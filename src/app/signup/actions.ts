@@ -50,13 +50,31 @@ export async function signup(
 
   const passwordHash = await bcrypt.hash(password, 12);
 
-  await prisma.user.create({
+  const newUser = await prisma.user.create({
     data: {
       email,
       passwordHash,
       emailVerified: new Date(),
     },
   });
+
+  // Auto-follow the first user (site creator) so new users see content in their feed
+  try {
+    const firstUser = await prisma.user.findFirst({
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+    });
+    if (firstUser && firstUser.id !== newUser.id) {
+      await prisma.follow.create({
+        data: {
+          followerId: newUser.id,
+          followingId: firstUser.id,
+        },
+      });
+    }
+  } catch {
+    // Non-critical — don't block signup if auto-follow fails
+  }
 
   try {
     await signIn("credentials", {
