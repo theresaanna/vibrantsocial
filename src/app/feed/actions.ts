@@ -52,8 +52,11 @@ export async function createPost(
     return { success: false, message: "Invalid post content" };
   }
 
+  const isSensitive = formData.get("isSensitive") === "true";
+  const isNsfw = formData.get("isNsfw") === "true";
+
   await prisma.post.create({
-    data: { content, authorId: session.user.id },
+    data: { content, authorId: session.user.id, isSensitive, isNsfw },
   });
 
   revalidatePath("/feed");

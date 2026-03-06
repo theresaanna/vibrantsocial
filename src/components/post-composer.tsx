@@ -135,6 +135,16 @@ export function PostComposer({ phoneVerified, isOldEnough }: PostComposerProps) 
             onCleared={() => setShouldClear(false)}
           />
         </LexicalComposer>
+        <div className="flex items-center gap-4 border-t border-zinc-200 px-4 py-2 dark:border-zinc-700">
+          <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+            <input type="checkbox" name="isSensitive" value="true" className="rounded" />
+            Sensitive
+          </label>
+          <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+            <input type="checkbox" name="isNsfw" value="true" className="rounded" />
+            NSFW
+          </label>
+        </div>
         <div className="flex items-center justify-between border-t border-zinc-200 px-4 py-3 dark:border-zinc-700">
           {state.message && !state.success && (
             <p className="text-sm text-red-600">{state.message}</p>

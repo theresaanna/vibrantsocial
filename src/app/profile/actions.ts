@@ -91,12 +91,15 @@ export async function updateProfile(
     await pruneOldRevisions(session.user.id);
   }
 
+  const showNsfwByDefault = formData.get("showNsfwByDefault") === "true";
+
   await prisma.user.update({
     where: { id: session.user.id },
     data: {
       username: username || null,
       displayName: displayName || null,
       bio: newBio,
+      showNsfwByDefault,
       ...themeColors,
     },
   });
