@@ -93,7 +93,7 @@ export async function POST(req: Request) {
     );
   }
 
-  let buffer = Buffer.from(await file.arrayBuffer());
+  let buffer = Buffer.from(await file.arrayBuffer() as ArrayBuffer);
   let ext = file.name.split(".").pop() ?? "bin";
 
   // Convert HEIC/HEIF to WebP
