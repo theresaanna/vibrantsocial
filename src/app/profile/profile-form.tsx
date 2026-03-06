@@ -2,6 +2,7 @@
 
 import { useActionState, useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import { updateProfile, removeAvatar } from "./actions";
 import { BioEditor } from "@/components/bio-editor";
 
@@ -27,8 +28,10 @@ export function ProfileForm({ user, currentAvatar, oauthImage }: ProfileFormProp
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>("idle");
+  const [savedUsername, setSavedUsername] = useState(user.username);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [copied, setCopied] = useState(false);
 
   const [avatarPreview, setAvatarPreview] = useState<string | null>(currentAvatar);
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -42,9 +45,12 @@ export function ProfileForm({ user, currentAvatar, oauthImage }: ProfileFormProp
     async (prevState: ProfileState, formData: FormData) => {
       const result = await updateProfile(prevState, formData);
       if (result.success) {
+        const newUsername = (formData.get("username") as string) || null;
+        setSavedUsername(newUsername);
+        setUsernameStatus("idle");
         await update({
           user: {
-            username: (formData.get("username") as string) || null,
+            username: newUsername,
             displayName: (formData.get("displayName") as string) || null,
             bio: (formData.get("bio") as string) || null,
           },
@@ -65,8 +71,8 @@ export function ProfileForm({ user, currentAvatar, oauthImage }: ProfileFormProp
       return;
     }
 
-    if (trimmed === user.username?.toLowerCase()) {
-      setUsernameStatus("available");
+    if (trimmed === savedUsername?.toLowerCase()) {
+      setUsernameStatus("idle");
       return;
     }
 
@@ -92,7 +98,7 @@ export function ProfileForm({ user, currentAvatar, oauthImage }: ProfileFormProp
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [usernameValue, user.username]);
+  }, [usernameValue, savedUsername]);
 
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -204,6 +210,31 @@ export function ProfileForm({ user, currentAvatar, oauthImage }: ProfileFormProp
           <p className="text-xs text-zinc-400">JPEG, PNG, GIF, or WebP. Max 2MB.</p>
         </div>
       </div>
+
+      {/* Public profile link & share */}
+      {savedUsername && (
+        <div className="flex items-center justify-between rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+          <Link
+            href={`/${savedUsername}`}
+            className="text-lg font-semibold text-zinc-900 transition-colors hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-400"
+          >
+            View public profile &rarr;
+          </Link>
+          <button
+            type="button"
+            onClick={() => {
+              navigator.clipboard.writeText(
+                `${window.location.origin}/${savedUsername}`
+              );
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            }}
+            className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+          >
+            {copied ? "Copied!" : "Share Profile"}
+          </button>
+        </div>
+      )}
 
       {/* Profile fields */}
       <form action={formAction} className="space-y-4">
