@@ -1,7 +1,7 @@
 import sharp from "sharp";
 
 export interface ConversionResult {
-  buffer: Buffer;
+  buffer: Uint8Array;
   mimeType: string;
   extension: string;
 }
@@ -13,9 +13,9 @@ export function isConvertibleImage(mimeType: string): boolean {
 }
 
 export async function convertToWebP(
-  inputBuffer: Buffer
+  inputBuffer: Uint8Array
 ): Promise<ConversionResult> {
-  const buffer = await sharp(inputBuffer).webp({ quality: 80 }).toBuffer();
+  const buffer: Uint8Array = await sharp(inputBuffer).webp({ quality: 80 }).toBuffer();
 
   return {
     buffer,
