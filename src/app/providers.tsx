@@ -5,6 +5,8 @@ import { ThemeProvider } from "next-themes";
 import { AblyProvider, ChannelProvider, usePresence } from "ably/react";
 import { getAblyRealtimeClient } from "@/lib/ably";
 import { createContext, useContext, useEffect, useRef } from "react";
+import { ToastProvider } from "@/components/toast-provider";
+import { Toaster } from "sonner";
 
 const PRESENCE_CHANNEL = "presence:global";
 
@@ -39,6 +41,7 @@ function AblyProviderWrapper({ children }: { children: React.ReactNode }) {
   if (!session?.user?.id || !clientRef.current) {
     return (
       <AblyReadyContext.Provider value={false}>
+        <Toaster position="bottom-right" />
         {children}
       </AblyReadyContext.Provider>
     );
@@ -49,6 +52,7 @@ function AblyProviderWrapper({ children }: { children: React.ReactNode }) {
       <AblyReadyContext.Provider value={true}>
         <ChannelProvider channelName={PRESENCE_CHANNEL}>
           <PresenceEntry />
+          <ToastProvider />
           {children}
         </ChannelProvider>
       </AblyReadyContext.Provider>

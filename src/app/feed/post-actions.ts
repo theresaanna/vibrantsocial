@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePhoneVerification } from "@/lib/phone-gate";
 import { revalidatePath } from "next/cache";
 import { getAblyRestClient } from "@/lib/ably";
+import { createNotification } from "@/lib/notifications";
 
 interface ActionState {
   success: boolean;
@@ -31,6 +32,19 @@ export async function toggleLike(
     await prisma.like.create({
       data: { postId, userId: session.user.id },
     });
+
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { authorId: true },
+    });
+    if (post) {
+      await createNotification({
+        type: "LIKE",
+        actorId: session.user.id,
+        targetUserId: post.authorId,
+        postId,
+      });
+    }
   }
 
   revalidatePath("/feed");
@@ -57,6 +71,19 @@ export async function toggleBookmark(
     await prisma.bookmark.create({
       data: { postId, userId: session.user.id },
     });
+
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { authorId: true },
+    });
+    if (post) {
+      await createNotification({
+        type: "BOOKMARK",
+        actorId: session.user.id,
+        targetUserId: post.authorId,
+        postId,
+      });
+    }
   }
 
   revalidatePath("/feed");
@@ -83,6 +110,19 @@ export async function toggleRepost(
     await prisma.repost.create({
       data: { postId, userId: session.user.id },
     });
+
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { authorId: true },
+    });
+    if (post) {
+      await createNotification({
+        type: "REPOST",
+        actorId: session.user.id,
+        targetUserId: post.authorId,
+        postId,
+      });
+    }
   }
 
   revalidatePath("/feed");
@@ -133,6 +173,38 @@ export async function createComment(
       },
     },
   });
+
+  // Notify post author about the comment
+  const post = await prisma.post.findUnique({
+    where: { id: postId },
+    select: { authorId: true },
+  });
+  if (post) {
+    await createNotification({
+      type: "COMMENT",
+      actorId: session.user.id,
+      targetUserId: post.authorId,
+      postId,
+      commentId: comment.id,
+    });
+  }
+
+  // If replying, also notify parent comment author
+  if (parentId) {
+    const parentComment = await prisma.comment.findUnique({
+      where: { id: parentId },
+      select: { authorId: true },
+    });
+    if (parentComment && parentComment.authorId !== post?.authorId) {
+      await createNotification({
+        type: "REPLY",
+        actorId: session.user.id,
+        targetUserId: parentComment.authorId,
+        postId,
+        commentId: comment.id,
+      });
+    }
+  }
 
   // Publish to Ably for real-time delivery
   try {
