@@ -3,7 +3,8 @@
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { useLexicalNodeSelection } from "@lexical/react/useLexicalNodeSelection";
 import { $getNodeByKey, type NodeKey } from "lexical";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { $isExcalidrawNode } from "./ExcalidrawNode";
 
 interface ExcalidrawComponentProps {
@@ -121,39 +122,58 @@ function ExcalidrawModal({
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-white dark:bg-zinc-900">
-      <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">
-        <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">Excalidraw</h2>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={handleSave}
-            className="rounded-lg bg-blue-500 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-600"
-          >
-            Save
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg bg-zinc-200 px-4 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600"
-          >
-            Cancel
-          </button>
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleEsc(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [onClose]);
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative z-10 flex h-[90vh] w-[90vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-zinc-900">
+        <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Excalidraw</h2>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleSave}
+              className="rounded-lg bg-blue-500 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-600"
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg bg-zinc-200 px-4 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+        <div className="flex-1">
+          {Excalidraw ? (
+            <Excalidraw
+              initialData={initialScene}
+              excalidrawAPI={(api: unknown) => setSceneRef(api as typeof sceneRef)}
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center text-zinc-500">
+              Loading Excalidraw...
+            </div>
+          )}
         </div>
       </div>
-      <div className="flex-1">
-        {Excalidraw ? (
-          <Excalidraw
-            initialData={initialScene}
-            excalidrawAPI={(api: unknown) => setSceneRef(api as typeof sceneRef)}
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-zinc-500">
-            Loading Excalidraw...
-          </div>
-        )}
-      </div>
-    </div>
+    </div>,
+    document.body
   );
 }

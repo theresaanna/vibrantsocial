@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { updateProfile, removeAvatar } from "./actions";
 import { BioEditor } from "@/components/bio-editor";
+import { BioRevisionHistory } from "@/components/bio-revision-history";
 
 interface ProfileFormProps {
   user: {
@@ -36,6 +37,7 @@ export function ProfileForm({ user, currentAvatar, oauthImage }: ProfileFormProp
   const [avatarPreview, setAvatarPreview] = useState<string | null>(currentAvatar);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [showRevisions, setShowRevisions] = useState(false);
 
   const displayedAvatar = avatarPreview || oauthImage;
   const displayName = user.displayName ?? "?";
@@ -286,7 +288,25 @@ export function ProfileForm({ user, currentAvatar, oauthImage }: ProfileFormProp
           />
         </div>
 
-        <BioEditor initialContent={user.bio} />
+        <div>
+          <BioEditor initialContent={user.bio} />
+          <button
+            type="button"
+            onClick={() => setShowRevisions(true)}
+            className="mt-1.5 text-xs text-zinc-500 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300"
+          >
+            Revision history
+          </button>
+        </div>
+
+        {showRevisions && (
+          <BioRevisionHistory
+            onClose={() => setShowRevisions(false)}
+            onRestore={() => {
+              window.location.reload();
+            }}
+          />
+        )}
 
         <button
           type="submit"
