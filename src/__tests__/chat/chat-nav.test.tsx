@@ -29,6 +29,7 @@ vi.mock("ably/react", () => ({
   usePresenceListener: vi.fn().mockReturnValue({
     presenceData: [{ clientId: "user2" }],
   }),
+  ChannelProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 vi.mock("@/app/providers", () => ({

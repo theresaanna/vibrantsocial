@@ -1,5 +1,6 @@
 "use client";
 
+import { ChannelProvider } from "ably/react";
 import { ConversationList } from "@/components/chat/conversation-list";
 import { MessageRequestList } from "@/components/chat/message-request-list";
 import { MessageThread } from "@/components/chat/message-thread";
@@ -45,13 +46,19 @@ export function ConversationPageClient({
 
       {/* Message thread */}
       <div className="flex flex-1 flex-col overflow-hidden rounded-r-2xl border border-l-0 border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <MessageThread
-          conversationId={conversationId}
-          initialMessages={initialMessages}
-          conversation={conversation}
-          currentUserId={currentUserId}
-          phoneVerified={phoneVerified}
-        />
+        <ChannelProvider channelName={`chat:${conversationId}`}>
+          <ChannelProvider channelName={`typing:${conversationId}`}>
+            <ChannelProvider channelName={`read:${conversationId}`}>
+              <MessageThread
+                conversationId={conversationId}
+                initialMessages={initialMessages}
+                conversation={conversation}
+                currentUserId={currentUserId}
+                phoneVerified={phoneVerified}
+              />
+            </ChannelProvider>
+          </ChannelProvider>
+        </ChannelProvider>
       </div>
     </main>
   );
