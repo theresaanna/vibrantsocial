@@ -4,9 +4,10 @@ import { Editor } from "@/components/editor/Editor";
 
 interface BioEditorProps {
   initialContent?: string | null;
+  onChange?: () => void;
 }
 
-export function BioEditor({ initialContent }: BioEditorProps) {
+export function BioEditor({ initialContent, onChange }: BioEditorProps) {
   return (
     <div>
       <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
@@ -16,6 +17,7 @@ export function BioEditor({ initialContent }: BioEditorProps) {
         <Editor
           initialContent={initialContent}
           inputName="bio"
+          onChange={onChange ? () => onChange() : undefined}
           placeholder="Tell us about yourself..."
           minHeight="188px"
         />
