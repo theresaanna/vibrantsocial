@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { del } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
+import { isValidHexColor, THEME_COLOR_FIELDS } from "@/lib/profile-themes";
 
 const MAX_BIO_REVISIONS = 20;
 
@@ -57,6 +58,23 @@ export async function updateProfile(
     }
   }
 
+  // Validate theme colors
+  const themeColors: Record<string, string | null> = {};
+  for (const field of THEME_COLOR_FIELDS) {
+    const value = formData.get(field) as string | null;
+    if (value && value.trim()) {
+      if (!isValidHexColor(value.trim())) {
+        return {
+          success: false,
+          message: `Invalid color value for ${field}. Must be a valid hex color (e.g. #ff0000).`,
+        };
+      }
+      themeColors[field] = value.trim();
+    } else {
+      themeColors[field] = null;
+    }
+  }
+
   // Save current bio as a revision if it changed
   const currentUser = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -79,10 +97,14 @@ export async function updateProfile(
       username: username || null,
       displayName: displayName || null,
       bio: newBio,
+      ...themeColors,
     },
   });
 
   revalidatePath("/profile");
+  if (username) {
+    revalidatePath(`/${username}`);
+  }
   return { success: true, message: "Profile updated" };
 }
 

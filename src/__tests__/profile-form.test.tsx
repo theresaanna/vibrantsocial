@@ -40,11 +40,21 @@ vi.mock("@/components/bio-editor", () => ({
   ),
 }));
 
+// Mock ThemeEditor
+vi.mock("@/components/theme-editor", () => ({
+  ThemeEditor: () => <div data-testid="theme-editor" />,
+}));
+
 const defaultUser = {
   id: "user1",
   username: "testuser",
   displayName: "Test User",
   bio: null,
+  profileBgColor: null as string | null,
+  profileTextColor: null as string | null,
+  profileLinkColor: null as string | null,
+  profileSecondaryColor: null as string | null,
+  profileContainerColor: null as string | null,
 };
 
 function renderForm(overrides: Partial<typeof defaultUser> = {}) {
@@ -71,6 +81,11 @@ describe("ProfileForm", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it("renders the theme editor", () => {
+    renderForm();
+    expect(screen.getByTestId("theme-editor")).toBeInTheDocument();
   });
 
   describe("username status - no 'available' message for current username", () => {

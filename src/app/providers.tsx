@@ -1,6 +1,7 @@
 "use client";
 
 import { SessionProvider, useSession } from "next-auth/react";
+import { ThemeProvider } from "next-themes";
 import { AblyProvider } from "ably/react";
 import { getAblyRealtimeClient } from "@/lib/ably";
 import { createContext, useContext, useEffect, useRef } from "react";
@@ -48,7 +49,9 @@ function AblyProviderWrapper({ children }: { children: React.ReactNode }) {
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
-      <AblyProviderWrapper>{children}</AblyProviderWrapper>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <AblyProviderWrapper>{children}</AblyProviderWrapper>
+      </ThemeProvider>
     </SessionProvider>
   );
 }

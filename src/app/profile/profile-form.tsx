@@ -6,6 +6,7 @@ import Link from "next/link";
 import { updateProfile, removeAvatar } from "./actions";
 import { BioEditor } from "@/components/bio-editor";
 import { BioRevisionHistory } from "@/components/bio-revision-history";
+import { ThemeEditor } from "@/components/theme-editor";
 
 interface ProfileFormProps {
   user: {
@@ -13,6 +14,11 @@ interface ProfileFormProps {
     username: string | null;
     displayName: string | null;
     bio: string | null;
+    profileBgColor: string | null;
+    profileTextColor: string | null;
+    profileLinkColor: string | null;
+    profileSecondaryColor: string | null;
+    profileContainerColor: string | null;
   };
   currentAvatar: string | null;
   oauthImage: string | null;
@@ -307,6 +313,20 @@ export function ProfileForm({ user, currentAvatar, oauthImage }: ProfileFormProp
             }}
           />
         )}
+
+        <ThemeEditor
+          initialColors={{
+            profileBgColor: user.profileBgColor ?? undefined,
+            profileTextColor: user.profileTextColor ?? undefined,
+            profileLinkColor: user.profileLinkColor ?? undefined,
+            profileSecondaryColor: user.profileSecondaryColor ?? undefined,
+            profileContainerColor: user.profileContainerColor ?? undefined,
+          }}
+          username={savedUsername ?? null}
+          displayName={user.displayName}
+          bio={user.bio}
+          avatarSrc={avatarPreview || oauthImage}
+        />
 
         <button
           type="submit"

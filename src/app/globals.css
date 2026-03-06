@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -8,19 +10,51 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-lexend);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-lexend), Arial, Helvetica, sans-serif;
+  font-weight: 200;
+}
+
+strong,
+b {
+  font-weight: 400;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 400;
+}
+
+/* Profile theme overrides */
+.profile-themed {
+  background-color: var(--profile-bg);
+  color: var(--profile-text);
+  min-height: calc(100vh - 57px);
+}
+
+.profile-themed .profile-container {
+  background-color: var(--profile-container);
+}
+
+.profile-themed .profile-text-secondary {
+  color: var(--profile-secondary);
+}
+
+.profile-themed .profile-link {
+  color: var(--profile-link);
 }

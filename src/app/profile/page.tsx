@@ -16,6 +16,11 @@ export default async function ProfilePage() {
       passwordHash: true,
       avatar: true,
       image: true,
+      profileBgColor: true,
+      profileTextColor: true,
+      profileLinkColor: true,
+      profileSecondaryColor: true,
+      profileContainerColor: true,
     },
   });
 
@@ -59,7 +64,14 @@ export default async function ProfilePage() {
         </div>
 
         <ProfileForm
-          user={session.user}
+          user={{
+            ...session.user,
+            profileBgColor: user?.profileBgColor ?? null,
+            profileTextColor: user?.profileTextColor ?? null,
+            profileLinkColor: user?.profileLinkColor ?? null,
+            profileSecondaryColor: user?.profileSecondaryColor ?? null,
+            profileContainerColor: user?.profileContainerColor ?? null,
+          }}
           currentAvatar={user?.avatar ?? null}
           oauthImage={oauthImage}
         />

@@ -22,6 +22,13 @@ model User {
   bio         String?
   avatar      String?
 
+  // Profile theme colors
+  profileBgColor        String?
+  profileTextColor      String?
+  profileLinkColor      String?
+  profileSecondaryColor String?
+  profileContainerColor String?
+
   // Credentials auth
   passwordHash String?
 

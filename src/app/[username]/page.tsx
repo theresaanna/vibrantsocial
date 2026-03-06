@@ -22,6 +22,11 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
       image: true,
       avatar: true,
       bio: true,
+      profileBgColor: true,
+      profileTextColor: true,
+      profileLinkColor: true,
+      profileSecondaryColor: true,
+      profileContainerColor: true,
       _count: {
         select: {
           posts: true,
@@ -121,80 +126,104 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
   const avatarSrc = user.avatar || user.image;
   const initial = (displayName || "?")[0].toUpperCase();
 
+  const hasCustomTheme = !!(
+    user.profileBgColor ||
+    user.profileTextColor ||
+    user.profileLinkColor ||
+    user.profileSecondaryColor ||
+    user.profileContainerColor
+  );
+
+  const themeStyle = hasCustomTheme
+    ? ({
+        "--profile-bg": user.profileBgColor ?? "#ffffff",
+        "--profile-text": user.profileTextColor ?? "#18181b",
+        "--profile-link": user.profileLinkColor ?? "#2563eb",
+        "--profile-secondary": user.profileSecondaryColor ?? "#71717a",
+        "--profile-container": user.profileContainerColor ?? "#f4f4f5",
+      } as React.CSSProperties)
+    : undefined;
+
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
-      {/* Profile header */}
-      <div className="rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-900">
-        <div className="flex items-start gap-4">
-          {avatarSrc ? (
-            <img
-              src={avatarSrc}
-              alt=""
-              referrerPolicy="no-referrer"
-              className="h-16 w-16 rounded-full"
-            />
-          ) : (
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-200 text-xl font-bold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-              {initial}
-            </div>
-          )}
-
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-                  {displayName}
-                </h1>
-                <p className="text-sm text-zinc-500">@{user.username}</p>
-              </div>
-
-              {currentUserId && !isOwnProfile && (
-                <FollowButton userId={user.id} isFollowing={isFollowing} />
-              )}
-            </div>
-
-            {user.bio && (
-              <div className="mt-2">
-                <BioContent content={user.bio} />
+    <div className={hasCustomTheme ? "profile-themed" : ""} style={themeStyle}>
+      <main className="mx-auto max-w-3xl px-4 py-6">
+        {/* Profile header */}
+        <div className={`rounded-2xl p-6 shadow-lg ${hasCustomTheme ? "profile-container" : "bg-white dark:bg-zinc-900"}`}>
+          <div className="flex items-start gap-4">
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt=""
+                referrerPolicy="no-referrer"
+                className="h-16 w-16 rounded-full"
+              />
+            ) : (
+              <div className={`flex h-16 w-16 items-center justify-center rounded-full text-xl font-bold ${hasCustomTheme ? "profile-container" : "bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300"}`}>
+                {initial}
               </div>
             )}
 
-            <div className="mt-3 flex gap-4 text-sm">
-              <span className="text-zinc-500">
-                <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                  {user._count.posts}
-                </span>{" "}
-                posts
-              </span>
-              <span className="text-zinc-500">
-                <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                  {user._count.followers}
-                </span>{" "}
-                followers
-              </span>
-              <span className="text-zinc-500">
-                <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                  {user._count.following}
-                </span>{" "}
-                following
-              </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h1 className={`text-xl font-bold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                    {displayName}
+                  </h1>
+                  <p className={`text-sm ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
+                    @{user.username}
+                  </p>
+                </div>
+
+                {currentUserId && !isOwnProfile && (
+                  <FollowButton userId={user.id} isFollowing={isFollowing} />
+                )}
+              </div>
+
+              {user.bio && (
+                <div className="mt-2">
+                  <BioContent content={user.bio} />
+                </div>
+              )}
+
+              <div className="mt-3 flex gap-4 text-sm">
+                <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                  <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                    {user._count.posts}
+                  </span>{" "}
+                  posts
+                </span>
+                <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                  <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                    {user._count.followers}
+                  </span>{" "}
+                  followers
+                </span>
+                <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                  <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                    {user._count.following}
+                  </span>{" "}
+                  following
+                </span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* User's posts */}
-      {posts.length === 0 ? (
-        <div className="mt-8 text-center">
-          <p className="text-zinc-500">No posts yet.</p>
-        </div>
-      ) : (
-        <div className="mt-6 space-y-4">
-          {posts.map((post) => (
-            <PostCard key={post.id} post={post} phoneVerified={phoneVerified} />
-          ))}
-        </div>
-      )}
-    </main>
+        {/* User's posts */}
+        {posts.length === 0 ? (
+          <div className="mt-8 text-center">
+            <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+              No posts yet.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-6 space-y-4">
+            {posts.map((post) => (
+              <PostCard key={post.id} post={post} phoneVerified={phoneVerified} />
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
   );
 }
