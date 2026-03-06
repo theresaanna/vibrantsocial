@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { requirePhoneVerification } from "@/lib/phone-gate";
 import { revalidatePath } from "next/cache";
+import { getAblyRestClient } from "@/lib/ably";
 
 interface ActionState {
   success: boolean;
@@ -117,9 +118,36 @@ export async function createComment(
     return { success: false, message: "Comment too long (max 1000 characters)" };
   }
 
-  await prisma.comment.create({
+  const comment = await prisma.comment.create({
     data: { content, postId, authorId: session.user.id, parentId },
+    include: {
+      author: {
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          name: true,
+          image: true,
+          avatar: true,
+        },
+      },
+    },
   });
+
+  // Publish to Ably for real-time delivery
+  try {
+    const ably = getAblyRestClient();
+    const channel = ably.channels.get(`comments:${postId}`);
+    await channel.publish("new", {
+      id: comment.id,
+      content: comment.content,
+      parentId: comment.parentId,
+      author: JSON.stringify(comment.author),
+      createdAt: comment.createdAt.toISOString(),
+    });
+  } catch {
+    // Non-critical — DB write succeeded
+  }
 
   revalidatePath("/feed");
   return { success: true, message: "Comment added" };

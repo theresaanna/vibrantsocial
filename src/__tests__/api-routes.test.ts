@@ -23,6 +23,11 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+vi.mock("@/lib/arachnid-shield", () => ({
+  scanImageBuffer: vi.fn().mockResolvedValue({ safe: true }),
+  quarantineUpload: vi.fn(),
+}));
+
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { put, del } from "@vercel/blob";
@@ -32,18 +37,25 @@ const mockPrisma = vi.mocked(prisma);
 const mockPut = vi.mocked(put);
 const mockDel = vi.mocked(del);
 
-function createMockFile(name: string, type: string, size: number): File {
+function createMockFile(name: string, type: string, size: number) {
   const content = new Uint8Array(size);
-  return new File([content], name, { type });
+  return {
+    name,
+    type,
+    size,
+    arrayBuffer: () => Promise.resolve(content.buffer),
+  } as unknown as File;
 }
 
 /**
- * Create a request whose .formData() resolves directly to the given FormData,
+ * Create a request whose .formData() resolves directly to a mock FormData,
  * bypassing body serialization which hangs in jsdom.
  */
-function createPostRequest(url: string, formData: FormData) {
+function createPostRequest(url: string, file?: File) {
+  const mockFd = { get: (key: string) => (key === "file" ? (file ?? null) : null) };
   return {
-    formData: async () => formData,
+    formData: async () => mockFd,
+    headers: new Headers(),
   } as unknown as NextRequest;
 }
 
@@ -56,10 +68,7 @@ describe("Avatar Upload API (/api/avatar)", () => {
     mockAuth.mockResolvedValueOnce(null as never);
 
     const { POST } = await import("@/app/api/avatar/route");
-    const formData = new FormData();
-    formData.set("file", createMockFile("test.jpg", "image/jpeg", 1000));
-
-    const res = await POST(createPostRequest("http://localhost/api/avatar", formData));
+    const res = await POST(createPostRequest("http://localhost/api/avatar", createMockFile("test.jpg", "image/jpeg", 1000)));
     expect(res.status).toBe(401);
     const body = await res.json();
     expect(body.error).toBe("Not authenticated");
@@ -69,9 +78,7 @@ describe("Avatar Upload API (/api/avatar)", () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
 
     const { POST } = await import("@/app/api/avatar/route");
-    const formData = new FormData();
-
-    const res = await POST(createPostRequest("http://localhost/api/avatar", formData));
+    const res = await POST(createPostRequest("http://localhost/api/avatar"));
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toBe("No file provided");
@@ -81,10 +88,7 @@ describe("Avatar Upload API (/api/avatar)", () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
 
     const { POST } = await import("@/app/api/avatar/route");
-    const formData = new FormData();
-    formData.set("file", createMockFile("test.pdf", "application/pdf", 1000));
-
-    const res = await POST(createPostRequest("http://localhost/api/avatar", formData));
+    const res = await POST(createPostRequest("http://localhost/api/avatar", createMockFile("test.pdf", "application/pdf", 1000)));
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toContain("JPEG, PNG, GIF, or WebP");
@@ -94,10 +98,7 @@ describe("Avatar Upload API (/api/avatar)", () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
 
     const { POST } = await import("@/app/api/avatar/route");
-    const formData = new FormData();
-    formData.set("file", createMockFile("big.jpg", "image/jpeg", 6 * 1024 * 1024));
-
-    const res = await POST(createPostRequest("http://localhost/api/avatar", formData));
+    const res = await POST(createPostRequest("http://localhost/api/avatar", createMockFile("big.jpg", "image/jpeg", 6 * 1024 * 1024)));
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toContain("5MB");
@@ -114,10 +115,7 @@ describe("Avatar Upload API (/api/avatar)", () => {
     mockPrisma.user.update.mockResolvedValueOnce({} as never);
 
     const { POST } = await import("@/app/api/avatar/route");
-    const formData = new FormData();
-    formData.set("file", createMockFile("photo.jpg", "image/jpeg", 100_000));
-
-    const res = await POST(createPostRequest("http://localhost/api/avatar", formData));
+    const res = await POST(createPostRequest("http://localhost/api/avatar", createMockFile("photo.jpg", "image/jpeg", 100_000)));
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.url).toBeDefined();
@@ -135,11 +133,8 @@ describe("Generic Upload API (/api/upload)", () => {
     mockAuth.mockResolvedValueOnce(null as never);
 
     const { POST } = await import("@/app/api/upload/route");
-    const formData = new FormData();
-    formData.set("file", createMockFile("test.jpg", "image/jpeg", 1000));
-
     const res = await POST(
-      createPostRequest("http://localhost/api/upload", formData) as unknown as Request
+      createPostRequest("http://localhost/api/upload", createMockFile("test.jpg", "image/jpeg", 1000)) as unknown as Request
     );
     expect(res.status).toBe(401);
   });
@@ -148,11 +143,8 @@ describe("Generic Upload API (/api/upload)", () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
 
     const { POST } = await import("@/app/api/upload/route");
-    const formData = new FormData();
-    formData.set("file", createMockFile("test.txt", "text/plain", 100));
-
     const res = await POST(
-      createPostRequest("http://localhost/api/upload", formData) as unknown as Request
+      createPostRequest("http://localhost/api/upload", createMockFile("test.txt", "text/plain", 100)) as unknown as Request
     );
     expect(res.status).toBe(400);
     const body = await res.json();
@@ -163,11 +155,8 @@ describe("Generic Upload API (/api/upload)", () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
 
     const { POST } = await import("@/app/api/upload/route");
-    const formData = new FormData();
-    formData.set("file", createMockFile("big.png", "image/png", 6 * 1024 * 1024));
-
     const res = await POST(
-      createPostRequest("http://localhost/api/upload", formData) as unknown as Request
+      createPostRequest("http://localhost/api/upload", createMockFile("big.png", "image/png", 6 * 1024 * 1024)) as unknown as Request
     );
     expect(res.status).toBe(400);
     const body = await res.json();
@@ -181,11 +170,8 @@ describe("Generic Upload API (/api/upload)", () => {
     } as never);
 
     const { POST } = await import("@/app/api/upload/route");
-    const formData = new FormData();
-    formData.set("file", createMockFile("diagram.svg", "image/svg+xml", 1000));
-
     const res = await POST(
-      createPostRequest("http://localhost/api/upload", formData) as unknown as Request
+      createPostRequest("http://localhost/api/upload", createMockFile("diagram.svg", "image/svg+xml", 1000)) as unknown as Request
     );
     expect(res.status).toBe(200);
     const body = await res.json();

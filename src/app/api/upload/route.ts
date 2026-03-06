@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { put } from "@vercel/blob";
+import { scanImageBuffer, quarantineUpload } from "@/lib/arachnid-shield";
 
 const ALLOWED_TYPES = [
   "image/jpeg",
@@ -37,6 +38,24 @@ export async function POST(req: Request) {
       { error: "File too large. Maximum size is 5MB" },
       { status: 400 }
     );
+  }
+
+  // Scan for CSAM before storing
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const scanResult = await scanImageBuffer(buffer, file.type);
+
+  if (!scanResult.safe) {
+    await quarantineUpload({
+      userId: session.user.id,
+      classification: scanResult.classification!,
+      sha256: scanResult.sha256!,
+      fileName: file.name,
+      fileSize: file.size,
+      mimeType: file.type,
+      uploadEndpoint: "/api/upload",
+      request: req,
+    });
+    return NextResponse.json({ error: "Upload rejected" }, { status: 400 });
   }
 
   const ext = file.name.split(".").pop() ?? "jpg";

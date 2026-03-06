@@ -40,6 +40,15 @@ vi.mock("@/lib/phone-gate", () => ({
   requirePhoneVerification: vi.fn(),
 }));
 
+const mockAblyPublish = vi.fn();
+vi.mock("@/lib/ably", () => ({
+  getAblyRestClient: () => ({
+    channels: {
+      get: () => ({ publish: mockAblyPublish }),
+    },
+  }),
+}));
+
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { requirePhoneVerification } from "@/lib/phone-gate";
@@ -180,10 +189,33 @@ describe("createComment", () => {
     expect(result.message).toBe("Comment too long (max 1000 characters)");
   });
 
+  const authorInclude = {
+    author: {
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        name: true,
+        image: true,
+        avatar: true,
+      },
+    },
+  };
+
+  const fakeComment = {
+    id: "c1",
+    content: "Great post!",
+    postId: "p1",
+    authorId: "user1",
+    parentId: null,
+    createdAt: new Date(),
+    author: { id: "user1", username: "u1", displayName: null, name: "User", image: null, avatar: null },
+  };
+
   it("creates comment successfully", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPhoneGate.mockResolvedValueOnce(true);
-    mockPrisma.comment.create.mockResolvedValueOnce({} as never);
+    mockPrisma.comment.create.mockResolvedValueOnce(fakeComment as never);
 
     const result = await createComment(
       prevState,
@@ -193,13 +225,14 @@ describe("createComment", () => {
     expect(result.message).toBe("Comment added");
     expect(mockPrisma.comment.create).toHaveBeenCalledWith({
       data: { content: "Great post!", postId: "p1", authorId: "user1", parentId: null },
+      include: authorInclude,
     });
   });
 
   it("creates reply to a comment with parentId", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPhoneGate.mockResolvedValueOnce(true);
-    mockPrisma.comment.create.mockResolvedValueOnce({} as never);
+    mockPrisma.comment.create.mockResolvedValueOnce({ ...fakeComment, parentId: "c1" } as never);
 
     const result = await createComment(
       prevState,
@@ -209,6 +242,7 @@ describe("createComment", () => {
     expect(result.message).toBe("Comment added");
     expect(mockPrisma.comment.create).toHaveBeenCalledWith({
       data: { content: "Great reply!", postId: "p1", authorId: "user1", parentId: "c1" },
+      include: authorInclude,
     });
   });
 });
