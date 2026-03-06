@@ -18,7 +18,7 @@ export interface ScanResult {
 }
 
 export async function scanImageBuffer(
-  bytes: Buffer,
+  bytes: Buffer | Uint8Array,
   mimeType: string
 ): Promise<ScanResult> {
   const username = process.env.ARACHNID_SHIELD_USERNAME;

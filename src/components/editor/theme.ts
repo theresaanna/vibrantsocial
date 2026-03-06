@@ -73,6 +73,8 @@ export const editorTheme: EditorThemeClasses = {
   tableRow: "",
   horizontalRule: "border-t border-zinc-300 dark:border-zinc-600 my-4",
   image: "inline-block max-w-full",
+  video: "my-2 inline-block max-w-full",
+  file: "my-2 inline-block",
   embedBlock: {
     base: "my-2",
     focus: "outline-2 outline-blue-500",

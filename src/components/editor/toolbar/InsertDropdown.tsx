@@ -1,7 +1,7 @@
 "use client";
 
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { $insertNodes, $getSelection, $isRangeSelection, $createParagraphNode } from "lexical";
+import { $insertNodes, $createParagraphNode } from "lexical";
 import { INSERT_HORIZONTAL_RULE_COMMAND } from "@lexical/react/LexicalHorizontalRuleNode";
 import {
   INSERT_TABLE_COMMAND,
@@ -11,6 +11,8 @@ import { useState } from "react";
 import { DropdownMenu, DropdownItem } from "../ui/DropdownMenu";
 import { Modal } from "../ui/Modal";
 import { $createImageNode } from "../nodes/ImageNode";
+import { $createVideoNode } from "../nodes/VideoNode";
+import { $createFileNode } from "../nodes/FileNode";
 import { $createYouTubeNode } from "../nodes/YouTubeNode";
 import { $createEquationNode } from "../nodes/EquationNode";
 import { $createPageBreakNode } from "../nodes/PageBreakNode";
@@ -23,6 +25,8 @@ import { extractYouTubeVideoID } from "../utils/url";
 
 type ModalType =
   | "image"
+  | "video"
+  | "file"
   | "youtube"
   | "equation"
   | "table"
@@ -88,6 +92,8 @@ export function InsertDropdown() {
         <DropdownItem label="Page Break" onClick={insertPageBreak} />
         <div className="my-1 border-t border-zinc-200 dark:border-zinc-700" />
         <DropdownItem label="Image" onClick={() => setModal("image")} />
+        <DropdownItem label="Video" onClick={() => setModal("video")} />
+        <DropdownItem label="File / PDF" onClick={() => setModal("file")} />
         <DropdownItem label="YouTube Video" onClick={() => setModal("youtube")} />
         <DropdownItem label="Excalidraw" onClick={insertExcalidraw} />
         <div className="my-1 border-t border-zinc-200 dark:border-zinc-700" />
@@ -106,6 +112,32 @@ export function InsertDropdown() {
           onInsert={(src, alt) => {
             editor.update(() => {
               const node = $createImageNode({ src, altText: alt });
+              $insertNodes([node, $createParagraphNode()]);
+            });
+            setModal(null);
+          }}
+        />
+      )}
+
+      {modal === "video" && (
+        <VideoInsertModal
+          onClose={() => setModal(null)}
+          onInsert={(src, fileName, mimeType) => {
+            editor.update(() => {
+              const node = $createVideoNode({ src, fileName, mimeType });
+              $insertNodes([node, $createParagraphNode()]);
+            });
+            setModal(null);
+          }}
+        />
+      )}
+
+      {modal === "file" && (
+        <FileInsertModal
+          onClose={() => setModal(null)}
+          onInsert={(src, fileName, fileSize, mimeType) => {
+            editor.update(() => {
+              const node = $createFileNode({ src, fileName, fileSize, mimeType });
               $insertNodes([node, $createParagraphNode()]);
             });
             setModal(null);
@@ -245,7 +277,7 @@ function ImageInsertModal({
           <div>
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,image/heic,image/heif,.heic,.heif"
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) handleFileUpload(file);
@@ -253,6 +285,9 @@ function ImageInsertModal({
               className="w-full text-sm"
               disabled={uploading}
             />
+            <p className="mt-1.5 text-xs text-zinc-400">
+              Supports JPEG, PNG, GIF, WebP, SVG, HEIC, HEIF (max 5MB)
+            </p>
             {uploading && <p className="mt-1 text-sm text-blue-600">Uploading...</p>}
           </div>
         ) : (
@@ -284,6 +319,138 @@ function ImageInsertModal({
           </div>
         )}
 
+        {error && <p className="text-sm text-red-600">{error}</p>}
+      </div>
+    </Modal>
+  );
+}
+
+/* ── Video Insert Modal ───────────────────────────── */
+function VideoInsertModal({
+  onClose,
+  onInsert,
+}: {
+  onClose: () => void;
+  onInsert: (src: string, fileName: string, mimeType: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleFileUpload(file: File) {
+    setError("");
+    if (!file.type.startsWith("video/")) {
+      setError("Please select a video file");
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      setError("Video must be under 50MB");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Upload failed");
+      }
+      const { url, fileName } = await res.json();
+      onInsert(url, fileName, file.type);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <Modal title="Insert Video" onClose={onClose}>
+      <div className="space-y-3">
+        <div>
+          <input
+            type="file"
+            accept="video/mp4,video/webm,video/quicktime,video/ogg,.mp4,.webm,.mov,.ogv"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFileUpload(file);
+            }}
+            className="w-full text-sm"
+            disabled={uploading}
+          />
+          <p className="mt-1.5 text-xs text-zinc-400">
+            Supports MP4, WebM, MOV, OGG (max 50MB)
+          </p>
+          {uploading && <p className="mt-1 text-sm text-blue-600">Uploading...</p>}
+        </div>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+      </div>
+    </Modal>
+  );
+}
+
+/* ── File Insert Modal ────────────────────────────── */
+function FileInsertModal({
+  onClose,
+  onInsert,
+}: {
+  onClose: () => void;
+  onInsert: (src: string, fileName: string, fileSize: number, mimeType: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleFileUpload(file: File) {
+    setError("");
+    if (file.type !== "application/pdf") {
+      setError("Please select a PDF file");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setError("File must be under 10MB");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Upload failed");
+      }
+      const { url, fileName, fileSize } = await res.json();
+      onInsert(url, fileName, fileSize, file.type);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <Modal title="Insert File" onClose={onClose}>
+      <div className="space-y-3">
+        <div>
+          <input
+            type="file"
+            accept="application/pdf,.pdf"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFileUpload(file);
+            }}
+            className="w-full text-sm"
+            disabled={uploading}
+          />
+          <p className="mt-1.5 text-xs text-zinc-400">
+            Supports PDF (max 10MB)
+          </p>
+          {uploading && <p className="mt-1 text-sm text-blue-600">Uploading...</p>}
+        </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
     </Modal>
