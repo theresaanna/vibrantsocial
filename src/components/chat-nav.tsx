@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { usePathname } from "next/navigation";
-import { ChannelProvider, usePresenceListener } from "ably/react";
+import { usePresenceListener } from "ably/react";
 import Link from "next/link";
 import { getConversations } from "@/app/chat/actions";
 import { useAblyReady } from "@/app/providers";
@@ -120,12 +120,10 @@ export function ChatNav({ initialConversations }: ChatNavProps) {
               No conversations yet
             </div>
           ) : ablyReady ? (
-            <ChannelProvider channelName={PRESENCE_CHANNEL}>
-              <PresenceAwareList
-                conversations={recent}
-                onClose={() => setIsOpen(false)}
-              />
-            </ChannelProvider>
+            <PresenceAwareList
+              conversations={recent}
+              onClose={() => setIsOpen(false)}
+            />
           ) : (
             recent.map((conv) => (
               <ChatPaneItem
