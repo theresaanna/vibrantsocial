@@ -1,22 +1,9 @@
 "use client";
 
+import type * as Ably from "ably";
 import { useChannel } from "ably/react";
 import { useCallback, useState } from "react";
 import type { MessageData } from "@/types/chat";
-
-interface AblyMessageEvent {
-  name: string;
-  data: {
-    id: string;
-    conversationId: string;
-    senderId: string;
-    content: string;
-    editedAt: string | null;
-    deletedAt: string | null;
-    createdAt: string;
-    sender: MessageData["sender"];
-  };
-}
 
 export function useChatMessages(
   conversationId: string,
@@ -25,19 +12,21 @@ export function useChatMessages(
   const [messages, setMessages] = useState<MessageData[]>(initialMessages);
   const channelName = `chat:${conversationId}`;
 
-  useChannel(channelName, (event: AblyMessageEvent) => {
+  useChannel(channelName, (event: Ably.Message) => {
+    const data = event.data as Record<string, string | null>;
     switch (event.name) {
       case "new": {
         const msg: MessageData = {
-          ...event.data,
-          editedAt: event.data.editedAt ? new Date(event.data.editedAt) : null,
-          deletedAt: event.data.deletedAt
-            ? new Date(event.data.deletedAt)
-            : null,
-          createdAt: new Date(event.data.createdAt),
+          id: data.id as string,
+          conversationId: data.conversationId as string,
+          senderId: data.senderId as string,
+          content: data.content as string,
+          sender: JSON.parse(data.sender as string),
+          editedAt: data.editedAt ? new Date(data.editedAt) : null,
+          deletedAt: data.deletedAt ? new Date(data.deletedAt) : null,
+          createdAt: new Date(data.createdAt as string),
         };
         setMessages((prev) => {
-          // Deduplicate by ID
           if (prev.some((m) => m.id === msg.id)) return prev;
           return [...prev, msg];
         });
@@ -46,11 +35,11 @@ export function useChatMessages(
       case "edit": {
         setMessages((prev) =>
           prev.map((m) =>
-            m.id === event.data.id
+            m.id === data.id
               ? {
                   ...m,
-                  content: event.data.content,
-                  editedAt: new Date(event.data.editedAt!),
+                  content: data.content as string,
+                  editedAt: new Date(data.editedAt as string),
                 }
               : m
           )
@@ -60,8 +49,8 @@ export function useChatMessages(
       case "delete": {
         setMessages((prev) =>
           prev.map((m) =>
-            m.id === event.data.id
-              ? { ...m, deletedAt: new Date(event.data.deletedAt!) }
+            m.id === data.id
+              ? { ...m, deletedAt: new Date(data.deletedAt as string) }
               : m
           )
         );
@@ -74,6 +63,7 @@ export function useChatMessages(
     (channel: { publish: (name: string, data: unknown) => void }, msg: MessageData) => {
       channel.publish("new", {
         ...msg,
+        sender: JSON.stringify(msg.sender),
         editedAt: msg.editedAt?.toISOString() ?? null,
         deletedAt: msg.deletedAt?.toISOString() ?? null,
         createdAt: msg.createdAt.toISOString(),
