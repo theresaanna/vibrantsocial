@@ -2,9 +2,16 @@
 
 import { SessionProvider, useSession } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
-import { AblyProvider } from "ably/react";
+import { AblyProvider, ChannelProvider, usePresence } from "ably/react";
 import { getAblyRealtimeClient } from "@/lib/ably";
 import { createContext, useContext, useEffect, useRef } from "react";
+
+const PRESENCE_CHANNEL = "presence:global";
+
+function PresenceEntry() {
+  usePresence(PRESENCE_CHANNEL, { status: "online" });
+  return null;
+}
 
 const AblyReadyContext = createContext(false);
 
@@ -40,7 +47,10 @@ function AblyProviderWrapper({ children }: { children: React.ReactNode }) {
   return (
     <AblyProvider client={clientRef.current}>
       <AblyReadyContext.Provider value={true}>
-        {children}
+        <ChannelProvider channelName={PRESENCE_CHANNEL}>
+          <PresenceEntry />
+          {children}
+        </ChannelProvider>
       </AblyReadyContext.Provider>
     </AblyProvider>
   );
