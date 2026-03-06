@@ -192,7 +192,23 @@ describe("createComment", () => {
     expect(result.success).toBe(true);
     expect(result.message).toBe("Comment added");
     expect(mockPrisma.comment.create).toHaveBeenCalledWith({
-      data: { content: "Great post!", postId: "p1", authorId: "user1" },
+      data: { content: "Great post!", postId: "p1", authorId: "user1", parentId: null },
+    });
+  });
+
+  it("creates reply to a comment with parentId", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
+    mockPrisma.comment.create.mockResolvedValueOnce({} as never);
+
+    const result = await createComment(
+      prevState,
+      makeFormData({ content: "Great reply!", postId: "p1", parentId: "c1" })
+    );
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("Comment added");
+    expect(mockPrisma.comment.create).toHaveBeenCalledWith({
+      data: { content: "Great reply!", postId: "p1", authorId: "user1", parentId: "c1" },
     });
   });
 });

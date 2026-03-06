@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState, useRef, useEffect } from "react";
 import { createComment } from "@/app/feed/post-actions";
 import { timeAgo } from "@/lib/time";
 import Link from "next/link";
@@ -19,6 +19,7 @@ interface CommentData {
   content: string;
   createdAt: Date;
   author: CommentAuthor;
+  replies?: CommentData[];
 }
 
 interface CommentSectionProps {
@@ -32,70 +33,92 @@ export function CommentSection({
   comments,
   phoneVerified,
 }: CommentSectionProps) {
-  const [state, formAction, isPending] = useActionState(createComment, {
-    success: false,
-    message: "",
-  });
+  const [replyingTo, setReplyingTo] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const [state, formAction, isPending] = useActionState(
+    async (prevState: { success: boolean; message: string }, formData: FormData) => {
+      const result = await createComment(prevState, formData);
+      if (result.success) {
+        setReplyingTo(null);
+      }
+      return result;
+    },
+    { success: false, message: "" }
+  );
+
+  useEffect(() => {
+    if (replyingTo && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [replyingTo]);
 
   return (
     <div className="border-t border-zinc-100 px-4 py-3 dark:border-zinc-800">
       {comments.length > 0 && (
         <div className="mb-3 space-y-3">
           {comments.map((comment) => (
-            <div key={comment.id} className="flex gap-2">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-                {(
-                  comment.author.displayName ||
-                  comment.author.name ||
-                  "?"
-                )[0].toUpperCase()}
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                    {comment.author.username ? (
-                      <Link
-                        href={`/${comment.author.username}`}
-                        className="hover:underline"
-                      >
-                        {comment.author.displayName || comment.author.name}
-                      </Link>
-                    ) : (
-                      comment.author.displayName || comment.author.name
-                    )}
-                  </span>
-                  <span className="text-xs text-zinc-400">
-                    {timeAgo(new Date(comment.createdAt))}
-                  </span>
+            <div key={comment.id}>
+              <CommentItem
+                comment={comment}
+                onReply={phoneVerified ? (id, name) => setReplyingTo({ id, name }) : undefined}
+              />
+              {comment.replies && comment.replies.length > 0 && (
+                <div className="ml-8 mt-2 space-y-2 border-l-2 border-zinc-100 pl-3 dark:border-zinc-800">
+                  {comment.replies.map((reply) => (
+                    <CommentItem
+                      key={reply.id}
+                      comment={reply}
+                      onReply={phoneVerified ? (id, name) => setReplyingTo({ id, name }) : undefined}
+                    />
+                  ))}
                 </div>
-                <p className="text-sm text-zinc-700 dark:text-zinc-300">
-                  {comment.content}
-                </p>
-              </div>
+              )}
             </div>
           ))}
         </div>
       )}
 
       {phoneVerified ? (
-        <form action={formAction} className="flex gap-2">
-          <input type="hidden" name="postId" value={postId} />
-          <input
-            name="content"
-            type="text"
-            placeholder="Write a comment..."
-            required
-            maxLength={1000}
-            className="min-w-0 flex-1 rounded-lg border border-zinc-200 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-          />
-          <button
-            type="submit"
-            disabled={isPending}
-            className="shrink-0 rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-          >
-            {isPending ? "..." : "Reply"}
-          </button>
-        </form>
+        <div>
+          {replyingTo && (
+            <div className="mb-1.5 flex items-center gap-1.5 text-xs text-zinc-500">
+              <span>Replying to {replyingTo.name}</span>
+              <button
+                type="button"
+                onClick={() => setReplyingTo(null)}
+                className="font-medium text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+          <form action={formAction} className="flex gap-2">
+            <input type="hidden" name="postId" value={postId} />
+            {replyingTo && (
+              <input type="hidden" name="parentId" value={replyingTo.id} />
+            )}
+            <input
+              ref={inputRef}
+              name="content"
+              type="text"
+              placeholder={replyingTo ? `Reply to ${replyingTo.name}...` : "Write a comment..."}
+              required
+              maxLength={1000}
+              className="min-w-0 flex-1 rounded-lg border border-zinc-200 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+            />
+            <button
+              type="submit"
+              disabled={isPending}
+              className="shrink-0 rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            >
+              {isPending ? "..." : "Reply"}
+            </button>
+          </form>
+        </div>
       ) : (
         <p className="text-sm text-zinc-500">
           <Link
@@ -111,6 +134,56 @@ export function CommentSection({
       {state.message && !state.success && (
         <p className="mt-1 text-sm text-red-600">{state.message}</p>
       )}
+    </div>
+  );
+}
+
+function CommentItem({
+  comment,
+  onReply,
+}: {
+  comment: CommentData;
+  onReply?: (commentId: string, authorName: string) => void;
+}) {
+  const authorName =
+    comment.author.displayName || comment.author.name || "User";
+
+  return (
+    <div className="flex gap-2">
+      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+        {authorName[0].toUpperCase()}
+      </div>
+      <div className="min-w-0">
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+            {comment.author.username ? (
+              <Link
+                href={`/${comment.author.username}`}
+                className="hover:underline"
+              >
+                {authorName}
+              </Link>
+            ) : (
+              authorName
+            )}
+          </span>
+          <span className="text-xs text-zinc-400">
+            {timeAgo(new Date(comment.createdAt))}
+          </span>
+        </div>
+        <p className="text-sm text-zinc-700 dark:text-zinc-300">
+          {comment.content}
+        </p>
+        {onReply && (
+          <button
+            type="button"
+            onClick={() => onReply(comment.id, authorName)}
+            className="mt-0.5 text-xs font-medium text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+          >
+            Reply
+          </button>
+        )}
+      </div>
     </div>
   );
 }

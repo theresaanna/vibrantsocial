@@ -73,6 +73,7 @@ export default async function FeedPage() {
         select: { id: true },
       },
       comments: {
+        where: { parentId: null },
         orderBy: { createdAt: "asc" },
         take: 5,
         include: {
@@ -84,6 +85,21 @@ export default async function FeedPage() {
               name: true,
               image: true,
               avatar: true,
+            },
+          },
+          replies: {
+            orderBy: { createdAt: "asc" },
+            include: {
+              author: {
+                select: {
+                  id: true,
+                  username: true,
+                  displayName: true,
+                  name: true,
+                  image: true,
+                  avatar: true,
+                },
+              },
             },
           },
         },
