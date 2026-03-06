@@ -18,6 +18,10 @@ vi.mock("@/auth", () => ({
   auth: vi.fn(),
 }));
 
+vi.mock("@/lib/phone-gate", () => ({
+  requirePhoneVerification: vi.fn(),
+}));
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     conversation: {
@@ -55,9 +59,11 @@ vi.mock("@/lib/prisma", () => ({
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { requirePhoneVerification } from "@/lib/phone-gate";
 
 const mockAuth = vi.mocked(auth);
 const mockPrisma = vi.mocked(prisma);
+const mockPhoneGate = vi.mocked(requirePhoneVerification);
 
 describe("startConversation", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -69,8 +75,17 @@ describe("startConversation", () => {
     expect(result.message).toBe("Not authenticated");
   });
 
+  it("returns error if phone not verified", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(false);
+    const result = await startConversation("user2");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Phone verification required to start conversations");
+  });
+
   it("prevents messaging yourself", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
     const result = await startConversation("user1");
     expect(result.success).toBe(false);
     expect(result.message).toBe("Cannot message yourself");
@@ -78,6 +93,7 @@ describe("startConversation", () => {
 
   it("returns error if target user not found", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
     mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
     const result = await startConversation("nonexistent");
     expect(result.success).toBe(false);
@@ -86,6 +102,7 @@ describe("startConversation", () => {
 
   it("returns existing conversation if found", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
     mockPrisma.user.findUnique.mockResolvedValueOnce({ id: "user2" } as never);
     mockPrisma.conversation.findFirst.mockResolvedValueOnce({
       id: "conv1",
@@ -98,6 +115,7 @@ describe("startConversation", () => {
 
   it("creates conversation for mutual followers", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
     mockPrisma.user.findUnique.mockResolvedValueOnce({ id: "user2" } as never);
     mockPrisma.conversation.findFirst.mockResolvedValueOnce(null as never);
     // Mutual follow check
@@ -115,6 +133,7 @@ describe("startConversation", () => {
 
   it("creates message request for non-friends", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
     mockPrisma.user.findUnique.mockResolvedValueOnce({ id: "user2" } as never);
     mockPrisma.conversation.findFirst.mockResolvedValueOnce(null as never);
     // Not mutual
@@ -141,8 +160,20 @@ describe("createGroupConversation", () => {
     expect(result.success).toBe(false);
   });
 
+  it("returns error if phone not verified", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(false);
+    const result = await createGroupConversation({
+      name: "Test",
+      participantIds: ["a", "b"],
+    });
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Phone verification required to create groups");
+  });
+
   it("rejects empty name", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
     const result = await createGroupConversation({
       name: "  ",
       participantIds: ["a", "b"],
@@ -153,6 +184,7 @@ describe("createGroupConversation", () => {
 
   it("rejects name over 100 characters", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
     const result = await createGroupConversation({
       name: "a".repeat(101),
       participantIds: ["a", "b"],
@@ -163,6 +195,7 @@ describe("createGroupConversation", () => {
 
   it("rejects fewer than 2 other participants", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
     const result = await createGroupConversation({
       name: "Test",
       participantIds: ["a"],
@@ -173,6 +206,7 @@ describe("createGroupConversation", () => {
 
   it("rejects if some users not found", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
     mockPrisma.user.findMany.mockResolvedValueOnce([{ id: "a" }] as never);
 
     const result = await createGroupConversation({
@@ -185,6 +219,7 @@ describe("createGroupConversation", () => {
 
   it("creates group successfully", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
     mockPrisma.user.findMany.mockResolvedValueOnce([
       { id: "a" },
       { id: "b" },
@@ -214,8 +249,20 @@ describe("sendMessage", () => {
     expect(result.success).toBe(false);
   });
 
+  it("returns error if phone not verified", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(false);
+    const result = await sendMessage({
+      conversationId: "conv1",
+      content: "hello",
+    });
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Phone verification required to send messages");
+  });
+
   it("rejects empty content", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
     const result = await sendMessage({
       conversationId: "conv1",
       content: "   ",
@@ -226,6 +273,7 @@ describe("sendMessage", () => {
 
   it("rejects content over 5000 characters", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
     const result = await sendMessage({
       conversationId: "conv1",
       content: "a".repeat(5001),
@@ -236,6 +284,7 @@ describe("sendMessage", () => {
 
   it("rejects if not a participant", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
     mockPrisma.conversationParticipant.findUnique.mockResolvedValueOnce(
       null as never
     );
@@ -249,6 +298,7 @@ describe("sendMessage", () => {
 
   it("sends message successfully", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
     mockPrisma.conversationParticipant.findUnique.mockResolvedValueOnce({
       id: "p1",
     } as never);

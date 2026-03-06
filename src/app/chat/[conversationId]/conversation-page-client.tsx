@@ -17,6 +17,7 @@ interface ConversationPageClientProps {
   initialMessages: MessageData[];
   conversation: ConversationWithParticipants;
   currentUserId: string;
+  phoneVerified: boolean;
 }
 
 export function ConversationPageClient({
@@ -26,6 +27,7 @@ export function ConversationPageClient({
   initialMessages,
   conversation,
   currentUserId,
+  phoneVerified,
 }: ConversationPageClientProps) {
   return (
     <main
@@ -48,6 +50,7 @@ export function ConversationPageClient({
           initialMessages={initialMessages}
           conversation={conversation}
           currentUserId={currentUserId}
+          phoneVerified={phoneVerified}
         />
       </div>
     </main>

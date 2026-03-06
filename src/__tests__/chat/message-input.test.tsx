@@ -113,4 +113,31 @@ describe("MessageInput", () => {
       screen.getByPlaceholderText("Type a message...")
     ).toBeDisabled();
   });
+
+  it("shows verification prompt when phone not verified", () => {
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+        phoneVerified={false}
+      />
+    );
+    expect(screen.getByText("Verify your phone number")).toBeInTheDocument();
+    expect(screen.getByText(/to send messages/)).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("Type a message...")).not.toBeInTheDocument();
+  });
+
+  it("shows input when phone is verified", () => {
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+        phoneVerified={true}
+      />
+    );
+    expect(screen.getByPlaceholderText("Type a message...")).toBeInTheDocument();
+    expect(screen.queryByText("Verify your phone number")).not.toBeInTheDocument();
+  });
 });

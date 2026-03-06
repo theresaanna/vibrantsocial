@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requirePhoneVerification } from "@/lib/phone-gate";
 import { getConversations, getMessages, getMessageRequests } from "../actions";
 import { ConversationPageClient } from "./conversation-page-client";
 
@@ -24,7 +25,7 @@ export default async function ConversationPage({ params }: Props) {
   });
   if (!participant) redirect("/chat");
 
-  const [conversations, { messages }, messageRequests, conversation] =
+  const [conversations, { messages }, messageRequests, conversation, phoneVerified] =
     await Promise.all([
       getConversations(),
       getMessages(conversationId),
@@ -48,6 +49,7 @@ export default async function ConversationPage({ params }: Props) {
           },
         },
       }),
+      requirePhoneVerification(session.user.id),
     ]);
 
   if (!conversation) redirect("/chat");
@@ -60,6 +62,7 @@ export default async function ConversationPage({ params }: Props) {
       initialMessages={messages}
       conversation={conversation}
       currentUserId={session.user.id}
+      phoneVerified={phoneVerified}
     />
   );
 }
