@@ -13,6 +13,8 @@ import {
 import { StickyNoteNode } from "@/components/editor/nodes/StickyNoteNode";
 import { PollNode } from "@/components/editor/nodes/PollNode";
 import { ExcalidrawNode } from "@/components/editor/nodes/ExcalidrawNode";
+import { VideoNode } from "@/components/editor/nodes/VideoNode";
+import { FileNode } from "@/components/editor/nodes/FileNode";
 
 const allNodes = [
   ImageNode,
@@ -26,6 +28,8 @@ const allNodes = [
   StickyNoteNode,
   PollNode,
   ExcalidrawNode,
+  VideoNode,
+  FileNode,
 ];
 
 function createTestEditor(): LexicalEditor {
@@ -336,11 +340,117 @@ describe("ExcalidrawNode", () => {
   });
 });
 
+describe("VideoNode", () => {
+  let editor: LexicalEditor;
+  beforeEach(() => {
+    editor = createTestEditor();
+  });
+
+  it("has correct type", () => {
+    expect(VideoNode.getType()).toBe("video");
+  });
+
+  it("serializes and deserializes correctly", () => {
+    const json = withEditor(editor, () => {
+      const node = new VideoNode(
+        "https://example.com/video.mp4",
+        "video.mp4",
+        "video/mp4"
+      );
+      return node.exportJSON();
+    });
+
+    expect(json.type).toBe("video");
+    expect(json.src).toBe("https://example.com/video.mp4");
+    expect(json.fileName).toBe("video.mp4");
+    expect(json.mimeType).toBe("video/mp4");
+
+    const restoredJson = withEditor(editor, () => {
+      const restored = VideoNode.importJSON(json);
+      return restored.exportJSON();
+    });
+    expect(restoredJson).toEqual(json);
+  });
+
+  it("exports to DOM with video element", () => {
+    withEditor(editor, () => {
+      const node = new VideoNode(
+        "https://example.com/video.mp4",
+        "video.mp4",
+        "video/mp4"
+      );
+      const { element } = node.exportDOM();
+      expect(element).toBeTruthy();
+      expect((element as HTMLElement).tagName).toBe("VIDEO");
+      expect((element as HTMLElement).getAttribute("src")).toBe(
+        "https://example.com/video.mp4"
+      );
+      expect((element as HTMLElement).getAttribute("controls")).toBe("true");
+    });
+  });
+});
+
+describe("FileNode", () => {
+  let editor: LexicalEditor;
+  beforeEach(() => {
+    editor = createTestEditor();
+  });
+
+  it("has correct type", () => {
+    expect(FileNode.getType()).toBe("file");
+  });
+
+  it("serializes and deserializes correctly", () => {
+    const json = withEditor(editor, () => {
+      const node = new FileNode(
+        "https://example.com/doc.pdf",
+        "doc.pdf",
+        102400,
+        "application/pdf"
+      );
+      return node.exportJSON();
+    });
+
+    expect(json.type).toBe("file");
+    expect(json.src).toBe("https://example.com/doc.pdf");
+    expect(json.fileName).toBe("doc.pdf");
+    expect(json.fileSize).toBe(102400);
+    expect(json.mimeType).toBe("application/pdf");
+
+    const restoredJson = withEditor(editor, () => {
+      const restored = FileNode.importJSON(json);
+      return restored.exportJSON();
+    });
+    expect(restoredJson).toEqual(json);
+  });
+
+  it("exports to DOM with download link", () => {
+    withEditor(editor, () => {
+      const node = new FileNode(
+        "https://example.com/doc.pdf",
+        "doc.pdf",
+        102400,
+        "application/pdf"
+      );
+      const { element } = node.exportDOM();
+      expect(element).toBeTruthy();
+      expect((element as HTMLElement).tagName).toBe("A");
+      expect((element as HTMLAnchorElement).getAttribute("href")).toBe(
+        "https://example.com/doc.pdf"
+      );
+      expect((element as HTMLAnchorElement).getAttribute("download")).toBe(
+        "doc.pdf"
+      );
+      expect((element as HTMLElement).textContent).toBe("doc.pdf");
+    });
+  });
+});
+
 describe("editorNodes registry", () => {
   it("exports all node types", async () => {
     const { editorNodes } = await import("@/components/editor/nodes");
     // Should have all the custom nodes plus standard ones
-    expect(editorNodes.length).toBeGreaterThanOrEqual(15);
+    expect(editorNodes.length).toBeGreaterThanOrEqual(17);
 
     const types = editorNodes.map((n) => n.getType());
     expect(types).toContain("image");
@@ -358,5 +468,7 @@ describe("editorNodes registry", () => {
     expect(types).toContain("link");
     expect(types).toContain("table");
     expect(types).toContain("horizontalrule");
+    expect(types).toContain("video");
+    expect(types).toContain("file");
   });
 });
