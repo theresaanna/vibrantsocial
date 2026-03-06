@@ -3,24 +3,8 @@
 import { useActionState, useState, useRef, useEffect } from "react";
 import { createComment } from "@/app/feed/post-actions";
 import { timeAgo } from "@/lib/time";
+import { useComments, type CommentData } from "@/hooks/use-comments";
 import Link from "next/link";
-
-interface CommentAuthor {
-  id: string;
-  username: string | null;
-  displayName: string | null;
-  name: string | null;
-  image: string | null;
-  avatar: string | null;
-}
-
-interface CommentData {
-  id: string;
-  content: string;
-  createdAt: Date;
-  author: CommentAuthor;
-  replies?: CommentData[];
-}
 
 interface CommentSectionProps {
   postId: string;
@@ -30,9 +14,10 @@ interface CommentSectionProps {
 
 export function CommentSection({
   postId,
-  comments,
+  comments: initialComments,
   phoneVerified,
 }: CommentSectionProps) {
+  const { comments } = useComments(postId, initialComments);
   const [replyingTo, setReplyingTo] = useState<{
     id: string;
     name: string;
@@ -147,12 +132,22 @@ function CommentItem({
 }) {
   const authorName =
     comment.author.displayName || comment.author.name || "User";
+  const avatarSrc = comment.author.avatar || comment.author.image;
 
   return (
     <div className="flex gap-2">
-      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-        {authorName[0].toUpperCase()}
-      </div>
+      {avatarSrc ? (
+        <img
+          src={avatarSrc}
+          alt=""
+          referrerPolicy="no-referrer"
+          className="h-6 w-6 shrink-0 rounded-full"
+        />
+      ) : (
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+          {authorName[0].toUpperCase()}
+        </div>
+      )}
       <div className="min-w-0">
         <div className="flex items-baseline gap-1.5">
           <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
