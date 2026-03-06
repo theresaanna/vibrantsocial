@@ -1,10 +1,12 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { ChannelProvider } from "ably/react";
 import { ConversationList } from "@/components/chat/conversation-list";
 import { MessageRequestList } from "@/components/chat/message-request-list";
 import { MessageThread } from "@/components/chat/message-thread";
 import { useAblyReady } from "@/app/providers";
+import { getConversations } from "@/app/chat/actions";
 import type {
   ConversationListItem,
   MessageRequestData,
@@ -32,6 +34,19 @@ export function ConversationPageClient({
   phoneVerified,
 }: ConversationPageClientProps) {
   const ablyReady = useAblyReady();
+  const [liveConversations, setLiveConversations] = useState(conversations);
+
+  // Refresh sidebar on focus and periodically
+  useEffect(() => {
+    const refresh = () => getConversations().then(setLiveConversations);
+    const handleFocus = () => refresh();
+    window.addEventListener("focus", handleFocus);
+    const interval = setInterval(refresh, 15000);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(interval);
+    };
+  }, []);
 
   return (
     <main
@@ -41,7 +56,7 @@ export function ConversationPageClient({
       {/* Sidebar */}
       <div className="flex w-80 flex-shrink-0 flex-col overflow-hidden rounded-l-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <ConversationList
-          conversations={conversations}
+          conversations={liveConversations}
           activeId={conversationId}
         />
         <MessageRequestList requests={messageRequests} />

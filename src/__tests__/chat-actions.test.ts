@@ -23,6 +23,15 @@ vi.mock("@/lib/phone-gate", () => ({
   requirePhoneVerification: vi.fn(),
 }));
 
+const mockAblyPublish = vi.fn();
+vi.mock("@/lib/ably", () => ({
+  getAblyRestClient: () => ({
+    channels: {
+      get: () => ({ publish: mockAblyPublish }),
+    },
+  }),
+}));
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     conversation: {
@@ -323,6 +332,18 @@ describe("sendMessage", () => {
         conversationId: "conv1",
         senderId: "user1",
         content: "hello",
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            name: true,
+            avatar: true,
+            image: true,
+          },
+        },
       },
     });
   });

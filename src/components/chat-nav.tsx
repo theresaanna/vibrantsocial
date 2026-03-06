@@ -69,6 +69,18 @@ export function ChatNav({ initialConversations }: ChatNavProps) {
     }
   }, [isOpen]);
 
+  // Refresh conversations on window focus and periodically
+  useEffect(() => {
+    const refresh = () => getConversations().then(setConversations);
+    const handleFocus = () => refresh();
+    window.addEventListener("focus", handleFocus);
+    const interval = setInterval(refresh, 30000);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(interval);
+    };
+  }, []);
+
   // Close on click outside
   useEffect(() => {
     if (!isOpen) return;
