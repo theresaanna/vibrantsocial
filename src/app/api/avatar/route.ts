@@ -10,7 +10,7 @@ const ALLOWED_TYPES = [
   "image/gif",
   "image/webp",
 ];
-const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
 
   if (file.size > MAX_SIZE) {
     return NextResponse.json(
-      { error: "File must be under 2MB" },
+      { error: "File must be under 5MB" },
       { status: 400 }
     );
   }

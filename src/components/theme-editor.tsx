@@ -15,6 +15,7 @@ interface ThemeEditorProps {
   displayName: string | null;
   bio: string | null;
   avatarSrc: string | null;
+  onChange?: () => void;
 }
 
 const COLOR_LABELS: Record<keyof ProfileThemeColors, string> = {
@@ -31,6 +32,7 @@ export function ThemeEditor({
   displayName,
   bio,
   avatarSrc,
+  onChange,
 }: ThemeEditorProps) {
   const defaultPreset = PROFILE_THEME_PRESETS.default;
   const [colors, setColors] = useState<ProfileThemeColors>({
@@ -46,14 +48,16 @@ export function ThemeEditor({
   const handlePresetSelect = useCallback((presetName: string) => {
     setColors(PROFILE_THEME_PRESETS[presetName]);
     setActivePreset(presetName);
-  }, []);
+    onChange?.();
+  }, [onChange]);
 
   const handleColorChange = useCallback(
     (field: keyof ProfileThemeColors, value: string) => {
       setColors((prev) => ({ ...prev, [field]: value }));
       setActivePreset(null);
+      onChange?.();
     },
-    []
+    [onChange]
   );
 
   return (

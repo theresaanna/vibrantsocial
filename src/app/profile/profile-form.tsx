@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useEffect, useRef } from "react";
+import { useActionState, useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { updateProfile, removeAvatar } from "./actions";
@@ -39,17 +39,24 @@ export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>("idle");
   const [savedUsername, setSavedUsername] = useState(user.username);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autosaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [copied, setCopied] = useState(false);
+  const hasMountedRef = useRef(false);
 
   const [avatarPreview, setAvatarPreview] = useState<string | null>(currentAvatar);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [showRevisions, setShowRevisions] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   const displayedAvatar = avatarPreview || oauthImage;
   const displayName = user.displayName ?? "?";
   const initial = displayName[0]?.toUpperCase() ?? "?";
+
+  const usernameStatusRef = useRef(usernameStatus);
+  usernameStatusRef.current = usernameStatus;
 
   const [state, formAction, isPending] = useActionState(
     async (prevState: ProfileState, formData: FormData) => {
@@ -70,6 +77,39 @@ export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified
     },
     { success: false, message: "" }
   );
+
+  // Track save status from form action state
+  useEffect(() => {
+    if (isPending) {
+      setSaveStatus("saving");
+    } else if (state.message) {
+      setSaveStatus(state.success ? "saved" : "error");
+      if (state.success) {
+        const timer = setTimeout(() => setSaveStatus("idle"), 2000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [isPending, state]);
+
+  const scheduleAutosave = useCallback(() => {
+    // Skip autosave on initial mount
+    if (!hasMountedRef.current) return;
+
+    if (autosaveRef.current) clearTimeout(autosaveRef.current);
+    autosaveRef.current = setTimeout(() => {
+      const status = usernameStatusRef.current;
+      if (status === "taken" || status === "invalid" || status === "checking") return;
+      formRef.current?.requestSubmit();
+    }, 1500);
+  }, []);
+
+  // Mark as mounted after first render
+  useEffect(() => {
+    hasMountedRef.current = true;
+    return () => {
+      if (autosaveRef.current) clearTimeout(autosaveRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -100,6 +140,10 @@ export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified
         );
         const data = await res.json();
         setUsernameStatus(data.available ? "available" : "taken");
+        // Autosave after username check completes and is available
+        if (data.available) {
+          scheduleAutosave();
+        }
       } catch {
         setUsernameStatus("idle");
       }
@@ -108,7 +152,7 @@ export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [usernameValue, savedUsername]);
+  }, [usernameValue, savedUsername, scheduleAutosave]);
 
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -122,8 +166,8 @@ export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      setAvatarError("File must be under 2MB");
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarError("File must be under 5MB");
       return;
     }
 
@@ -217,7 +261,7 @@ export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified
           {avatarError && (
             <p className="text-xs text-red-600">{avatarError}</p>
           )}
-          <p className="text-xs text-zinc-400">JPEG, PNG, GIF, or WebP. Max 2MB.</p>
+          <p className="text-xs text-zinc-400">JPEG, PNG, GIF, or WebP. Max 5MB.</p>
         </div>
       </div>
 
@@ -247,7 +291,12 @@ export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified
       )}
 
       {/* Profile fields */}
-      <form action={formAction} className="space-y-4">
+      <form
+        ref={formRef}
+        action={formAction}
+        onChange={scheduleAutosave}
+        className="space-y-4"
+      >
         <div>
           <label
             htmlFor="username"
@@ -297,7 +346,7 @@ export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified
         </div>
 
         <div>
-          <BioEditor initialContent={user.bio} />
+          <BioEditor initialContent={user.bio} onChange={scheduleAutosave} />
           <button
             type="button"
             onClick={() => setShowRevisions(true)}
@@ -328,6 +377,7 @@ export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified
           displayName={user.displayName}
           bio={user.bio}
           avatarSrc={avatarPreview || oauthImage}
+          onChange={scheduleAutosave}
         />
 
         {biometricVerified && (
@@ -350,23 +400,26 @@ export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={isPending || usernameStatus === "taken"}
-          className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-        >
-          {isPending ? "Saving..." : "Save Profile"}
-        </button>
-
-        {state.message && (
-          <p
-            className={`text-sm ${
-              state.success ? "text-green-600" : "text-red-600"
-            }`}
-          >
-            {state.message}
+        {/* Autosave status */}
+        <div className="flex items-center justify-between">
+          <p className={`text-sm ${
+            saveStatus === "saving" ? "text-zinc-400" :
+            saveStatus === "saved" ? "text-green-600" :
+            saveStatus === "error" ? "text-red-600" : "text-transparent"
+          }`}>
+            {saveStatus === "saving" ? "Saving..." :
+             saveStatus === "saved" ? "Saved" :
+             saveStatus === "error" ? state.message :
+             "\u00A0"}
           </p>
-        )}
+          <button
+            type="submit"
+            disabled={isPending || usernameStatus === "taken"}
+            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          >
+            {isPending ? "Saving..." : "Save"}
+          </button>
+        </div>
       </form>
     </div>
   );
