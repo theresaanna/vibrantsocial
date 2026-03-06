@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { del } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 
 interface ProfileState {
@@ -50,4 +51,33 @@ export async function updateProfile(
 
   revalidatePath("/profile");
   return { success: true, message: "Profile updated" };
+}
+
+export async function removeAvatar(): Promise<ProfileState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { avatar: true },
+  });
+
+  // Delete from Vercel Blob if it's a blob URL
+  if (user?.avatar?.includes("blob.vercel-storage.com")) {
+    try {
+      await del(user.avatar);
+    } catch {
+      // Non-critical — blob cleanup failed
+    }
+  }
+
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { avatar: null },
+  });
+
+  revalidatePath("/profile");
+  return { success: true, message: "Avatar removed" };
 }

@@ -6,56 +6,20 @@ import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
+import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { CheckListPlugin } from "@lexical/react/LexicalCheckListPlugin";
+import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
+import { HorizontalRulePlugin } from "@lexical/react/LexicalHorizontalRulePlugin";
+import { TablePlugin } from "@lexical/react/LexicalTablePlugin";
+import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { HeadingNode, QuoteNode } from "@lexical/rich-text";
-import {
-  FORMAT_TEXT_COMMAND,
-  type EditorState,
-  $getRoot,
-} from "lexical";
+import { $getRoot, type EditorState } from "lexical";
 import { createPost } from "@/app/feed/actions";
 import Link from "next/link";
 
-const theme = {
-  paragraph: "mb-1",
-  text: {
-    bold: "font-bold",
-    italic: "italic",
-    underline: "underline",
-  },
-};
-
-function Toolbar() {
-  const [editor] = useLexicalComposerContext();
-
-  return (
-    <div className="flex gap-1 border-b border-zinc-200 px-2 py-1 dark:border-zinc-700">
-      <button
-        type="button"
-        onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "bold")}
-        className="rounded px-2 py-1 text-sm font-bold text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-700"
-      >
-        B
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "italic")}
-        className="rounded px-2 py-1 text-sm italic text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-700"
-      >
-        I
-      </button>
-      <button
-        type="button"
-        onClick={() =>
-          editor.dispatchCommand(FORMAT_TEXT_COMMAND, "underline")
-        }
-        className="rounded px-2 py-1 text-sm text-zinc-600 underline hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-700"
-      >
-        U
-      </button>
-    </div>
-  );
-}
+import { editorTheme } from "@/components/editor/theme";
+import { editorNodes } from "@/components/editor/nodes";
+import { Toolbar } from "@/components/editor/toolbar/Toolbar";
 
 function ClearOnSuccess({
   shouldClear,
@@ -121,8 +85,8 @@ export function PostComposer({ phoneVerified }: PostComposerProps) {
 
   const editorConfig = {
     namespace: "PostComposer",
-    theme,
-    nodes: [HeadingNode, QuoteNode],
+    theme: editorTheme,
+    nodes: editorNodes,
     onError: (error: Error) => console.error(error),
   };
 
@@ -146,6 +110,12 @@ export function PostComposer({ phoneVerified }: PostComposerProps) {
             />
             <OnChangePlugin onChange={handleChange} />
             <HistoryPlugin />
+            <ListPlugin />
+            <CheckListPlugin />
+            <LinkPlugin />
+            <HorizontalRulePlugin />
+            <TablePlugin />
+            <TabIndentationPlugin />
           </div>
           <ClearOnSuccess
             shouldClear={shouldClear}

@@ -1,0 +1,60 @@
+"use client";
+
+import { useEffect, useCallback, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+
+interface ModalProps {
+  title: string;
+  children: ReactNode;
+  onClose: () => void;
+  fullScreen?: boolean;
+}
+
+export function Modal({ title, children, onClose, fullScreen = false }: ModalProps) {
+  const handleEsc = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    },
+    [onClose]
+  );
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleEsc);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", handleEsc);
+      document.body.style.overflow = "";
+    };
+  }, [handleEsc]);
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div
+        className={`relative z-10 flex flex-col bg-white dark:bg-zinc-900 ${
+          fullScreen
+            ? "h-[90vh] w-[90vw] rounded-xl"
+            : "max-h-[85vh] w-full max-w-lg rounded-xl shadow-xl"
+        }`}
+      >
+        <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+            {title}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            aria-label="Close"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="flex-1 overflow-auto p-4">{children}</div>
+      </div>
+    </div>,
+    document.body
+  );
+}

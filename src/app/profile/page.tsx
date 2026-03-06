@@ -10,33 +10,24 @@ export default async function ProfilePage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { phoneNumber: true, phoneVerified: true, passwordHash: true },
+    select: {
+      phoneNumber: true,
+      phoneVerified: true,
+      passwordHash: true,
+      avatar: true,
+      image: true,
+    },
   });
 
   const isCredentialsUser = !!user?.passwordHash;
+  const oauthImage = user?.image ?? session.user.image ?? null;
 
   return (
     <div className="flex min-h-[calc(100vh-57px)] items-center justify-center">
-      <div className="w-full max-w-lg space-y-6 rounded-2xl bg-white p-8 shadow-lg dark:bg-zinc-900">
+      <div className="w-full max-w-2xl space-y-6 rounded-2xl bg-white p-8 shadow-lg dark:bg-zinc-900">
         <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
           Your Profile
         </h1>
-
-        <div className="flex items-center gap-4">
-          {session.user.image && (
-            <img
-              src={session.user.image}
-              alt="Profile"
-              className="h-16 w-16 rounded-full"
-            />
-          )}
-          <div>
-            <p className="font-medium text-zinc-900 dark:text-zinc-100">
-              {session.user.displayName ?? session.user.name ?? "No name set"}
-            </p>
-            <p className="text-sm text-zinc-500">{session.user.email}</p>
-          </div>
-        </div>
 
         <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
           <div className="flex items-center justify-between">
@@ -67,7 +58,11 @@ export default async function ProfilePage() {
           </div>
         </div>
 
-        <ProfileForm user={session.user} />
+        <ProfileForm
+          user={session.user}
+          currentAvatar={user?.avatar ?? null}
+          oauthImage={oauthImage}
+        />
       </div>
     </div>
   );

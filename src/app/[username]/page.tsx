@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { PostCard } from "@/components/post-card";
 import { FollowButton } from "@/components/follow-button";
+import { BioContent } from "@/components/bio-content";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
@@ -129,6 +130,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
             <img
               src={avatarSrc}
               alt=""
+              referrerPolicy="no-referrer"
               className="h-16 w-16 rounded-full"
             />
           ) : (
@@ -152,9 +154,9 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
             </div>
 
             {user.bio && (
-              <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">
-                {user.bio}
-              </p>
+              <div className="mt-2">
+                <BioContent content={user.bio} />
+              </div>
             )}
 
             <div className="mt-3 flex gap-4 text-sm">

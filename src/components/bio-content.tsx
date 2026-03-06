@@ -2,10 +2,10 @@
 
 import { EditorContent } from "@/components/editor/EditorContent";
 
-interface PostContentProps {
+interface BioContentProps {
   content: string;
 }
 
-export function PostContent({ content }: PostContentProps) {
+export function BioContent({ content }: BioContentProps) {
   return <EditorContent content={content} />;
 }

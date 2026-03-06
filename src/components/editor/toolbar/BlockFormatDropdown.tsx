@@ -1,0 +1,135 @@
+"use client";
+
+import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
+import {
+  $createParagraphNode,
+  $getSelection,
+  $isRangeSelection,
+  COMMAND_PRIORITY_CRITICAL,
+  SELECTION_CHANGE_COMMAND,
+} from "lexical";
+import {
+  $createHeadingNode,
+  $createQuoteNode,
+  $isHeadingNode,
+  type HeadingTagType,
+} from "@lexical/rich-text";
+import {
+  $isListNode,
+  INSERT_CHECK_LIST_COMMAND,
+  INSERT_ORDERED_LIST_COMMAND,
+  INSERT_UNORDERED_LIST_COMMAND,
+  ListNode,
+} from "@lexical/list";
+import { $createCodeNode, $isCodeNode } from "@lexical/code";
+import { $setBlocksType } from "@lexical/selection";
+import { $findMatchingParent } from "@lexical/utils";
+import { useEffect, useState, useCallback } from "react";
+import { DropdownMenu, DropdownItem } from "../ui/DropdownMenu";
+
+type BlockType =
+  | "paragraph"
+  | "h1"
+  | "h2"
+  | "h3"
+  | "bullet"
+  | "number"
+  | "check"
+  | "quote"
+  | "code";
+
+const blockTypeNames: Record<BlockType, string> = {
+  paragraph: "Normal",
+  h1: "Heading 1",
+  h2: "Heading 2",
+  h3: "Heading 3",
+  bullet: "Bullet List",
+  number: "Numbered List",
+  check: "Check List",
+  quote: "Quote",
+  code: "Code Block",
+};
+
+export function BlockFormatDropdown() {
+  const [editor] = useLexicalComposerContext();
+  const [blockType, setBlockType] = useState<BlockType>("paragraph");
+
+  const updateBlockType = useCallback(() => {
+    const selection = $getSelection();
+    if (!$isRangeSelection(selection)) return;
+
+    const anchorNode = selection.anchor.getNode();
+    const element =
+      anchorNode.getKey() === "root"
+        ? anchorNode
+        : $findMatchingParent(anchorNode, (e) => {
+            const parent = e.getParent();
+            return parent !== null && parent.getKey() === "root";
+          }) ?? anchorNode.getTopLevelElementOrThrow();
+
+    if ($isHeadingNode(element)) {
+      const tag = element.getTag();
+      setBlockType(tag as BlockType);
+    } else if ($isListNode(element)) {
+      const listType = element.getListType();
+      if (listType === "bullet") setBlockType("bullet");
+      else if (listType === "number") setBlockType("number");
+      else if (listType === "check") setBlockType("check");
+    } else if ($isCodeNode(element)) {
+      setBlockType("code");
+    } else {
+      const type = element.getType();
+      if (type === "quote") setBlockType("quote");
+      else setBlockType("paragraph");
+    }
+  }, []);
+
+  useEffect(() => {
+    return editor.registerCommand(
+      SELECTION_CHANGE_COMMAND,
+      () => {
+        updateBlockType();
+        return false;
+      },
+      COMMAND_PRIORITY_CRITICAL
+    );
+  }, [editor, updateBlockType]);
+
+  function formatBlock(type: BlockType) {
+    editor.update(() => {
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection)) return;
+
+      if (type === "paragraph") {
+        $setBlocksType(selection, () => $createParagraphNode());
+      } else if (type === "h1" || type === "h2" || type === "h3") {
+        $setBlocksType(selection, () => $createHeadingNode(type as HeadingTagType));
+      } else if (type === "quote") {
+        $setBlocksType(selection, () => $createQuoteNode());
+      } else if (type === "code") {
+        $setBlocksType(selection, () => $createCodeNode());
+      }
+    });
+
+    if (type === "bullet") {
+      editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
+    } else if (type === "number") {
+      editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
+    } else if (type === "check") {
+      editor.dispatchCommand(INSERT_CHECK_LIST_COMMAND, undefined);
+    }
+  }
+
+  return (
+    <DropdownMenu trigger={<span className="min-w-[80px] text-left">{blockTypeNames[blockType]}</span>}>
+      {(Object.keys(blockTypeNames) as BlockType[]).map((type) => (
+        <DropdownItem
+          key={type}
+          label={blockTypeNames[type]}
+          active={blockType === type}
+          onClick={() => formatBlock(type)}
+        />
+      ))}
+    </DropdownMenu>
+  );
+}
