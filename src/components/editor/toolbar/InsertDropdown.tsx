@@ -22,6 +22,7 @@ import { $createPollNode, type PollOption } from "../nodes/PollNode";
 import { $createDateNode } from "../nodes/DateNode";
 import { $createExcalidrawNode } from "../nodes/ExcalidrawNode";
 import { extractYouTubeVideoID } from "../utils/url";
+import { upload } from "@vercel/blob/client";
 
 type ModalType =
   | "image"
@@ -349,16 +350,12 @@ function VideoInsertModal({
 
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Upload failed");
-      }
-      const { url, fileName } = await res.json();
-      onInsert(url, fileName, file.type);
+      const blob = await upload(file.name, file, {
+        access: "public",
+        handleUploadUrl: "/api/upload/client",
+        clientPayload: "video",
+      });
+      onInsert(blob.url, file.name, file.type);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
@@ -415,16 +412,12 @@ function FileInsertModal({
 
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Upload failed");
-      }
-      const { url, fileName, fileSize } = await res.json();
-      onInsert(url, fileName, fileSize, file.type);
+      const blob = await upload(file.name, file, {
+        access: "public",
+        handleUploadUrl: "/api/upload/client",
+        clientPayload: "document",
+      });
+      onInsert(blob.url, file.name, file.size, file.type);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {

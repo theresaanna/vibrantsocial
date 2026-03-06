@@ -1,12 +1,17 @@
 import { auth, signOut } from "@/auth";
 import Link from "next/link";
 import { getConversations } from "@/app/chat/actions";
+import { getUnreadNotificationCount } from "@/app/notifications/actions";
 import { ChatNav } from "@/components/chat-nav";
+import { NotificationBell } from "@/components/notification-bell";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export async function Header() {
   const session = await auth();
-  const conversations = session?.user ? await getConversations() : [];
+  const [conversations, unreadNotifications] = await Promise.all([
+    session?.user ? getConversations() : Promise.resolve([]),
+    session?.user ? getUnreadNotificationCount() : Promise.resolve(0),
+  ]);
 
   return (
     <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
@@ -28,6 +33,7 @@ export async function Header() {
               >
                 Feed
               </Link>
+              <NotificationBell initialUnreadCount={unreadNotifications} />
               <ChatNav initialConversations={conversations} />
               <Link
                 href="/profile"

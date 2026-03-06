@@ -23,8 +23,12 @@ vi.mock("@/lib/prisma", () => ({
       create: vi.fn(),
       delete: vi.fn(),
     },
+    post: {
+      findUnique: vi.fn(),
+    },
     comment: {
       create: vi.fn(),
+      findUnique: vi.fn(),
     },
     follow: {
       findUnique: vi.fn(),
@@ -34,6 +38,10 @@ vi.mock("@/lib/prisma", () => ({
     },
     $transaction: vi.fn(),
   },
+}));
+
+vi.mock("@/lib/notifications", () => ({
+  createNotification: vi.fn(),
 }));
 
 vi.mock("@/lib/phone-gate", () => ({
@@ -80,6 +88,7 @@ describe("toggleLike", () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPrisma.like.findUnique.mockResolvedValueOnce(null as never);
     mockPrisma.like.create.mockResolvedValueOnce({} as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce({ authorId: "author1" } as never);
 
     const result = await toggleLike(prevState, makeFormData({ postId: "p1" }));
     expect(result.success).toBe(true);
@@ -106,6 +115,7 @@ describe("toggleBookmark", () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPrisma.bookmark.findUnique.mockResolvedValueOnce(null as never);
     mockPrisma.bookmark.create.mockResolvedValueOnce({} as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce({ authorId: "author1" } as never);
 
     const result = await toggleBookmark(prevState, makeFormData({ postId: "p1" }));
     expect(result.success).toBe(true);
@@ -130,6 +140,7 @@ describe("toggleRepost", () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPrisma.repost.findUnique.mockResolvedValueOnce(null as never);
     mockPrisma.repost.create.mockResolvedValueOnce({} as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce({ authorId: "author1" } as never);
 
     const result = await toggleRepost(prevState, makeFormData({ postId: "p1" }));
     expect(result.success).toBe(true);
@@ -216,6 +227,7 @@ describe("createComment", () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPhoneGate.mockResolvedValueOnce(true);
     mockPrisma.comment.create.mockResolvedValueOnce(fakeComment as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce({ authorId: "author1" } as never);
 
     const result = await createComment(
       prevState,
@@ -233,6 +245,8 @@ describe("createComment", () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPhoneGate.mockResolvedValueOnce(true);
     mockPrisma.comment.create.mockResolvedValueOnce({ ...fakeComment, parentId: "c1" } as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce({ authorId: "author1" } as never);
+    mockPrisma.comment.findUnique.mockResolvedValueOnce({ authorId: "parent-author" } as never);
 
     const result = await createComment(
       prevState,

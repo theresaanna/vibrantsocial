@@ -62,6 +62,10 @@ model User {
   sentMessageRequests      MessageRequest[] @relation("sentMessageRequests")
   receivedMessageRequests  MessageRequest[] @relation("receivedMessageRequests")
 
+  // Notifications
+  notificationsReceived Notification[] @relation("notificationTarget")
+  notificationsSent     Notification[] @relation("notificationActor")
+
   // Content moderation
   quarantinedUploads QuarantinedUpload[]
 }
@@ -110,11 +114,12 @@ model Post {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  comments  Comment[]
-  likes     Like[]
-  bookmarks Bookmark[]
-  reposts   Repost[]
+  author        User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments      Comment[]
+  likes         Like[]
+  bookmarks     Bookmark[]
+  reposts       Repost[]
+  notifications Notification[]
 
   @@index([authorId])
   @@index([createdAt])
@@ -128,10 +133,11 @@ model Comment {
   parentId  String?
   createdAt DateTime @default(now())
 
-  post    Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  author  User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies Comment[] @relation("CommentReplies")
+  post          Post           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author        User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent        Comment?       @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies       Comment[]      @relation("CommentReplies")
+  notifications Notification[]
 
   @@index([postId])
   @@index([authorId])
@@ -267,6 +273,36 @@ model MessageRequest {
   @@unique([senderId, receiverId])
   @@index([receiverId, status])
   @@index([senderId])
+}
+
+// Notifications
+
+enum NotificationType {
+  LIKE
+  COMMENT
+  REPLY
+  REPOST
+  BOOKMARK
+  FOLLOW
+}
+
+model Notification {
+  id           String           @id @default(cuid())
+  type         NotificationType
+  actorId      String
+  targetUserId String
+  postId       String?
+  commentId    String?
+  readAt       DateTime?
+  createdAt    DateTime         @default(now())
+
+  actor      User     @relation("notificationActor", fields: [actorId], references: [id], onDelete: Cascade)
+  targetUser User     @relation("notificationTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  post       Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment    Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([targetUserId, readAt, createdAt])
+  @@index([actorId])
 }
 
 // Content moderation
