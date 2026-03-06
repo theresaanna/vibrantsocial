@@ -80,10 +80,10 @@ function NotificationToastListener() {
     const notifChannel = client.channels.get(
       `notifications:${session.user.id}`
     );
-    notifChannel.subscribe("new", handleNotification);
+    notifChannel.subscribe({ name: "new" }, handleNotification);
 
     return () => {
-      notifChannel.unsubscribe("new", handleNotification);
+      notifChannel.unsubscribe({ name: "new" }, handleNotification);
     };
   }, [ablyReady, session?.user?.id, handleNotification]);
 
@@ -96,7 +96,7 @@ function NotificationToastListener() {
     // Chat messages arrive on chat:{conversationId} channels
     const handleChannelMessage = (channelName: string) => {
       const channel = client.channels.get(channelName);
-      channel.subscribe("new", (msg) => {
+      channel.subscribe({ name: "new" }, (msg) => {
         handleChatMessage({
           data: msg.data,
           name: channelName.replace("chat:", ""),
@@ -112,7 +112,7 @@ function NotificationToastListener() {
     const chatNotifChannel = client.channels.get(
       `chat-notify:${session.user.id}`
     );
-    chatNotifChannel.subscribe("new", (msg) => {
+    chatNotifChannel.subscribe({ name: "new" }, (msg) => {
       handleChatMessage({
         data: msg.data,
         name: msg.data.conversationId ?? "",

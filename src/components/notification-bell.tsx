@@ -24,10 +24,10 @@ export function NotificationBell({
 
     const client = getAblyRealtimeClient();
     const channel = client.channels.get(`notifications:${session.user.id}`);
-    channel.subscribe("new", handleNewNotification);
+    channel.subscribe({ name: "new" }, handleNewNotification);
 
     return () => {
-      channel.unsubscribe("new", handleNewNotification);
+      channel.unsubscribe({ name: "new" }, handleNewNotification);
     };
   }, [ablyReady, session?.user?.id, handleNewNotification]);
 
