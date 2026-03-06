@@ -30,6 +30,7 @@ interface MessageThreadProps {
   conversation: ConversationWithParticipants;
   currentUserId: string;
   onlineUserIds?: Set<string>;
+  phoneVerified?: boolean;
 }
 
 export function MessageThread({
@@ -38,6 +39,7 @@ export function MessageThread({
   conversation,
   currentUserId,
   onlineUserIds = new Set(),
+  phoneVerified = true,
 }: MessageThreadProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -265,6 +267,7 @@ export function MessageThread({
         onSendMessage={handleSendMessage}
         onKeystroke={keystroke}
         onStopTyping={stopTyping}
+        phoneVerified={phoneVerified}
       />
 
       {/* Group settings modal */}

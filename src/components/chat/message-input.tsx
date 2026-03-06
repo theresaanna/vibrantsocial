@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Link from "next/link";
 
 interface MessageInputProps {
   onSendMessage: (content: string) => Promise<void>;
   onKeystroke: () => void;
   onStopTyping: () => void;
   disabled?: boolean;
+  phoneVerified?: boolean;
 }
 
 export function MessageInput({
@@ -14,6 +16,7 @@ export function MessageInput({
   onKeystroke,
   onStopTyping,
   disabled,
+  phoneVerified = true,
 }: MessageInputProps) {
   const [value, setValue] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -55,6 +58,22 @@ export function MessageInput({
     textarea.style.height = "auto";
     textarea.style.height = Math.min(textarea.scrollHeight, 120) + "px";
   };
+
+  if (!phoneVerified) {
+    return (
+      <div className="border-t border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          <Link
+            href="/verify-phone"
+            className="font-medium text-zinc-900 hover:underline dark:text-zinc-100"
+          >
+            Verify your phone number
+          </Link>{" "}
+          to send messages.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <form
