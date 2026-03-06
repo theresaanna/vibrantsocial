@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { PostComposer } from "@/components/post-composer";
 import { PostCard } from "@/components/post-card";
+import { calculateAge } from "@/lib/age-gate";
 
 export default async function FeedPage() {
   const session = await auth();
@@ -13,10 +14,15 @@ export default async function FeedPage() {
   // Check phone verification for composer / comment gating
   const currentUser = await prisma.user.findUnique({
     where: { id: userId },
-    select: { phoneVerified: true },
+    select: { phoneVerified: true, dateOfBirth: true },
   });
 
+  if (!currentUser?.dateOfBirth) redirect("/complete-profile");
+
   const phoneVerified = !!currentUser?.phoneVerified;
+  const isOldEnough = currentUser?.dateOfBirth
+    ? calculateAge(currentUser.dateOfBirth) >= 18
+    : false;
 
   // Get IDs of users the current user follows
   const following = await prisma.follow.findMany({
@@ -85,7 +91,7 @@ export default async function FeedPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
-      <PostComposer phoneVerified={phoneVerified} />
+      <PostComposer phoneVerified={phoneVerified} isOldEnough={isOldEnough} />
 
       {posts.length === 0 ? (
         <div className="mt-8 text-center">

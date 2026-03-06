@@ -11,6 +11,7 @@ import {
   markConversationRead,
   acceptMessageRequest,
   declineMessageRequest,
+  bulkDeclineMessageRequests,
   searchUsers,
 } from "@/app/chat/actions";
 
@@ -46,6 +47,7 @@ vi.mock("@/lib/prisma", () => ({
       findMany: vi.fn(),
       upsert: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
     },
     follow: {
       findUnique: vi.fn(),
@@ -620,6 +622,76 @@ describe("getMessageRequests", () => {
     mockAuth.mockResolvedValueOnce(null as never);
     const result = await getMessageRequests();
     expect(result).toEqual([]);
+  });
+});
+
+describe("bulkDeclineMessageRequests", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns error if not authenticated", async () => {
+    mockAuth.mockResolvedValueOnce(null as never);
+    const result = await bulkDeclineMessageRequests(["req1"]);
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Not authenticated");
+  });
+
+  it("returns error if no request IDs provided", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    const result = await bulkDeclineMessageRequests([]);
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("No requests selected");
+  });
+
+  it("returns error if some requests not found", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.messageRequest.findMany.mockResolvedValueOnce([
+      { id: "req1", receiverId: "user1", status: "PENDING" },
+    ] as never);
+
+    const result = await bulkDeclineMessageRequests(["req1", "req2"]);
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Some requests not found");
+  });
+
+  it("returns error if some requests belong to another user", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.messageRequest.findMany.mockResolvedValueOnce([
+      { id: "req1", receiverId: "user1", status: "PENDING" },
+      { id: "req2", receiverId: "user2", status: "PENDING" },
+    ] as never);
+
+    const result = await bulkDeclineMessageRequests(["req1", "req2"]);
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Some requests are invalid");
+  });
+
+  it("returns error if some requests are not PENDING", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.messageRequest.findMany.mockResolvedValueOnce([
+      { id: "req1", receiverId: "user1", status: "PENDING" },
+      { id: "req2", receiverId: "user1", status: "ACCEPTED" },
+    ] as never);
+
+    const result = await bulkDeclineMessageRequests(["req1", "req2"]);
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Some requests are invalid");
+  });
+
+  it("declines multiple requests successfully", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.messageRequest.findMany.mockResolvedValueOnce([
+      { id: "req1", receiverId: "user1", status: "PENDING" },
+      { id: "req2", receiverId: "user1", status: "PENDING" },
+    ] as never);
+    mockPrisma.messageRequest.updateMany.mockResolvedValueOnce({ count: 2 } as never);
+
+    const result = await bulkDeclineMessageRequests(["req1", "req2"]);
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("2 request(s) declined");
+    expect(mockPrisma.messageRequest.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["req1", "req2"] }, receiverId: "user1", status: "PENDING" },
+      data: { status: "DECLINED" },
+    });
   });
 });
 

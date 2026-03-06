@@ -44,9 +44,10 @@ function ClearOnSuccess({
 
 interface PostComposerProps {
   phoneVerified: boolean;
+  isOldEnough: boolean;
 }
 
-export function PostComposer({ phoneVerified }: PostComposerProps) {
+export function PostComposer({ phoneVerified, isOldEnough }: PostComposerProps) {
   const [editorJson, setEditorJson] = useState("");
   const [shouldClear, setShouldClear] = useState(false);
 
@@ -80,6 +81,16 @@ export function PostComposer({ phoneVerified }: PostComposerProps) {
             Verify your phone number
           </Link>{" "}
           to start posting.
+        </p>
+      </div>
+    );
+  }
+
+  if (!isOldEnough) {
+    return (
+      <div className="rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-900">
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          You must be 18 or older to create posts.
         </p>
       </div>
     );

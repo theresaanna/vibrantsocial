@@ -31,6 +31,7 @@ model User {
 
   // Credentials auth
   passwordHash String?
+  dateOfBirth  DateTime?
 
   // Phone verification
   phoneNumber   String?   @unique

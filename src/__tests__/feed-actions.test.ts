@@ -19,13 +19,19 @@ vi.mock("@/lib/phone-gate", () => ({
   requirePhoneVerification: vi.fn(),
 }));
 
+vi.mock("@/lib/age-gate", () => ({
+  requireMinimumAge: vi.fn(),
+}));
+
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { requirePhoneVerification } from "@/lib/phone-gate";
+import { requireMinimumAge } from "@/lib/age-gate";
 
 const mockAuth = vi.mocked(auth);
 const mockPrisma = vi.mocked(prisma);
 const mockPhoneGate = vi.mocked(requirePhoneVerification);
+const mockAgeGate = vi.mocked(requireMinimumAge);
 
 function makeFormData(data: Record<string, string>): FormData {
   const fd = new FormData();
@@ -89,9 +95,21 @@ describe("createPost", () => {
     expect(result.message).toBe("Phone verification required to post");
   });
 
+  it("requires minimum age of 18 to post", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
+    mockAgeGate.mockResolvedValueOnce(false);
+
+    const result = await createPost(prevState, makeFormData({ content: validLexicalContent }));
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("You must be 18 or older to post");
+    expect(mockAgeGate).toHaveBeenCalledWith("user1", 18);
+  });
+
   it("requires content to be present", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPhoneGate.mockResolvedValueOnce(true);
+    mockAgeGate.mockResolvedValueOnce(true);
 
     const result = await createPost(prevState, makeFormData({}));
     expect(result.success).toBe(false);
@@ -101,6 +119,7 @@ describe("createPost", () => {
   it("requires valid JSON content", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPhoneGate.mockResolvedValueOnce(true);
+    mockAgeGate.mockResolvedValueOnce(true);
 
     const result = await createPost(
       prevState,
@@ -113,6 +132,7 @@ describe("createPost", () => {
   it("rejects posts that are too short (< 50 chars when stringified)", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPhoneGate.mockResolvedValueOnce(true);
+    mockAgeGate.mockResolvedValueOnce(true);
 
     const shortContent = JSON.stringify({ root: { type: "root" } });
     const result = await createPost(
@@ -126,6 +146,7 @@ describe("createPost", () => {
   it("creates post successfully with valid content", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPhoneGate.mockResolvedValueOnce(true);
+    mockAgeGate.mockResolvedValueOnce(true);
     mockPrisma.post.create.mockResolvedValueOnce({} as never);
 
     const result = await createPost(

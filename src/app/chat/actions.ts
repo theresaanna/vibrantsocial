@@ -500,6 +500,42 @@ export async function declineMessageRequest(
   return { success: true, message: "Request declined" };
 }
 
+export async function bulkDeclineMessageRequests(
+  requestIds: string[]
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  if (!requestIds.length) {
+    return { success: false, message: "No requests selected" };
+  }
+
+  const requests = await prisma.messageRequest.findMany({
+    where: { id: { in: requestIds } },
+    select: { id: true, receiverId: true, status: true },
+  });
+
+  const invalid = requests.filter(
+    (r) => r.receiverId !== session.user!.id || r.status !== "PENDING"
+  );
+  if (invalid.length > 0) {
+    return { success: false, message: "Some requests are invalid" };
+  }
+  if (requests.length !== requestIds.length) {
+    return { success: false, message: "Some requests not found" };
+  }
+
+  await prisma.messageRequest.updateMany({
+    where: { id: { in: requestIds }, receiverId: session.user.id, status: "PENDING" },
+    data: { status: "DECLINED" },
+  });
+
+  revalidatePath("/chat");
+  return { success: true, message: `${requestIds.length} request(s) declined` };
+}
+
 export async function searchUsers(
   query: string
 ): Promise<ChatUserProfile[]> {

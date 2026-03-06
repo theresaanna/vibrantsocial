@@ -11,6 +11,7 @@ export default async function ProfilePage() {
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
+      dateOfBirth: true,
       phoneNumber: true,
       phoneVerified: true,
       passwordHash: true,
@@ -23,6 +24,8 @@ export default async function ProfilePage() {
       profileContainerColor: true,
     },
   });
+
+  if (!user?.dateOfBirth) redirect("/complete-profile");
 
   const isCredentialsUser = !!user?.passwordHash;
   const oauthImage = user?.image ?? session.user.image ?? null;

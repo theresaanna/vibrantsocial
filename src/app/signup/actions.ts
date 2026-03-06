@@ -15,11 +15,32 @@ export async function signup(
   formData: FormData
 ): Promise<SignupState> {
   const email = (formData.get("email") as string)?.trim().toLowerCase();
+  const dateOfBirthStr = formData.get("dateOfBirth") as string;
   const password = formData.get("password") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
 
-  if (!email || !password || !confirmPassword) {
+  if (!email || !dateOfBirthStr || !password || !confirmPassword) {
     return { success: false, message: "All fields are required" };
+  }
+
+  const dateOfBirth = new Date(dateOfBirthStr);
+  if (isNaN(dateOfBirth.getTime())) {
+    return { success: false, message: "Invalid date of birth" };
+  }
+
+  if (dateOfBirth > new Date()) {
+    return { success: false, message: "Date of birth cannot be in the future" };
+  }
+
+  const today = new Date();
+  let age = today.getFullYear() - dateOfBirth.getFullYear();
+  const monthDiff = today.getMonth() - dateOfBirth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dateOfBirth.getDate())) {
+    age--;
+  }
+
+  if (age < 13) {
+    return { success: false, message: "You must be at least 13 years old to sign up" };
   }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -54,6 +75,7 @@ export async function signup(
     data: {
       email,
       passwordHash,
+      dateOfBirth,
       emailVerified: new Date(),
     },
   });
