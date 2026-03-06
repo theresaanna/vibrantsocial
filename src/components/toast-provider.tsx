@@ -7,7 +7,7 @@ import { useTheme } from "next-themes";
 import { Toaster, toast } from "sonner";
 import { useAblyReady } from "@/app/providers";
 import { getAblyRealtimeClient } from "@/lib/ably";
-import type { NotificationType } from "@/generated/prisma";
+import type { NotificationType } from "@/generated/prisma/client";
 
 function getToastText(type: NotificationType): string {
   switch (type) {

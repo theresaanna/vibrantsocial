@@ -7,7 +7,7 @@ import {
   markNotificationRead,
   markAllNotificationsRead,
 } from "@/app/notifications/actions";
-import type { NotificationType } from "@/generated/prisma";
+import type { NotificationType } from "@/generated/prisma/client";
 
 interface NotificationActor {
   id: string;

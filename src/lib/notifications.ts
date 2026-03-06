@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getAblyRestClient } from "@/lib/ably";
-import type { NotificationType } from "@/generated/prisma";
+import type { NotificationType } from "@/generated/prisma/client";
 
 const MAX_NOTIFICATIONS = 50;
 
