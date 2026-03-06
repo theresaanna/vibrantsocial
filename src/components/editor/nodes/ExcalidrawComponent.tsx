@@ -160,12 +160,14 @@ function ExcalidrawModal({
             </button>
           </div>
         </div>
-        <div className="flex-1">
+        <div className="relative min-h-0 flex-1">
           {Excalidraw ? (
-            <Excalidraw
-              initialData={initialScene}
-              excalidrawAPI={(api: unknown) => setSceneRef(api as typeof sceneRef)}
-            />
+            <div className="absolute inset-0">
+              <Excalidraw
+                initialData={initialScene}
+                excalidrawAPI={(api: unknown) => setSceneRef(api as typeof sceneRef)}
+              />
+            </div>
           ) : (
             <div className="flex h-full items-center justify-center text-zinc-500">
               Loading Excalidraw...
