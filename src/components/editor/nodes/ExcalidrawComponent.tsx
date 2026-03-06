@@ -6,6 +6,7 @@ import { $getNodeByKey, type NodeKey } from "lexical";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { $isExcalidrawNode } from "./ExcalidrawNode";
+import "@excalidraw/excalidraw/index.css";
 
 interface ExcalidrawComponentProps {
   data: string;
