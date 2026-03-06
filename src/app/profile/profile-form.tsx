@@ -22,6 +22,8 @@ interface ProfileFormProps {
   };
   currentAvatar: string | null;
   oauthImage: string | null;
+  biometricVerified: boolean;
+  showNsfwByDefault: boolean;
 }
 
 interface ProfileState {
@@ -31,7 +33,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, currentAvatar, oauthImage }: ProfileFormProps) {
+export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified, showNsfwByDefault }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>("idle");
@@ -327,6 +329,26 @@ export function ProfileForm({ user, currentAvatar, oauthImage }: ProfileFormProp
           bio={user.bio}
           avatarSrc={avatarPreview || oauthImage}
         />
+
+        {biometricVerified && (
+          <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="showNsfwByDefault"
+                value="true"
+                defaultChecked={showNsfwByDefault}
+                className="rounded"
+              />
+              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Show NSFW content by default
+              </span>
+            </label>
+            <p className="mt-1 ml-6 text-xs text-zinc-500 dark:text-zinc-400">
+              When enabled, NSFW posts will be visible without clicking to reveal.
+            </p>
+          </div>
+        )}
 
         <button
           type="submit"

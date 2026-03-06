@@ -14,12 +14,14 @@ export default async function FeedPage() {
   // Check phone verification for composer / comment gating
   const currentUser = await prisma.user.findUnique({
     where: { id: userId },
-    select: { phoneVerified: true, dateOfBirth: true },
+    select: { phoneVerified: true, dateOfBirth: true, biometricVerified: true, showNsfwByDefault: true },
   });
 
   if (!currentUser?.dateOfBirth) redirect("/complete-profile");
 
   const phoneVerified = !!currentUser?.phoneVerified;
+  const biometricVerified = !!currentUser?.biometricVerified;
+  const showNsfwByDefault = currentUser?.showNsfwByDefault ?? false;
   const isOldEnough = currentUser?.dateOfBirth
     ? calculateAge(currentUser.dateOfBirth) >= 18
     : false;
@@ -103,7 +105,7 @@ export default async function FeedPage() {
       ) : (
         <div className="mt-6 space-y-4">
           {posts.map((post) => (
-            <PostCard key={post.id} post={post} phoneVerified={phoneVerified} />
+            <PostCard key={post.id} post={post} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showNsfwByDefault={showNsfwByDefault} />
           ))}
         </div>
       )}

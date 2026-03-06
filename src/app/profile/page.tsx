@@ -22,6 +22,8 @@ export default async function ProfilePage() {
       profileLinkColor: true,
       profileSecondaryColor: true,
       profileContainerColor: true,
+      biometricVerified: true,
+      showNsfwByDefault: true,
     },
   });
 
@@ -77,6 +79,8 @@ export default async function ProfilePage() {
           }}
           currentAvatar={user?.avatar ?? null}
           oauthImage={oauthImage}
+          biometricVerified={!!user?.biometricVerified}
+          showNsfwByDefault={user?.showNsfwByDefault ?? false}
         />
       </div>
     </div>

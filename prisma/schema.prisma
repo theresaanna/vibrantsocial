@@ -33,6 +33,10 @@ model User {
   passwordHash String?
   dateOfBirth  DateTime?
 
+  // Biometric age verification
+  biometricVerified DateTime?
+  showNsfwByDefault Boolean   @default(false)
+
   // Phone verification
   phoneNumber   String?   @unique
   phoneVerified DateTime?
@@ -94,11 +98,13 @@ model VerificationToken {
 }
 
 model Post {
-  id        String   @id @default(cuid())
-  content   String   @db.Text
-  authorId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  authorId    String
+  isSensitive Boolean  @default(false)
+  isNsfw      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   comments  Comment[]

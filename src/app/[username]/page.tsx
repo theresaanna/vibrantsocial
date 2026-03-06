@@ -47,6 +47,8 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
   // Check if current user follows this profile
   let isFollowing = false;
   let phoneVerified = false;
+  let biometricVerified = false;
+  let showNsfwByDefault = false;
 
   if (currentUserId && !isOwnProfile) {
     const follow = await prisma.follow.findUnique({
@@ -63,9 +65,11 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
   if (currentUserId) {
     const currentUser = await prisma.user.findUnique({
       where: { id: currentUserId },
-      select: { phoneVerified: true },
+      select: { phoneVerified: true, biometricVerified: true, showNsfwByDefault: true },
     });
     phoneVerified = !!currentUser?.phoneVerified;
+    biometricVerified = !!currentUser?.biometricVerified;
+    showNsfwByDefault = currentUser?.showNsfwByDefault ?? false;
   }
 
   // Fetch user's posts
@@ -223,7 +227,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
         ) : (
           <div className="mt-6 space-y-4">
             {posts.map((post) => (
-              <PostCard key={post.id} post={post} phoneVerified={phoneVerified} />
+              <PostCard key={post.id} post={post} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showNsfwByDefault={showNsfwByDefault} />
             ))}
           </div>
         )}

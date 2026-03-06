@@ -156,8 +156,54 @@ describe("createPost", () => {
     expect(result.success).toBe(true);
     expect(result.message).toBe("Post created");
     expect(mockPrisma.post.create).toHaveBeenCalledWith({
-      data: { content: validLexicalContent, authorId: "user1" },
+      data: { content: validLexicalContent, authorId: "user1", isSensitive: false, isNsfw: false },
     });
+  });
+
+  it("creates post with isSensitive flag", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
+    mockAgeGate.mockResolvedValueOnce(true);
+    mockPrisma.post.create.mockResolvedValueOnce({} as never);
+
+    const result = await createPost(
+      prevState,
+      makeFormData({ content: validLexicalContent, isSensitive: "true" })
+    );
+    expect(result.success).toBe(true);
+    expect(mockPrisma.post.create).toHaveBeenCalledWith({
+      data: { content: validLexicalContent, authorId: "user1", isSensitive: true, isNsfw: false },
+    });
+  });
+
+  it("creates post with isNsfw flag", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
+    mockAgeGate.mockResolvedValueOnce(true);
+    mockPrisma.post.create.mockResolvedValueOnce({} as never);
+
+    const result = await createPost(
+      prevState,
+      makeFormData({ content: validLexicalContent, isNsfw: "true" })
+    );
+    expect(result.success).toBe(true);
+    expect(mockPrisma.post.create).toHaveBeenCalledWith({
+      data: { content: validLexicalContent, authorId: "user1", isSensitive: false, isNsfw: true },
+    });
+  });
+
+  it("defaults isSensitive and isNsfw to false when not provided", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
+    mockAgeGate.mockResolvedValueOnce(true);
+    mockPrisma.post.create.mockResolvedValueOnce({} as never);
+
+    await createPost(prevState, makeFormData({ content: validLexicalContent }));
+    expect(mockPrisma.post.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ isSensitive: false, isNsfw: false }),
+      })
+    );
   });
 });
 
