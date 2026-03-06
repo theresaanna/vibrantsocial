@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import type { InboundMessage } from "ably";
 import { useAblyReady } from "@/app/providers";
 import { getAblyRealtimeClient } from "@/lib/ably";
 
@@ -15,7 +16,7 @@ export function NotificationBell({
   const { data: session } = useSession();
   const ablyReady = useAblyReady();
 
-  const handleNewNotification = useCallback(() => {
+  const handleNewNotification = useCallback((_msg: InboundMessage) => {
     setUnreadCount((prev) => prev + 1);
   }, []);
 
@@ -24,10 +25,10 @@ export function NotificationBell({
 
     const client = getAblyRealtimeClient();
     const channel = client.channels.get(`notifications:${session.user.id}`);
-    channel.subscribe({ name: "new" }, handleNewNotification);
+    channel.subscribe("new", handleNewNotification);
 
     return () => {
-      channel.unsubscribe({ name: "new" }, handleNewNotification);
+      channel.unsubscribe("new", handleNewNotification);
     };
   }, [ablyReady, session?.user?.id, handleNewNotification]);
 

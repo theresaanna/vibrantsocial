@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Toaster, toast } from "sonner";
+import type { InboundMessage } from "ably";
 import { useAblyReady } from "@/app/providers";
 import { getAblyRealtimeClient } from "@/lib/ably";
 import type { NotificationType } from "@/generated/prisma/client";
@@ -32,14 +33,15 @@ function NotificationToastListener() {
   const pathname = usePathname();
 
   const handleNotification = useCallback(
-    (message: { data: { type: NotificationType; actor: string } }) => {
+    (message: InboundMessage) => {
       // Don't toast if on notifications page
       if (pathname === "/notifications") return;
 
-      const actor = JSON.parse(message.data.actor);
+      const data = message.data as { type: NotificationType; actor: string };
+      const actor = JSON.parse(data.actor);
       const name =
         actor.displayName ?? actor.username ?? actor.name ?? "Someone";
-      const text = getToastText(message.data.type);
+      const text = getToastText(data.type);
       toast(`${name} ${text}`);
     },
     [pathname]
@@ -80,10 +82,10 @@ function NotificationToastListener() {
     const notifChannel = client.channels.get(
       `notifications:${session.user.id}`
     );
-    notifChannel.subscribe({ name: "new" }, handleNotification);
+    notifChannel.subscribe("new", handleNotification);
 
     return () => {
-      notifChannel.unsubscribe({ name: "new" }, handleNotification);
+      notifChannel.unsubscribe("new", handleNotification);
     };
   }, [ablyReady, session?.user?.id, handleNotification]);
 
@@ -96,7 +98,7 @@ function NotificationToastListener() {
     // Chat messages arrive on chat:{conversationId} channels
     const handleChannelMessage = (channelName: string) => {
       const channel = client.channels.get(channelName);
-      channel.subscribe({ name: "new" }, (msg) => {
+      channel.subscribe("new", (msg: InboundMessage) => {
         handleChatMessage({
           data: msg.data,
           name: channelName.replace("chat:", ""),
@@ -112,7 +114,7 @@ function NotificationToastListener() {
     const chatNotifChannel = client.channels.get(
       `chat-notify:${session.user.id}`
     );
-    chatNotifChannel.subscribe({ name: "new" }, (msg) => {
+    chatNotifChannel.subscribe("new", (msg: InboundMessage) => {
       handleChatMessage({
         data: msg.data,
         name: msg.data.conversationId ?? "",
