@@ -2,6 +2,7 @@ import { auth, signOut } from "@/auth";
 import Link from "next/link";
 import { getConversations } from "@/app/chat/actions";
 import { ChatNav } from "@/components/chat-nav";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export async function Header() {
   const session = await auth();
@@ -18,6 +19,7 @@ export async function Header() {
         </Link>
 
         <div className="flex items-center gap-4">
+          <ThemeToggle />
           {session?.user ? (
             <>
               <Link

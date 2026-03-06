@@ -167,11 +167,11 @@ describe("updateProfile", () => {
     expect(result.message).toBe("Profile updated");
     expect(mockPrisma.user.update).toHaveBeenCalledWith({
       where: { id: "user1" },
-      data: {
+      data: expect.objectContaining({
         username: "newname",
         displayName: "New Name",
         bio: '{"root":{}}',
-      },
+      }),
     });
   });
 
@@ -187,7 +187,11 @@ describe("updateProfile", () => {
     );
     expect(mockPrisma.user.update).toHaveBeenCalledWith({
       where: { id: "user1" },
-      data: { username: null, displayName: null, bio: null },
+      data: expect.objectContaining({
+        username: null,
+        displayName: null,
+        bio: null,
+      }),
     });
   });
 
@@ -237,6 +241,104 @@ describe("updateProfile", () => {
     );
     expect(result.success).toBe(true);
     expect(mockPrisma.bioRevision.create).not.toHaveBeenCalled();
+  });
+
+  describe("theme color validation", () => {
+    it("saves valid theme colors", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+      // bio fetch
+      mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
+      mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+      const result = await updateProfile(
+        prevState,
+        makeFormData({
+          profileBgColor: "#ff0000",
+          profileTextColor: "#00ff00",
+          profileLinkColor: "#0000ff",
+          profileSecondaryColor: "#999999",
+          profileContainerColor: "#eeeeee",
+        })
+      );
+      expect(result.success).toBe(true);
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            profileBgColor: "#ff0000",
+            profileTextColor: "#00ff00",
+            profileLinkColor: "#0000ff",
+            profileSecondaryColor: "#999999",
+            profileContainerColor: "#eeeeee",
+          }),
+        })
+      );
+    });
+
+    it("rejects invalid hex color values", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+      const result = await updateProfile(
+        prevState,
+        makeFormData({ profileBgColor: "not-a-color" })
+      );
+      expect(result.success).toBe(false);
+      expect(result.message).toContain("Invalid color");
+    });
+
+    it("rejects hex colors missing # prefix", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+      const result = await updateProfile(
+        prevState,
+        makeFormData({ profileBgColor: "ff0000" })
+      );
+      expect(result.success).toBe(false);
+      expect(result.message).toContain("Invalid color");
+    });
+
+    it("accepts 3-digit hex colors", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+      mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
+      mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+      const result = await updateProfile(
+        prevState,
+        makeFormData({ profileBgColor: "#f00" })
+      );
+      expect(result.success).toBe(true);
+    });
+
+    it("sets empty color values to null", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+      mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
+      mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+      await updateProfile(prevState, makeFormData({ profileBgColor: "" }));
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            profileBgColor: null,
+          }),
+        })
+      );
+    });
+
+    it("sets missing color values to null", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+      mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
+      mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+      await updateProfile(prevState, makeFormData({}));
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            profileBgColor: null,
+            profileTextColor: null,
+            profileLinkColor: null,
+            profileSecondaryColor: null,
+            profileContainerColor: null,
+          }),
+        })
+      );
+    });
   });
 
   it("prunes old revisions when count exceeds 20", async () => {
