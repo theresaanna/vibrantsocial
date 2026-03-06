@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useState, useEffect, useActionState } from "react";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -30,12 +30,14 @@ function ClearOnSuccess({
 }) {
   const [editor] = useLexicalComposerContext();
 
-  if (shouldClear) {
-    editor.update(() => {
-      $getRoot().clear();
-    });
-    onCleared();
-  }
+  useEffect(() => {
+    if (shouldClear) {
+      editor.update(() => {
+        $getRoot().clear();
+      });
+      onCleared();
+    }
+  }, [shouldClear, editor, onCleared]);
 
   return null;
 }
