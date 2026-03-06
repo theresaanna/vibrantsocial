@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 
-const ARACHNID_API_URL = "https://shield.projectarachnid.ca/v1/media/";
+const ARACHNID_API_URL = "https://shield.projectarachnid.com/v1/media/";
 
 interface ArachnidScanResponse {
   classification: string;
