@@ -1,8 +1,11 @@
 import { auth, signOut } from "@/auth";
 import Link from "next/link";
+import { getConversations } from "@/app/chat/actions";
+import { ChatNav } from "@/components/chat-nav";
 
 export async function Header() {
   const session = await auth();
+  const conversations = session?.user ? await getConversations() : [];
 
   return (
     <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
@@ -23,12 +26,7 @@ export async function Header() {
               >
                 Feed
               </Link>
-              <Link
-                href="/chat"
-                className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-              >
-                Chat
-              </Link>
+              <ChatNav initialConversations={conversations} />
               <Link
                 href="/profile"
                 className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
