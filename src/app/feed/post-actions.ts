@@ -107,6 +107,7 @@ export async function createComment(
 
   const postId = formData.get("postId") as string;
   const content = (formData.get("content") as string)?.trim();
+  const parentId = (formData.get("parentId") as string) || null;
 
   if (!content) {
     return { success: false, message: "Comment cannot be empty" };
@@ -117,7 +118,7 @@ export async function createComment(
   }
 
   await prisma.comment.create({
-    data: { content, postId, authorId: session.user.id },
+    data: { content, postId, authorId: session.user.id, parentId },
   });
 
   revalidatePath("/feed");
