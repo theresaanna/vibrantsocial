@@ -37,7 +37,7 @@ export async function scanImageBuffer(
       "Content-Type": mimeType,
       Authorization: "Basic " + Buffer.from(`${username}:${password}`).toString("base64"),
     },
-    body: bytes,
+    body: new Uint8Array(bytes),
   });
 
   if (!response.ok) {
