@@ -1,0 +1,590 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import {
+  getConversations,
+  getMessages,
+  getMessageRequests,
+  startConversation,
+  createGroupConversation,
+  sendMessage,
+  editMessage,
+  deleteMessage,
+  markConversationRead,
+  acceptMessageRequest,
+  declineMessageRequest,
+  searchUsers,
+} from "@/app/chat/actions";
+
+vi.mock("@/auth", () => ({
+  auth: vi.fn(),
+}));
+
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    conversation: {
+      create: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
+    conversationParticipant: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
+    message: {
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      findMany: vi.fn(),
+    },
+    messageRequest: {
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      upsert: vi.fn(),
+      update: vi.fn(),
+    },
+    follow: {
+      findUnique: vi.fn(),
+    },
+    user: {
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+    },
+  },
+}));
+
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+
+const mockAuth = vi.mocked(auth);
+const mockPrisma = vi.mocked(prisma);
+
+describe("startConversation", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns error if not authenticated", async () => {
+    mockAuth.mockResolvedValueOnce(null as never);
+    const result = await startConversation("target-id");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Not authenticated");
+  });
+
+  it("prevents messaging yourself", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    const result = await startConversation("user1");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Cannot message yourself");
+  });
+
+  it("returns error if target user not found", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
+    const result = await startConversation("nonexistent");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("User not found");
+  });
+
+  it("returns existing conversation if found", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.user.findUnique.mockResolvedValueOnce({ id: "user2" } as never);
+    mockPrisma.conversation.findFirst.mockResolvedValueOnce({
+      id: "conv1",
+    } as never);
+
+    const result = await startConversation("user2");
+    expect(result.success).toBe(true);
+    expect(result.conversationId).toBe("conv1");
+  });
+
+  it("creates conversation for mutual followers", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.user.findUnique.mockResolvedValueOnce({ id: "user2" } as never);
+    mockPrisma.conversation.findFirst.mockResolvedValueOnce(null as never);
+    // Mutual follow check
+    mockPrisma.follow.findUnique.mockResolvedValueOnce({ id: "f1" } as never);
+    mockPrisma.follow.findUnique.mockResolvedValueOnce({ id: "f2" } as never);
+    mockPrisma.conversation.create.mockResolvedValueOnce({
+      id: "new-conv",
+    } as never);
+
+    const result = await startConversation("user2");
+    expect(result.success).toBe(true);
+    expect(result.conversationId).toBe("new-conv");
+    expect(mockPrisma.conversation.create).toHaveBeenCalled();
+  });
+
+  it("creates message request for non-friends", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.user.findUnique.mockResolvedValueOnce({ id: "user2" } as never);
+    mockPrisma.conversation.findFirst.mockResolvedValueOnce(null as never);
+    // Not mutual
+    mockPrisma.follow.findUnique.mockResolvedValueOnce({ id: "f1" } as never);
+    mockPrisma.follow.findUnique.mockResolvedValueOnce(null as never);
+    mockPrisma.messageRequest.upsert.mockResolvedValueOnce({} as never);
+
+    const result = await startConversation("user2");
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("Message request sent");
+    expect(result.conversationId).toBeUndefined();
+  });
+});
+
+describe("createGroupConversation", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns error if not authenticated", async () => {
+    mockAuth.mockResolvedValueOnce(null as never);
+    const result = await createGroupConversation({
+      name: "Test",
+      participantIds: ["a", "b"],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects empty name", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    const result = await createGroupConversation({
+      name: "  ",
+      participantIds: ["a", "b"],
+    });
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Group name is required");
+  });
+
+  it("rejects name over 100 characters", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    const result = await createGroupConversation({
+      name: "a".repeat(101),
+      participantIds: ["a", "b"],
+    });
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Group name too long (max 100 characters)");
+  });
+
+  it("rejects fewer than 2 other participants", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    const result = await createGroupConversation({
+      name: "Test",
+      participantIds: ["a"],
+    });
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Groups need at least 2 other members");
+  });
+
+  it("rejects if some users not found", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.user.findMany.mockResolvedValueOnce([{ id: "a" }] as never);
+
+    const result = await createGroupConversation({
+      name: "Test",
+      participantIds: ["a", "b"],
+    });
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Some users were not found");
+  });
+
+  it("creates group successfully", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.user.findMany.mockResolvedValueOnce([
+      { id: "a" },
+      { id: "b" },
+    ] as never);
+    mockPrisma.conversation.create.mockResolvedValueOnce({
+      id: "group1",
+    } as never);
+
+    const result = await createGroupConversation({
+      name: "Test Group",
+      participantIds: ["a", "b"],
+    });
+    expect(result.success).toBe(true);
+    expect(result.conversationId).toBe("group1");
+  });
+});
+
+describe("sendMessage", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns error if not authenticated", async () => {
+    mockAuth.mockResolvedValueOnce(null as never);
+    const result = await sendMessage({
+      conversationId: "conv1",
+      content: "hello",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects empty content", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    const result = await sendMessage({
+      conversationId: "conv1",
+      content: "   ",
+    });
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Message cannot be empty");
+  });
+
+  it("rejects content over 5000 characters", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    const result = await sendMessage({
+      conversationId: "conv1",
+      content: "a".repeat(5001),
+    });
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Message too long (max 5000 characters)");
+  });
+
+  it("rejects if not a participant", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.conversationParticipant.findUnique.mockResolvedValueOnce(
+      null as never
+    );
+    const result = await sendMessage({
+      conversationId: "conv1",
+      content: "hello",
+    });
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Not a participant of this conversation");
+  });
+
+  it("sends message successfully", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.conversationParticipant.findUnique.mockResolvedValueOnce({
+      id: "p1",
+    } as never);
+    mockPrisma.message.create.mockResolvedValueOnce({
+      id: "msg1",
+    } as never);
+    mockPrisma.conversation.update.mockResolvedValueOnce({} as never);
+    mockPrisma.conversationParticipant.update.mockResolvedValueOnce(
+      {} as never
+    );
+
+    const result = await sendMessage({
+      conversationId: "conv1",
+      content: "hello",
+    });
+    expect(result.success).toBe(true);
+    expect(result.messageId).toBe("msg1");
+    expect(mockPrisma.message.create).toHaveBeenCalledWith({
+      data: {
+        conversationId: "conv1",
+        senderId: "user1",
+        content: "hello",
+      },
+    });
+  });
+});
+
+describe("editMessage", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns error if not authenticated", async () => {
+    mockAuth.mockResolvedValueOnce(null as never);
+    const result = await editMessage({
+      messageId: "msg1",
+      content: "edited",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects empty content", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    const result = await editMessage({ messageId: "msg1", content: "  " });
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Message cannot be empty");
+  });
+
+  it("returns error if message not found", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.message.findUnique.mockResolvedValueOnce(null as never);
+    const result = await editMessage({
+      messageId: "msg1",
+      content: "edited",
+    });
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Message not found");
+  });
+
+  it("rejects editing another user's message", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.message.findUnique.mockResolvedValueOnce({
+      id: "msg1",
+      senderId: "user2",
+      deletedAt: null,
+    } as never);
+    const result = await editMessage({
+      messageId: "msg1",
+      content: "edited",
+    });
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Can only edit your own messages");
+  });
+
+  it("rejects editing a deleted message", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.message.findUnique.mockResolvedValueOnce({
+      id: "msg1",
+      senderId: "user1",
+      deletedAt: new Date(),
+    } as never);
+    const result = await editMessage({
+      messageId: "msg1",
+      content: "edited",
+    });
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Cannot edit a deleted message");
+  });
+
+  it("edits message successfully", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.message.findUnique.mockResolvedValueOnce({
+      id: "msg1",
+      senderId: "user1",
+      deletedAt: null,
+    } as never);
+    mockPrisma.message.update.mockResolvedValueOnce({} as never);
+
+    const result = await editMessage({
+      messageId: "msg1",
+      content: "edited content",
+    });
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("Message edited");
+  });
+});
+
+describe("deleteMessage", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns error if not authenticated", async () => {
+    mockAuth.mockResolvedValueOnce(null as never);
+    const result = await deleteMessage("msg1");
+    expect(result.success).toBe(false);
+  });
+
+  it("returns error if message not found", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.message.findUnique.mockResolvedValueOnce(null as never);
+    const result = await deleteMessage("msg1");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Message not found");
+  });
+
+  it("rejects deleting another user's message", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.message.findUnique.mockResolvedValueOnce({
+      id: "msg1",
+      senderId: "user2",
+    } as never);
+    const result = await deleteMessage("msg1");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Can only delete your own messages");
+  });
+
+  it("soft-deletes message successfully", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.message.findUnique.mockResolvedValueOnce({
+      id: "msg1",
+      senderId: "user1",
+    } as never);
+    mockPrisma.message.update.mockResolvedValueOnce({} as never);
+
+    const result = await deleteMessage("msg1");
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("Message deleted");
+  });
+});
+
+describe("markConversationRead", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns error if not authenticated", async () => {
+    mockAuth.mockResolvedValueOnce(null as never);
+    const result = await markConversationRead("conv1");
+    expect(result.success).toBe(false);
+  });
+
+  it("returns error if not a participant", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.conversationParticipant.findUnique.mockResolvedValueOnce(
+      null as never
+    );
+    const result = await markConversationRead("conv1");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Not a participant of this conversation");
+  });
+
+  it("marks as read successfully", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.conversationParticipant.findUnique.mockResolvedValueOnce({
+      id: "p1",
+    } as never);
+    mockPrisma.conversationParticipant.update.mockResolvedValueOnce(
+      {} as never
+    );
+
+    const result = await markConversationRead("conv1");
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("Marked as read");
+  });
+});
+
+describe("acceptMessageRequest", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns error if not authenticated", async () => {
+    mockAuth.mockResolvedValueOnce(null as never);
+    const result = await acceptMessageRequest("req1");
+    expect(result.success).toBe(false);
+  });
+
+  it("returns error if request not found", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.messageRequest.findUnique.mockResolvedValueOnce(null as never);
+    const result = await acceptMessageRequest("req1");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Request not found");
+  });
+
+  it("rejects if not the receiver", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.messageRequest.findUnique.mockResolvedValueOnce({
+      id: "req1",
+      receiverId: "user2",
+      status: "PENDING",
+    } as never);
+    const result = await acceptMessageRequest("req1");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Not your request");
+  });
+
+  it("rejects if not PENDING", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.messageRequest.findUnique.mockResolvedValueOnce({
+      id: "req1",
+      receiverId: "user1",
+      senderId: "user2",
+      status: "ACCEPTED",
+    } as never);
+    const result = await acceptMessageRequest("req1");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Request already handled");
+  });
+
+  it("accepts request and creates conversation", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.messageRequest.findUnique.mockResolvedValueOnce({
+      id: "req1",
+      receiverId: "user1",
+      senderId: "user2",
+      status: "PENDING",
+    } as never);
+    mockPrisma.messageRequest.update.mockResolvedValueOnce({} as never);
+    mockPrisma.conversation.create.mockResolvedValueOnce({
+      id: "conv1",
+    } as never);
+
+    const result = await acceptMessageRequest("req1");
+    expect(result.success).toBe(true);
+    expect(result.conversationId).toBe("conv1");
+  });
+});
+
+describe("declineMessageRequest", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns error if not authenticated", async () => {
+    mockAuth.mockResolvedValueOnce(null as never);
+    const result = await declineMessageRequest("req1");
+    expect(result.success).toBe(false);
+  });
+
+  it("returns error if request not found", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.messageRequest.findUnique.mockResolvedValueOnce(null as never);
+    const result = await declineMessageRequest("req1");
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects if not the receiver", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.messageRequest.findUnique.mockResolvedValueOnce({
+      id: "req1",
+      receiverId: "user2",
+      status: "PENDING",
+    } as never);
+    const result = await declineMessageRequest("req1");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Not your request");
+  });
+
+  it("declines request successfully", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.messageRequest.findUnique.mockResolvedValueOnce({
+      id: "req1",
+      receiverId: "user1",
+      status: "PENDING",
+    } as never);
+    mockPrisma.messageRequest.update.mockResolvedValueOnce({} as never);
+
+    const result = await declineMessageRequest("req1");
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("Request declined");
+  });
+});
+
+describe("getConversations", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns empty array if not authenticated", async () => {
+    mockAuth.mockResolvedValueOnce(null as never);
+    const result = await getConversations();
+    expect(result).toEqual([]);
+  });
+});
+
+describe("getMessages", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns empty if not authenticated", async () => {
+    mockAuth.mockResolvedValueOnce(null as never);
+    const result = await getMessages("conv1");
+    expect(result.messages).toEqual([]);
+  });
+
+  it("returns empty if not a participant", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.conversationParticipant.findUnique.mockResolvedValueOnce(
+      null as never
+    );
+    const result = await getMessages("conv1");
+    expect(result.messages).toEqual([]);
+  });
+});
+
+describe("getMessageRequests", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns empty if not authenticated", async () => {
+    mockAuth.mockResolvedValueOnce(null as never);
+    const result = await getMessageRequests();
+    expect(result).toEqual([]);
+  });
+});
+
+describe("searchUsers", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns empty if not authenticated", async () => {
+    mockAuth.mockResolvedValueOnce(null as never);
+    const result = await searchUsers("test");
+    expect(result).toEqual([]);
+  });
+
+  it("returns empty for short queries", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    const result = await searchUsers("a");
+    expect(result).toEqual([]);
+  });
+});
