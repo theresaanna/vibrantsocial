@@ -39,8 +39,9 @@ model User {
   likes     Like[]
   bookmarks Bookmark[]
   reposts   Repost[]
-  followers Follow[] @relation("followers")
-  following Follow[] @relation("following")
+  followers    Follow[]       @relation("followers")
+  following    Follow[]       @relation("following")
+  bioRevisions BioRevision[]
 }
 
 model Account {
@@ -143,6 +144,17 @@ model Repost {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
+}
+
+model BioRevision {
+  id        String   @id @default(cuid())
+  userId    String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 model Follow {

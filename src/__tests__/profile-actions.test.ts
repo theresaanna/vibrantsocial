@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { updateProfile, removeAvatar } from "@/app/profile/actions";
+import {
+  updateProfile,
+  removeAvatar,
+  getBioRevisions,
+  restoreBioRevision,
+} from "@/app/profile/actions";
 
 vi.mock("@/auth", () => ({
   auth: vi.fn(),
@@ -10,6 +15,13 @@ vi.mock("@/lib/prisma", () => ({
     user: {
       findUnique: vi.fn(),
       update: vi.fn(),
+    },
+    bioRevision: {
+      create: vi.fn(),
+      count: vi.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      deleteMany: vi.fn(),
     },
   },
 }));
@@ -36,9 +48,18 @@ function makeFormData(data: Record<string, string>): FormData {
 
 const prevState = { success: false, message: "" };
 
+/** Helper: set up auth + findUnique for bio-aware updateProfile calls */
+function setupAuthAndBio(userId: string, currentBio: string | null) {
+  mockAuth.mockResolvedValueOnce({ user: { id: userId } } as never);
+  // First findUnique may be for username check, second for bio fetch
+  // For tests without username, only bio fetch is called
+}
+
 describe("updateProfile", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: no revisions to prune
+    mockPrisma.bioRevision.count.mockResolvedValue(0 as never);
   });
 
   it("returns error if not authenticated", async () => {
@@ -50,7 +71,10 @@ describe("updateProfile", () => {
 
   it("validates username format - too short", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
-    const result = await updateProfile(prevState, makeFormData({ username: "ab" }));
+    const result = await updateProfile(
+      prevState,
+      makeFormData({ username: "ab" })
+    );
     expect(result.success).toBe(false);
     expect(result.message).toContain("3-30 characters");
   });
@@ -77,7 +101,10 @@ describe("updateProfile", () => {
 
   it("accepts valid usernames", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    // username check
     mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
+    // bio fetch
+    mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
     mockPrisma.user.update.mockResolvedValueOnce({} as never);
 
     const result = await updateProfile(
@@ -104,10 +131,13 @@ describe("updateProfile", () => {
 
   it("allows user to keep their own username", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    // username check
     mockPrisma.user.findUnique.mockResolvedValueOnce({
       id: "user1",
       username: "myusername",
     } as never);
+    // bio fetch
+    mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
     mockPrisma.user.update.mockResolvedValueOnce({} as never);
 
     const result = await updateProfile(
@@ -119,7 +149,10 @@ describe("updateProfile", () => {
 
   it("updates profile with all fields", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    // username check
     mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
+    // bio fetch
+    mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
     mockPrisma.user.update.mockResolvedValueOnce({} as never);
 
     const result = await updateProfile(
@@ -144,6 +177,8 @@ describe("updateProfile", () => {
 
   it("sets empty strings to null", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    // bio fetch
+    mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
     mockPrisma.user.update.mockResolvedValueOnce({} as never);
 
     await updateProfile(
@@ -153,6 +188,78 @@ describe("updateProfile", () => {
     expect(mockPrisma.user.update).toHaveBeenCalledWith({
       where: { id: "user1" },
       data: { username: null, displayName: null, bio: null },
+    });
+  });
+
+  it("creates a bio revision when bio changes", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    // bio fetch — current bio exists
+    mockPrisma.user.findUnique.mockResolvedValueOnce({
+      bio: '{"root":{"old":true}}',
+    } as never);
+    mockPrisma.bioRevision.create.mockResolvedValueOnce({} as never);
+    mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+    const result = await updateProfile(
+      prevState,
+      makeFormData({ bio: '{"root":{"new":true}}' })
+    );
+    expect(result.success).toBe(true);
+    expect(mockPrisma.bioRevision.create).toHaveBeenCalledWith({
+      data: { userId: "user1", content: '{"root":{"old":true}}' },
+    });
+  });
+
+  it("does not create a revision when bio is unchanged", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    // bio fetch — same content
+    mockPrisma.user.findUnique.mockResolvedValueOnce({
+      bio: '{"root":{}}',
+    } as never);
+    mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+    const result = await updateProfile(
+      prevState,
+      makeFormData({ bio: '{"root":{}}' })
+    );
+    expect(result.success).toBe(true);
+    expect(mockPrisma.bioRevision.create).not.toHaveBeenCalled();
+  });
+
+  it("does not create a revision when old bio is null", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
+    mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+    const result = await updateProfile(
+      prevState,
+      makeFormData({ bio: '{"root":{}}' })
+    );
+    expect(result.success).toBe(true);
+    expect(mockPrisma.bioRevision.create).not.toHaveBeenCalled();
+  });
+
+  it("prunes old revisions when count exceeds 20", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.user.findUnique.mockResolvedValueOnce({
+      bio: "old bio",
+    } as never);
+    mockPrisma.bioRevision.create.mockResolvedValueOnce({} as never);
+    // After creating, count is 21
+    mockPrisma.bioRevision.count.mockResolvedValueOnce(21 as never);
+    mockPrisma.bioRevision.findMany.mockResolvedValueOnce([
+      { id: "oldest" },
+    ] as never);
+    mockPrisma.bioRevision.deleteMany.mockResolvedValueOnce({} as never);
+    mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+    const result = await updateProfile(
+      prevState,
+      makeFormData({ bio: "new bio" })
+    );
+    expect(result.success).toBe(true);
+    expect(mockPrisma.bioRevision.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ["oldest"] } },
     });
   });
 });
@@ -172,7 +279,8 @@ describe("removeAvatar", () => {
   it("deletes blob and sets avatar to null", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPrisma.user.findUnique.mockResolvedValueOnce({
-      avatar: "https://abc.public.blob.vercel-storage.com/avatars/user1-123.jpg",
+      avatar:
+        "https://abc.public.blob.vercel-storage.com/avatars/user1-123.jpg",
     } as never);
     mockPrisma.user.update.mockResolvedValueOnce({} as never);
 
@@ -210,5 +318,116 @@ describe("removeAvatar", () => {
     const result = await removeAvatar();
     expect(result.success).toBe(true);
     expect(mockPrisma.user.update).toHaveBeenCalled();
+  });
+});
+
+describe("getBioRevisions", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns empty array if not authenticated", async () => {
+    mockAuth.mockResolvedValueOnce(null as never);
+    const result = await getBioRevisions();
+    expect(result).toEqual([]);
+  });
+
+  it("returns revisions for authenticated user", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    const revisions = [
+      { id: "rev1", content: "bio v2", createdAt: new Date("2025-01-02") },
+      { id: "rev2", content: "bio v1", createdAt: new Date("2025-01-01") },
+    ];
+    mockPrisma.bioRevision.findMany.mockResolvedValueOnce(revisions as never);
+
+    const result = await getBioRevisions();
+    expect(result).toEqual(revisions);
+    expect(mockPrisma.bioRevision.findMany).toHaveBeenCalledWith({
+      where: { userId: "user1" },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      select: { id: true, content: true, createdAt: true },
+    });
+  });
+});
+
+describe("restoreBioRevision", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPrisma.bioRevision.count.mockResolvedValue(0 as never);
+  });
+
+  it("returns error if not authenticated", async () => {
+    mockAuth.mockResolvedValueOnce(null as never);
+    const result = await restoreBioRevision("rev1");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Not authenticated");
+  });
+
+  it("returns error if revision not found", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.bioRevision.findUnique.mockResolvedValueOnce(null as never);
+
+    const result = await restoreBioRevision("nonexistent");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Revision not found");
+  });
+
+  it("returns error if revision belongs to another user", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.bioRevision.findUnique.mockResolvedValueOnce({
+      id: "rev1",
+      userId: "other-user",
+      content: "someone else's bio",
+    } as never);
+
+    const result = await restoreBioRevision("rev1");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Revision not found");
+  });
+
+  it("restores bio and saves current as revision", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.bioRevision.findUnique.mockResolvedValueOnce({
+      id: "rev1",
+      userId: "user1",
+      content: "old bio content",
+    } as never);
+    mockPrisma.user.findUnique.mockResolvedValueOnce({
+      bio: "current bio content",
+    } as never);
+    mockPrisma.bioRevision.create.mockResolvedValueOnce({} as never);
+    mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+    const result = await restoreBioRevision("rev1");
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("Bio restored");
+    expect(result.restoredContent).toBe("old bio content");
+
+    // Should save current bio as a revision
+    expect(mockPrisma.bioRevision.create).toHaveBeenCalledWith({
+      data: { userId: "user1", content: "current bio content" },
+    });
+
+    // Should update user bio with restored content
+    expect(mockPrisma.user.update).toHaveBeenCalledWith({
+      where: { id: "user1" },
+      data: { bio: "old bio content" },
+    });
+  });
+
+  it("does not save revision if current bio is null", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.bioRevision.findUnique.mockResolvedValueOnce({
+      id: "rev1",
+      userId: "user1",
+      content: "old bio",
+    } as never);
+    mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
+    mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+    const result = await restoreBioRevision("rev1");
+    expect(result.success).toBe(true);
+    expect(mockPrisma.bioRevision.create).not.toHaveBeenCalled();
   });
 });

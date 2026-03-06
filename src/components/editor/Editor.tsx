@@ -92,7 +92,7 @@ export function Editor({
   };
 
   return (
-    <div className="overflow-hidden rounded-lg border border-zinc-300 dark:border-zinc-600">
+    <div className="rounded-lg border border-zinc-300 dark:border-zinc-600">
       {inputName && <input type="hidden" name={inputName} value={editorJson} />}
       <LexicalComposer initialConfig={editorConfig}>
         <Toolbar />
