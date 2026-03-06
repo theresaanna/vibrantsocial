@@ -5,12 +5,40 @@ import { usePathname } from "next/navigation";
 import { usePresenceListener } from "ably/react";
 import Link from "next/link";
 import { getConversations } from "@/app/chat/actions";
+import { useAblyReady } from "@/app/providers";
 import { PresenceIndicator } from "@/components/chat/presence-indicator";
 import { timeAgo } from "@/lib/time";
 import type { ConversationListItem } from "@/types/chat";
 
 const PRESENCE_CHANNEL = "presence:global";
 const MAX_VISIBLE = 8;
+
+function PresenceAwareList({
+  conversations,
+  onClose,
+}: {
+  conversations: ConversationListItem[];
+  onClose: () => void;
+}) {
+  const { presenceData } = usePresenceListener(PRESENCE_CHANNEL);
+  const onlineUserIds = useMemo(
+    () => new Set(presenceData.map((m) => m.clientId)),
+    [presenceData]
+  );
+
+  return (
+    <>
+      {conversations.map((conv) => (
+        <ChatPaneItem
+          key={conv.id}
+          conversation={conv}
+          onlineUserIds={onlineUserIds}
+          onClose={onClose}
+        />
+      ))}
+    </>
+  );
+}
 
 interface ChatNavProps {
   initialConversations: ConversationListItem[];
@@ -22,12 +50,7 @@ export function ChatNav({ initialConversations }: ChatNavProps) {
     useState<ConversationListItem[]>(initialConversations);
   const pathname = usePathname();
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const { presenceData } = usePresenceListener(PRESENCE_CHANNEL);
-  const onlineUserIds = useMemo(
-    () => new Set(presenceData.map((m) => m.clientId)),
-    [presenceData]
-  );
+  const ablyReady = useAblyReady();
 
   const totalUnread = conversations.reduce(
     (sum, c) => sum + c.unreadCount,
@@ -96,12 +119,17 @@ export function ChatNav({ initialConversations }: ChatNavProps) {
             <div className="px-4 py-8 text-center text-sm text-zinc-400">
               No conversations yet
             </div>
+          ) : ablyReady ? (
+            <PresenceAwareList
+              conversations={recent}
+              onClose={() => setIsOpen(false)}
+            />
           ) : (
             recent.map((conv) => (
               <ChatPaneItem
                 key={conv.id}
                 conversation={conv}
-                onlineUserIds={onlineUserIds}
+                onlineUserIds={new Set()}
                 onClose={() => setIsOpen(false)}
               />
             ))
