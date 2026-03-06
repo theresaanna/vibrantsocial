@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { ChannelProvider } from "ably/react";
+import { useState, useEffect, useMemo } from "react";
+import { ChannelProvider, usePresenceListener } from "ably/react";
 import { ConversationList } from "@/components/chat/conversation-list";
 import { MessageRequestList } from "@/components/chat/message-request-list";
 import { MessageThread } from "@/components/chat/message-thread";
@@ -14,6 +14,8 @@ import type {
   ConversationWithParticipants,
 } from "@/types/chat";
 
+const PRESENCE_CHANNEL = "presence:global";
+
 interface ConversationPageClientProps {
   conversationId: string;
   conversations: ConversationListItem[];
@@ -22,6 +24,70 @@ interface ConversationPageClientProps {
   conversation: ConversationWithParticipants;
   currentUserId: string;
   phoneVerified: boolean;
+}
+
+function PresenceAwareSidebar({
+  conversations,
+  activeId,
+  messageRequests,
+}: {
+  conversations: ConversationListItem[];
+  activeId: string;
+  messageRequests: MessageRequestData[];
+}) {
+  const { presenceData } = usePresenceListener(PRESENCE_CHANNEL);
+  const onlineUserIds = useMemo(
+    () => new Set(presenceData.map((m) => m.clientId)),
+    [presenceData]
+  );
+
+  return (
+    <>
+      <ConversationList
+        conversations={conversations}
+        activeId={activeId}
+        onlineUserIds={onlineUserIds}
+      />
+      <MessageRequestList requests={messageRequests} />
+    </>
+  );
+}
+
+function PresenceAwareThread({
+  conversationId,
+  initialMessages,
+  conversation,
+  currentUserId,
+  phoneVerified,
+}: {
+  conversationId: string;
+  initialMessages: MessageData[];
+  conversation: ConversationWithParticipants;
+  currentUserId: string;
+  phoneVerified: boolean;
+}) {
+  const { presenceData } = usePresenceListener(PRESENCE_CHANNEL);
+  const onlineUserIds = useMemo(
+    () => new Set(presenceData.map((m) => m.clientId)),
+    [presenceData]
+  );
+
+  return (
+    <ChannelProvider channelName={`chat:${conversationId}`}>
+      <ChannelProvider channelName={`typing:${conversationId}`}>
+        <ChannelProvider channelName={`read:${conversationId}`}>
+          <MessageThread
+            conversationId={conversationId}
+            initialMessages={initialMessages}
+            conversation={conversation}
+            currentUserId={currentUserId}
+            onlineUserIds={onlineUserIds}
+            phoneVerified={phoneVerified}
+          />
+        </ChannelProvider>
+      </ChannelProvider>
+    </ChannelProvider>
+  );
 }
 
 export function ConversationPageClient({
@@ -50,34 +116,38 @@ export function ConversationPageClient({
 
   return (
     <main
-      className="mx-auto flex max-w-5xl px-4 py-6"
+      className="mx-auto flex max-w-5xl px-2 py-2 md:px-4 md:py-6"
       style={{ height: "calc(100vh - 57px)" }}
     >
       {/* Sidebar */}
-      <div className="flex w-80 flex-shrink-0 flex-col overflow-hidden rounded-l-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <ConversationList
-          conversations={liveConversations}
-          activeId={conversationId}
-        />
-        <MessageRequestList requests={messageRequests} />
+      <div className="hidden flex-col overflow-hidden rounded-l-2xl border border-zinc-200 bg-white md:flex md:w-80 md:flex-shrink-0 dark:border-zinc-800 dark:bg-zinc-900">
+        {ablyReady ? (
+          <PresenceAwareSidebar
+            conversations={liveConversations}
+            activeId={conversationId}
+            messageRequests={messageRequests}
+          />
+        ) : (
+          <>
+            <ConversationList
+              conversations={liveConversations}
+              activeId={conversationId}
+            />
+            <MessageRequestList requests={messageRequests} />
+          </>
+        )}
       </div>
 
       {/* Message thread */}
-      <div className="flex flex-1 flex-col overflow-hidden rounded-r-2xl border border-l-0 border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="flex w-full flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white md:w-auto md:flex-1 md:rounded-l-none md:rounded-r-2xl md:border-l-0 dark:border-zinc-800 dark:bg-zinc-900">
         {ablyReady ? (
-          <ChannelProvider channelName={`chat:${conversationId}`}>
-            <ChannelProvider channelName={`typing:${conversationId}`}>
-              <ChannelProvider channelName={`read:${conversationId}`}>
-                <MessageThread
-                  conversationId={conversationId}
-                  initialMessages={initialMessages}
-                  conversation={conversation}
-                  currentUserId={currentUserId}
-                  phoneVerified={phoneVerified}
-                />
-              </ChannelProvider>
-            </ChannelProvider>
-          </ChannelProvider>
+          <PresenceAwareThread
+            conversationId={conversationId}
+            initialMessages={initialMessages}
+            conversation={conversation}
+            currentUserId={currentUserId}
+            phoneVerified={phoneVerified}
+          />
         ) : (
           <div className="flex flex-1 items-center justify-center">
             <p className="text-sm text-zinc-400">Connecting...</p>

@@ -501,6 +501,39 @@ describe("markConversationRead", () => {
     expect(result.success).toBe(true);
     expect(result.message).toBe("Marked as read");
   });
+
+  it("publishes read event to Ably after updating DB", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.conversationParticipant.findUnique.mockResolvedValueOnce({
+      id: "p1",
+    } as never);
+    mockPrisma.conversationParticipant.update.mockResolvedValueOnce(
+      {} as never
+    );
+
+    await markConversationRead("conv1");
+    expect(mockAblyPublish).toHaveBeenCalledWith(
+      "read",
+      expect.objectContaining({
+        userId: "user1",
+        timestamp: expect.any(String),
+      })
+    );
+  });
+
+  it("succeeds even if Ably publish fails", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.conversationParticipant.findUnique.mockResolvedValueOnce({
+      id: "p1",
+    } as never);
+    mockPrisma.conversationParticipant.update.mockResolvedValueOnce(
+      {} as never
+    );
+    mockAblyPublish.mockRejectedValueOnce(new Error("Ably error"));
+
+    const result = await markConversationRead("conv1");
+    expect(result.success).toBe(true);
+  });
 });
 
 describe("acceptMessageRequest", () => {
@@ -615,6 +648,103 @@ describe("getConversations", () => {
     const result = await getConversations();
     expect(result).toEqual([]);
   });
+
+  it("returns conversations with correct structure", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.conversationParticipant.findMany.mockResolvedValueOnce([
+      {
+        userId: "user1",
+        lastReadAt: new Date("2024-01-01T12:00:00Z"),
+        conversation: {
+          id: "conv1",
+          isGroup: false,
+          name: null,
+          avatarUrl: null,
+          participants: [
+            { userId: "user1", user: { id: "user1", username: "me", displayName: "Me", name: "Me", avatar: null, image: null } },
+            { userId: "user2", user: { id: "user2", username: "alice", displayName: "Alice", name: "Alice", avatar: null, image: null } },
+          ],
+          messages: [{ content: "hello", senderId: "user2", createdAt: new Date("2024-01-01T11:00:00Z"), deletedAt: null }],
+        },
+      },
+    ] as never);
+
+    const result = await getConversations();
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("conv1");
+    expect(result[0].participants).toHaveLength(1);
+    expect(result[0].participants[0].id).toBe("user2");
+    expect(result[0].lastMessage?.content).toBe("hello");
+  });
+
+  it("calculates unread count as 1 when lastReadAt is null", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.conversationParticipant.findMany.mockResolvedValueOnce([
+      {
+        userId: "user1",
+        lastReadAt: null,
+        conversation: {
+          id: "conv1",
+          isGroup: false,
+          name: null,
+          avatarUrl: null,
+          participants: [
+            { userId: "user1", user: { id: "user1", username: "me", displayName: "Me", name: "Me", avatar: null, image: null } },
+          ],
+          messages: [{ content: "hi", senderId: "user2", createdAt: new Date(), deletedAt: null }],
+        },
+      },
+    ] as never);
+
+    const result = await getConversations();
+    expect(result[0].unreadCount).toBe(1);
+  });
+
+  it("calculates unread count as 0 when lastReadAt is after last message", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.conversationParticipant.findMany.mockResolvedValueOnce([
+      {
+        userId: "user1",
+        lastReadAt: new Date("2024-01-02T00:00:00Z"),
+        conversation: {
+          id: "conv1",
+          isGroup: false,
+          name: null,
+          avatarUrl: null,
+          participants: [
+            { userId: "user1", user: { id: "user1", username: "me", displayName: "Me", name: "Me", avatar: null, image: null } },
+          ],
+          messages: [{ content: "hi", senderId: "user2", createdAt: new Date("2024-01-01T10:00:00Z"), deletedAt: null }],
+        },
+      },
+    ] as never);
+
+    const result = await getConversations();
+    expect(result[0].unreadCount).toBe(0);
+  });
+
+  it("returns 0 unread when no messages", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.conversationParticipant.findMany.mockResolvedValueOnce([
+      {
+        userId: "user1",
+        lastReadAt: null,
+        conversation: {
+          id: "conv1",
+          isGroup: false,
+          name: null,
+          avatarUrl: null,
+          participants: [
+            { userId: "user1", user: { id: "user1", username: "me", displayName: "Me", name: "Me", avatar: null, image: null } },
+          ],
+          messages: [],
+        },
+      },
+    ] as never);
+
+    const result = await getConversations();
+    expect(result[0].unreadCount).toBe(0);
+  });
 });
 
 describe("getMessages", () => {
@@ -633,6 +763,53 @@ describe("getMessages", () => {
     );
     const result = await getMessages("conv1");
     expect(result.messages).toEqual([]);
+  });
+
+  it("returns messages in chronological order", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.conversationParticipant.findUnique.mockResolvedValueOnce({ id: "p1" } as never);
+    // DB returns in desc order (newest first)
+    mockPrisma.message.findMany.mockResolvedValueOnce([
+      { id: "m2", content: "second", createdAt: new Date("2024-01-01T11:00:00Z"), sender: {} },
+      { id: "m1", content: "first", createdAt: new Date("2024-01-01T10:00:00Z"), sender: {} },
+    ] as never);
+
+    const result = await getMessages("conv1");
+    // Should be reversed to chronological (oldest first)
+    expect(result.messages[0].id).toBe("m1");
+    expect(result.messages[1].id).toBe("m2");
+    expect(result.nextCursor).toBeNull();
+  });
+
+  it("returns pagination cursor when more than 50 messages", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.conversationParticipant.findUnique.mockResolvedValueOnce({ id: "p1" } as never);
+    // 51 messages means there are more
+    const messages = Array.from({ length: 51 }, (_, i) => ({
+      id: `m${i}`,
+      content: `msg ${i}`,
+      createdAt: new Date(`2024-01-01T${String(i).padStart(2, "0")}:00:00Z`),
+      sender: {},
+    }));
+    mockPrisma.message.findMany.mockResolvedValueOnce(messages as never);
+
+    const result = await getMessages("conv1");
+    expect(result.messages).toHaveLength(50);
+    expect(result.nextCursor).toBeTruthy();
+  });
+
+  it("passes cursor to query when provided", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.conversationParticipant.findUnique.mockResolvedValueOnce({ id: "p1" } as never);
+    mockPrisma.message.findMany.mockResolvedValueOnce([] as never);
+
+    await getMessages("conv1", "cursor-id");
+    expect(mockPrisma.message.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cursor: { id: "cursor-id" },
+        skip: 1,
+      })
+    );
   });
 });
 
