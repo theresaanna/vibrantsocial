@@ -66,7 +66,7 @@ describe("scanImageBuffer", () => {
     expect(result.safe).toBe(true);
     expect(result.classification).toBe("no-known-match");
     expect(fetch).toHaveBeenCalledWith(
-      "https://shield.projectarachnid.ca/v1/media/",
+      "https://shield.projectarachnid.com/v1/media/",
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
