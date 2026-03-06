@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { requirePhoneVerification } from "@/lib/phone-gate";
+import { getAblyRestClient } from "@/lib/ably";
 import type {
   ActionState,
   ConversationListItem,
@@ -315,6 +316,7 @@ export async function sendMessage(data: {
       senderId: session.user.id,
       content: trimmedContent,
     },
+    include: { sender: { select: userSelect } },
   });
 
   // Update conversation timestamp for ordering
@@ -330,6 +332,24 @@ export async function sendMessage(data: {
     },
     data: { lastReadAt: new Date() },
   });
+
+  // Publish to Ably for real-time delivery
+  try {
+    const ably = getAblyRestClient();
+    const channel = ably.channels.get(`chat:${conversationId}`);
+    await channel.publish("new", {
+      id: message.id,
+      conversationId,
+      senderId: message.senderId,
+      content: message.content,
+      sender: JSON.stringify(message.sender),
+      editedAt: null,
+      deletedAt: null,
+      createdAt: message.createdAt.toISOString(),
+    });
+  } catch {
+    // Non-critical — message is saved, real-time delivery failed
+  }
 
   return { success: true, message: "Message sent", messageId: message.id };
 }
@@ -366,10 +386,23 @@ export async function editMessage(data: {
     return { success: false, message: "Cannot edit a deleted message" };
   }
 
-  await prisma.message.update({
+  const updated = await prisma.message.update({
     where: { id: messageId },
     data: { content: trimmedContent, editedAt: new Date() },
   });
+
+  // Publish edit to Ably
+  try {
+    const ably = getAblyRestClient();
+    const channel = ably.channels.get(`chat:${message.conversationId}`);
+    await channel.publish("edit", {
+      id: messageId,
+      content: trimmedContent,
+      editedAt: updated.editedAt!.toISOString(),
+    });
+  } catch {
+    // Non-critical
+  }
 
   return { success: true, message: "Message edited" };
 }
@@ -390,10 +423,22 @@ export async function deleteMessage(messageId: string): Promise<ActionState> {
     return { success: false, message: "Can only delete your own messages" };
   }
 
-  await prisma.message.update({
+  const updated = await prisma.message.update({
     where: { id: messageId },
     data: { deletedAt: new Date() },
   });
+
+  // Publish delete to Ably
+  try {
+    const ably = getAblyRestClient();
+    const channel = ably.channels.get(`chat:${message.conversationId}`);
+    await channel.publish("delete", {
+      id: messageId,
+      deletedAt: updated.deletedAt!.toISOString(),
+    });
+  } catch {
+    // Non-critical
+  }
 
   return { success: true, message: "Message deleted" };
 }

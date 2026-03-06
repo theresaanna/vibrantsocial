@@ -2,7 +2,7 @@
 
 import type * as Ably from "ably";
 import { useChannel } from "ably/react";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import type { MessageData } from "@/types/chat";
 
 export function useChatMessages(
@@ -59,39 +59,5 @@ export function useChatMessages(
     }
   });
 
-  const publishMessage = useCallback(
-    (channel: { publish: (name: string, data: unknown) => void }, msg: MessageData) => {
-      channel.publish("new", {
-        ...msg,
-        sender: JSON.stringify(msg.sender),
-        editedAt: msg.editedAt?.toISOString() ?? null,
-        deletedAt: msg.deletedAt?.toISOString() ?? null,
-        createdAt: msg.createdAt.toISOString(),
-      });
-    },
-    []
-  );
-
-  const publishEdit = useCallback(
-    (channel: { publish: (name: string, data: unknown) => void }, msg: { id: string; content: string; editedAt: Date }) => {
-      channel.publish("edit", {
-        id: msg.id,
-        content: msg.content,
-        editedAt: msg.editedAt.toISOString(),
-      });
-    },
-    []
-  );
-
-  const publishDelete = useCallback(
-    (channel: { publish: (name: string, data: unknown) => void }, msg: { id: string; deletedAt: Date }) => {
-      channel.publish("delete", {
-        id: msg.id,
-        deletedAt: msg.deletedAt.toISOString(),
-      });
-    },
-    []
-  );
-
-  return { messages, setMessages, publishMessage, publishEdit, publishDelete, channelName };
+  return { messages, setMessages, channelName };
 }
