@@ -17,7 +17,7 @@ export function BioEditor({ initialContent }: BioEditorProps) {
           initialContent={initialContent}
           inputName="bio"
           placeholder="Tell us about yourself..."
-          minHeight="150px"
+          minHeight="188px"
         />
       </div>
     </div>

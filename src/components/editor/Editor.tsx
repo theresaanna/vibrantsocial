@@ -96,12 +96,11 @@ export function Editor({
       {inputName && <input type="hidden" name={inputName} value={editorJson} />}
       <LexicalComposer initialConfig={editorConfig}>
         <Toolbar />
-        <div className="relative px-3 py-2">
+        <div className="relative px-3 py-2 resize-y overflow-auto" style={{ minHeight }}>
           <RichTextPlugin
             contentEditable={
               <ContentEditable
-                className="outline-none text-sm text-zinc-900 dark:text-zinc-100"
-                style={{ minHeight }}
+                className="outline-none text-sm text-zinc-900 dark:text-zinc-100 h-full"
               />
             }
             placeholder={
