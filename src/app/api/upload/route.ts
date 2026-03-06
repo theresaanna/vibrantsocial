@@ -94,20 +94,21 @@ export async function POST(req: Request) {
   }
 
   const arrayBuf = await file.arrayBuffer();
-  let buffer: Buffer | Uint8Array = Buffer.from(new Uint8Array(arrayBuf));
+  let buffer = Buffer.from(new Uint8Array(arrayBuf));
   let ext = file.name.split(".").pop() ?? "bin";
+  let converted = false;
 
   // Convert HEIC/HEIF to WebP
   if (category === "convertible-image") {
-    const converted = await convertToWebP(buffer);
-    buffer = converted.buffer;
-    ext = converted.extension;
+    const result = await convertToWebP(buffer);
+    buffer = Buffer.from(result.buffer);
+    ext = result.extension;
+    converted = true;
   }
 
   // CSAM scanning for all image types (standard + converted)
   if (category === "image" || category === "convertible-image") {
-    const uploadMimeType =
-      category === "convertible-image" ? "image/webp" : file.type;
+    const uploadMimeType = converted ? "image/webp" : file.type;
     const scanResult = await scanImageBuffer(buffer, uploadMimeType);
 
     if (!scanResult.safe) {
@@ -130,7 +131,7 @@ export async function POST(req: Request) {
 
   const filename = `uploads/${session.user.id}-${Date.now()}.${ext}`;
 
-  const uploadBody = category === "convertible-image" ? Buffer.from(buffer) : file;
+  const uploadBody = converted ? buffer : file;
 
   const blob = await put(filename, uploadBody, {
     access: "public",
