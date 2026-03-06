@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { PostCard } from "@/components/post-card";
 import { FollowButton } from "@/components/follow-button";
+import { ProfileShareButton } from "@/components/profile-share-button";
 import { BioContent } from "@/components/bio-content";
 
 interface ProfilePageProps {
@@ -174,9 +175,12 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
                   </p>
                 </div>
 
-                {currentUserId && !isOwnProfile && (
-                  <FollowButton userId={user.id} isFollowing={isFollowing} />
-                )}
+                <div className="flex items-center gap-2">
+                  {currentUserId && !isOwnProfile && (
+                    <FollowButton userId={user.id} isFollowing={isFollowing} />
+                  )}
+                  <ProfileShareButton username={user.username!} />
+                </div>
               </div>
 
               {user.bio && (

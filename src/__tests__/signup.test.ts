@@ -39,7 +39,21 @@ function makeFormData(data: Record<string, string>): FormData {
   return fd;
 }
 
+// A valid date of birth for a 20-year-old
+function validDob(): string {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 20);
+  return d.toISOString().split("T")[0];
+}
+
 const prevState = { success: false, message: "" };
+
+const validFields = {
+  email: "user@example.com",
+  dateOfBirth: validDob(),
+  password: "password123",
+  confirmPassword: "password123",
+};
 
 describe("signup", () => {
   beforeEach(() => {
@@ -55,7 +69,24 @@ describe("signup", () => {
   it("requires email to be present", async () => {
     const result = await signup(
       prevState,
-      makeFormData({ password: "password123", confirmPassword: "password123" })
+      makeFormData({
+        dateOfBirth: validDob(),
+        password: "password123",
+        confirmPassword: "password123",
+      })
+    );
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("All fields are required");
+  });
+
+  it("requires dateOfBirth to be present", async () => {
+    const result = await signup(
+      prevState,
+      makeFormData({
+        email: "user@example.com",
+        password: "password123",
+        confirmPassword: "password123",
+      })
     );
     expect(result.success).toBe(false);
     expect(result.message).toBe("All fields are required");
@@ -65,9 +96,8 @@ describe("signup", () => {
     const result = await signup(
       prevState,
       makeFormData({
+        ...validFields,
         email: "notanemail",
-        password: "password123",
-        confirmPassword: "password123",
       })
     );
     expect(result.success).toBe(false);
@@ -78,20 +108,61 @@ describe("signup", () => {
     const result = await signup(
       prevState,
       makeFormData({
+        ...validFields,
         email: "userexample.com",
-        password: "password123",
-        confirmPassword: "password123",
       })
     );
     expect(result.success).toBe(false);
     expect(result.message).toBe("Invalid email address");
   });
 
+  it("rejects invalid date of birth", async () => {
+    const result = await signup(
+      prevState,
+      makeFormData({
+        ...validFields,
+        dateOfBirth: "not-a-date",
+      })
+    );
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Invalid date of birth");
+  });
+
+  it("rejects future date of birth", async () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const result = await signup(
+      prevState,
+      makeFormData({
+        ...validFields,
+        dateOfBirth: tomorrow.toISOString().split("T")[0],
+      })
+    );
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Date of birth cannot be in the future");
+  });
+
+  it("rejects users under 13 years old", async () => {
+    const tenYearsAgo = new Date();
+    tenYearsAgo.setFullYear(tenYearsAgo.getFullYear() - 10);
+
+    const result = await signup(
+      prevState,
+      makeFormData({
+        ...validFields,
+        dateOfBirth: tenYearsAgo.toISOString().split("T")[0],
+      })
+    );
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("You must be at least 13 years old to sign up");
+  });
+
   it("requires password to be at least 8 characters", async () => {
     const result = await signup(
       prevState,
       makeFormData({
-        email: "user@example.com",
+        ...validFields,
         password: "short",
         confirmPassword: "short",
       })
@@ -104,7 +175,7 @@ describe("signup", () => {
     const result = await signup(
       prevState,
       makeFormData({
-        email: "user@example.com",
+        ...validFields,
         password: "password123",
         confirmPassword: "password456",
       })
@@ -121,16 +192,15 @@ describe("signup", () => {
     const result = await signup(
       prevState,
       makeFormData({
+        ...validFields,
         email: "existing@example.com",
-        password: "password123",
-        confirmPassword: "password123",
       })
     );
     expect(result.success).toBe(false);
     expect(result.message).toBe("An account with this email already exists");
   });
 
-  it("creates user and auto-follows first user on success", async () => {
+  it("creates user with dateOfBirth and auto-follows first user on success", async () => {
     mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
     mockPrisma.user.create.mockResolvedValueOnce({
       id: "new-user-id",
@@ -145,9 +215,8 @@ describe("signup", () => {
       signup(
         prevState,
         makeFormData({
+          ...validFields,
           email: "new@example.com",
-          password: "password123",
-          confirmPassword: "password123",
         })
       )
     ).rejects.toThrow("NEXT_REDIRECT");
@@ -156,6 +225,7 @@ describe("signup", () => {
       data: expect.objectContaining({
         email: "new@example.com",
         passwordHash: "hashed_password",
+        dateOfBirth: expect.any(Date),
         emailVerified: expect.any(Date),
       }),
     });
@@ -178,9 +248,8 @@ describe("signup", () => {
       signup(
         prevState,
         makeFormData({
+          ...validFields,
           email: "USER@EXAMPLE.COM",
-          password: "password123",
-          confirmPassword: "password123",
         })
       )
     ).rejects.toThrow();
@@ -200,9 +269,8 @@ describe("signup", () => {
       signup(
         prevState,
         makeFormData({
+          ...validFields,
           email: "first@example.com",
-          password: "password123",
-          confirmPassword: "password123",
         })
       )
     ).rejects.toThrow();

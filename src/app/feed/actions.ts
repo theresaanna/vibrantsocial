@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { requirePhoneVerification } from "@/lib/phone-gate";
+import { requireMinimumAge } from "@/lib/age-gate";
 import { revalidatePath } from "next/cache";
 
 interface PostState {
@@ -24,6 +25,14 @@ export async function createPost(
     return {
       success: false,
       message: "Phone verification required to post",
+    };
+  }
+
+  const isOldEnough = await requireMinimumAge(session.user.id, 18);
+  if (!isOldEnough) {
+    return {
+      success: false,
+      message: "You must be 18 or older to post",
     };
   }
 
