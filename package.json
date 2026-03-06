@@ -37,6 +37,7 @@
     "@prisma/client": "^6.19.2",
     "@types/katex": "^0.16.8",
     "@vercel/blob": "^2.3.1",
+    "ably": "^2.19.0",
     "bcryptjs": "^3.0.3",
     "katex": "^0.16.35",
     "lexical": "^0.41.0",
