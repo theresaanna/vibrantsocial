@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useChannel } from "ably/react";
+import Link from "next/link";
 import { MessageBubble } from "./message-bubble";
 import { MessageInput } from "./message-input";
 import { TypingIndicator } from "./typing-indicator";
@@ -55,7 +56,7 @@ export function MessageThread({
     conversationId,
     currentUserId
   );
-  const { readTimestamps, publishRead } = useReadReceipts(conversationId);
+  const { readTimestamps } = useReadReceipts(conversationId);
 
   // Build participant lookup map
   const participantMap = useMemo(() => {
@@ -105,11 +106,10 @@ export function MessageThread({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  // Mark conversation as read when opened
+  // Mark conversation as read when opened (server publishes to Ably)
   useEffect(() => {
     markConversationRead(conversationId);
-    publishRead(currentUserId);
-  }, [conversationId, currentUserId, publishRead]);
+  }, [conversationId]);
 
   // Load older messages on scroll to top
   const handleScroll = useCallback(async () => {
@@ -194,6 +194,15 @@ export function MessageThread({
       {/* Header */}
       <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
         <div className="flex items-center gap-3">
+          <Link
+            href="/chat"
+            className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 md:hidden dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+            aria-label="Back to conversations"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
+              <path fillRule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clipRule="evenodd" />
+            </svg>
+          </Link>
           <div>
             <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
               {displayName}

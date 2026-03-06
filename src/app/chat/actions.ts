@@ -465,6 +465,18 @@ export async function markConversationRead(
     data: { lastReadAt: new Date() },
   });
 
+  // Publish read receipt to Ably for real-time delivery
+  try {
+    const ably = getAblyRestClient();
+    const channel = ably.channels.get(`read:${conversationId}`);
+    await channel.publish("read", {
+      userId: session.user.id,
+      timestamp: new Date().toISOString(),
+    });
+  } catch {
+    // Non-critical — DB updated, real-time delivery failed
+  }
+
   return { success: true, message: "Marked as read" };
 }
 
