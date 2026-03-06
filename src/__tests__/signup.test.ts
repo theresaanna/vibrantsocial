@@ -6,12 +6,12 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     user: {
       findUnique: vi.fn(),
-      findFirst: vi.fn(),
       create: vi.fn(),
     },
     follow: {
       create: vi.fn(),
     },
+    $transaction: vi.fn(),
   },
 }));
 
@@ -200,14 +200,17 @@ describe("signup", () => {
     expect(result.message).toBe("An account with this email already exists");
   });
 
-  it("creates user with dateOfBirth and auto-follows first user on success", async () => {
+  it("creates user with dateOfBirth and auto-friends with theresa on success", async () => {
+    // First findUnique: email check (null = no existing user)
     mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
     mockPrisma.user.create.mockResolvedValueOnce({
       id: "new-user-id",
     } as never);
-    mockPrisma.user.findFirst.mockResolvedValueOnce({
-      id: "first-user-id",
+    // Second findUnique: theresa lookup by username
+    mockPrisma.user.findUnique.mockResolvedValueOnce({
+      id: "theresa-id",
     } as never);
+    mockPrisma.$transaction.mockResolvedValueOnce(undefined as never);
     // signIn throws NEXT_REDIRECT on success
     mockSignIn.mockRejectedValueOnce(new Error("NEXT_REDIRECT"));
 
@@ -230,18 +233,13 @@ describe("signup", () => {
       }),
     });
 
-    expect(mockPrisma.follow.create).toHaveBeenCalledWith({
-      data: {
-        followerId: "new-user-id",
-        followingId: "first-user-id",
-      },
-    });
+    expect(mockPrisma.$transaction).toHaveBeenCalled();
   });
 
   it("normalizes email to lowercase", async () => {
     mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
     mockPrisma.user.create.mockResolvedValueOnce({ id: "new-id" } as never);
-    mockPrisma.user.findFirst.mockResolvedValueOnce(null as never);
+    mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
     mockSignIn.mockRejectedValueOnce(new Error("NEXT_REDIRECT"));
 
     await expect(
@@ -259,10 +257,11 @@ describe("signup", () => {
     });
   });
 
-  it("does not auto-follow if user is the first user", async () => {
+  it("does not auto-friend if theresa user not found", async () => {
     mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
-    mockPrisma.user.create.mockResolvedValueOnce({ id: "first-user-id" } as never);
-    mockPrisma.user.findFirst.mockResolvedValueOnce({ id: "first-user-id" } as never);
+    mockPrisma.user.create.mockResolvedValueOnce({ id: "new-user-id" } as never);
+    // theresa lookup returns null
+    mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
     mockSignIn.mockRejectedValueOnce(new Error("NEXT_REDIRECT"));
 
     await expect(
@@ -275,6 +274,6 @@ describe("signup", () => {
       )
     ).rejects.toThrow();
 
-    expect(mockPrisma.follow.create).not.toHaveBeenCalled();
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
   });
 });

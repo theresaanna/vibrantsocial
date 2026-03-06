@@ -80,22 +80,24 @@ export async function signup(
     },
   });
 
-  // Auto-follow the first user (site creator) so new users see content in their feed
+  // Auto-friend with theresa so new users see content and have a connection
   try {
-    const firstUser = await prisma.user.findFirst({
-      orderBy: { createdAt: "asc" },
+    const theresa = await prisma.user.findUnique({
+      where: { username: "theresa" },
       select: { id: true },
     });
-    if (firstUser && firstUser.id !== newUser.id) {
-      await prisma.follow.create({
-        data: {
-          followerId: newUser.id,
-          followingId: firstUser.id,
-        },
-      });
+    if (theresa && theresa.id !== newUser.id) {
+      await prisma.$transaction([
+        prisma.follow.create({
+          data: { followerId: newUser.id, followingId: theresa.id },
+        }),
+        prisma.follow.create({
+          data: { followerId: theresa.id, followingId: newUser.id },
+        }),
+      ]);
     }
   } catch {
-    // Non-critical — don't block signup if auto-follow fails
+    // Non-critical — don't block signup if auto-friend fails
   }
 
   try {

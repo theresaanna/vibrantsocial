@@ -30,7 +30,9 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: vi.fn(),
       create: vi.fn(),
       delete: vi.fn(),
+      deleteMany: vi.fn(),
     },
+    $transaction: vi.fn(),
   },
 }));
 
@@ -211,23 +213,25 @@ describe("toggleFollow", () => {
     expect(result.message).toBe("Cannot follow yourself");
   });
 
-  it("creates follow if not following", async () => {
+  it("creates mutual follow (friendship) if not following", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPrisma.follow.findUnique.mockResolvedValueOnce(null as never);
-    mockPrisma.follow.create.mockResolvedValueOnce({} as never);
+    mockPrisma.$transaction.mockResolvedValueOnce(undefined as never);
 
     const result = await toggleFollow(prevState, makeFormData({ userId: "user2" }));
     expect(result.success).toBe(true);
-    expect(result.message).toBe("Followed");
+    expect(result.message).toBe("Added friend");
+    expect(mockPrisma.$transaction).toHaveBeenCalled();
   });
 
-  it("unfollows if already following", async () => {
+  it("removes both follow directions (unfriends) if already following", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPrisma.follow.findUnique.mockResolvedValueOnce({ id: "f1" } as never);
-    mockPrisma.follow.delete.mockResolvedValueOnce({} as never);
+    mockPrisma.follow.deleteMany.mockResolvedValueOnce({ count: 2 } as never);
 
     const result = await toggleFollow(prevState, makeFormData({ userId: "user2" }));
     expect(result.success).toBe(true);
-    expect(result.message).toBe("Unfollowed");
+    expect(result.message).toBe("Removed friend");
+    expect(mockPrisma.follow.deleteMany).toHaveBeenCalled();
   });
 });

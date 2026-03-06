@@ -34,13 +34,27 @@ export async function toggleFollow(
   });
 
   if (existing) {
-    await prisma.follow.delete({ where: { id: existing.id } });
-  } else {
-    await prisma.follow.create({
-      data: { followerId: session.user.id, followingId: targetUserId },
+    // Remove both directions of the friendship
+    await prisma.follow.deleteMany({
+      where: {
+        OR: [
+          { followerId: session.user.id, followingId: targetUserId },
+          { followerId: targetUserId, followingId: session.user.id },
+        ],
+      },
     });
+  } else {
+    // Create mutual follows (friendship)
+    await prisma.$transaction([
+      prisma.follow.create({
+        data: { followerId: session.user.id, followingId: targetUserId },
+      }),
+      prisma.follow.create({
+        data: { followerId: targetUserId, followingId: session.user.id },
+      }),
+    ]);
   }
 
   revalidatePath("/feed");
-  return { success: true, message: existing ? "Unfollowed" : "Followed" };
+  return { success: true, message: existing ? "Removed friend" : "Added friend" };
 }
