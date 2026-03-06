@@ -31,6 +31,10 @@ vi.mock("ably/react", () => ({
   }),
 }));
 
+vi.mock("@/app/providers", () => ({
+  useAblyReady: vi.fn().mockReturnValue(true),
+}));
+
 const mockGetConversations = vi.fn();
 vi.mock("@/app/chat/actions", () => ({
   getConversations: (...args: unknown[]) => mockGetConversations(...args),
