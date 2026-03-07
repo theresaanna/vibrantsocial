@@ -50,6 +50,7 @@ const prevState = { success: false, message: "" };
 
 const validFields = {
   email: "user@example.com",
+  username: "testuser",
   dateOfBirth: validDob(),
   password: "password123",
   confirmPassword: "password123",
@@ -70,6 +71,21 @@ describe("signup", () => {
     const result = await signup(
       prevState,
       makeFormData({
+        username: "testuser",
+        dateOfBirth: validDob(),
+        password: "password123",
+        confirmPassword: "password123",
+      })
+    );
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("All fields are required");
+  });
+
+  it("requires username to be present", async () => {
+    const result = await signup(
+      prevState,
+      makeFormData({
+        email: "user@example.com",
         dateOfBirth: validDob(),
         password: "password123",
         confirmPassword: "password123",
@@ -84,12 +100,55 @@ describe("signup", () => {
       prevState,
       makeFormData({
         email: "user@example.com",
+        username: "testuser",
         password: "password123",
         confirmPassword: "password123",
       })
     );
     expect(result.success).toBe(false);
     expect(result.message).toBe("All fields are required");
+  });
+
+  it("validates username format - too short", async () => {
+    const result = await signup(
+      prevState,
+      makeFormData({
+        ...validFields,
+        username: "ab",
+      })
+    );
+    expect(result.success).toBe(false);
+    expect(result.message).toBe(
+      "Username must be 3-30 characters, letters, numbers, and underscores only"
+    );
+  });
+
+  it("validates username format - special characters", async () => {
+    const result = await signup(
+      prevState,
+      makeFormData({
+        ...validFields,
+        username: "user@name",
+      })
+    );
+    expect(result.success).toBe(false);
+    expect(result.message).toBe(
+      "Username must be 3-30 characters, letters, numbers, and underscores only"
+    );
+  });
+
+  it("validates username format - spaces", async () => {
+    const result = await signup(
+      prevState,
+      makeFormData({
+        ...validFields,
+        username: "user name",
+      })
+    );
+    expect(result.success).toBe(false);
+    expect(result.message).toBe(
+      "Username must be 3-30 characters, letters, numbers, and underscores only"
+    );
   });
 
   it("validates email format", async () => {
@@ -155,7 +214,9 @@ describe("signup", () => {
       })
     );
     expect(result.success).toBe(false);
-    expect(result.message).toBe("You must be at least 13 years old to sign up");
+    expect(result.message).toBe(
+      "You must be at least 13 years old to sign up"
+    );
   });
 
   it("requires password to be at least 8 characters", async () => {
@@ -200,13 +261,34 @@ describe("signup", () => {
     expect(result.message).toBe("An account with this email already exists");
   });
 
-  it("creates user with dateOfBirth and auto-friends with theresa on success", async () => {
+  it("rejects duplicate usernames", async () => {
     // First findUnique: email check (null = no existing user)
+    mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
+    // Second findUnique: username check (taken)
+    mockPrisma.user.findUnique.mockResolvedValueOnce({
+      id: "existing-user",
+    } as never);
+
+    const result = await signup(
+      prevState,
+      makeFormData({
+        ...validFields,
+        username: "takenuser",
+      })
+    );
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("This username is already taken");
+  });
+
+  it("creates user with username, dateOfBirth and auto-friends with theresa on success", async () => {
+    // First findUnique: email check (null = no existing user)
+    mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
+    // Second findUnique: username check (null = available)
     mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
     mockPrisma.user.create.mockResolvedValueOnce({
       id: "new-user-id",
     } as never);
-    // Second findUnique: theresa lookup by username
+    // Third findUnique: theresa lookup by username
     mockPrisma.user.findUnique.mockResolvedValueOnce({
       id: "theresa-id",
     } as never);
@@ -220,6 +302,7 @@ describe("signup", () => {
         makeFormData({
           ...validFields,
           email: "new@example.com",
+          username: "newuser",
         })
       )
     ).rejects.toThrow("NEXT_REDIRECT");
@@ -227,6 +310,7 @@ describe("signup", () => {
     expect(mockPrisma.user.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         email: "new@example.com",
+        username: "newuser",
         passwordHash: "hashed_password",
         dateOfBirth: expect.any(Date),
         emailVerified: expect.any(Date),
@@ -237,6 +321,7 @@ describe("signup", () => {
   });
 
   it("normalizes email to lowercase", async () => {
+    mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
     mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
     mockPrisma.user.create.mockResolvedValueOnce({ id: "new-id" } as never);
     mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
@@ -257,9 +342,34 @@ describe("signup", () => {
     });
   });
 
+  it("normalizes username to lowercase", async () => {
+    mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
+    mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
+    mockPrisma.user.create.mockResolvedValueOnce({ id: "new-id" } as never);
+    mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
+    mockSignIn.mockRejectedValueOnce(new Error("NEXT_REDIRECT"));
+
+    await expect(
+      signup(
+        prevState,
+        makeFormData({
+          ...validFields,
+          username: "MyUser",
+        })
+      )
+    ).rejects.toThrow();
+
+    expect(mockPrisma.user.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ username: "myuser" }),
+    });
+  });
+
   it("does not auto-friend if theresa user not found", async () => {
     mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
-    mockPrisma.user.create.mockResolvedValueOnce({ id: "new-user-id" } as never);
+    mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
+    mockPrisma.user.create.mockResolvedValueOnce({
+      id: "new-user-id",
+    } as never);
     // theresa lookup returns null
     mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
     mockSignIn.mockRejectedValueOnce(new Error("NEXT_REDIRECT"));
@@ -275,5 +385,27 @@ describe("signup", () => {
     ).rejects.toThrow();
 
     expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("accepts valid usernames with underscores and numbers", async () => {
+    mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
+    mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
+    mockPrisma.user.create.mockResolvedValueOnce({ id: "new-id" } as never);
+    mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
+    mockSignIn.mockRejectedValueOnce(new Error("NEXT_REDIRECT"));
+
+    await expect(
+      signup(
+        prevState,
+        makeFormData({
+          ...validFields,
+          username: "user_123",
+        })
+      )
+    ).rejects.toThrow("NEXT_REDIRECT");
+
+    expect(mockPrisma.user.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ username: "user_123" }),
+    });
   });
 });

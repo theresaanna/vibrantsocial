@@ -39,7 +39,8 @@ export function MessageInput({
     } finally {
       setIsSending(false);
     }
-    textareaRef.current?.focus();
+    // Focus after React re-renders the textarea as enabled
+    setTimeout(() => textareaRef.current?.focus(), 0);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
