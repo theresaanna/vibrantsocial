@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { getPostInclude, PAGE_SIZE } from "@/app/feed/feed-queries";
+import { PAGE_SIZE } from "@/app/feed/feed-queries";
 
 export async function searchUsers(query: string, cursor?: string) {
   const session = await auth();
@@ -50,8 +50,6 @@ export async function searchPosts(query: string, cursor?: string) {
   const trimmed = query.trim();
   if (!trimmed || trimmed.length < 2) return { posts: [], hasMore: false };
 
-  const userId = session.user.id;
-  const postInclude = getPostInclude(userId);
   const fetchCount = PAGE_SIZE + 1;
 
   const posts = await prisma.post.findMany({
@@ -61,7 +59,25 @@ export async function searchPosts(query: string, cursor?: string) {
     },
     orderBy: { createdAt: "desc" },
     take: fetchCount,
-    include: postInclude,
+    include: {
+      author: {
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          name: true,
+          avatar: true,
+          image: true,
+        },
+      },
+      _count: {
+        select: {
+          likes: true,
+          comments: true,
+          reposts: true,
+        },
+      },
+    },
   });
 
   const hasMore = posts.length > PAGE_SIZE;

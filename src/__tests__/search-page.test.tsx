@@ -27,8 +27,8 @@ vi.mock("@/app/search/actions", () => ({
   searchPosts: vi.fn(),
 }));
 
-vi.mock("@/components/post-card", () => ({
-  PostCard: ({ post }: { post: { id: string; content: string } }) => (
+vi.mock("@/components/search-post-card", () => ({
+  SearchPostCard: ({ post }: { post: { id: string; content: string } }) => (
     <div data-testid={`post-${post.id}`}>{post.content}</div>
   ),
 }));
@@ -52,10 +52,6 @@ const defaultProps = {
   initialTab: "users" as const,
   initialUsers: { users: [], hasMore: false },
   initialPosts: { posts: [], hasMore: false },
-  currentUserId: "user1",
-  phoneVerified: true,
-  biometricVerified: false,
-  showNsfwByDefault: false,
 };
 
 describe("SearchPageClient", () => {
