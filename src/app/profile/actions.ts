@@ -92,6 +92,8 @@ export async function updateProfile(
   }
 
   const showNsfwByDefault = formData.get("showNsfwByDefault") === "true";
+  const emailOnComment = formData.get("emailOnComment") === "true";
+  const emailOnNewChat = formData.get("emailOnNewChat") === "true";
 
   await prisma.user.update({
     where: { id: session.user.id },
@@ -100,6 +102,8 @@ export async function updateProfile(
       displayName: displayName || null,
       bio: newBio,
       showNsfwByDefault,
+      emailOnComment,
+      emailOnNewChat,
       ...themeColors,
     },
   });

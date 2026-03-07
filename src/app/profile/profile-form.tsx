@@ -24,6 +24,8 @@ interface ProfileFormProps {
   oauthImage: string | null;
   biometricVerified: boolean;
   showNsfwByDefault: boolean;
+  emailOnComment: boolean;
+  emailOnNewChat: boolean;
   phoneVerified: boolean;
   phoneNumber: string | null;
   isCredentialsUser: boolean;
@@ -36,7 +38,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified, showNsfwByDefault, phoneVerified, phoneNumber, isCredentialsUser }: ProfileFormProps) {
+export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified, showNsfwByDefault, emailOnComment, emailOnNewChat, phoneVerified, phoneNumber, isCredentialsUser }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>("idle");
@@ -435,6 +437,42 @@ export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified
             </p>
           </div>
         )}
+
+        {/* Email notifications */}
+        <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+          <p className="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+            Email Notifications
+          </p>
+          <div className="space-y-3">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="emailOnComment"
+                value="true"
+                defaultChecked={emailOnComment}
+                className="rounded"
+              />
+              <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                New comments on my posts
+              </span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="emailOnNewChat"
+                value="true"
+                defaultChecked={emailOnNewChat}
+                className="rounded"
+              />
+              <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                New chat conversations
+              </span>
+            </label>
+          </div>
+          <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+            Choose which email notifications you&apos;d like to receive.
+          </p>
+        </div>
 
         {/* Autosave status */}
         <div className="flex items-center justify-between">

@@ -6,6 +6,7 @@ import { requirePhoneVerification } from "@/lib/phone-gate";
 import { revalidatePath } from "next/cache";
 import { getAblyRestClient } from "@/lib/ably";
 import { createNotification } from "@/lib/notifications";
+import { sendCommentEmail } from "@/lib/email";
 
 interface ActionState {
   success: boolean;
@@ -249,7 +250,12 @@ export async function createComment(
   // Notify post author about the comment
   const post = await prisma.post.findUnique({
     where: { id: postId },
-    select: { authorId: true },
+    select: {
+      authorId: true,
+      author: {
+        select: { email: true, emailOnComment: true },
+      },
+    },
   });
   if (post) {
     await createNotification({
@@ -259,6 +265,21 @@ export async function createComment(
       postId,
       commentId: comment.id,
     });
+
+    // Send email notification if the post author has it enabled
+    if (
+      post.authorId !== session.user.id &&
+      post.author.email &&
+      post.author.emailOnComment
+    ) {
+      const commenterName =
+        comment.author.displayName ?? comment.author.username ?? "Someone";
+      sendCommentEmail({
+        toEmail: post.author.email,
+        commenterName,
+        postId,
+      });
+    }
   }
 
   // If replying, also notify parent comment author
