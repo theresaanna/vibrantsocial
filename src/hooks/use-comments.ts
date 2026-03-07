@@ -1,8 +1,9 @@
 "use client";
 
-import type * as Ably from "ably";
-import { useChannel } from "ably/react";
-import { useState } from "react";
+import type { InboundMessage } from "ably";
+import { useState, useEffect, useCallback } from "react";
+import { useAblyReady } from "@/app/providers";
+import { getAblyRealtimeClient } from "@/lib/ably";
 
 interface CommentAuthor {
   id: string;
@@ -23,8 +24,9 @@ export interface CommentData {
 
 export function useComments(postId: string, initialComments: CommentData[]) {
   const [comments, setComments] = useState<CommentData[]>(initialComments);
+  const ablyReady = useAblyReady();
 
-  useChannel(`comments:${postId}`, (event: Ably.Message) => {
+  const handleMessage = useCallback((event: InboundMessage) => {
     if (event.name !== "new") return;
 
     const data = event.data as Record<string, string | null>;
@@ -38,7 +40,6 @@ export function useComments(postId: string, initialComments: CommentData[]) {
 
     setComments((prev) => {
       if (parentId) {
-        // It's a reply — check if already exists in any parent's replies
         const alreadyExists = prev.some((c) =>
           c.replies?.some((r) => r.id === comment.id)
         );
@@ -51,11 +52,22 @@ export function useComments(postId: string, initialComments: CommentData[]) {
         );
       }
 
-      // Top-level comment — deduplicate
       if (prev.some((c) => c.id === comment.id)) return prev;
       return [...prev, comment];
     });
-  });
+  }, []);
+
+  useEffect(() => {
+    if (!ablyReady) return;
+
+    const client = getAblyRealtimeClient();
+    const channel = client.channels.get(`comments:${postId}`);
+    channel.subscribe("new", handleMessage);
+
+    return () => {
+      channel.unsubscribe("new", handleMessage);
+    };
+  }, [ablyReady, postId, handleMessage]);
 
   return { comments };
 }

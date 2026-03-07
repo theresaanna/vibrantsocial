@@ -103,15 +103,26 @@ describe("Header", () => {
     expect(bookmarksLink.querySelector("svg")).toBeInTheDocument();
   });
 
-  it("shows profile link with display name when authenticated", async () => {
+  it("shows Profile icon linking to public profile when username exists", async () => {
     vi.mocked(auth).mockResolvedValue({
-      user: { id: "u1", name: "Jane", displayName: "Jane D" },
+      user: { id: "u1", name: "Jane", username: "jane" },
       expires: "",
     } as ReturnType<typeof auth> extends Promise<infer T> ? T : never);
     const jsx = await Header();
     render(jsx);
 
-    expect(screen.getByText("Jane D")).toBeInTheDocument();
+    const profileLink = screen.getByLabelText("Profile");
+    expect(profileLink.closest("a")).toHaveAttribute("href", "/jane");
+    expect(profileLink.querySelector("svg")).toBeInTheDocument();
+  });
+
+  it("falls back to /profile when username is null", async () => {
+    vi.mocked(auth).mockResolvedValue(authedSession);
+    const jsx = await Header();
+    render(jsx);
+
+    const profileLink = screen.getByLabelText("Profile");
+    expect(profileLink.closest("a")).toHaveAttribute("href", "/profile");
   });
 
   it("renders notification bell and chat nav when authenticated", async () => {
