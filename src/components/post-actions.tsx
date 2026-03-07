@@ -17,6 +17,7 @@ interface PostActionsProps {
   isBookmarked: boolean;
   isReposted: boolean;
   onToggleComments: () => void;
+  onQuotePost?: () => void;
 }
 
 export function PostActions({
@@ -29,6 +30,7 @@ export function PostActions({
   isBookmarked,
   isReposted,
   onToggleComments,
+  onQuotePost,
 }: PostActionsProps) {
   const [liked, setLiked] = useState(isLiked);
   const [likes, setLikes] = useState(likeCount);
@@ -167,31 +169,12 @@ export function PostActions({
       </button>
 
       {/* Repost */}
-      <button
-        type="button"
-        onClick={handleRepost}
-        className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-green-50 dark:hover:bg-green-900/20 ${
-          reposted
-            ? "text-green-500"
-            : "text-zinc-500 hover:text-green-500"
-        }`}
-        aria-label={reposted ? "Unrepost" : "Repost"}
-      >
-        <svg
-          className="h-4 w-4"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"
-          />
-        </svg>
-        {reposts > 0 && <span>{reposts}</span>}
-      </button>
+      <RepostButton
+        reposted={reposted}
+        reposts={reposts}
+        onRepost={handleRepost}
+        onQuotePost={onQuotePost}
+      />
 
       {/* Bookmark */}
       <button
@@ -219,6 +202,97 @@ export function PostActions({
         </svg>
         {bookmarks > 0 && <span>{bookmarks}</span>}
       </button>
+    </div>
+  );
+}
+
+function RepostButton({
+  reposted,
+  reposts,
+  onRepost,
+  onQuotePost,
+}: {
+  reposted: boolean;
+  reposts: number;
+  onRepost: () => void;
+  onQuotePost?: () => void;
+}) {
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showMenu]);
+
+  const handleClick = () => {
+    if (reposted) {
+      onRepost();
+    } else {
+      setShowMenu((v) => !v);
+    }
+  };
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        type="button"
+        onClick={handleClick}
+        className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-green-50 dark:hover:bg-green-900/20 ${
+          reposted
+            ? "text-green-500"
+            : "text-zinc-500 hover:text-green-500"
+        }`}
+        aria-label={reposted ? "Unrepost" : "Repost"}
+      >
+        <svg
+          className="h-4 w-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"
+          />
+        </svg>
+        {reposts > 0 && <span>{reposts}</span>}
+      </button>
+
+      {showMenu && (
+        <div className="absolute bottom-full left-0 z-10 mb-1 w-36 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+          <button
+            type="button"
+            onClick={() => { setShowMenu(false); onRepost(); }}
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3" />
+            </svg>
+            Repost
+          </button>
+          {onQuotePost && (
+            <button
+              type="button"
+              onClick={() => { setShowMenu(false); onQuotePost(); }}
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+              </svg>
+              Quote Post
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -142,7 +142,63 @@ export async function toggleRepost(
 
   revalidatePath("/feed");
   revalidatePath(`/post/${postId}`);
+  if (session.user.username) {
+    revalidatePath(`/${session.user.username}`);
+  }
   return { success: true, message: existing ? "Unreposted" : "Reposted" };
+}
+
+export async function createQuoteRepost(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const postId = formData.get("postId") as string;
+  const content = (formData.get("content") as string)?.trim();
+
+  if (!content) {
+    return { success: false, message: "Quote text cannot be empty" };
+  }
+
+  if (content.length > 500) {
+    return { success: false, message: "Quote text too long (max 500 characters)" };
+  }
+
+  const existing = await prisma.repost.findUnique({
+    where: { postId_userId: { postId, userId: session.user.id } },
+  });
+
+  if (existing) {
+    return { success: false, message: "You have already reposted this post" };
+  }
+
+  await prisma.repost.create({
+    data: { postId, userId: session.user.id, content },
+  });
+
+  const post = await prisma.post.findUnique({
+    where: { id: postId },
+    select: { authorId: true },
+  });
+  if (post) {
+    await createNotification({
+      type: "REPOST",
+      actorId: session.user.id,
+      targetUserId: post.authorId,
+      postId,
+    });
+  }
+
+  revalidatePath("/feed");
+  revalidatePath(`/post/${postId}`);
+  if (session.user.username) {
+    revalidatePath(`/${session.user.username}`);
+  }
+  return { success: true, message: "Quote posted" };
 }
 
 export async function createComment(

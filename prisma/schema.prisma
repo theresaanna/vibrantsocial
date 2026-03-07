@@ -177,6 +177,7 @@ model Repost {
   id        String   @id @default(cuid())
   postId    String
   userId    String
+  content   String?  @db.Text
   createdAt DateTime @default(now())
 
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
