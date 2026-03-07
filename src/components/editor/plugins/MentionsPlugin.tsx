@@ -87,6 +87,7 @@ function MentionDropdown({
       className="max-h-52 w-64 overflow-y-auto rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800"
       role="listbox"
       aria-label="Mention suggestions"
+      onPointerDown={(e) => e.preventDefault()}
     >
       {results.map((user, index) => {
         const avatarSrc = user.avatar || user.image;
@@ -97,7 +98,7 @@ function MentionDropdown({
             type="button"
             role="option"
             aria-selected={index === selectedIndex}
-            onMouseDown={(e) => e.preventDefault()}
+            onPointerDown={(e) => e.preventDefault()}
             onClick={() => onSelect(user)}
             className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
               index === selectedIndex
