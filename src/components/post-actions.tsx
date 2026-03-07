@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useRef, useTransition } from "react";
 import {
   toggleLike,
   toggleBookmark,
@@ -45,11 +45,18 @@ export function PostActions({
   useEffect(() => { setBookmarked(isBookmarked); }, [isBookmarked]);
   useEffect(() => { setBookmarks(bookmarkCount); }, [bookmarkCount]);
 
-  const [likePending, startLikeTransition] = useTransition();
-  const [repostPending, startRepostTransition] = useTransition();
-  const [bookmarkPending, startBookmarkTransition] = useTransition();
+  const [, startLikeTransition] = useTransition();
+  const [, startRepostTransition] = useTransition();
+  const [, startBookmarkTransition] = useTransition();
+
+  const likeInFlight = useRef(false);
+  const repostInFlight = useRef(false);
+  const bookmarkInFlight = useRef(false);
 
   const handleLike = () => {
+    if (likeInFlight.current) return;
+    likeInFlight.current = true;
+
     const wasLiked = liked;
     setLiked(!wasLiked);
     setLikes((c) => wasLiked ? c - 1 : c + 1);
@@ -62,10 +69,14 @@ export function PostActions({
         setLiked(wasLiked);
         setLikes((c) => wasLiked ? c + 1 : c - 1);
       }
+      likeInFlight.current = false;
     });
   };
 
   const handleRepost = () => {
+    if (repostInFlight.current) return;
+    repostInFlight.current = true;
+
     const wasReposted = reposted;
     setReposted(!wasReposted);
     setReposts((c) => wasReposted ? c - 1 : c + 1);
@@ -78,10 +89,14 @@ export function PostActions({
         setReposted(wasReposted);
         setReposts((c) => wasReposted ? c + 1 : c - 1);
       }
+      repostInFlight.current = false;
     });
   };
 
   const handleBookmark = () => {
+    if (bookmarkInFlight.current) return;
+    bookmarkInFlight.current = true;
+
     const wasBookmarked = bookmarked;
     setBookmarked(!wasBookmarked);
     setBookmarks((c) => wasBookmarked ? c - 1 : c + 1);
@@ -94,6 +109,7 @@ export function PostActions({
         setBookmarked(wasBookmarked);
         setBookmarks((c) => wasBookmarked ? c + 1 : c - 1);
       }
+      bookmarkInFlight.current = false;
     });
   };
 
@@ -103,7 +119,6 @@ export function PostActions({
       <button
         type="button"
         onClick={handleLike}
-        disabled={likePending}
         className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-red-50 dark:hover:bg-red-900/20 ${
           liked
             ? "text-red-500"
@@ -155,7 +170,6 @@ export function PostActions({
       <button
         type="button"
         onClick={handleRepost}
-        disabled={repostPending}
         className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-green-50 dark:hover:bg-green-900/20 ${
           reposted
             ? "text-green-500"
@@ -183,7 +197,6 @@ export function PostActions({
       <button
         type="button"
         onClick={handleBookmark}
-        disabled={bookmarkPending}
         className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-yellow-50 dark:hover:bg-yellow-900/20 ${
           bookmarked
             ? "text-yellow-500"
