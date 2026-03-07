@@ -20,6 +20,7 @@ import Link from "next/link";
 import { editorTheme } from "@/components/editor/theme";
 import { editorNodes } from "@/components/editor/nodes";
 import { Toolbar } from "@/components/editor/toolbar/Toolbar";
+import { AutoLinkPlugin } from "@/components/editor/plugins/AutoLinkPlugin";
 import { MentionsPlugin } from "@/components/editor/plugins/MentionsPlugin";
 
 function ClearOnSuccess({
@@ -127,6 +128,7 @@ export function PostComposer({ phoneVerified, isOldEnough }: PostComposerProps) 
             <ListPlugin />
             <CheckListPlugin />
             <LinkPlugin />
+            <AutoLinkPlugin />
             <HorizontalRulePlugin />
             <TablePlugin />
             <TabIndentationPlugin />
