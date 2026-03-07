@@ -35,7 +35,7 @@ export function NotificationBell({
   return (
     <Link
       href="/notifications"
-      className="relative text-sm text-zinc-600 hover:text-blue-500 dark:text-zinc-400 dark:hover:text-blue-500"
+      className="relative rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-blue-50 hover:text-blue-500 dark:text-zinc-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-500"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

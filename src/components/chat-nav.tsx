@@ -102,7 +102,7 @@ export function ChatNav({ initialConversations }: ChatNavProps) {
     <div className="relative" ref={containerRef}>
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        className="relative text-sm text-zinc-600 hover:text-green-500 dark:text-zinc-400 dark:hover:text-green-500"
+        className="relative rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-green-50 hover:text-green-500 dark:text-zinc-400 dark:hover:bg-green-900/20 dark:hover:text-green-500"
         aria-label="Chat"
       >
         <svg
