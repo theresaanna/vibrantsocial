@@ -5,21 +5,24 @@ import { usePresenceListener } from "ably/react";
 import { ConversationList } from "@/components/chat/conversation-list";
 import { MessageRequestList } from "@/components/chat/message-request-list";
 import { useAblyReady } from "@/app/providers";
-import type { ConversationListItem, MessageRequestData } from "@/types/chat";
+import type { ConversationListItem, MessageRequestData, ChatThemeColors } from "@/types/chat";
 
 const PRESENCE_CHANNEL = "presence:global";
 
 interface ChatPageClientProps {
   conversations: ConversationListItem[];
   messageRequests: MessageRequestData[];
+  themeColors?: ChatThemeColors;
 }
 
 function PresenceAwareSidebar({
   conversations,
   messageRequests,
+  themeColors,
 }: {
   conversations: ConversationListItem[];
   messageRequests: MessageRequestData[];
+  themeColors?: ChatThemeColors;
 }) {
   const { presenceData } = usePresenceListener(PRESENCE_CHANNEL);
   const onlineUserIds = useMemo(
@@ -32,6 +35,7 @@ function PresenceAwareSidebar({
       <ConversationList
         conversations={conversations}
         onlineUserIds={onlineUserIds}
+        themeColors={themeColors}
       />
       <MessageRequestList requests={messageRequests} />
     </>
@@ -41,6 +45,7 @@ function PresenceAwareSidebar({
 export function ChatPageClient({
   conversations,
   messageRequests,
+  themeColors,
 }: ChatPageClientProps) {
   const ablyReady = useAblyReady();
 
@@ -55,10 +60,11 @@ export function ChatPageClient({
           <PresenceAwareSidebar
             conversations={conversations}
             messageRequests={messageRequests}
+            themeColors={themeColors}
           />
         ) : (
           <>
-            <ConversationList conversations={conversations} />
+            <ConversationList conversations={conversations} themeColors={themeColors} />
             <MessageRequestList requests={messageRequests} />
           </>
         )}

@@ -26,6 +26,7 @@ import type {
   MediaType,
   ConversationWithParticipants,
   ChatUserProfile,
+  ChatThemeColors,
 } from "@/types/chat";
 import type { MediaAttachment } from "./message-input";
 
@@ -36,6 +37,7 @@ interface MessageThreadProps {
   currentUserId: string;
   onlineUserIds?: Set<string>;
   phoneVerified?: boolean;
+  themeColors?: ChatThemeColors;
 }
 
 export function MessageThread({
@@ -45,6 +47,7 @@ export function MessageThread({
   currentUserId,
   onlineUserIds = new Set(),
   phoneVerified = true,
+  themeColors,
 }: MessageThreadProps) {
   const router = useRouter();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -336,6 +339,7 @@ export function MessageThread({
               onEditingChange={(editing) =>
                 setEditingMessageId(editing ? msg.id : null)
               }
+              themeColors={themeColors}
             />
           );
         })}

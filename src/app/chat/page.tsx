@@ -10,17 +10,31 @@ export default async function ChatPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { dateOfBirth: true },
+    select: {
+      dateOfBirth: true,
+      profileBgColor: true,
+      profileTextColor: true,
+      profileContainerColor: true,
+      profileSecondaryColor: true,
+    },
   });
   if (!user?.dateOfBirth) redirect("/complete-profile");
 
   const conversations = await getConversations();
   const messageRequests = await getMessageRequests();
 
+  const themeColors = {
+    bgColor: user.profileBgColor ?? null,
+    textColor: user.profileTextColor ?? null,
+    containerColor: user.profileContainerColor ?? null,
+    secondaryColor: user.profileSecondaryColor ?? null,
+  };
+
   return (
     <ChatPageClient
       conversations={conversations}
       messageRequests={messageRequests}
+      themeColors={themeColors}
     />
   );
 }

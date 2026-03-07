@@ -7,7 +7,7 @@ import { timeAgo } from "@/lib/time";
 import { ReadReceiptIndicator } from "./read-receipt-indicator";
 import { SeenByIndicator } from "./seen-by-indicator";
 import { MediaRenderer } from "./media-renderer";
-import type { MessageData, ChatUserProfile, MediaType } from "@/types/chat";
+import type { MessageData, ChatUserProfile, MediaType, ChatThemeColors } from "@/types/chat";
 
 const LazyEmojiPicker = lazy(() => import("emoji-picker-react"));
 
@@ -24,6 +24,7 @@ interface MessageBubbleProps {
   currentUserId?: string;
   isEditing?: boolean;
   onEditingChange?: (editing: boolean) => void;
+  themeColors?: ChatThemeColors;
 }
 
 export function MessageBubble({
@@ -39,6 +40,7 @@ export function MessageBubble({
   currentUserId,
   isEditing: externalIsEditing,
   onEditingChange,
+  themeColors,
 }: MessageBubbleProps) {
   const [internalIsEditing, setInternalIsEditing] = useState(false);
   const isEditing = externalIsEditing ?? internalIsEditing;
@@ -209,9 +211,10 @@ export function MessageBubble({
               <div
                 className={`rounded-2xl px-3.5 py-2 text-sm ${
                   isOwn
-                    ? "rounded-br-sm bg-blue-500 text-white"
+                    ? `rounded-br-sm ${themeColors?.bgColor ? "" : "bg-blue-500 text-white"}`
                     : "rounded-bl-sm bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
                 }`}
+                style={isOwn && themeColors?.bgColor ? { backgroundColor: themeColors.bgColor, color: themeColors.textColor ?? "#ffffff" } : undefined}
               >
                 {message.mediaUrl && message.mediaType && (
                   <div className="mb-1">
@@ -353,7 +356,7 @@ export function MessageBubble({
             {message.editedAt && (
               <span className="text-[10px] text-zinc-400">(edited)</span>
             )}
-            {isOwn && <ReadReceiptIndicator status={readStatus} />}
+            {isOwn && <ReadReceiptIndicator status={readStatus} color={themeColors?.bgColor ?? undefined} />}
           </div>
 
           {/* Seen by (group chats only, own messages) */}
