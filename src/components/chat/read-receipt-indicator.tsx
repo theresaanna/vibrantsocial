@@ -2,7 +2,8 @@
 
 interface ReadReceiptIndicatorProps {
   status: "sent" | "delivered" | "read";
-  color?: string;
+  bgColor?: string;
+  textColor?: string;
 }
 
 function CheckIcon({ className }: { className?: string }) {
@@ -22,12 +23,13 @@ function CheckIcon({ className }: { className?: string }) {
   );
 }
 
-export function ReadReceiptIndicator({ status, color }: ReadReceiptIndicatorProps) {
+export function ReadReceiptIndicator({ status, bgColor, textColor }: ReadReceiptIndicatorProps) {
   if (status === "read") {
+    // Read: match text color so checkmark is clearly visible
     return (
       <span
-        className={`inline-flex ${color ? "" : "text-blue-500"}`}
-        style={color ? { color } : undefined}
+        className={`inline-flex ${textColor ? "" : "text-white"}`}
+        style={textColor ? { color: textColor } : undefined}
         aria-label="Read"
       >
         <CheckIcon />
@@ -35,8 +37,13 @@ export function ReadReceiptIndicator({ status, color }: ReadReceiptIndicatorProp
     );
   }
 
+  // Sent/delivered: match bg color so checkmark is subtle
   return (
-    <span className="inline-flex text-zinc-400" aria-label={status === "delivered" ? "Delivered" : "Sent"}>
+    <span
+      className={`inline-flex ${bgColor ? "" : "text-blue-500"}`}
+      style={bgColor ? { color: bgColor } : undefined}
+      aria-label={status === "delivered" ? "Delivered" : "Sent"}
+    >
       <CheckIcon />
     </span>
   );

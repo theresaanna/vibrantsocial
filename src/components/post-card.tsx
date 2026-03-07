@@ -78,6 +78,7 @@ export function PostCard({
   const [deleted, setDeleted] = useState(false);
   const [currentContent, setCurrentContent] = useState(post.content);
   const [wasEdited, setWasEdited] = useState(!!post.editedAt);
+  const [currentTags, setCurrentTags] = useState(post.tags ?? []);
   const [editTags, setEditTags] = useState<string[]>(
     post.tags?.map((pt) => pt.tag.name) ?? []
   );
@@ -169,6 +170,7 @@ export function PostCard({
     const result = await editPost({ success: false, message: "" }, formData);
     if (result.success) {
       setCurrentContent(formData.get("content") as string);
+      setCurrentTags(editTags.map((name) => ({ tag: { name } })));
       setWasEdited(true);
       setIsEditing(false);
     }
@@ -261,7 +263,7 @@ export function PostCard({
                 <button
                   type="button"
                   onClick={() => {
-                    setEditTags(post.tags?.map((pt) => pt.tag.name) ?? []);
+                    setEditTags(currentTags.map((pt) => pt.tag.name));
                     setIsEditing(true);
                     setShowMenu(false);
                   }}
@@ -381,9 +383,9 @@ export function PostCard({
           </div>
 
           {/* Tags */}
-          {post.tags && post.tags.length > 0 && (
+          {currentTags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 px-4 pb-2" data-testid="post-tags">
-              {post.tags.map((pt) => (
+              {currentTags.map((pt) => (
                 <Link
                   key={pt.tag.name}
                   href={`/tag/${pt.tag.name}`}
