@@ -109,6 +109,13 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       where: { userId: currentUserId ?? "" },
       select: { id: true },
     },
+    tags: {
+      include: {
+        tag: {
+          select: { name: true },
+        },
+      },
+    },
     comments: {
       orderBy: { createdAt: "asc" as const },
       take: 5,

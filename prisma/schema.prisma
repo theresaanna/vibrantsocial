@@ -131,9 +131,28 @@ model Post {
   reposts       Repost[]
   notifications Notification[]
   revisions     PostRevision[]
+  tags          PostTag[]
 
   @@index([authorId])
   @@index([createdAt])
+}
+
+model Tag {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  posts     PostTag[]
+}
+
+model PostTag {
+  id     String @id @default(cuid())
+  postId String
+  tagId  String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, tagId])
+  @@index([tagId])
 }
 
 model Comment {

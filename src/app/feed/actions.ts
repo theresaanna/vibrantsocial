@@ -9,6 +9,7 @@ import {
   extractMentionsFromLexicalJson,
   createMentionNotifications,
 } from "@/lib/mentions";
+import { extractTagsFromNames } from "@/lib/tags";
 
 interface PostState {
   success: boolean;
@@ -63,6 +64,22 @@ export async function createPost(
   const post = await prisma.post.create({
     data: { content, authorId: session.user.id, isSensitive, isNsfw },
   });
+
+  // Attach tags (skip for NSFW/sensitive posts)
+  const rawTags = formData.get("tags") as string;
+  if (rawTags && !isSensitive && !isNsfw) {
+    const tagNames = extractTagsFromNames(rawTags.split(","));
+    for (const name of tagNames) {
+      const tag = await prisma.tag.upsert({
+        where: { name },
+        create: { name },
+        update: {},
+      });
+      await prisma.postTag.create({
+        data: { postId: post.id, tagId: tag.id },
+      });
+    }
+  }
 
   // Send mention notifications
   const mentionedUsernames = extractMentionsFromLexicalJson(content);
@@ -125,6 +142,27 @@ export async function editPost(
     where: { id: postId },
     data: { content, editedAt: new Date() },
   });
+
+  // Update tags
+  const rawTags = formData.get("tags") as string;
+  const isSensitive = formData.get("isSensitive") === "true";
+  const isNsfw = formData.get("isNsfw") === "true";
+  // Delete existing tags first
+  await prisma.postTag.deleteMany({ where: { postId } });
+  // Re-create if not sensitive/nsfw
+  if (rawTags && !isSensitive && !isNsfw) {
+    const tagNames = extractTagsFromNames(rawTags.split(","));
+    for (const name of tagNames) {
+      const tag = await prisma.tag.upsert({
+        where: { name },
+        create: { name },
+        update: {},
+      });
+      await prisma.postTag.create({
+        data: { postId, tagId: tag.id },
+      });
+    }
+  }
 
   // Notify users who were newly mentioned in the edit
   const oldMentions = new Set(extractMentionsFromLexicalJson(post.content));

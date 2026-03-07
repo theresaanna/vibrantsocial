@@ -44,6 +44,7 @@ const defaultRepost = {
       image: null,
       avatar: null,
     },
+    tags: [],
     _count: { comments: 0, likes: 0, bookmarks: 0, reposts: 1 },
     likes: [],
     bookmarks: [],

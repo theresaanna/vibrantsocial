@@ -37,6 +37,7 @@ interface PostCardProps {
     isNsfw: boolean;
     isPinned: boolean;
     author: PostAuthor;
+    tags?: Array<{ tag: { name: string } }>;
     _count: {
       comments: number;
       likes: number;
@@ -366,6 +367,21 @@ export function PostCard({
               />
             )}
           </div>
+
+          {/* Tags */}
+          {post.tags && post.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 px-4 pb-2" data-testid="post-tags">
+              {post.tags.map((pt) => (
+                <Link
+                  key={pt.tag.name}
+                  href={`/tag/${pt.tag.name}`}
+                  className="inline-block rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
+                >
+                  #{pt.tag.name}
+                </Link>
+              ))}
+            </div>
+          )}
 
           {/* Actions */}
           <div className="border-t border-zinc-100 px-2 py-1 dark:border-zinc-800">

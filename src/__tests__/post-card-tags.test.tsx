@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 
 vi.mock("@/components/post-content", () => ({
   PostContent: ({ content }: { content: string }) => (
@@ -56,30 +56,60 @@ const basePost = {
     image: null,
     avatar: null,
   },
-  tags: [],
   _count: { comments: 0, likes: 0, bookmarks: 0, reposts: 0 },
   likes: [],
   bookmarks: [],
   reposts: [],
   comments: [],
+  tags: [],
 };
 
-describe("PostCard - pin indicator", () => {
-  it("shows pinned indicator when post is pinned", () => {
+describe("PostCard - tag display", () => {
+  it("renders tag chips when tags are present", () => {
+    const postWithTags = {
+      ...basePost,
+      tags: [
+        { tag: { name: "react" } },
+        { tag: { name: "typescript" } },
+      ],
+    };
+
     render(
       <PostCard
-        post={{ ...basePost, isPinned: true }}
+        post={postWithTags}
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
         showNsfwByDefault={false}
       />
     );
-    expect(screen.getByTestId("post-pinned-indicator")).toBeInTheDocument();
-    expect(screen.getByText("Pinned")).toBeInTheDocument();
+
+    expect(screen.getByTestId("post-tags")).toBeInTheDocument();
+    expect(screen.getByText("#react")).toBeInTheDocument();
+    expect(screen.getByText("#typescript")).toBeInTheDocument();
   });
 
-  it("does not show pinned indicator when post is not pinned", () => {
+  it("tag chips link to /tag/{name}", () => {
+    const postWithTags = {
+      ...basePost,
+      tags: [{ tag: { name: "react" } }],
+    };
+
+    render(
+      <PostCard
+        post={postWithTags}
+        currentUserId="user1"
+        phoneVerified={true}
+        biometricVerified={false}
+        showNsfwByDefault={false}
+      />
+    );
+
+    const tagLink = screen.getByText("#react").closest("a");
+    expect(tagLink).toHaveAttribute("href", "/tag/react");
+  });
+
+  it("does not render tags section when tags array is empty", () => {
     render(
       <PostCard
         post={basePost}
@@ -89,48 +119,24 @@ describe("PostCard - pin indicator", () => {
         showNsfwByDefault={false}
       />
     );
-    expect(screen.queryByTestId("post-pinned-indicator")).not.toBeInTheDocument();
+
+    expect(screen.queryByTestId("post-tags")).not.toBeInTheDocument();
   });
 
-  it("shows 'Unpin' in menu for pinned post when author is viewing", () => {
+  it("does not render tags section when tags is undefined", () => {
+    const postWithoutTags = { ...basePost };
+    delete (postWithoutTags as Record<string, unknown>).tags;
+
     render(
       <PostCard
-        post={{ ...basePost, isPinned: true }}
+        post={postWithoutTags}
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
         showNsfwByDefault={false}
       />
     );
-    fireEvent.click(screen.getByTestId("post-menu-button"));
-    expect(screen.getByTestId("post-pin-button")).toHaveTextContent("Unpin");
-  });
 
-  it("shows 'Pin to profile' in menu for unpinned post when author is viewing", () => {
-    render(
-      <PostCard
-        post={basePost}
-        currentUserId="user1"
-        phoneVerified={true}
-        biometricVerified={false}
-        showNsfwByDefault={false}
-      />
-    );
-    fireEvent.click(screen.getByTestId("post-menu-button"));
-    expect(screen.getByTestId("post-pin-button")).toHaveTextContent("Pin to profile");
-  });
-
-  it("does not show pin button for non-authors", () => {
-    render(
-      <PostCard
-        post={basePost}
-        currentUserId="other-user"
-        phoneVerified={true}
-        biometricVerified={false}
-        showNsfwByDefault={false}
-      />
-    );
-    expect(screen.queryByTestId("post-menu-button")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("post-pin-button")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("post-tags")).not.toBeInTheDocument();
   });
 });
