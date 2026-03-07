@@ -3,18 +3,20 @@
 import Link from "next/link";
 import { timeAgo } from "@/lib/time";
 import { PresenceIndicator } from "./presence-indicator";
-import type { ConversationListItem } from "@/types/chat";
+import type { ConversationListItem, ChatThemeColors } from "@/types/chat";
 
 interface ConversationItemProps {
   conversation: ConversationListItem;
   isActive: boolean;
   isOnline?: boolean;
+  themeColors?: ChatThemeColors;
 }
 
 export function ConversationItem({
   conversation,
   isActive,
   isOnline = false,
+  themeColors,
 }: ConversationItemProps) {
   const { participants, lastMessage, unreadCount, isGroup, name } = conversation;
 
@@ -29,14 +31,17 @@ export function ConversationItem({
     ? conversation.avatarUrl
     : participants[0]?.avatar ?? participants[0]?.image;
 
+  const hasThemedActive = isActive && themeColors?.containerColor;
+
   return (
     <Link
       href={`/chat/${conversation.id}`}
       className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${
-        isActive
+        isActive && !hasThemedActive
           ? "bg-zinc-100 dark:bg-zinc-800"
           : ""
       }`}
+      style={hasThemedActive ? { backgroundColor: `${themeColors.containerColor}33`, color: themeColors.secondaryColor ?? undefined } : undefined}
     >
       <div className="relative flex-shrink-0">
         {avatar ? (

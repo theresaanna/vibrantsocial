@@ -12,6 +12,7 @@ import type {
   MessageRequestData,
   MessageData,
   ConversationWithParticipants,
+  ChatThemeColors,
 } from "@/types/chat";
 
 const PRESENCE_CHANNEL = "presence:global";
@@ -24,16 +25,19 @@ interface ConversationPageClientProps {
   conversation: ConversationWithParticipants;
   currentUserId: string;
   phoneVerified: boolean;
+  themeColors?: ChatThemeColors;
 }
 
 function PresenceAwareSidebar({
   conversations,
   activeId,
   messageRequests,
+  themeColors,
 }: {
   conversations: ConversationListItem[];
   activeId: string;
   messageRequests: MessageRequestData[];
+  themeColors?: ChatThemeColors;
 }) {
   const { presenceData } = usePresenceListener(PRESENCE_CHANNEL);
   const onlineUserIds = useMemo(
@@ -47,6 +51,7 @@ function PresenceAwareSidebar({
         conversations={conversations}
         activeId={activeId}
         onlineUserIds={onlineUserIds}
+        themeColors={themeColors}
       />
       <MessageRequestList requests={messageRequests} />
     </>
@@ -59,12 +64,14 @@ function PresenceAwareThread({
   conversation,
   currentUserId,
   phoneVerified,
+  themeColors,
 }: {
   conversationId: string;
   initialMessages: MessageData[];
   conversation: ConversationWithParticipants;
   currentUserId: string;
   phoneVerified: boolean;
+  themeColors?: ChatThemeColors;
 }) {
   const { presenceData } = usePresenceListener(PRESENCE_CHANNEL);
   const onlineUserIds = useMemo(
@@ -83,6 +90,7 @@ function PresenceAwareThread({
             currentUserId={currentUserId}
             onlineUserIds={onlineUserIds}
             phoneVerified={phoneVerified}
+            themeColors={themeColors}
           />
         </ChannelProvider>
       </ChannelProvider>
@@ -98,6 +106,7 @@ export function ConversationPageClient({
   conversation,
   currentUserId,
   phoneVerified,
+  themeColors,
 }: ConversationPageClientProps) {
   const ablyReady = useAblyReady();
   const [liveConversations, setLiveConversations] = useState(conversations);
@@ -126,12 +135,14 @@ export function ConversationPageClient({
             conversations={liveConversations}
             activeId={conversationId}
             messageRequests={messageRequests}
+            themeColors={themeColors}
           />
         ) : (
           <>
             <ConversationList
               conversations={liveConversations}
               activeId={conversationId}
+              themeColors={themeColors}
             />
             <MessageRequestList requests={messageRequests} />
           </>
@@ -147,6 +158,7 @@ export function ConversationPageClient({
             conversation={conversation}
             currentUserId={currentUserId}
             phoneVerified={phoneVerified}
+            themeColors={themeColors}
           />
         ) : (
           <div className="flex flex-1 items-center justify-center">

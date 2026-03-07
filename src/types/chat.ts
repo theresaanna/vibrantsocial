@@ -53,6 +53,13 @@ export interface MessageRequestData {
   sender: ChatUserProfile;
 }
 
+export interface ChatThemeColors {
+  bgColor: string | null;
+  textColor: string | null;
+  containerColor: string | null;
+  secondaryColor: string | null;
+}
+
 export interface ActionState {
   success: boolean;
   message: string;

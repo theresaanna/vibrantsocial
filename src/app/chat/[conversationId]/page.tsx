@@ -25,7 +25,7 @@ export default async function ConversationPage({ params }: Props) {
   });
   if (!participant) redirect("/chat");
 
-  const [conversations, { messages }, messageRequests, conversation, phoneVerified] =
+  const [conversations, { messages }, messageRequests, conversation, phoneVerified, currentUser] =
     await Promise.all([
       getConversations(),
       getMessages(conversationId),
@@ -50,9 +50,25 @@ export default async function ConversationPage({ params }: Props) {
         },
       }),
       requirePhoneVerification(session.user.id),
+      prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: {
+          profileBgColor: true,
+          profileTextColor: true,
+          profileContainerColor: true,
+          profileSecondaryColor: true,
+        },
+      }),
     ]);
 
   if (!conversation) redirect("/chat");
+
+  const themeColors = {
+    bgColor: currentUser?.profileBgColor ?? null,
+    textColor: currentUser?.profileTextColor ?? null,
+    containerColor: currentUser?.profileContainerColor ?? null,
+    secondaryColor: currentUser?.profileSecondaryColor ?? null,
+  };
 
   return (
     <ConversationPageClient
@@ -63,6 +79,7 @@ export default async function ConversationPage({ params }: Props) {
       conversation={conversation}
       currentUserId={session.user.id}
       phoneVerified={phoneVerified}
+      themeColors={themeColors}
     />
   );
 }

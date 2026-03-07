@@ -3,18 +3,20 @@
 import { useState } from "react";
 import { ConversationItem } from "./conversation-item";
 import { NewConversationModal } from "./new-conversation-modal";
-import type { ConversationListItem } from "@/types/chat";
+import type { ConversationListItem, ChatThemeColors } from "@/types/chat";
 
 interface ConversationListProps {
   conversations: ConversationListItem[];
   activeId?: string;
   onlineUserIds?: Set<string>;
+  themeColors?: ChatThemeColors;
 }
 
 export function ConversationList({
   conversations,
   activeId,
   onlineUserIds = new Set(),
+  themeColors,
 }: ConversationListProps) {
   const [showModal, setShowModal] = useState(false);
 
@@ -58,6 +60,7 @@ export function ConversationList({
                 conversation={conv}
                 isActive={conv.id === activeId}
                 isOnline={otherUserId ? onlineUserIds.has(otherUserId) : false}
+                themeColors={themeColors}
               />
             );
           })
