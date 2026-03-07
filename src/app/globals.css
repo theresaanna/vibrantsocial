@@ -58,3 +58,7 @@ h6 {
 .profile-themed .profile-link {
   color: var(--profile-link);
 }
+
+.profile-themed .profile-share-btn:hover {
+  background-color: var(--profile-container);
+}

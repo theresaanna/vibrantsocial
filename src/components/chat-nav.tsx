@@ -102,7 +102,7 @@ export function ChatNav({ initialConversations }: ChatNavProps) {
     <div className="relative" ref={containerRef}>
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        className="relative text-sm text-zinc-600 hover:text-green-500 dark:text-zinc-400 dark:hover:text-green-500"
+        className="relative rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-green-50 hover:text-green-500 dark:text-zinc-400 dark:hover:bg-green-900/20 dark:hover:text-green-500"
         aria-label="Chat"
       >
         <svg
@@ -119,7 +119,7 @@ export function ChatNav({ initialConversations }: ChatNavProps) {
           />
         </svg>
         {totalUnread > 0 && (
-          <span className="absolute -right-3.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-500 px-1 text-[10px] font-medium text-white">
+          <span className="absolute -right-3.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-green-500 px-1 text-[10px] font-medium text-white">
             {totalUnread > 99 ? "99+" : totalUnread}
           </span>
         )}
@@ -252,7 +252,7 @@ function ChatPaneItem({
             {lastMessage?.content ?? "No messages yet"}
           </p>
           {unreadCount > 0 && (
-            <span className="ml-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
+            <span className="ml-2 h-2 w-2 flex-shrink-0 rounded-full bg-green-500" />
           )}
         </div>
       </div>

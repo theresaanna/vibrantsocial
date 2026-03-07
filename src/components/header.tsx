@@ -29,7 +29,7 @@ export async function Header() {
             <>
               <Link
                 href="/feed"
-                className="text-sm text-zinc-600 hover:text-purple-500 dark:text-zinc-400 dark:hover:text-purple-500"
+                className="rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-purple-50 hover:text-purple-500 dark:text-zinc-400 dark:hover:bg-purple-900/20 dark:hover:text-purple-500"
                 aria-label="Feed"
               >
                 <svg
@@ -48,7 +48,7 @@ export async function Header() {
               </Link>
               <Link
                 href="/likes"
-                className="text-sm text-zinc-600 hover:text-red-500 dark:text-zinc-400 dark:hover:text-red-500"
+                className="rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-red-50 hover:text-red-500 dark:text-zinc-400 dark:hover:bg-red-900/20 dark:hover:text-red-500"
                 aria-label="Likes"
               >
                 <svg
@@ -67,7 +67,7 @@ export async function Header() {
               </Link>
               <Link
                 href="/bookmarks"
-                className="text-sm text-zinc-600 hover:text-yellow-500 dark:text-zinc-400 dark:hover:text-yellow-500"
+                className="rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-yellow-50 hover:text-yellow-500 dark:text-zinc-400 dark:hover:bg-yellow-900/20 dark:hover:text-yellow-500"
                 aria-label="Bookmarks"
               >
                 <svg
