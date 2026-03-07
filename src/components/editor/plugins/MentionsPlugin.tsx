@@ -65,12 +65,30 @@ function MentionDropdown({
   if (!anchorRect || results.length === 0) return null;
 
   const dropdownWidth = 256; // w-64
-  // Clamp left so the dropdown doesn't overflow the viewport
-  const left = Math.max(8, Math.min(anchorRect.left, window.innerWidth - dropdownWidth - 8));
-  // If anchorRect is invalid (zeros on mobile), fall back to a centered position
-  const isValidRect = anchorRect.bottom > 0 && anchorRect.height > 0;
-  const top = isValidRect ? anchorRect.bottom + 4 : undefined;
-  const bottom = isValidRect ? undefined : 8;
+  const dropdownMaxHeight = 208; // max-h-52
+
+  // Horizontal: if cursor is past the midpoint, align right edge near cursor
+  const viewportWidth = window.innerWidth;
+  let left: number;
+  if (anchorRect.left > viewportWidth / 2) {
+    left = Math.max(8, anchorRect.right - dropdownWidth);
+  } else {
+    left = Math.max(8, Math.min(anchorRect.left, viewportWidth - dropdownWidth - 8));
+  }
+
+  // Vertical: place below the anchor; use visualViewport to avoid the keyboard
+  const vv = window.visualViewport;
+  const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+  const spaceBelow = visibleBottom - anchorRect.bottom;
+
+  let top: number | undefined;
+  let bottom: number | undefined;
+  if (spaceBelow >= dropdownMaxHeight + 8) {
+    top = anchorRect.bottom + 4;
+  } else {
+    // Not enough room below (keyboard), flip above the cursor
+    bottom = window.innerHeight - anchorRect.top + 4;
+  }
 
   const style: React.CSSProperties = {
     position: "fixed",
@@ -250,8 +268,22 @@ export function MentionsPlugin() {
             if (rangeRect.height > 0 && rangeRect.bottom > 0) {
               rect = rangeRect;
             }
+            // Try getClientRects() — sometimes works when getBoundingClientRect doesn't
+            if (!rect) {
+              const rects = range.getClientRects();
+              if (rects.length > 0 && rects[0].height > 0) {
+                rect = rects[0];
+              }
+            }
           }
-          // Fallback: use the editor root element's rect
+          // Fallback: use the DOM element of the text node being edited
+          if (!rect) {
+            const element = editor.getElementByKey(anchorNode.getKey());
+            if (element) {
+              rect = element.getBoundingClientRect();
+            }
+          }
+          // Last fallback: editor root element
           if (!rect) {
             const rootEl = editor.getRootElement();
             if (rootEl) {
