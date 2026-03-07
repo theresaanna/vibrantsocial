@@ -64,11 +64,19 @@ function MentionDropdown({
 
   if (!anchorRect || results.length === 0) return null;
 
-  // Position below the cursor
+  const dropdownWidth = 256; // w-64
+  // Clamp left so the dropdown doesn't overflow the viewport
+  const left = Math.max(8, Math.min(anchorRect.left, window.innerWidth - dropdownWidth - 8));
+  // If anchorRect is invalid (zeros on mobile), fall back to a centered position
+  const isValidRect = anchorRect.bottom > 0 && anchorRect.height > 0;
+  const top = isValidRect ? anchorRect.bottom + 4 : undefined;
+  const bottom = isValidRect ? undefined : 8;
+
   const style: React.CSSProperties = {
     position: "fixed",
-    top: anchorRect.bottom + 4,
-    left: anchorRect.left,
+    top,
+    bottom,
+    left,
     zIndex: 9999,
   };
 
@@ -233,10 +241,23 @@ export function MentionsPlugin() {
 
           // Get cursor position for dropdown
           const nativeSelection = window.getSelection();
+          let rect: DOMRect | null = null;
           if (nativeSelection && nativeSelection.rangeCount > 0) {
             const range = nativeSelection.getRangeAt(0);
-            setAnchorRect(range.getBoundingClientRect());
+            const rangeRect = range.getBoundingClientRect();
+            // On mobile, collapsed ranges can return all-zero rects
+            if (rangeRect.height > 0 && rangeRect.bottom > 0) {
+              rect = rangeRect;
+            }
           }
+          // Fallback: use the editor root element's rect
+          if (!rect) {
+            const rootEl = editor.getRootElement();
+            if (rootEl) {
+              rect = rootEl.getBoundingClientRect();
+            }
+          }
+          if (rect) setAnchorRect(rect);
         } else {
           setQuery(null);
           matchInfoRef.current = null;
