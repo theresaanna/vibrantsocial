@@ -243,7 +243,7 @@ describe("searchPosts", () => {
     );
   });
 
-  it("includes author and interaction data via postInclude", async () => {
+  it("includes author and counts for search result cards", async () => {
     mockSession();
     mockPrisma.post.findMany.mockResolvedValueOnce([] as never);
 
@@ -254,10 +254,6 @@ describe("searchPosts", () => {
         include: expect.objectContaining({
           author: expect.any(Object),
           _count: expect.any(Object),
-          likes: expect.any(Object),
-          bookmarks: expect.any(Object),
-          reposts: expect.any(Object),
-          comments: expect.any(Object),
         }),
       })
     );

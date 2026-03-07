@@ -1,5 +1,4 @@
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { searchUsers, searchPosts } from "./actions";
 import { SearchPageClient } from "./search-page-client";
@@ -27,11 +26,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     }
   }
 
-  const currentUser = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { phoneVerified: true, biometricVerified: true, showNsfwByDefault: true },
-  });
-
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
       <SearchPageClient
@@ -39,10 +33,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         initialTab={tab}
         initialUsers={initialUsers}
         initialPosts={initialPosts}
-        currentUserId={session.user.id}
-        phoneVerified={!!currentUser?.phoneVerified}
-        biometricVerified={!!currentUser?.biometricVerified}
-        showNsfwByDefault={currentUser?.showNsfwByDefault ?? false}
       />
     </main>
   );

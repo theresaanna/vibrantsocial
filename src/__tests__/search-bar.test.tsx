@@ -21,15 +21,23 @@ describe("SearchBar", () => {
     expect(screen.getByLabelText("Open search")).toBeInTheDocument();
   });
 
-  it("does not show input by default", () => {
+  it("popup is hidden by default", () => {
     render(<SearchBar />);
-    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+    // The input is always in the DOM but the popup container is visually hidden
+    const input = screen.getByLabelText("Search");
+    const popup = input.closest("[class*='absolute']")!;
+    expect(popup.className).toContain("opacity-0");
+    expect(popup.className).toContain("pointer-events-none");
   });
 
-  it("opens input when magnifying glass is clicked", () => {
+  it("opens popup when magnifying glass is clicked", () => {
     render(<SearchBar />);
     fireEvent.click(screen.getByLabelText("Open search"));
-    expect(screen.getByRole("searchbox")).toBeInTheDocument();
+
+    const input = screen.getByLabelText("Search");
+    const popup = input.closest("[class*='absolute']")!;
+    expect(popup.className).toContain("opacity-100");
+    expect(popup.className).toContain("pointer-events-auto");
   });
 
   it("navigates to /search on form submit with valid query", () => {
@@ -41,6 +49,18 @@ describe("SearchBar", () => {
     fireEvent.submit(input);
 
     expect(mockPush).toHaveBeenCalledWith("/search?q=hello");
+  });
+
+  it("closes popup after successful submit", () => {
+    render(<SearchBar />);
+    fireEvent.click(screen.getByLabelText("Open search"));
+
+    const input = screen.getByRole("searchbox");
+    fireEvent.change(input, { target: { value: "hello" } });
+    fireEvent.submit(input);
+
+    const popup = input.closest("[class*='absolute']")!;
+    expect(popup.className).toContain("opacity-0");
   });
 
   it("does not navigate with empty query", () => {
@@ -75,20 +95,37 @@ describe("SearchBar", () => {
     expect(mockPush).toHaveBeenCalledWith("/search?q=hello%20world");
   });
 
-  it("closes input on Escape key", () => {
+  it("closes popup on Escape key", () => {
     render(<SearchBar />);
     fireEvent.click(screen.getByLabelText("Open search"));
 
     const input = screen.getByRole("searchbox");
-    expect(input).toBeInTheDocument();
+    const popup = input.closest("[class*='absolute']")!;
+    expect(popup.className).toContain("opacity-100");
 
     fireEvent.keyDown(input, { key: "Escape" });
-    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+    expect(popup.className).toContain("opacity-0");
+  });
+
+  it("closes popup when clicking outside", () => {
+    render(<SearchBar />);
+    fireEvent.click(screen.getByLabelText("Open search"));
+
+    const input = screen.getByLabelText("Search");
+    const popup = input.closest("[class*='absolute']")!;
+    expect(popup.className).toContain("opacity-100");
+
+    fireEvent.mouseDown(document.body);
+    expect(popup.className).toContain("opacity-0");
   });
 
   it("has aria-label on search input", () => {
     render(<SearchBar />);
-    fireEvent.click(screen.getByLabelText("Open search"));
     expect(screen.getByLabelText("Search")).toBeInTheDocument();
+  });
+
+  it("shows hint text about pressing Enter", () => {
+    render(<SearchBar />);
+    expect(screen.getByText("Press Enter to search")).toBeInTheDocument();
   });
 });

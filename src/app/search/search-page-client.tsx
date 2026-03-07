@@ -9,7 +9,7 @@ import {
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { searchUsers, searchPosts } from "./actions";
-import { PostCard } from "@/components/post-card";
+import { SearchPostCard } from "@/components/search-post-card";
 import { SearchUserCard } from "@/components/search-user-card";
 
 type SearchTab = "users" | "posts";
@@ -20,10 +20,6 @@ interface SearchPageClientProps {
   initialTab: SearchTab;
   initialUsers: { users: any[]; hasMore: boolean };
   initialPosts: { posts: any[]; hasMore: boolean };
-  currentUserId: string;
-  phoneVerified: boolean;
-  biometricVerified: boolean;
-  showNsfwByDefault: boolean;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
@@ -32,10 +28,6 @@ export function SearchPageClient({
   initialTab,
   initialUsers,
   initialPosts,
-  currentUserId,
-  phoneVerified,
-  biometricVerified,
-  showNsfwByDefault,
 }: SearchPageClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -257,16 +249,9 @@ export function SearchPageClient({
                 No posts found
               </p>
             )}
-            <div className="space-y-4">
+            <div className="space-y-3">
               {posts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  currentUserId={currentUserId}
-                  phoneVerified={phoneVerified}
-                  biometricVerified={biometricVerified}
-                  showNsfwByDefault={showNsfwByDefault}
-                />
+                <SearchPostCard key={post.id} post={post} />
               ))}
             </div>
           </>
