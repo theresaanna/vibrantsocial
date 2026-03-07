@@ -15,12 +15,21 @@ export async function signup(
   formData: FormData
 ): Promise<SignupState> {
   const email = (formData.get("email") as string)?.trim().toLowerCase();
+  const username = (formData.get("username") as string)?.trim().toLowerCase();
   const dateOfBirthStr = formData.get("dateOfBirth") as string;
   const password = formData.get("password") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
 
-  if (!email || !dateOfBirthStr || !password || !confirmPassword) {
+  if (!email || !username || !dateOfBirthStr || !password || !confirmPassword) {
     return { success: false, message: "All fields are required" };
+  }
+
+  if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) {
+    return {
+      success: false,
+      message:
+        "Username must be 3-30 characters, letters, numbers, and underscores only",
+    };
   }
 
   const dateOfBirth = new Date(dateOfBirthStr);
@@ -69,11 +78,23 @@ export async function signup(
     };
   }
 
+  const existingUsername = await prisma.user.findUnique({
+    where: { username },
+  });
+
+  if (existingUsername) {
+    return {
+      success: false,
+      message: "This username is already taken",
+    };
+  }
+
   const passwordHash = await bcrypt.hash(password, 12);
 
   const newUser = await prisma.user.create({
     data: {
       email,
+      username,
       passwordHash,
       dateOfBirth,
       emailVerified: new Date(),

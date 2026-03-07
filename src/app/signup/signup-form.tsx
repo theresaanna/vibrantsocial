@@ -1,13 +1,53 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState, useEffect, useRef } from "react";
 import { signup } from "./actions";
+
+type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
 export function SignupForm() {
   const [state, formAction, isPending] = useActionState(signup, {
     success: false,
     message: "",
   });
+
+  const [usernameValue, setUsernameValue] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>("idle");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    const trimmed = usernameValue.trim().toLowerCase();
+
+    if (!trimmed) {
+      setUsernameStatus("idle");
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_]{3,30}$/.test(trimmed)) {
+      setUsernameStatus("invalid");
+      return;
+    }
+
+    setUsernameStatus("checking");
+
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/username-check?username=${encodeURIComponent(trimmed)}`
+        );
+        const data = await res.json();
+        setUsernameStatus(data.available ? "available" : "taken");
+      } catch {
+        setUsernameStatus("idle");
+      }
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [usernameValue]);
 
   return (
     <form action={formAction} className="space-y-4">
@@ -26,6 +66,51 @@ export function SignupForm() {
           className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
           placeholder="you@example.com"
         />
+      </div>
+
+      <div>
+        <label
+          htmlFor="username"
+          className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+        >
+          Username
+        </label>
+        <input
+          id="username"
+          name="username"
+          type="text"
+          required
+          minLength={3}
+          maxLength={30}
+          pattern="^[a-zA-Z0-9_]{3,30}$"
+          value={usernameValue}
+          onChange={(e) => setUsernameValue(e.target.value)}
+          className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+          placeholder="your_username"
+        />
+        {usernameValue.trim() && (
+          <div className="mt-1.5">
+            {usernameStatus === "checking" && (
+              <p className="text-xs text-zinc-400">Checking availability...</p>
+            )}
+            {usernameStatus === "available" && (
+              <p className="text-xs text-green-600">
+                vibrantsocial.com/{usernameValue.trim().toLowerCase()} is
+                available
+              </p>
+            )}
+            {usernameStatus === "taken" && (
+              <p className="text-xs text-red-600">
+                This username is already taken
+              </p>
+            )}
+            {usernameStatus === "invalid" && (
+              <p className="text-xs text-red-600">
+                3-30 characters, letters, numbers, and underscores only
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       <div>

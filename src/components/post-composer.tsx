@@ -145,10 +145,10 @@ export function PostComposer({ phoneVerified, isOldEnough }: PostComposerProps) 
               <input type="checkbox" name="isNsfw" value="true" className="rounded" />
               NSFW
             </label>
+            <p className="ml-auto text-xs text-zinc-400 dark:text-zinc-500">
+              Posts marked sensitive or NSFW will only be visible to age-verified users.
+            </p>
           </div>
-          <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
-            Posts marked sensitive or NSFW will only be visible to age-verified users. Biometric age verification coming soon.
-          </p>
         </div>
         <div className="flex items-center justify-between border-t border-zinc-200 px-4 py-3 dark:border-zinc-700">
           {state.message && !state.success && (
