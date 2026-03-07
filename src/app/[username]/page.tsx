@@ -6,13 +6,18 @@ import { PostCard } from "@/components/post-card";
 import { FollowButton } from "@/components/follow-button";
 import { ProfileShareButton } from "@/components/profile-share-button";
 import { BioContent } from "@/components/bio-content";
+import { ProfileTabs } from "@/components/profile-tabs";
+import { RepostCard } from "@/components/repost-card";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }
 
-export default async function PublicProfilePage({ params }: ProfilePageProps) {
+export default async function PublicProfilePage({ params, searchParams }: ProfilePageProps) {
   const { username } = await params;
+  const { tab } = await searchParams;
+  const activeTab = tab === "reposts" ? "reposts" as const : "posts" as const;
 
   const user = await prisma.user.findUnique({
     where: { username },
@@ -73,47 +78,72 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
     showNsfwByDefault = currentUser?.showNsfwByDefault ?? false;
   }
 
-  // Fetch user's posts
-  const posts = await prisma.post.findMany({
-    where: { authorId: user.id },
-    orderBy: { createdAt: "desc" },
-    take: 20,
-    include: {
-      author: {
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          name: true,
-          image: true,
-          avatar: true,
+  const postInclude = {
+    author: {
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        name: true,
+        image: true,
+        avatar: true,
+      },
+    },
+    _count: {
+      select: {
+        comments: true,
+        likes: true,
+        bookmarks: true,
+        reposts: true,
+      },
+    },
+    likes: {
+      where: { userId: currentUserId ?? "" },
+      select: { id: true },
+    },
+    bookmarks: {
+      where: { userId: currentUserId ?? "" },
+      select: { id: true },
+    },
+    reposts: {
+      where: { userId: currentUserId ?? "" },
+      select: { id: true },
+    },
+    comments: {
+      orderBy: { createdAt: "asc" as const },
+      take: 5,
+      include: {
+        author: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            name: true,
+            image: true,
+            avatar: true,
+          },
         },
       },
-      _count: {
-        select: {
-          comments: true,
-          likes: true,
-          bookmarks: true,
-          reposts: true,
-        },
-      },
-      likes: {
-        where: { userId: currentUserId ?? "" },
-        select: { id: true },
-      },
-      bookmarks: {
-        where: { userId: currentUserId ?? "" },
-        select: { id: true },
-      },
-      reposts: {
-        where: { userId: currentUserId ?? "" },
-        select: { id: true },
-      },
-      comments: {
-        orderBy: { createdAt: "asc" },
-        take: 5,
+    },
+  };
+
+  // Fetch user's posts or reposts based on active tab
+  const posts = activeTab === "posts"
+    ? await prisma.post.findMany({
+        where: { authorId: user.id },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        include: postInclude,
+      })
+    : [];
+
+  const userReposts = activeTab === "reposts"
+    ? await prisma.repost.findMany({
+        where: { userId: user.id },
+        orderBy: { createdAt: "desc" },
+        take: 20,
         include: {
-          author: {
+          user: {
             select: {
               id: true,
               username: true,
@@ -123,10 +153,10 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
               avatar: true,
             },
           },
+          post: { include: postInclude },
         },
-      },
-    },
-  });
+      })
+    : [];
 
   const displayName = user.displayName || user.name || user.username;
   const avatarSrc = user.avatar || user.image;
@@ -238,19 +268,37 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
           </div>
         </div>
 
-        {/* User's posts */}
-        {posts.length === 0 ? (
-          <div className="mt-8 text-center">
-            <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
-              No posts yet.
-            </p>
-          </div>
+        <ProfileTabs username={user.username!} activeTab={activeTab} hasCustomTheme={hasCustomTheme} />
+
+        {/* Tab content */}
+        {activeTab === "posts" ? (
+          posts.length === 0 ? (
+            <div className="mt-8 text-center">
+              <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                No posts yet.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-6 space-y-4">
+              {posts.map((post) => (
+                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showNsfwByDefault={showNsfwByDefault} />
+              ))}
+            </div>
+          )
         ) : (
-          <div className="mt-6 space-y-4">
-            {posts.map((post) => (
-              <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showNsfwByDefault={showNsfwByDefault} />
-            ))}
-          </div>
+          userReposts.length === 0 ? (
+            <div className="mt-8 text-center">
+              <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                No reposts yet.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-6 space-y-4">
+              {userReposts.map((repost) => (
+                <RepostCard key={repost.id} repost={repost} currentUserId={currentUserId} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showNsfwByDefault={showNsfwByDefault} />
+              ))}
+            </div>
+          )
         )}
       </main>
     </div>

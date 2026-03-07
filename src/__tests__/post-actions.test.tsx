@@ -147,14 +147,53 @@ describe("PostActions", () => {
     expect(within(unbookmarkBtn).getByText("3")).toBeInTheDocument();
   });
 
-  it("optimistically updates repost on click", async () => {
+  it("shows repost dropdown when not reposted", async () => {
     const user = userEvent.setup();
     render(<PostActions {...defaultProps} repostCount={0} isReposted={false} />);
 
     await user.click(screen.getByLabelText("Repost"));
 
+    // Dropdown should appear with "Repost" and "Quote Post" options
+    expect(screen.getByText("Repost")).toBeInTheDocument();
+  });
+
+  it("optimistically updates repost via dropdown", async () => {
+    const user = userEvent.setup();
+    render(<PostActions {...defaultProps} repostCount={0} isReposted={false} />);
+
+    // Click repost button to open dropdown
+    await user.click(screen.getByLabelText("Repost"));
+    // Click "Repost" in the dropdown
+    await user.click(screen.getByText("Repost"));
+
     const unrepostBtn = screen.getByLabelText("Unrepost");
     expect(within(unrepostBtn).getByText("1")).toBeInTheDocument();
+  });
+
+  it("directly unrepost when already reposted (no dropdown)", async () => {
+    const user = userEvent.setup();
+    render(<PostActions {...defaultProps} repostCount={2} isReposted={true} />);
+
+    // Should show Unrepost label
+    const unrepostBtn = screen.getByLabelText("Unrepost");
+    expect(within(unrepostBtn).getByText("2")).toBeInTheDocument();
+
+    // Click directly unrepost (no dropdown)
+    await user.click(unrepostBtn);
+
+    const repostBtn = screen.getByLabelText("Repost");
+    expect(within(repostBtn).getByText("1")).toBeInTheDocument();
+  });
+
+  it("calls onQuotePost from dropdown", async () => {
+    const onQuotePost = vi.fn();
+    const user = userEvent.setup();
+    render(<PostActions {...defaultProps} isReposted={false} onQuotePost={onQuotePost} />);
+
+    await user.click(screen.getByLabelText("Repost"));
+    await user.click(screen.getByText("Quote Post"));
+
+    expect(onQuotePost).toHaveBeenCalledTimes(1);
   });
 
   it("calls onToggleComments when comment button clicked", async () => {

@@ -7,6 +7,7 @@ import { CommentSection } from "./comment-section";
 import { PostRevisionHistory } from "./post-revision-history";
 import { Editor } from "./editor/Editor";
 import { editPost, deletePost } from "@/app/feed/actions";
+import { QuotePostModal } from "./quote-post-modal";
 import { timeAgo } from "@/lib/time";
 import Link from "next/link";
 
@@ -68,6 +69,7 @@ export function PostCard({
   const [showMenu, setShowMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showRevisionHistory, setShowRevisionHistory] = useState(false);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [currentContent, setCurrentContent] = useState(post.content);
   const [wasEdited, setWasEdited] = useState(!!post.editedAt);
@@ -333,6 +335,7 @@ export function PostCard({
               isBookmarked={post.bookmarks.length > 0}
               isReposted={post.reposts.length > 0}
               onToggleComments={() => setShowComments((prev) => !prev)}
+              onQuotePost={() => setShowQuoteModal(true)}
             />
           </div>
 
@@ -357,6 +360,17 @@ export function PostCard({
             setCurrentContent(content);
             setWasEdited(true);
           }}
+        />
+      )}
+
+      {/* Quote post modal */}
+      {showQuoteModal && (
+        <QuotePostModal
+          postId={post.id}
+          originalAuthor={post.author.username || "unknown"}
+          originalContent={currentContent}
+          onClose={() => setShowQuoteModal(false)}
+          onSuccess={() => {}}
         />
       )}
     </div>
