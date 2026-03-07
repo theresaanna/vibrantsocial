@@ -85,6 +85,36 @@ export async function sendNewChatEmail(params: {
   }
 }
 
+export async function sendWelcomeEmail(toEmail: string) {
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: toEmail,
+      subject: "Welcome to the party! \u{1F389}",
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #18181b; margin-bottom: 16px;">Welcome to the party! \u{1F389}</h2>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            I hope you'll find your time on VibrantSocial more enriching than your average social media. No algorithms, no children, just self expression.
+          </p>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            Please let me know by messaging me on the app, or emailing <a href="mailto:vibrantsocial@proton.me" style="color: #18181b;">vibrantsocial@proton.me</a>.
+          </p>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            Thanks for joining us.<br/>
+            &mdash; Theresa Anna
+          </p>
+          <a href="${getBaseUrl()}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
+            Get Started
+          </a>
+        </div>
+      `,
+    });
+  } catch {
+    // Non-critical — don't break the signup flow
+  }
+}
+
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, "&amp;")

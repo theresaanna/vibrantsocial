@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { signIn } from "@/auth";
 import { AuthError } from "next-auth";
 import { autoFriendNewUser } from "@/lib/auto-friend";
+import { sendWelcomeEmail } from "@/lib/email";
 
 interface SignupState {
   success: boolean;
@@ -104,6 +105,9 @@ export async function signup(
 
   // Auto-friend with theresa so new users see content and have a connection
   await autoFriendNewUser(newUser.id);
+
+  // Send welcome email (fire-and-forget)
+  sendWelcomeEmail(email);
 
   try {
     await signIn("credentials", {

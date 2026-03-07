@@ -10,7 +10,7 @@ vi.mock("resend", () => ({
   })),
 }));
 
-import { sendCommentEmail, sendNewChatEmail } from "@/lib/email";
+import { sendCommentEmail, sendNewChatEmail, sendWelcomeEmail } from "@/lib/email";
 
 describe("sendCommentEmail", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -107,5 +107,31 @@ describe("sendNewChatEmail", () => {
         conversationId: "conv-456",
       })
     ).resolves.toBeUndefined();
+  });
+});
+
+describe("sendWelcomeEmail", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("sends a welcome email with the correct fields", async () => {
+    mockSend.mockResolvedValueOnce({ id: "email-5" });
+
+    await sendWelcomeEmail("newuser@example.com");
+
+    expect(mockSend).toHaveBeenCalledOnce();
+    const call = mockSend.mock.calls[0][0];
+    expect(call.from).toBe("VibrantSocial <hello@vibrantsocial.app>");
+    expect(call.to).toBe("newuser@example.com");
+    expect(call.subject).toContain("Welcome to the party!");
+    expect(call.html).toContain("Welcome to the party!");
+    expect(call.html).toContain("No algorithms, no children, just self expression");
+    expect(call.html).toContain("vibrantsocial@proton.me");
+    expect(call.html).toContain("Theresa Anna");
+  });
+
+  it("does not throw on Resend failure", async () => {
+    mockSend.mockRejectedValueOnce(new Error("Resend down"));
+
+    await expect(sendWelcomeEmail("newuser@example.com")).resolves.toBeUndefined();
   });
 });
