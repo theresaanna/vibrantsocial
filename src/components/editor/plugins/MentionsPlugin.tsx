@@ -81,20 +81,6 @@ function MentionDropdown({
   onSelect,
 }: MentionDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [, forceRender] = useState(0);
-
-  // Re-render when the visual viewport changes (keyboard show/hide, scroll)
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const handler = () => forceRender((n) => n + 1);
-    vv.addEventListener("resize", handler);
-    vv.addEventListener("scroll", handler);
-    return () => {
-      vv.removeEventListener("resize", handler);
-      vv.removeEventListener("scroll", handler);
-    };
-  }, []);
 
   if (results.length === 0) return null;
 
@@ -103,35 +89,27 @@ function MentionDropdown({
   if (!anchorRect) return null;
 
   const dropdownWidth = 256; // w-64
-  const dropdownMaxHeight = 208; // max-h-52
+
+  // Convert viewport-relative rect to document-relative coordinates
+  // so the dropdown scrolls with the page (fixes iOS keyboard issues)
+  const scrollX = window.scrollX;
+  const scrollY = window.scrollY;
 
   // Horizontal: if cursor is past the midpoint, align right edge near cursor
   const viewportWidth = window.innerWidth;
   let left: number;
   if (anchorRect.left > viewportWidth / 2) {
-    left = Math.max(8, anchorRect.right - dropdownWidth);
+    left = Math.max(scrollX + 8, anchorRect.right + scrollX - dropdownWidth);
   } else {
-    left = Math.max(8, Math.min(anchorRect.left, viewportWidth - dropdownWidth - 8));
+    left = Math.max(scrollX + 8, Math.min(anchorRect.left + scrollX, scrollX + viewportWidth - dropdownWidth - 8));
   }
 
-  // Vertical: place below the anchor; use visualViewport to avoid the keyboard
-  const vv = window.visualViewport;
-  const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
-  const spaceBelow = visibleBottom - anchorRect.bottom;
-
-  let top: number | undefined;
-  let bottom: number | undefined;
-  if (spaceBelow >= dropdownMaxHeight + 8) {
-    top = anchorRect.bottom + 4;
-  } else {
-    // Not enough room below (keyboard), flip above the cursor
-    bottom = window.innerHeight - anchorRect.top + 4;
-  }
+  // Vertical: place below the anchor
+  const top = anchorRect.bottom + scrollY + 4;
 
   const style: React.CSSProperties = {
-    position: "fixed",
+    position: "absolute",
     top,
-    bottom,
     left,
     zIndex: 9999,
   };
