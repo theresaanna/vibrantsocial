@@ -30,7 +30,7 @@ export function PostRevisionHistory({
 
   useEffect(() => {
     getPostRevisions(postId).then((data) => {
-      setRevisions(data.map((r) => ({ ...r, createdAt: new Date(r.createdAt) })));
+      setRevisions(data.map((r: { id: string; content: string; createdAt: Date }) => ({ ...r, createdAt: new Date(r.createdAt) })));
       setLoading(false);
       if (data.length > 0) setSelectedId(data[0].id);
     });

@@ -68,7 +68,7 @@ export default async function BookmarksPage() {
           },
           comments: {
             where: { parentId: null },
-            orderBy: { createdAt: "asc" },
+            orderBy: { createdAt: "asc" as const },
             take: 5,
             include: {
               author: {
@@ -82,7 +82,7 @@ export default async function BookmarksPage() {
                 },
               },
               replies: {
-                orderBy: { createdAt: "asc" },
+                orderBy: { createdAt: "asc" as const },
                 include: {
                   author: {
                     select: {

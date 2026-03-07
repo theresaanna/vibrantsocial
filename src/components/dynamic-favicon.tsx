@@ -33,7 +33,7 @@ async function fetchHasUnread(): Promise<boolean> {
     getConversations(),
   ]);
   const chatUnread = convos.reduce(
-    (sum: number, c) => sum + c.unreadCount,
+    (sum: number, c: { unreadCount: number }) => sum + c.unreadCount,
     0
   );
   return notifCount > 0 || chatUnread > 0;

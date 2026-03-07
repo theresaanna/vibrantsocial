@@ -90,7 +90,7 @@ async function prunePostRevisions(postId: string) {
       select: { id: true },
     });
     await prisma.postRevision.deleteMany({
-      where: { id: { in: toDelete.map((r) => r.id) } },
+      where: { id: { in: toDelete.map((r: { id: string }) => r.id) } },
     });
   }
 }
@@ -125,6 +125,19 @@ export async function editPost(
     where: { id: postId },
     data: { content, editedAt: new Date() },
   });
+
+  // Notify users who were newly mentioned in the edit
+  const oldMentions = new Set(extractMentionsFromLexicalJson(post.content));
+  const newMentions = extractMentionsFromLexicalJson(content).filter(
+    (u) => !oldMentions.has(u)
+  );
+  if (newMentions.length > 0) {
+    await createMentionNotifications({
+      usernames: newMentions,
+      actorId: session.user.id,
+      postId,
+    });
+  }
 
   revalidatePath("/feed");
   revalidatePath(`/post/${postId}`);

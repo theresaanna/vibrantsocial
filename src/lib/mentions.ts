@@ -67,7 +67,7 @@ export async function createMentionNotifications(params: {
     actor?.displayName ?? actor?.username ?? actor?.name ?? "Someone";
 
   await Promise.all(
-    users.map(async (user) => {
+    users.map(async (user: { id: string; email: string | null; emailOnMention: boolean }) => {
       await createNotification({
         type: "MENTION",
         actorId: params.actorId,

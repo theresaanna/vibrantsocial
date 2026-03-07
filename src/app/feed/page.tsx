@@ -32,7 +32,7 @@ export default async function FeedPage() {
     select: { followingId: true },
   });
 
-  const followingIds = following.map((f) => f.followingId);
+  const followingIds = following.map((f: { followingId: string }) => f.followingId);
   const postInclude = getPostInclude(userId);
   const fetchCount = PAGE_SIZE + 1;
 
@@ -60,17 +60,17 @@ export default async function FeedPage() {
   });
 
   // Deduplicate: if a post appears both directly and via repost, keep the direct post
-  const directPostIds = new Set(posts.map((p) => p.id));
-  const filteredReposts = reposts.filter((r) => !directPostIds.has(r.post.id));
+  const directPostIds = new Set(posts.map((p: { id: string }) => p.id));
+  const filteredReposts = reposts.filter((r: { post: { id: string } }) => !directPostIds.has(r.post.id));
 
   // Merge and sort chronologically, serialize for client component
   const allItems = [
-    ...posts.map((p) => ({
+    ...posts.map((p: { createdAt: Date }) => ({
       type: "post" as const,
       data: JSON.parse(JSON.stringify(p)),
       date: p.createdAt.toISOString(),
     })),
-    ...filteredReposts.map((r) => ({
+    ...filteredReposts.map((r: { createdAt: Date }) => ({
       type: "repost" as const,
       data: JSON.parse(JSON.stringify(r)),
       date: r.createdAt.toISOString(),

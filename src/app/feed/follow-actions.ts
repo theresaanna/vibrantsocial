@@ -45,10 +45,10 @@ export async function getFollowers(username: string): Promise<FollowUser[]> {
       where: { followerId: currentUserId },
       select: { followingId: true },
     });
-    currentUserFollowingIds = new Set(myFollows.map((f) => f.followingId));
+    currentUserFollowingIds = new Set(myFollows.map((f: { followingId: string }) => f.followingId));
   }
 
-  return follows.map((f) => ({
+  return follows.map((f: { follower: Omit<FollowUser, "isFollowing"> }) => ({
     ...f.follower,
     isFollowing: currentUserFollowingIds.has(f.follower.id),
   }));
@@ -76,10 +76,10 @@ export async function getFollowing(username: string): Promise<FollowUser[]> {
       where: { followerId: currentUserId },
       select: { followingId: true },
     });
-    currentUserFollowingIds = new Set(myFollows.map((f) => f.followingId));
+    currentUserFollowingIds = new Set(myFollows.map((f: { followingId: string }) => f.followingId));
   }
 
-  return follows.map((f) => ({
+  return follows.map((f: { following: Omit<FollowUser, "isFollowing"> }) => ({
     ...f.following,
     isFollowing: currentUserFollowingIds.has(f.following.id),
   }));
