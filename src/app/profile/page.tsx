@@ -1,8 +1,7 @@
-import { auth } from "@/auth";
+import { auth, signOut } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ProfileForm } from "./profile-form";
-import Link from "next/link";
 
 export default async function ProfilePage() {
   const session = await auth();
@@ -39,35 +38,6 @@ export default async function ProfilePage() {
           Your Profile
         </h1>
 
-        <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                Phone Verification
-              </p>
-              {user?.phoneVerified ? (
-                <p className="text-sm text-green-600 dark:text-green-400">
-                  Verified: {user.phoneNumber?.replace(/(\+\d{1,3})\d+(\d{4})/, "$1****$2")}
-                </p>
-              ) : (
-                <p className="text-sm text-zinc-500">
-                  {isCredentialsUser
-                    ? "Verify your phone to secure your account"
-                    : "Add a phone number for extra security"}
-                </p>
-              )}
-            </div>
-            {!user?.phoneVerified && (
-              <Link
-                href="/verify-phone"
-                className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-              >
-                Verify
-              </Link>
-            )}
-          </div>
-        </div>
-
         <ProfileForm
           user={{
             ...session.user,
@@ -81,7 +51,24 @@ export default async function ProfilePage() {
           oauthImage={oauthImage}
           biometricVerified={!!user?.biometricVerified}
           showNsfwByDefault={user?.showNsfwByDefault ?? false}
+          phoneVerified={!!user?.phoneVerified}
+          phoneNumber={user?.phoneNumber ?? null}
+          isCredentialsUser={isCredentialsUser}
         />
+
+        <form
+          action={async () => {
+            "use server";
+            await signOut({ redirectTo: "/" });
+          }}
+        >
+          <button
+            type="submit"
+            className="w-full rounded-lg bg-zinc-100 px-4 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+          >
+            Sign Out
+          </button>
+        </form>
       </div>
     </div>
   );
