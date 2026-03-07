@@ -140,4 +140,57 @@ describe("MessageInput", () => {
     expect(screen.getByPlaceholderText("Type a message...")).toBeInTheDocument();
     expect(screen.queryByText("Verify your phone number")).not.toBeInTheDocument();
   });
+
+  // Up-arrow edit tests
+  it("calls onEditLastMessage when pressing ArrowUp with empty input", async () => {
+    const onEditLastMessage = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+        onEditLastMessage={onEditLastMessage}
+      />
+    );
+
+    const input = screen.getByPlaceholderText("Type a message...");
+    await user.click(input);
+    await user.keyboard("{ArrowUp}");
+    expect(onEditLastMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not call onEditLastMessage when pressing ArrowUp with text in input", async () => {
+    const onEditLastMessage = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+        onEditLastMessage={onEditLastMessage}
+      />
+    );
+
+    const input = screen.getByPlaceholderText("Type a message...");
+    await user.type(input, "some text");
+    await user.keyboard("{ArrowUp}");
+    expect(onEditLastMessage).not.toHaveBeenCalled();
+  });
+
+  it("does not call onEditLastMessage when callback is not provided", async () => {
+    const user = userEvent.setup();
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+      />
+    );
+
+    const input = screen.getByPlaceholderText("Type a message...");
+    await user.click(input);
+    // Should not throw when pressing ArrowUp without the callback
+    await user.keyboard("{ArrowUp}");
+  });
 });

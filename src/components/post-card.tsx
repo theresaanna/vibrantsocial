@@ -45,6 +45,8 @@ interface PostCardProps {
   phoneVerified: boolean;
   biometricVerified: boolean;
   showNsfwByDefault: boolean;
+  defaultShowComments?: boolean;
+  highlightCommentId?: string | null;
 }
 
 export function PostCard({
@@ -52,8 +54,10 @@ export function PostCard({
   phoneVerified,
   biometricVerified,
   showNsfwByDefault,
+  defaultShowComments = false,
+  highlightCommentId,
 }: PostCardProps) {
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(defaultShowComments);
   const [revealed, setRevealed] = useState(false);
 
   const authorName =
@@ -198,6 +202,7 @@ export function PostCard({
               postId={post.id}
               comments={post.comments}
               phoneVerified={phoneVerified}
+              highlightCommentId={highlightCommentId}
             />
           )}
         </>

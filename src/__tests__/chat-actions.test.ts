@@ -770,8 +770,8 @@ describe("getMessages", () => {
     mockPrisma.conversationParticipant.findUnique.mockResolvedValueOnce({ id: "p1" } as never);
     // DB returns in desc order (newest first)
     mockPrisma.message.findMany.mockResolvedValueOnce([
-      { id: "m2", content: "second", createdAt: new Date("2024-01-01T11:00:00Z"), sender: {} },
-      { id: "m1", content: "first", createdAt: new Date("2024-01-01T10:00:00Z"), sender: {} },
+      { id: "m2", content: "second", createdAt: new Date("2024-01-01T11:00:00Z"), sender: {}, reactions: [] },
+      { id: "m1", content: "first", createdAt: new Date("2024-01-01T10:00:00Z"), sender: {}, reactions: [] },
     ] as never);
 
     const result = await getMessages("conv1");
@@ -790,6 +790,7 @@ describe("getMessages", () => {
       content: `msg ${i}`,
       createdAt: new Date(`2024-01-01T${String(i).padStart(2, "0")}:00:00Z`),
       sender: {},
+      reactions: [],
     }));
     mockPrisma.message.findMany.mockResolvedValueOnce(messages as never);
 

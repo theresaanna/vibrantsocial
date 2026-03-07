@@ -106,9 +106,16 @@ export function NotificationList({
           const name = getActorName(notification.actor);
           const text = getNotificationText(notification.type);
           const isUnread = !notification.readAt;
-          const href = notification.postId
-            ? `/feed#post-${notification.postId}`
-            : "/notifications";
+          const isCommentType =
+            notification.type === "COMMENT" || notification.type === "REPLY";
+          let href: string;
+          if (isCommentType && notification.postId && notification.commentId) {
+            href = `/post/${notification.postId}?commentId=${notification.commentId}`;
+          } else if (notification.postId) {
+            href = `/post/${notification.postId}`;
+          } else {
+            href = "/notifications";
+          }
 
           return (
             <Link

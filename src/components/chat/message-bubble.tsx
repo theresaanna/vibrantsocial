@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { timeAgo } from "@/lib/time";
 import { ReadReceiptIndicator } from "./read-receipt-indicator";
 import type { MessageData, ChatUserProfile } from "@/types/chat";
+
+const EMOJI_OPTIONS = ["\u{1F44D}", "\u{2764}\u{FE0F}", "\u{1F602}", "\u{1F62E}", "\u{1F622}", "\u{1F64F}"];
 
 interface MessageBubbleProps {
   message: MessageData;
@@ -13,6 +15,10 @@ interface MessageBubbleProps {
   readStatus: "sent" | "delivered" | "read";
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
+  onReaction?: (messageId: string, emoji: string) => void;
+  currentUserId?: string;
+  isEditing?: boolean;
+  onEditingChange?: (editing: boolean) => void;
 }
 
 export function MessageBubble({
@@ -23,10 +29,28 @@ export function MessageBubble({
   readStatus,
   onEdit,
   onDelete,
+  onReaction,
+  currentUserId,
+  isEditing: externalIsEditing,
+  onEditingChange,
 }: MessageBubbleProps) {
-  const [isEditing, setIsEditing] = useState(false);
+  const [internalIsEditing, setInternalIsEditing] = useState(false);
+  const isEditing = externalIsEditing ?? internalIsEditing;
+  const setIsEditing = (val: boolean) => {
+    setInternalIsEditing(val);
+    onEditingChange?.(val);
+  };
+
   const [editContent, setEditContent] = useState(message.content);
   const [showMenu, setShowMenu] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  // When externally triggered to edit (e.g., up-arrow), reset content
+  useEffect(() => {
+    if (externalIsEditing) {
+      setEditContent(message.content);
+    }
+  }, [externalIsEditing, message.content]);
 
   if (message.deletedAt) {
     return (
@@ -61,10 +85,15 @@ export function MessageBubble({
   const displayName =
     senderProfile.displayName ?? senderProfile.username ?? senderProfile.name ?? "User";
 
+  const reactions = message.reactions ?? [];
+
   return (
     <div
       className={`group flex ${isOwn ? "justify-end" : "justify-start"} px-4 py-0.5`}
-      onMouseLeave={() => setShowMenu(false)}
+      onMouseLeave={() => {
+        setShowMenu(false);
+        setShowEmojiPicker(false);
+      }}
     >
       <div className={`flex max-w-[70%] gap-2 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
         {/* Avatar for group non-own messages */}
@@ -134,43 +163,110 @@ export function MessageBubble({
               </div>
             )}
 
-            {/* Context menu for own messages */}
-            {isOwn && !isEditing && (
-              <div className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100">
-                <button
-                  onClick={() => setShowMenu(!showMenu)}
-                  className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-700 dark:hover:text-zinc-300"
-                  aria-label="Message options"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-                    <path d="M3 10a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM8.5 10a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM15.5 8.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" />
-                  </svg>
-                </button>
-                {showMenu && (
-                  <div className="absolute right-0 top-full z-10 mt-1 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
-                    <button
-                      onClick={() => {
-                        setIsEditing(true);
-                        setShowMenu(false);
-                      }}
-                      className="block w-full px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-700"
+            {/* Action buttons: context menu + emoji reaction trigger */}
+            {!isEditing && (
+              <div
+                className={`absolute top-1/2 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100 ${
+                  isOwn ? "-left-16 flex flex-row" : "-right-16 flex flex-row-reverse"
+                }`}
+              >
+                {/* Emoji reaction button */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-700 dark:hover:text-zinc-300"
+                    aria-label="Add reaction"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.536-4.464a.75.75 0 10-1.06-1.06 3.5 3.5 0 01-4.95 0 .75.75 0 00-1.06 1.06 5 5 0 007.07 0zM9 8.5c0 .828-.448 1.5-1 1.5s-1-.672-1-1.5S7.448 7 8 7s1 .672 1 1.5zm3 1.5c.552 0 1-.672 1-1.5S12.552 7 12 7s-1 .672-1 1.5.448 1.5 1 1.5z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  {showEmojiPicker && (
+                    <div
+                      className={`absolute z-20 mt-1 flex gap-1 rounded-full border border-zinc-200 bg-white px-2 py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-800 ${
+                        isOwn ? "right-0 top-full" : "left-0 top-full"
+                      }`}
                     >
-                      Edit
-                    </button>
+                      {EMOJI_OPTIONS.map((emoji) => (
+                        <button
+                          key={emoji}
+                          onClick={() => {
+                            onReaction?.(message.id, emoji);
+                            setShowEmojiPicker(false);
+                          }}
+                          className="rounded p-1 text-base transition-transform hover:scale-125 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                          aria-label={`React with ${emoji}`}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Context menu for own messages */}
+                {isOwn && (
+                  <div className="relative">
                     <button
-                      onClick={() => {
-                        onDelete?.(message.id);
-                        setShowMenu(false);
-                      }}
-                      className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-zinc-700"
+                      onClick={() => setShowMenu(!showMenu)}
+                      className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-700 dark:hover:text-zinc-300"
+                      aria-label="Message options"
                     >
-                      Delete
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                        <path d="M3 10a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM8.5 10a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM15.5 8.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" />
+                      </svg>
                     </button>
+                    {showMenu && (
+                      <div className="absolute right-0 top-full z-10 mt-1 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+                        <button
+                          onClick={() => {
+                            setIsEditing(true);
+                            setShowMenu(false);
+                          }}
+                          className="block w-full px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => {
+                            onDelete?.(message.id);
+                            setShowMenu(false);
+                          }}
+                          className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-zinc-700"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             )}
           </div>
+
+          {/* Reactions display */}
+          {reactions.length > 0 && (
+            <div className={`flex flex-wrap gap-1 px-1 pt-1 ${isOwn ? "justify-end" : "justify-start"}`}>
+              {reactions.map((reaction) => {
+                const isReacted = currentUserId ? reaction.userIds.includes(currentUserId) : false;
+                return (
+                  <button
+                    key={reaction.emoji}
+                    onClick={() => onReaction?.(message.id, reaction.emoji)}
+                    className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors ${
+                      isReacted
+                        ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-300"
+                        : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-600"
+                    }`}
+                    aria-label={`${reaction.emoji} ${reaction.userIds.length}`}
+                  >
+                    <span>{reaction.emoji}</span>
+                    <span>{reaction.userIds.length}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           {/* Metadata row */}
           <div className={`flex items-center gap-1.5 px-1 pt-0.5 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>

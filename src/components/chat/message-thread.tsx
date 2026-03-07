@@ -18,6 +18,7 @@ import {
   deleteMessage,
   markConversationRead,
   getMessages,
+  toggleReaction,
 } from "@/app/chat/actions";
 import type {
   MessageData,
@@ -156,6 +157,7 @@ export function MessageThread({
       editedAt: null,
       deletedAt: null,
       createdAt: new Date(),
+      reactions: [],
       sender: participantMap.get(currentUserId) ?? {
         id: currentUserId,
         username: null,
@@ -188,6 +190,42 @@ export function MessageThread({
       )
     );
   };
+
+  const handleReaction = async (messageId: string, emoji: string) => {
+    // Optimistic update
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id !== messageId) return m;
+        const reactions = [...m.reactions];
+        const group = reactions.find((r) => r.emoji === emoji);
+        if (group) {
+          if (group.userIds.includes(currentUserId)) {
+            group.userIds = group.userIds.filter((id) => id !== currentUserId);
+            if (group.userIds.length === 0) {
+              return { ...m, reactions: reactions.filter((r) => r.emoji !== emoji) };
+            }
+          } else {
+            group.userIds = [...group.userIds, currentUserId];
+          }
+          return { ...m, reactions: [...reactions] };
+        }
+        return { ...m, reactions: [...reactions, { emoji, userIds: [currentUserId] }] };
+      })
+    );
+    await toggleReaction({ messageId, emoji });
+  };
+
+  // Find last own message for up-arrow edit
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+
+  const handleEditLastMessage = useCallback(() => {
+    const lastOwn = [...messages]
+      .reverse()
+      .find((m) => m.senderId === currentUserId && !m.deletedAt);
+    if (lastOwn) {
+      setEditingMessageId(lastOwn.id);
+    }
+  }, [messages, currentUserId]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -258,6 +296,12 @@ export function MessageThread({
               readStatus={getReadStatus(msg)}
               onEdit={handleEditMessage}
               onDelete={handleDeleteMessage}
+              onReaction={handleReaction}
+              currentUserId={currentUserId}
+              isEditing={editingMessageId === msg.id}
+              onEditingChange={(editing) =>
+                setEditingMessageId(editing ? msg.id : null)
+              }
             />
           );
         })}
@@ -277,6 +321,7 @@ export function MessageThread({
         onKeystroke={keystroke}
         onStopTyping={stopTyping}
         phoneVerified={phoneVerified}
+        onEditLastMessage={handleEditLastMessage}
       />
 
       {/* Group settings modal */}

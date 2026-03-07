@@ -21,6 +21,11 @@ export interface ConversationListItem {
   unreadCount: number;
 }
 
+export interface ReactionGroup {
+  emoji: string;
+  userIds: string[];
+}
+
 export interface MessageData {
   id: string;
   conversationId: string;
@@ -30,6 +35,7 @@ export interface MessageData {
   deletedAt: Date | null;
   createdAt: Date;
   sender: ChatUserProfile;
+  reactions: ReactionGroup[];
 }
 
 export interface MessageRequestData {
