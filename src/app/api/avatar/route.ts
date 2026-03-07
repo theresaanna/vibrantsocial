@@ -4,6 +4,7 @@ import { put, del } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { scanImageBuffer, quarantineUpload } from "@/lib/arachnid-shield";
+import { uploadLimiter, checkRateLimit } from "@/lib/rate-limit";
 
 const ALLOWED_TYPES = [
   "image/jpeg",
@@ -18,6 +19,9 @@ export async function POST(request: NextRequest) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
+
+  const rateLimited = await checkRateLimit(uploadLimiter, session.user.id);
+  if (rateLimited) return rateLimited;
 
   const formData = await request.formData();
   const file = formData.get("file") as File | null;

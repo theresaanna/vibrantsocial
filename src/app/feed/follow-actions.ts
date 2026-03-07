@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { invalidate, cacheKeys } from "@/lib/cache";
 
 export interface FollowUser {
   id: string;
@@ -135,6 +136,12 @@ export async function toggleFollow(
       }),
     ]);
   }
+
+  // Invalidate following cache for both users
+  await Promise.all([
+    invalidate(cacheKeys.userFollowing(session.user.id)),
+    invalidate(cacheKeys.userFollowing(targetUserId)),
+  ]);
 
   revalidatePath("/feed");
   return { success: true, message: existing ? "Removed friend" : "Added friend" };

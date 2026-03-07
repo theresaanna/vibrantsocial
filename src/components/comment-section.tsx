@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useRef, useEffect } from "react";
-import { createComment } from "@/app/feed/post-actions";
+import { createComment, fetchComments } from "@/app/feed/post-actions";
 import { timeAgo } from "@/lib/time";
 import { useComments, type CommentData } from "@/hooks/use-comments";
 import Link from "next/link";
@@ -30,7 +30,7 @@ function renderCommentContent(text: string) {
 
 interface CommentSectionProps {
   postId: string;
-  comments: CommentData[];
+  comments?: CommentData[];
   phoneVerified: boolean;
   highlightCommentId?: string | null;
 }
@@ -41,7 +41,25 @@ export function CommentSection({
   phoneVerified,
   highlightCommentId,
 }: CommentSectionProps) {
-  const { comments } = useComments(postId, initialComments);
+  const [loadedComments, setLoadedComments] = useState<CommentData[] | null>(
+    initialComments ?? null
+  );
+  const [loading, setLoading] = useState(!initialComments);
+
+  // Lazy-load comments when not provided (feed view)
+  useEffect(() => {
+    if (initialComments) return;
+    let cancelled = false;
+    fetchComments(postId).then((data) => {
+      if (!cancelled) {
+        setLoadedComments(data);
+        setLoading(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [postId, initialComments]);
+
+  const { comments } = useComments(postId, loadedComments ?? []);
   const [replyingTo, setReplyingTo] = useState<{
     id: string;
     name: string;
@@ -79,6 +97,14 @@ export function CommentSection({
     }, 100);
     return () => clearTimeout(timer);
   }, [highlightCommentId, comments]);
+
+  if (loading) {
+    return (
+      <div className="border-t border-zinc-100 px-4 py-3 dark:border-zinc-800">
+        <p className="text-sm text-zinc-400">Loading comments...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="border-t border-zinc-100 px-4 py-3 dark:border-zinc-800">

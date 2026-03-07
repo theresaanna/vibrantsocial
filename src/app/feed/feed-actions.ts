@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getPostInclude, repostUserSelect, PAGE_SIZE } from "./feed-queries";
+import { cached, cacheKeys } from "@/lib/cache";
 
 export async function fetchSinglePost(postId: string) {
   const session = await auth();
@@ -29,11 +30,17 @@ export async function fetchFeedPage(cursor?: string) {
 
   const userId = session.user.id;
 
-  const following = await prisma.follow.findMany({
-    where: { followerId: userId },
-    select: { followingId: true },
-  });
-  const followingIds = following.map((f: { followingId: string }) => f.followingId);
+  const followingIds = await cached(
+    cacheKeys.userFollowing(userId),
+    async () => {
+      const rows = await prisma.follow.findMany({
+        where: { followerId: userId },
+        select: { followingId: true },
+      });
+      return rows.map((f: { followingId: string }) => f.followingId);
+    },
+    60 // cache for 60 seconds
+  );
 
   const postInclude = getPostInclude(userId);
   const dateFilter = cursor ? { lt: new Date(cursor) } : undefined;

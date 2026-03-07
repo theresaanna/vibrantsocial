@@ -6,7 +6,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { autoFriendNewUser } from "@/lib/auto-friend";
-import { sendWelcomeEmail } from "@/lib/email";
+import { inngest } from "@/lib/inngest";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -56,7 +56,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         await autoFriendNewUser(user.id);
       }
       if (user.email) {
-        sendWelcomeEmail(user.email);
+        await inngest.send({
+          name: "email/welcome",
+          data: { toEmail: user.email },
+        });
       }
     },
   },

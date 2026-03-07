@@ -48,7 +48,7 @@ interface PostCardProps {
     likes: Array<{ id: string }>;
     bookmarks: Array<{ id: string }>;
     reposts: Array<{ id: string }>;
-    comments: CommentData[];
+    comments?: CommentData[];
   };
   currentUserId?: string;
   phoneVerified: boolean;

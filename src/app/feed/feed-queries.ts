@@ -39,38 +39,7 @@ export function getPostInclude(userId: string) {
         },
       },
     },
-    comments: {
-      where: { parentId: null },
-      orderBy: { createdAt: "asc" },
-      take: 5,
-      include: {
-        author: {
-          select: {
-            id: true,
-            username: true,
-            displayName: true,
-            name: true,
-            image: true,
-            avatar: true,
-          },
-        },
-        replies: {
-          orderBy: { createdAt: "asc" },
-          include: {
-            author: {
-              select: {
-                id: true,
-                username: true,
-                displayName: true,
-                name: true,
-                image: true,
-                avatar: true,
-              },
-            },
-          },
-        },
-      },
-    },
+    // Comments are lazy-loaded via fetchComments() when expanded
   } as const;
 }
 

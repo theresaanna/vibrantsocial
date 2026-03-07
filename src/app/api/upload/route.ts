@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { put } from "@vercel/blob";
 import { scanImageBuffer, quarantineUpload } from "@/lib/arachnid-shield";
 import { isConvertibleImage, convertToWebP } from "@/lib/image-convert";
+import { uploadLimiter, checkRateLimit } from "@/lib/rate-limit";
 
 const IMAGE_TYPES = [
   "image/jpeg",
@@ -79,6 +80,9 @@ export async function POST(req: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const rateLimited = await checkRateLimit(uploadLimiter, session.user.id);
+  if (rateLimited) return rateLimited;
 
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
