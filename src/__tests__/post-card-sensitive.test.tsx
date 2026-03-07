@@ -24,6 +24,7 @@ vi.mock("@/app/feed/actions", () => ({
   editPost: vi.fn(),
   deletePost: vi.fn(),
   updatePostChecklist: vi.fn(),
+  togglePinPost: vi.fn().mockResolvedValue({ success: true, message: "" }),
 }));
 
 vi.mock("@/lib/time", () => ({
@@ -36,6 +37,7 @@ const basePost = {
   createdAt: new Date(),
   isSensitive: false,
   isNsfw: false,
+  isPinned: false,
   author: {
     id: "user1",
     username: "testuser",

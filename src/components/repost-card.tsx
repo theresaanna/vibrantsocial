@@ -26,6 +26,7 @@ interface RepostCardProps {
       editedAt?: Date | null;
       isSensitive: boolean;
       isNsfw: boolean;
+      isPinned: boolean;
       author: RepostUser;
       _count: {
         comments: number;
