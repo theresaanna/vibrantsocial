@@ -126,6 +126,19 @@ export async function editPost(
     data: { content, editedAt: new Date() },
   });
 
+  // Notify users who were newly mentioned in the edit
+  const oldMentions = new Set(extractMentionsFromLexicalJson(post.content));
+  const newMentions = extractMentionsFromLexicalJson(content).filter(
+    (u) => !oldMentions.has(u)
+  );
+  if (newMentions.length > 0) {
+    await createMentionNotifications({
+      usernames: newMentions,
+      actorId: session.user.id,
+      postId,
+    });
+  }
+
   revalidatePath("/feed");
   revalidatePath(`/post/${postId}`);
   return { success: true, message: "Post updated" };
