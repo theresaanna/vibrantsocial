@@ -15,6 +15,7 @@ import { PollNode } from "@/components/editor/nodes/PollNode";
 import { ExcalidrawNode } from "@/components/editor/nodes/ExcalidrawNode";
 import { VideoNode } from "@/components/editor/nodes/VideoNode";
 import { FileNode } from "@/components/editor/nodes/FileNode";
+import { MentionNode } from "@/components/editor/nodes/MentionNode";
 
 const allNodes = [
   ImageNode,
@@ -30,6 +31,7 @@ const allNodes = [
   ExcalidrawNode,
   VideoNode,
   FileNode,
+  MentionNode,
 ];
 
 function createTestEditor(): LexicalEditor {
@@ -446,11 +448,63 @@ describe("FileNode", () => {
   });
 });
 
+describe("MentionNode", () => {
+  let editor: LexicalEditor;
+  beforeEach(() => {
+    editor = createTestEditor();
+  });
+
+  it("has correct type", () => {
+    expect(MentionNode.getType()).toBe("mention");
+  });
+
+  it("serializes and deserializes correctly", () => {
+    const json = withEditor(editor, () => {
+      const node = new MentionNode("alice", "user-123");
+      return node.exportJSON();
+    });
+
+    expect(json.type).toBe("mention");
+    expect(json.username).toBe("alice");
+    expect(json.userId).toBe("user-123");
+    expect(json.version).toBe(1);
+
+    const restoredJson = withEditor(editor, () => {
+      const restored = MentionNode.importJSON(json);
+      return restored.exportJSON();
+    });
+    expect(restoredJson).toEqual(json);
+  });
+
+  it("is inline", () => {
+    const isInline = withEditor(editor, () => {
+      const node = new MentionNode("alice", "user-123");
+      return node.isInline();
+    });
+    expect(isInline).toBe(true);
+  });
+
+  it("exports to DOM with username data attributes", () => {
+    withEditor(editor, () => {
+      const node = new MentionNode("alice", "user-123");
+      const { element } = node.exportDOM();
+      expect(element).toBeTruthy();
+      expect((element as HTMLElement).textContent).toBe("@alice");
+      expect(
+        (element as HTMLElement).getAttribute("data-mention-username")
+      ).toBe("alice");
+      expect(
+        (element as HTMLElement).getAttribute("data-mention-user-id")
+      ).toBe("user-123");
+    });
+  });
+});
+
 describe("editorNodes registry", () => {
   it("exports all node types", async () => {
     const { editorNodes } = await import("@/components/editor/nodes");
     // Should have all the custom nodes plus standard ones
-    expect(editorNodes.length).toBeGreaterThanOrEqual(17);
+    expect(editorNodes.length).toBeGreaterThanOrEqual(18);
 
     const types = editorNodes.map((n) => n.getType());
     expect(types).toContain("image");
@@ -470,5 +524,6 @@ describe("editorNodes registry", () => {
     expect(types).toContain("horizontalrule");
     expect(types).toContain("video");
     expect(types).toContain("file");
+    expect(types).toContain("mention");
   });
 });

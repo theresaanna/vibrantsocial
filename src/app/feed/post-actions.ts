@@ -7,6 +7,10 @@ import { revalidatePath } from "next/cache";
 import { getAblyRestClient } from "@/lib/ably";
 import { createNotification } from "@/lib/notifications";
 import { sendCommentEmail } from "@/lib/email";
+import {
+  extractMentionsFromPlainText,
+  createMentionNotifications,
+} from "@/lib/mentions";
 
 interface ActionState {
   success: boolean;
@@ -297,6 +301,17 @@ export async function createComment(
         commentId: comment.id,
       });
     }
+  }
+
+  // Send mention notifications for @mentions in comment text
+  const mentionedUsernames = extractMentionsFromPlainText(content);
+  if (mentionedUsernames.length > 0) {
+    await createMentionNotifications({
+      usernames: mentionedUsernames,
+      actorId: session.user.id,
+      postId,
+      commentId: comment.id,
+    });
   }
 
   // Publish to Ably for real-time delivery

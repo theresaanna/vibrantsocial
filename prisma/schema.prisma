@@ -326,6 +326,7 @@ enum NotificationType {
   BOOKMARK
   FOLLOW
   REACTION
+  MENTION
 }
 
 model Notification {

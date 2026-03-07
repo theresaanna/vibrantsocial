@@ -20,6 +20,7 @@ import { DateNode } from "./nodes/DateNode";
 import { ExcalidrawNode } from "./nodes/ExcalidrawNode";
 import { VideoNode } from "./nodes/VideoNode";
 import { FileNode } from "./nodes/FileNode";
+import { MentionNode } from "./nodes/MentionNode";
 
 export const editorNodes: Array<Klass<LexicalNode>> = [
   HeadingNode,
@@ -47,4 +48,5 @@ export const editorNodes: Array<Klass<LexicalNode>> = [
   ExcalidrawNode,
   VideoNode,
   FileNode,
+  MentionNode,
 ];

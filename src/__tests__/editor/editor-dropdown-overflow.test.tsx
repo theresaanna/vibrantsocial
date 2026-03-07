@@ -63,6 +63,9 @@ vi.mock("@/components/editor/nodes", () => ({
 vi.mock("@/components/editor/toolbar/Toolbar", () => ({
   Toolbar: () => <div data-testid="toolbar" />,
 }));
+vi.mock("@/components/editor/plugins/MentionsPlugin", () => ({
+  MentionsPlugin: () => null,
+}));
 
 import { Editor } from "@/components/editor/Editor";
 

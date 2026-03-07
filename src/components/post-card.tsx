@@ -52,6 +52,7 @@ interface PostCardProps {
   biometricVerified: boolean;
   showNsfwByDefault: boolean;
   defaultShowComments?: boolean;
+  defaultExpanded?: boolean;
   highlightCommentId?: string | null;
 }
 
@@ -62,6 +63,7 @@ export function PostCard({
   biometricVerified,
   showNsfwByDefault,
   defaultShowComments = false,
+  defaultExpanded = false,
   highlightCommentId,
 }: PostCardProps) {
   const [showComments, setShowComments] = useState(defaultShowComments);
@@ -319,7 +321,7 @@ export function PostCard({
                 </div>
               </form>
             ) : (
-              <PostContent content={currentContent} />
+              <PostContent content={currentContent} truncate={!defaultExpanded} />
             )}
           </div>
 

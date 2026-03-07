@@ -47,6 +47,7 @@ export function PostPageClient({
         biometricVerified={biometricVerified}
         showNsfwByDefault={showNsfwByDefault}
         defaultShowComments
+        defaultExpanded
         highlightCommentId={highlightCommentId}
       />
     </div>

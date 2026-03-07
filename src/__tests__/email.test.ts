@@ -10,7 +10,7 @@ vi.mock("resend", () => ({
   })),
 }));
 
-import { sendCommentEmail, sendNewChatEmail, sendWelcomeEmail, sendPasswordResetEmail } from "@/lib/email";
+import { sendCommentEmail, sendNewChatEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMentionEmail } from "@/lib/email";
 
 describe("sendCommentEmail", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -164,6 +164,76 @@ describe("sendPasswordResetEmail", () => {
       sendPasswordResetEmail({
         toEmail: "user@example.com",
         token: "test-token-uuid",
+      })
+    ).resolves.toBeUndefined();
+  });
+});
+
+describe("sendMentionEmail", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("sends a mention email for a post mention", async () => {
+    mockSend.mockResolvedValueOnce({ id: "email-7" });
+
+    await sendMentionEmail({
+      toEmail: "mentioned@example.com",
+      mentionerName: "Alice",
+      postId: "post-456",
+    });
+
+    expect(mockSend).toHaveBeenCalledOnce();
+    const call = mockSend.mock.calls[0][0];
+    expect(call.from).toBe("VibrantSocial <hello@vibrantsocial.app>");
+    expect(call.to).toBe("mentioned@example.com");
+    expect(call.subject).toBe("Someone mentioned you!");
+    expect(call.html).toContain("Alice");
+    expect(call.html).toContain("mentioned you in a post");
+    expect(call.html).toContain("/post/post-456");
+    expect(call.html).not.toContain("commentId");
+    expect(call.html).toContain("View Post");
+    expect(call.html).toContain("Hey, friend!");
+  });
+
+  it("sends a mention email for a comment mention with commentId in URL", async () => {
+    mockSend.mockResolvedValueOnce({ id: "email-8" });
+
+    await sendMentionEmail({
+      toEmail: "mentioned@example.com",
+      mentionerName: "Bob",
+      postId: "post-789",
+      commentId: "comment-321",
+    });
+
+    expect(mockSend).toHaveBeenCalledOnce();
+    const call = mockSend.mock.calls[0][0];
+    expect(call.html).toContain("Bob");
+    expect(call.html).toContain("mentioned you in a comment");
+    expect(call.html).toContain("/post/post-789?commentId=comment-321");
+    expect(call.html).toContain("View Comment");
+  });
+
+  it("escapes HTML in mentioner name", async () => {
+    mockSend.mockResolvedValueOnce({ id: "email-9" });
+
+    await sendMentionEmail({
+      toEmail: "mentioned@example.com",
+      mentionerName: '<img src=x onerror=alert(1)>',
+      postId: "post-123",
+    });
+
+    const call = mockSend.mock.calls[0][0];
+    expect(call.html).not.toContain("<img");
+    expect(call.html).toContain("&lt;img");
+  });
+
+  it("does not throw on Resend failure", async () => {
+    mockSend.mockRejectedValueOnce(new Error("Resend down"));
+
+    await expect(
+      sendMentionEmail({
+        toEmail: "mentioned@example.com",
+        mentionerName: "Alice",
+        postId: "post-456",
       })
     ).resolves.toBeUndefined();
   });
