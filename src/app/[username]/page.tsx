@@ -183,7 +183,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
                   {currentUserId && !isOwnProfile && (
                     <FollowButton userId={user.id} isFollowing={isFollowing} />
                   )}
-                  <ProfileShareButton username={user.username!} />
+                  <ProfileShareButton username={user.username!} hasCustomTheme={hasCustomTheme} />
                 </div>
               </div>
 

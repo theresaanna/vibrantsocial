@@ -119,7 +119,7 @@ export function ChatNav({ initialConversations }: ChatNavProps) {
           />
         </svg>
         {totalUnread > 0 && (
-          <span className="absolute -right-3.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-500 px-1 text-[10px] font-medium text-white">
+          <span className="absolute -right-3.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-green-500 px-1 text-[10px] font-medium text-white">
             {totalUnread > 99 ? "99+" : totalUnread}
           </span>
         )}
@@ -252,7 +252,7 @@ function ChatPaneItem({
             {lastMessage?.content ?? "No messages yet"}
           </p>
           {unreadCount > 0 && (
-            <span className="ml-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
+            <span className="ml-2 h-2 w-2 flex-shrink-0 rounded-full bg-green-500" />
           )}
         </div>
       </div>
