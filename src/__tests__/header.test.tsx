@@ -37,6 +37,10 @@ vi.mock("@/components/notification-bell", () => ({
   NotificationBell: () => <div data-testid="notification-bell">Bell</div>,
 }));
 
+vi.mock("@/components/dynamic-favicon", () => ({
+  DynamicFavicon: () => null,
+}));
+
 vi.mock("@/components/theme-toggle", () => ({
   ThemeToggle: () => <div data-testid="theme-toggle">Toggle</div>,
 }));
