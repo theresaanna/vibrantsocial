@@ -123,6 +123,78 @@ describe("extractTextFromLexicalJson", () => {
     expect(extractTextFromLexicalJson(json)).toBe("After break");
   });
 
+  it("extracts text from a numbered list", () => {
+    const json = makeLexical([
+      {
+        type: "list",
+        listType: "number",
+        children: [
+          { type: "listitem", children: [makeTextNode("First")] },
+          { type: "listitem", children: [makeTextNode("Second")] },
+          { type: "listitem", children: [makeTextNode("Third")] },
+        ],
+      },
+    ]);
+    expect(extractTextFromLexicalJson(json)).toBe("First Second Third");
+  });
+
+  it("extracts text from checklist items", () => {
+    const json = makeLexical([
+      {
+        type: "list",
+        listType: "check",
+        children: [
+          { type: "listitem", checked: true, children: [makeTextNode("Done task")] },
+          { type: "listitem", checked: false, children: [makeTextNode("Pending task")] },
+        ],
+      },
+    ]);
+    expect(extractTextFromLexicalJson(json)).toBe("Done task Pending task");
+  });
+
+  it("extracts text from nested lists", () => {
+    const json = makeLexical([
+      {
+        type: "list",
+        listType: "bullet",
+        children: [
+          { type: "listitem", children: [makeTextNode("Parent item")] },
+          {
+            type: "listitem",
+            children: [
+              {
+                type: "list",
+                listType: "bullet",
+                children: [
+                  { type: "listitem", children: [makeTextNode("Child item")] },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+    expect(extractTextFromLexicalJson(json)).toBe("Parent item Child item");
+  });
+
+  it("extracts text from mixed paragraph and list content", () => {
+    const json = makeLexical([
+      makeParagraph([makeTextNode("Intro text")]),
+      {
+        type: "list",
+        listType: "bullet",
+        children: [
+          { type: "listitem", children: [makeTextNode("Item A")] },
+          { type: "listitem", children: [makeTextNode("Item B")] },
+        ],
+      },
+      makeParagraph([makeTextNode("Outro text")]),
+    ]);
+    expect(extractTextFromLexicalJson(json)).toBe(
+      "Intro text Item A Item B Outro text"
+    );
+  });
+
   it("handles deeply nested content", () => {
     const json = makeLexical([
       {

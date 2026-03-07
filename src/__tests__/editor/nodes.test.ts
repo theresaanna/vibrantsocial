@@ -525,5 +525,7 @@ describe("editorNodes registry", () => {
     expect(types).toContain("video");
     expect(types).toContain("file");
     expect(types).toContain("mention");
+    expect(types).toContain("list");
+    expect(types).toContain("listitem");
   });
 });

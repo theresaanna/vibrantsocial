@@ -18,6 +18,7 @@ import { useState, useCallback } from "react";
 import { editorTheme } from "./theme";
 import { editorNodes } from "./nodes";
 import { Toolbar } from "./toolbar/Toolbar";
+import { AutoLinkPlugin } from "./plugins/AutoLinkPlugin";
 import { MentionsPlugin } from "./plugins/MentionsPlugin";
 
 interface EditorProps {
@@ -118,6 +119,7 @@ export function Editor({
           <ListPlugin />
           <CheckListPlugin />
           <LinkPlugin />
+          <AutoLinkPlugin />
           <HorizontalRulePlugin />
           <TablePlugin />
           <TabIndentationPlugin />
