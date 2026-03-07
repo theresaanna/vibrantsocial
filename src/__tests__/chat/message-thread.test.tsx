@@ -78,6 +78,7 @@ const mockMessages: MessageData[] = [
     deletedAt: null,
     createdAt: new Date("2024-01-01T10:00:00"),
     sender: mockConversation.participants[1].user,
+    reactions: [],
   },
   {
     id: "msg2",
@@ -88,6 +89,7 @@ const mockMessages: MessageData[] = [
     deletedAt: null,
     createdAt: new Date("2024-01-01T10:01:00"),
     sender: mockConversation.participants[0].user,
+    reactions: [],
   },
 ];
 

@@ -3,7 +3,7 @@
 import type * as Ably from "ably";
 import { useChannel } from "ably/react";
 import { useState } from "react";
-import type { MessageData } from "@/types/chat";
+import type { MessageData, ReactionGroup } from "@/types/chat";
 
 export function useChatMessages(
   conversationId: string,
@@ -25,6 +25,7 @@ export function useChatMessages(
           editedAt: data.editedAt ? new Date(data.editedAt) : null,
           deletedAt: data.deletedAt ? new Date(data.deletedAt) : null,
           createdAt: new Date(data.createdAt as string),
+          reactions: [],
         };
         setMessages((prev) => {
           if (prev.some((m) => m.id === msg.id)) return prev;
@@ -52,6 +53,16 @@ export function useChatMessages(
             m.id === data.id
               ? { ...m, deletedAt: new Date(data.deletedAt as string) }
               : m
+          )
+        );
+        break;
+      }
+      case "reaction": {
+        const messageId = data.messageId as string;
+        const reactions: ReactionGroup[] = JSON.parse(data.reactions as string);
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === messageId ? { ...m, reactions } : m
           )
         );
         break;

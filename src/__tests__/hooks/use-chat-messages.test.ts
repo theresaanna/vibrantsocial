@@ -29,6 +29,7 @@ const makeMessage = (id: string, content = "hello"): MessageData => ({
   editedAt: null,
   deletedAt: null,
   createdAt: new Date("2024-01-01T10:00:00Z"),
+  reactions: [],
   sender: {
     id: "sender1",
     username: "alice",
@@ -156,5 +157,68 @@ describe("useChatMessages", () => {
     });
 
     expect(result.current.messages[0].deletedAt).toEqual(new Date("2024-01-01T12:00:00Z"));
+  });
+
+  it("updates reactions on 'reaction' event", () => {
+    const initial = [makeMessage("m1")];
+    const { result } = renderHook(() => useChatMessages("conv1", initial));
+
+    act(() => {
+      channelCallback({
+        name: "reaction",
+        data: {
+          messageId: "m1",
+          reactions: JSON.stringify([
+            { emoji: "\u{1F44D}", userIds: ["user1", "user2"] },
+          ]),
+        },
+      });
+    });
+
+    expect(result.current.messages[0].reactions).toEqual([
+      { emoji: "\u{1F44D}", userIds: ["user1", "user2"] },
+    ]);
+  });
+
+  it("does not modify other messages on 'reaction' event", () => {
+    const initial = [makeMessage("m1"), makeMessage("m2")];
+    const { result } = renderHook(() => useChatMessages("conv1", initial));
+
+    act(() => {
+      channelCallback({
+        name: "reaction",
+        data: {
+          messageId: "m1",
+          reactions: JSON.stringify([
+            { emoji: "\u{2764}\u{FE0F}", userIds: ["user1"] },
+          ]),
+        },
+      });
+    });
+
+    expect(result.current.messages[0].reactions).toHaveLength(1);
+    expect(result.current.messages[1].reactions).toHaveLength(0);
+  });
+
+  it("sets reactions to empty array for new messages", () => {
+    const { result } = renderHook(() => useChatMessages("conv1", []));
+
+    act(() => {
+      channelCallback({
+        name: "new",
+        data: {
+          id: "m1",
+          conversationId: "conv1",
+          senderId: "sender1",
+          content: "hello",
+          sender: makeSender(),
+          editedAt: null,
+          deletedAt: null,
+          createdAt: "2024-01-01T10:00:00Z",
+        },
+      });
+    });
+
+    expect(result.current.messages[0].reactions).toEqual([]);
   });
 });

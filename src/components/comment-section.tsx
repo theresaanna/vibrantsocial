@@ -10,12 +10,14 @@ interface CommentSectionProps {
   postId: string;
   comments: CommentData[];
   phoneVerified: boolean;
+  highlightCommentId?: string | null;
 }
 
 export function CommentSection({
   postId,
   comments: initialComments,
   phoneVerified,
+  highlightCommentId,
 }: CommentSectionProps) {
   const { comments } = useComments(postId, initialComments);
   const [replyingTo, setReplyingTo] = useState<{
@@ -23,6 +25,7 @@ export function CommentSection({
     name: string;
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const hasScrolled = useRef(false);
 
   const [state, formAction, isPending] = useActionState(
     async (prevState: { success: boolean; message: string }, formData: FormData) => {
@@ -41,24 +44,41 @@ export function CommentSection({
     }
   }, [replyingTo]);
 
+  // Scroll to highlighted comment on mount
+  useEffect(() => {
+    if (!highlightCommentId || hasScrolled.current) return;
+    // Use a small delay to ensure DOM is rendered
+    const timer = setTimeout(() => {
+      const el = document.getElementById(`comment-${highlightCommentId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        hasScrolled.current = true;
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [highlightCommentId, comments]);
+
   return (
     <div className="border-t border-zinc-100 px-4 py-3 dark:border-zinc-800">
       {comments.length > 0 && (
         <div className="mb-3 space-y-3">
           {comments.map((comment) => (
-            <div key={comment.id}>
+            <div key={comment.id} id={`comment-${comment.id}`}>
               <CommentItem
                 comment={comment}
                 onReply={phoneVerified ? (id, name) => setReplyingTo({ id, name }) : undefined}
+                isHighlighted={highlightCommentId === comment.id}
               />
               {comment.replies && comment.replies.length > 0 && (
                 <div className="ml-8 mt-2 space-y-2 border-l-2 border-zinc-100 pl-3 dark:border-zinc-800">
                   {comment.replies.map((reply) => (
-                    <CommentItem
-                      key={reply.id}
-                      comment={reply}
-                      onReply={phoneVerified ? (id, name) => setReplyingTo({ id, name }) : undefined}
-                    />
+                    <div key={reply.id} id={`comment-${reply.id}`}>
+                      <CommentItem
+                        comment={reply}
+                        onReply={phoneVerified ? (id, name) => setReplyingTo({ id, name }) : undefined}
+                        isHighlighted={highlightCommentId === reply.id}
+                      />
+                    </div>
                   ))}
                 </div>
               )}
@@ -126,16 +146,24 @@ export function CommentSection({
 function CommentItem({
   comment,
   onReply,
+  isHighlighted,
 }: {
   comment: CommentData;
   onReply?: (commentId: string, authorName: string) => void;
+  isHighlighted?: boolean;
 }) {
   const authorName =
     comment.author.displayName || comment.author.name || "User";
   const avatarSrc = comment.author.avatar || comment.author.image;
 
   return (
-    <div className="flex gap-2">
+    <div
+      className={`flex gap-2 ${
+        isHighlighted
+          ? "-mx-2 rounded-lg bg-blue-50 px-2 py-1.5 dark:bg-blue-950/30"
+          : ""
+      }`}
+    >
       {avatarSrc ? (
         <img
           src={avatarSrc}

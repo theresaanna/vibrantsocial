@@ -11,6 +11,7 @@ import type {
   MessageData,
   MessageRequestData,
   ChatUserProfile,
+  ReactionGroup,
 } from "@/types/chat";
 
 const userSelect = {
@@ -21,6 +22,18 @@ const userSelect = {
   avatar: true,
   image: true,
 } as const;
+
+function groupReactions(
+  reactions: { emoji: string; userId: string }[]
+): ReactionGroup[] {
+  const map = new Map<string, string[]>();
+  for (const r of reactions) {
+    const list = map.get(r.emoji) ?? [];
+    list.push(r.userId);
+    map.set(r.emoji, list);
+  }
+  return Array.from(map, ([emoji, userIds]) => ({ emoji, userIds }));
+}
 
 async function checkMutualFollow(
   userId1: string,
@@ -124,14 +137,20 @@ export async function getMessages(
     orderBy: { createdAt: "desc" },
     take: 51,
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-    include: { sender: { select: userSelect } },
+    include: {
+      sender: { select: userSelect },
+      reactions: { select: { emoji: true, userId: true } },
+    },
   });
 
   const hasMore = messages.length > 50;
   const trimmed = hasMore ? messages.slice(0, 50) : messages;
 
   return {
-    messages: trimmed.reverse(),
+    messages: trimmed.reverse().map((m) => ({
+      ...m,
+      reactions: groupReactions(m.reactions),
+    })),
     nextCursor: hasMore ? trimmed[0].id : null,
   };
 }
@@ -591,6 +610,80 @@ export async function bulkDeclineMessageRequests(
 
   revalidatePath("/chat");
   return { success: true, message: `${requestIds.length} request(s) declined` };
+}
+
+export async function toggleReaction(data: {
+  messageId: string;
+  emoji: string;
+}): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const { messageId, emoji } = data;
+
+  const message = await prisma.message.findUnique({
+    where: { id: messageId },
+  });
+  if (!message) {
+    return { success: false, message: "Message not found" };
+  }
+  if (message.deletedAt) {
+    return { success: false, message: "Cannot react to a deleted message" };
+  }
+
+  // Verify participant
+  const participant = await prisma.conversationParticipant.findUnique({
+    where: {
+      conversationId_userId: {
+        conversationId: message.conversationId,
+        userId: session.user.id,
+      },
+    },
+  });
+  if (!participant) {
+    return { success: false, message: "Not a participant of this conversation" };
+  }
+
+  // Toggle: remove if exists, add if not
+  const existing = await prisma.messageReaction.findUnique({
+    where: {
+      messageId_userId_emoji: {
+        messageId,
+        userId: session.user.id,
+        emoji,
+      },
+    },
+  });
+
+  if (existing) {
+    await prisma.messageReaction.delete({ where: { id: existing.id } });
+  } else {
+    await prisma.messageReaction.create({
+      data: { messageId, userId: session.user.id, emoji },
+    });
+  }
+
+  // Fetch updated reactions for this message
+  const reactions = await prisma.messageReaction.findMany({
+    where: { messageId },
+    select: { emoji: true, userId: true },
+  });
+
+  // Publish to Ably
+  try {
+    const ably = getAblyRestClient();
+    const channel = ably.channels.get(`chat:${message.conversationId}`);
+    await channel.publish("reaction", {
+      messageId,
+      reactions: JSON.stringify(groupReactions(reactions)),
+    });
+  } catch {
+    // Non-critical
+  }
+
+  return { success: true, message: existing ? "Reaction removed" : "Reaction added" };
 }
 
 export async function searchUsers(

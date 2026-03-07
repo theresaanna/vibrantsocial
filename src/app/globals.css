@@ -40,8 +40,10 @@ h6 {
   font-weight: 400;
 }
 
-a {
-  color: #3b82f6;
+@layer base {
+  a {
+    color: #3b82f6;
+  }
 }
 
 /* Profile theme overrides */

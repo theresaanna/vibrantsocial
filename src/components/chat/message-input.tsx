@@ -9,6 +9,7 @@ interface MessageInputProps {
   onStopTyping: () => void;
   disabled?: boolean;
   phoneVerified?: boolean;
+  onEditLastMessage?: () => void;
 }
 
 export function MessageInput({
@@ -17,6 +18,7 @@ export function MessageInput({
   onStopTyping,
   disabled,
   phoneVerified = true,
+  onEditLastMessage,
 }: MessageInputProps) {
   const [value, setValue] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -47,6 +49,10 @@ export function MessageInput({
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
+    }
+    if (e.key === "ArrowUp" && !value && onEditLastMessage) {
+      e.preventDefault();
+      onEditLastMessage();
     }
   };
 
