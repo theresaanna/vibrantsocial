@@ -6,9 +6,11 @@ import { EditorContent } from "@/components/editor/EditorContent";
 interface PostContentProps {
   content: string;
   truncate?: boolean;
+  allowChecklistToggle?: boolean;
+  onContentChange?: (json: string) => void;
 }
 
-export function PostContent({ content, truncate = true }: PostContentProps) {
+export function PostContent({ content, truncate = true, allowChecklistToggle, onContentChange }: PostContentProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [isOverflowing, setIsOverflowing] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -31,7 +33,7 @@ export function PostContent({ content, truncate = true }: PostContentProps) {
         data-testid="post-content-container"
         className={shouldTruncate ? "max-h-[50vh] overflow-hidden" : ""}
       >
-        <EditorContent content={content} />
+        <EditorContent content={content} allowChecklistToggle={allowChecklistToggle} onContentChange={onContentChange} />
       </div>
       {shouldTruncate && isOverflowing && (
         <>

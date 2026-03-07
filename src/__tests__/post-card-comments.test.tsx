@@ -37,6 +37,7 @@ vi.mock("@/components/post-revision-history", () => ({
 vi.mock("@/app/feed/actions", () => ({
   editPost: vi.fn(),
   deletePost: vi.fn(),
+  updatePostChecklist: vi.fn(),
 }));
 
 vi.mock("@/lib/time", () => ({
