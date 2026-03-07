@@ -19,6 +19,7 @@ interface SearchPostCardProps {
       comments: number;
       reposts: number;
     };
+    tags?: Array<{ tag: { name: string } }>;
   };
 }
 
@@ -64,6 +65,19 @@ export function SearchPostCard({ post }: SearchPostCardProps) {
       <p className="mt-2 line-clamp-3 text-sm text-zinc-700 dark:text-zinc-300">
         {plainText || "No content"}
       </p>
+
+      {post.tags && post.tags.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {post.tags.map((pt) => (
+            <span
+              key={pt.tag.name}
+              className="inline-block rounded-full bg-fuchsia-50 px-2 py-0.5 text-xs font-medium text-fuchsia-600 dark:bg-fuchsia-950/30 dark:text-fuchsia-400"
+            >
+              #{pt.tag.name}
+            </span>
+          ))}
+        </div>
+      )}
 
       <div className="mt-2 flex gap-4 text-xs text-zinc-400">
         <span>

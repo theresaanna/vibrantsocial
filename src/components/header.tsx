@@ -95,7 +95,7 @@ export async function Header() {
               </Link>
               <Link
                 href="/communities"
-                className="rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-emerald-50 hover:text-emerald-500 dark:text-zinc-400 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-500"
+                className="rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-fuchsia-50 hover:text-fuchsia-500 dark:text-zinc-400 dark:hover:bg-fuchsia-900/20 dark:hover:text-fuchsia-500"
                 aria-label="Communities"
               >
                 <svg
