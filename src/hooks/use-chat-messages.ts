@@ -3,7 +3,7 @@
 import type * as Ably from "ably";
 import { useChannel } from "ably/react";
 import { useState } from "react";
-import type { MessageData, MediaType, ReactionGroup } from "@/types/chat";
+import type { MessageData, MessageReplyTo, MediaType, ReactionGroup } from "@/types/chat";
 
 export function useChatMessages(
   conversationId: string,
@@ -16,6 +16,9 @@ export function useChatMessages(
     const data = event.data as Record<string, string | null>;
     switch (event.name) {
       case "new": {
+        const replyTo: MessageReplyTo | null = data.replyTo
+          ? JSON.parse(data.replyTo as string)
+          : null;
         const msg: MessageData = {
           id: data.id as string,
           conversationId: data.conversationId as string,
@@ -30,6 +33,7 @@ export function useChatMessages(
           deletedAt: data.deletedAt ? new Date(data.deletedAt) : null,
           createdAt: new Date(data.createdAt as string),
           reactions: [],
+          replyTo,
         };
         setMessages((prev) => {
           if (prev.some((m) => m.id === msg.id)) return prev;

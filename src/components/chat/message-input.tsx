@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { VoiceRecorder } from "./voice-recorder";
+import type { MessageData } from "@/types/chat";
 
 export interface MediaAttachment {
   url: string;
@@ -18,6 +19,8 @@ interface MessageInputProps {
   disabled?: boolean;
   phoneVerified?: boolean;
   onEditLastMessage?: () => void;
+  replyingTo?: MessageData | null;
+  onCancelReply?: () => void;
 }
 
 export function MessageInput({
@@ -27,6 +30,8 @@ export function MessageInput({
   disabled,
   phoneVerified = true,
   onEditLastMessage,
+  replyingTo,
+  onCancelReply,
 }: MessageInputProps) {
   const [value, setValue] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -39,6 +44,13 @@ export function MessageInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const hasMedia = !!selectedFile || !!voiceBlob;
+
+  // Focus textarea when replying starts
+  useEffect(() => {
+    if (replyingTo) {
+      textareaRef.current?.focus();
+    }
+  }, [replyingTo]);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -155,6 +167,37 @@ export function MessageInput({
 
   return (
     <div className="border-t border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+      {/* Reply preview bar */}
+      {replyingTo && (
+        <div className="flex items-center gap-2 border-b border-zinc-100 px-4 py-2 dark:border-zinc-800" data-testid="reply-preview">
+          <div className="flex-1 min-w-0 border-l-2 border-blue-500 pl-2">
+            <span className="block truncate text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+              {replyingTo.sender.displayName ?? replyingTo.sender.username ?? replyingTo.sender.name ?? "User"}
+            </span>
+            <span className="block truncate text-xs text-zinc-500 dark:text-zinc-400">
+              {replyingTo.deletedAt
+                ? "This message was deleted"
+                : replyingTo.mediaType && !replyingTo.content
+                  ? `[${replyingTo.mediaType}]`
+                  : replyingTo.content.length > 100
+                    ? replyingTo.content.slice(0, 100) + "..."
+                    : replyingTo.content}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={onCancelReply}
+            className="flex-shrink-0 rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-700"
+            aria-label="Cancel reply"
+            data-testid="cancel-reply"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
+              <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* File/voice preview */}
       {(selectedFile || voiceBlob) && (
         <div className="flex items-center gap-2 border-b border-zinc-100 px-4 py-2 dark:border-zinc-800">

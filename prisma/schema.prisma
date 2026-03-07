@@ -288,17 +288,21 @@ model Message {
   mediaType      String?
   mediaFileName  String?
   mediaFileSize  Int?
+  replyToId      String?
   editedAt       DateTime?
   deletedAt      DateTime?
   createdAt      DateTime  @default(now())
 
   conversation  Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender        User              @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  replyTo       Message?          @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies       Message[]         @relation("MessageReplies")
   reactions     MessageReaction[]
   notifications Notification[]
 
   @@index([conversationId, createdAt])
   @@index([senderId])
+  @@index([replyToId])
 }
 
 model MessageReaction {

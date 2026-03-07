@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MessageInput } from "@/components/chat/message-input";
+import type { MessageData, ChatUserProfile } from "@/types/chat";
 
 vi.mock("@/components/chat/voice-recorder", () => ({
   VoiceRecorder: ({ onRecordingComplete, onCancel }: { onRecordingComplete: (blob: Blob) => void; onCancel: () => void }) => (
@@ -261,5 +262,142 @@ describe("MessageInput", () => {
 
     await user.click(screen.getByTestId("voice-record-button"));
     expect(screen.getByTestId("voice-recorder")).toBeInTheDocument();
+  });
+
+  // Reply preview tests
+  const replySender: ChatUserProfile = {
+    id: "sender2",
+    username: "bob",
+    displayName: "Bob",
+    name: "Bob Jones",
+    avatar: null,
+    image: null,
+  };
+
+  const replyMessage: MessageData = {
+    id: "reply-msg-1",
+    conversationId: "conv1",
+    senderId: "sender2",
+    content: "This is the message being replied to",
+    mediaUrl: null,
+    mediaType: null,
+    mediaFileName: null,
+    mediaFileSize: null,
+    editedAt: null,
+    deletedAt: null,
+    createdAt: new Date("2024-01-01"),
+    sender: replySender,
+    reactions: [],
+    replyTo: null,
+  };
+
+  it("shows reply preview bar when replyingTo is set", () => {
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+        replyingTo={replyMessage}
+        onCancelReply={vi.fn()}
+      />
+    );
+    expect(screen.getByTestId("reply-preview")).toBeInTheDocument();
+  });
+
+  it("shows sender name in reply preview", () => {
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+        replyingTo={replyMessage}
+        onCancelReply={vi.fn()}
+      />
+    );
+    expect(screen.getByText("Bob")).toBeInTheDocument();
+  });
+
+  it("shows truncated content in reply preview", () => {
+    const longMessage: MessageData = {
+      ...replyMessage,
+      content: "B".repeat(150),
+    };
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+        replyingTo={longMessage}
+        onCancelReply={vi.fn()}
+      />
+    );
+    expect(screen.getByText("B".repeat(100) + "...")).toBeInTheDocument();
+  });
+
+  it("shows cancel reply button", () => {
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+        replyingTo={replyMessage}
+        onCancelReply={vi.fn()}
+      />
+    );
+    expect(screen.getByTestId("cancel-reply")).toBeInTheDocument();
+  });
+
+  it("calls onCancelReply when cancel button is clicked", async () => {
+    const user = userEvent.setup();
+    const onCancelReply = vi.fn();
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+        replyingTo={replyMessage}
+        onCancelReply={onCancelReply}
+      />
+    );
+    await user.click(screen.getByTestId("cancel-reply"));
+    expect(onCancelReply).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not show reply preview when replyingTo is null", () => {
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+        replyingTo={null}
+        onCancelReply={vi.fn()}
+      />
+    );
+    expect(screen.queryByTestId("reply-preview")).not.toBeInTheDocument();
+  });
+
+  it("focuses textarea when replyingTo is set", () => {
+    const { rerender } = render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+        replyingTo={null}
+        onCancelReply={vi.fn()}
+      />
+    );
+
+    rerender(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+        replyingTo={replyMessage}
+        onCancelReply={vi.fn()}
+      />
+    );
+
+    const textarea = screen.getByPlaceholderText("Type a message...");
+    expect(document.activeElement).toBe(textarea);
   });
 });

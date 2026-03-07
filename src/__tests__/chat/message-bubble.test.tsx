@@ -51,6 +51,7 @@ const baseMessage: MessageData = {
   createdAt: new Date("2024-01-01"),
   sender: baseSender,
   reactions: [],
+  replyTo: null,
 };
 
 describe("MessageBubble", () => {
@@ -489,5 +490,176 @@ describe("MessageBubble", () => {
       />
     );
     expect(screen.queryByText("Seen by")).not.toBeInTheDocument();
+  });
+
+  // Reply feature tests
+  it("shows reply quote when message has replyTo", () => {
+    const messageWithReply: MessageData = {
+      ...baseMessage,
+      replyTo: {
+        id: "original-msg",
+        content: "This is the original message",
+        senderId: "sender2",
+        senderName: "Bob",
+        mediaType: null,
+        deletedAt: null,
+      },
+    };
+    render(
+      <MessageBubble
+        message={messageWithReply}
+        isOwn={false}
+        senderProfile={baseSender}
+        isGroup={false}
+        readStatus="sent"
+      />
+    );
+    expect(screen.getByText("Bob")).toBeInTheDocument();
+    expect(screen.getByText("This is the original message")).toBeInTheDocument();
+    expect(screen.getByTestId("reply-quote")).toBeInTheDocument();
+  });
+
+  it("shows truncated content in reply quote for long messages", () => {
+    const longContent = "A".repeat(100);
+    const messageWithReply: MessageData = {
+      ...baseMessage,
+      replyTo: {
+        id: "original-msg",
+        content: longContent,
+        senderId: "sender2",
+        senderName: "Bob",
+        mediaType: null,
+        deletedAt: null,
+      },
+    };
+    render(
+      <MessageBubble
+        message={messageWithReply}
+        isOwn={false}
+        senderProfile={baseSender}
+        isGroup={false}
+        readStatus="sent"
+      />
+    );
+    expect(screen.getByText(longContent.slice(0, 80) + "...")).toBeInTheDocument();
+  });
+
+  it("shows deleted message text in reply quote when original was deleted", () => {
+    const messageWithReply: MessageData = {
+      ...baseMessage,
+      replyTo: {
+        id: "original-msg",
+        content: "Some old content",
+        senderId: "sender2",
+        senderName: "Bob",
+        mediaType: null,
+        deletedAt: new Date("2024-01-02"),
+      },
+    };
+    render(
+      <MessageBubble
+        message={messageWithReply}
+        isOwn={false}
+        senderProfile={baseSender}
+        isGroup={false}
+        readStatus="sent"
+      />
+    );
+    expect(screen.getByText("This message was deleted")).toBeInTheDocument();
+  });
+
+  it("shows media type in reply quote when reply has media but no content", () => {
+    const messageWithReply: MessageData = {
+      ...baseMessage,
+      replyTo: {
+        id: "original-msg",
+        content: "",
+        senderId: "sender2",
+        senderName: "Bob",
+        mediaType: "image",
+        deletedAt: null,
+      },
+    };
+    render(
+      <MessageBubble
+        message={messageWithReply}
+        isOwn={false}
+        senderProfile={baseSender}
+        isGroup={false}
+        readStatus="sent"
+      />
+    );
+    expect(screen.getByText("[image]")).toBeInTheDocument();
+  });
+
+  it("calls onScrollToMessage when reply quote is clicked", async () => {
+    const user = userEvent.setup();
+    const onScrollToMessage = vi.fn();
+    const messageWithReply: MessageData = {
+      ...baseMessage,
+      replyTo: {
+        id: "original-msg",
+        content: "Original content",
+        senderId: "sender2",
+        senderName: "Bob",
+        mediaType: null,
+        deletedAt: null,
+      },
+    };
+    render(
+      <MessageBubble
+        message={messageWithReply}
+        isOwn={false}
+        senderProfile={baseSender}
+        isGroup={false}
+        readStatus="sent"
+        onScrollToMessage={onScrollToMessage}
+      />
+    );
+    await user.click(screen.getByTestId("reply-quote"));
+    expect(onScrollToMessage).toHaveBeenCalledWith("original-msg");
+  });
+
+  it("shows reply button on hover", () => {
+    render(
+      <MessageBubble
+        message={baseMessage}
+        isOwn={false}
+        senderProfile={baseSender}
+        isGroup={false}
+        readStatus="sent"
+      />
+    );
+    expect(screen.getByLabelText("Reply")).toBeInTheDocument();
+  });
+
+  it("calls onReply when reply button is clicked", async () => {
+    const user = userEvent.setup();
+    const onReply = vi.fn();
+    render(
+      <MessageBubble
+        message={baseMessage}
+        isOwn={false}
+        senderProfile={baseSender}
+        isGroup={false}
+        readStatus="sent"
+        onReply={onReply}
+      />
+    );
+    await user.click(screen.getByLabelText("Reply"));
+    expect(onReply).toHaveBeenCalledWith(baseMessage);
+  });
+
+  it("does not render reply quote when replyTo is null", () => {
+    render(
+      <MessageBubble
+        message={baseMessage}
+        isOwn={false}
+        senderProfile={baseSender}
+        isGroup={false}
+        readStatus="sent"
+      />
+    );
+    expect(screen.queryByTestId("reply-quote")).not.toBeInTheDocument();
   });
 });

@@ -29,6 +29,15 @@ export interface ReactionGroup {
   userIds: string[];
 }
 
+export interface MessageReplyTo {
+  id: string;
+  content: string;
+  senderId: string;
+  senderName: string;
+  mediaType: MediaType | null;
+  deletedAt: Date | null;
+}
+
 export interface MessageData {
   id: string;
   conversationId: string;
@@ -43,6 +52,7 @@ export interface MessageData {
   createdAt: Date;
   sender: ChatUserProfile;
   reactions: ReactionGroup[];
+  replyTo: MessageReplyTo | null;
 }
 
 export interface MessageRequestData {
