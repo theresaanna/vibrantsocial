@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
+import { createPortal } from "react-dom";
 import { timeAgo } from "@/lib/time";
 import { ReadReceiptIndicator } from "./read-receipt-indicator";
 import { SeenByIndicator } from "./seen-by-indicator";
@@ -49,6 +50,23 @@ export function MessageBubble({
   const [showMenu, setShowMenu] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const emojiButtonRef = useRef<HTMLButtonElement>(null);
+  const [pickerPos, setPickerPos] = useState<{ top: number; left: number } | null>(null);
+
+  const openEmojiPicker = useCallback(() => {
+    if (showEmojiPicker) {
+      setShowEmojiPicker(false);
+      return;
+    }
+    if (emojiButtonRef.current) {
+      const rect = emojiButtonRef.current.getBoundingClientRect();
+      setPickerPos({
+        top: rect.bottom + 4,
+        left: isOwn ? rect.right - 350 : rect.left,
+      });
+    }
+    setShowEmojiPicker(true);
+  }, [showEmojiPicker, isOwn]);
 
   // When externally triggered to edit (e.g., up-arrow), reset content
   useEffect(() => {
@@ -61,7 +79,12 @@ export function MessageBubble({
   useEffect(() => {
     if (!showEmojiPicker) return;
     function handleClick(e: MouseEvent) {
-      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(e.target as Node) &&
+        emojiButtonRef.current &&
+        !emojiButtonRef.current.contains(e.target as Node)
+      ) {
         setShowEmojiPicker(false);
       }
     }
@@ -200,9 +223,10 @@ export function MessageBubble({
                 }`}
               >
                 {/* Emoji reaction button */}
-                <div className="relative" ref={emojiPickerRef}>
+                <div className="relative">
                   <button
-                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    ref={emojiButtonRef}
+                    onClick={openEmojiPicker}
                     className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-700 dark:hover:text-zinc-300"
                     aria-label="Add reaction"
                   >
@@ -210,11 +234,11 @@ export function MessageBubble({
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.536-4.464a.75.75 0 10-1.06-1.06 3.5 3.5 0 01-4.95 0 .75.75 0 00-1.06 1.06 5 5 0 007.07 0zM9 8.5c0 .828-.448 1.5-1 1.5s-1-.672-1-1.5S7.448 7 8 7s1 .672 1 1.5zm3 1.5c.552 0 1-.672 1-1.5S12.552 7 12 7s-1 .672-1 1.5.448 1.5 1 1.5z" clipRule="evenodd" />
                     </svg>
                   </button>
-                  {showEmojiPicker && (
+                  {showEmojiPicker && pickerPos && createPortal(
                     <div
-                      className={`absolute z-50 mt-1 ${
-                        isOwn ? "right-0 top-full" : "left-0 top-full"
-                      }`}
+                      ref={emojiPickerRef}
+                      className="fixed z-50"
+                      style={{ top: pickerPos.top, left: pickerPos.left }}
                       data-testid="emoji-picker"
                     >
                       <Suspense
@@ -235,7 +259,8 @@ export function MessageBubble({
                           previewConfig={{ showPreview: false }}
                         />
                       </Suspense>
-                    </div>
+                    </div>,
+                    document.body
                   )}
                 </div>
 
