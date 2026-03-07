@@ -356,7 +356,7 @@ export function MessageBubble({
             {message.editedAt && (
               <span className="text-[10px] text-zinc-400">(edited)</span>
             )}
-            {isOwn && <ReadReceiptIndicator status={readStatus} color={themeColors?.bgColor ?? undefined} />}
+            {isOwn && <ReadReceiptIndicator status={readStatus} bgColor={themeColors?.bgColor ?? undefined} textColor={themeColors?.textColor ?? undefined} />}
           </div>
 
           {/* Seen by (group chats only, own messages) */}
