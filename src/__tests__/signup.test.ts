@@ -58,6 +58,7 @@ const validFields = {
   dateOfBirth: validDob(),
   password: "password123",
   confirmPassword: "password123",
+  agreeToTos: "true",
 };
 
 describe("signup", () => {
@@ -69,6 +70,15 @@ describe("signup", () => {
     const result = await signup(prevState, makeFormData({}));
     expect(result.success).toBe(false);
     expect(result.message).toBe("All fields are required");
+  });
+
+  it("rejects signup without TOS agreement", async () => {
+    const { agreeToTos: _, ...fieldsWithoutTos } = validFields;
+    const result = await signup(prevState, makeFormData(fieldsWithoutTos));
+    expect(result.success).toBe(false);
+    expect(result.message).toBe(
+      "You must agree to the Terms of Service and Privacy Policy"
+    );
   });
 
   it("requires email to be present", async () => {
@@ -206,7 +216,7 @@ describe("signup", () => {
     expect(result.message).toBe("Date of birth cannot be in the future");
   });
 
-  it("rejects users under 13 years old", async () => {
+  it("rejects users under 18 years old", async () => {
     const tenYearsAgo = new Date();
     tenYearsAgo.setFullYear(tenYearsAgo.getFullYear() - 10);
 
@@ -219,7 +229,24 @@ describe("signup", () => {
     );
     expect(result.success).toBe(false);
     expect(result.message).toBe(
-      "You must be at least 13 years old to sign up"
+      "You must be at least 18 years old to sign up"
+    );
+  });
+
+  it("rejects users who are 17 years old", async () => {
+    const seventeenYearsAgo = new Date();
+    seventeenYearsAgo.setFullYear(seventeenYearsAgo.getFullYear() - 17);
+
+    const result = await signup(
+      prevState,
+      makeFormData({
+        ...validFields,
+        dateOfBirth: seventeenYearsAgo.toISOString().split("T")[0],
+      })
+    );
+    expect(result.success).toBe(false);
+    expect(result.message).toBe(
+      "You must be at least 18 years old to sign up"
     );
   });
 

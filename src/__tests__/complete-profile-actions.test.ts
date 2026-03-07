@@ -89,7 +89,7 @@ describe("completeProfile", () => {
       makeFormData({ dateOfBirth: tenYearsAgo.toISOString().split("T")[0] })
     );
     expect(result.success).toBe(false);
-    expect(result.message).toBe("You must be at least 13 years old");
+    expect(result.message).toBe("You must be at least 18 years old");
   });
 
   it("updates user and redirects on valid date", async () => {

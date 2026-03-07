@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
 
 const lexend = Lexend({
   variable: "--font-lexend",
@@ -44,6 +45,7 @@ export default function RootLayout({
         <Providers>
           <Header />
           {children}
+          <Footer />
         </Providers>
         <Analytics />
       </body>

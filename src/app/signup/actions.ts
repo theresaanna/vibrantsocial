@@ -21,9 +21,17 @@ export async function signup(
   const dateOfBirthStr = formData.get("dateOfBirth") as string;
   const password = formData.get("password") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
+  const agreeToTos = formData.get("agreeToTos") as string;
 
   if (!email || !username || !dateOfBirthStr || !password || !confirmPassword) {
     return { success: false, message: "All fields are required" };
+  }
+
+  if (agreeToTos !== "true") {
+    return {
+      success: false,
+      message: "You must agree to the Terms of Service and Privacy Policy",
+    };
   }
 
   if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) {
@@ -50,8 +58,8 @@ export async function signup(
     age--;
   }
 
-  if (age < 13) {
-    return { success: false, message: "You must be at least 13 years old to sign up" };
+  if (age < 18) {
+    return { success: false, message: "You must be at least 18 years old to sign up" };
   }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
