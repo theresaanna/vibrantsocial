@@ -6,7 +6,7 @@ import { PostActions } from "./post-actions";
 import { CommentSection } from "./comment-section";
 import { PostRevisionHistory } from "./post-revision-history";
 import { Editor } from "./editor/Editor";
-import { editPost, deletePost } from "@/app/feed/actions";
+import { editPost, deletePost, updatePostChecklist } from "@/app/feed/actions";
 import { QuotePostModal } from "./quote-post-modal";
 import { timeAgo } from "@/lib/time";
 import Link from "next/link";
@@ -321,7 +321,15 @@ export function PostCard({
                 </div>
               </form>
             ) : (
-              <PostContent content={currentContent} truncate={!defaultExpanded} />
+              <PostContent
+                content={currentContent}
+                truncate={!defaultExpanded}
+                allowChecklistToggle={isAuthor}
+                onContentChange={(json) => {
+                  setCurrentContent(json);
+                  updatePostChecklist(post.id, json);
+                }}
+              />
             )}
           </div>
 

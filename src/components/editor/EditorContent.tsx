@@ -3,12 +3,21 @@
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
+import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
+import { CheckListPlugin } from "@lexical/react/LexicalCheckListPlugin";
+import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import type { EditorState } from "lexical";
 
 import { editorTheme } from "./theme";
 import { editorNodes } from "./nodes";
+import { ReadOnlyChecklistPlugin } from "./plugins/ReadOnlyChecklistPlugin";
 
 interface EditorContentProps {
   content: string;
+  /** When true, checkboxes are toggleable (for post authors). */
+  allowChecklistToggle?: boolean;
+  /** Called with updated Lexical JSON when a checkbox is toggled. */
+  onContentChange?: (json: string) => void;
 }
 
 function isLexicalJson(str: string): boolean {
@@ -53,29 +62,53 @@ function plainTextToLexical(text: string): string {
   });
 }
 
-export function EditorContent({ content }: EditorContentProps) {
+export function EditorContent({
+  content,
+  allowChecklistToggle = false,
+  onContentChange,
+}: EditorContentProps) {
   const editorState = isLexicalJson(content)
     ? content
     : plainTextToLexical(content);
 
+  const editable = allowChecklistToggle;
+
   const editorConfig = {
     namespace: "VibrantContent",
-    editable: false,
+    editable,
     editorState,
     theme: editorTheme,
     nodes: editorNodes,
     onError: (error: Error) => console.error("[EditorContent]", error),
   };
 
+  function handleChange(state: EditorState) {
+    if (onContentChange) {
+      onContentChange(JSON.stringify(state.toJSON()));
+    }
+  }
+
   return (
     <LexicalComposer initialConfig={editorConfig}>
       <RichTextPlugin
         contentEditable={
-          <ContentEditable className="text-sm text-zinc-900 outline-none dark:text-zinc-100" />
+          <ContentEditable
+            className={`text-sm text-zinc-900 outline-none dark:text-zinc-100${
+              editable ? " cursor-default" : ""
+            }`}
+          />
         }
         placeholder={null}
         ErrorBoundary={({ children }) => <>{children}</>}
       />
+      {allowChecklistToggle && (
+        <>
+          <ListPlugin />
+          <CheckListPlugin />
+          <ReadOnlyChecklistPlugin />
+          <OnChangePlugin onChange={handleChange} />
+        </>
+      )}
     </LexicalComposer>
   );
 }

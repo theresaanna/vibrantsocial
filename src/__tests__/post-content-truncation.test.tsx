@@ -3,8 +3,22 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { PostContent } from "@/components/post-content";
 
 vi.mock("@/components/editor/EditorContent", () => ({
-  EditorContent: ({ content }: { content: string }) => (
-    <div data-testid="editor-content">{content}</div>
+  EditorContent: ({
+    content,
+    allowChecklistToggle,
+    onContentChange,
+  }: {
+    content: string;
+    allowChecklistToggle?: boolean;
+    onContentChange?: (json: string) => void;
+  }) => (
+    <div
+      data-testid="editor-content"
+      data-allow-checklist={allowChecklistToggle ? "true" : "false"}
+      data-has-onchange={onContentChange ? "true" : "false"}
+    >
+      {content}
+    </div>
   ),
 }));
 
@@ -134,5 +148,38 @@ describe("PostContent - truncation", () => {
     expect(screen.getByTestId("editor-content")).toHaveTextContent(
       "My post content"
     );
+  });
+});
+
+describe("PostContent - checklist props", () => {
+  it("passes allowChecklistToggle to EditorContent", () => {
+    render(
+      <PostContent
+        content="hello"
+        allowChecklistToggle={true}
+        onContentChange={() => {}}
+      />
+    );
+    const editor = screen.getByTestId("editor-content");
+    expect(editor.dataset.allowChecklist).toBe("true");
+  });
+
+  it("defaults allowChecklistToggle to false", () => {
+    render(<PostContent content="hello" />);
+    const editor = screen.getByTestId("editor-content");
+    expect(editor.dataset.allowChecklist).toBe("false");
+  });
+
+  it("passes onContentChange to EditorContent", () => {
+    const onChange = vi.fn();
+    render(
+      <PostContent
+        content="hello"
+        allowChecklistToggle={true}
+        onContentChange={onChange}
+      />
+    );
+    const editor = screen.getByTestId("editor-content");
+    expect(editor.dataset.hasOnchange).toBe("true");
   });
 });

@@ -5,6 +5,7 @@ import {
   editPost,
   getPostRevisions,
   restorePostRevision,
+  updatePostChecklist,
 } from "@/app/feed/actions";
 
 vi.mock("@/auth", () => ({
@@ -431,5 +432,57 @@ describe("restorePostRevision", () => {
       where: { id: "p1" },
       data: { content: "old content", editedAt: expect.any(Date) },
     });
+  });
+});
+
+describe("updatePostChecklist", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns error if not authenticated", async () => {
+    mockAuth.mockResolvedValueOnce(null as never);
+    const result = await updatePostChecklist("p1", "content");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Not authenticated");
+  });
+
+  it("returns error if post not found", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce(null as never);
+    const result = await updatePostChecklist("p1", "content");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Not authorized");
+  });
+
+  it("returns error if user is not the author", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce({
+      id: "p1",
+      authorId: "other-user",
+    } as never);
+    const result = await updatePostChecklist("p1", "content");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Not authorized");
+  });
+
+  it("updates content without creating revision or setting editedAt", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce({
+      id: "p1",
+      authorId: "user1",
+      content: "old",
+    } as never);
+    mockPrisma.post.update.mockResolvedValueOnce({} as never);
+
+    const result = await updatePostChecklist("p1", "new-content");
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("Checklist updated");
+    expect(mockPrisma.post.update).toHaveBeenCalledWith({
+      where: { id: "p1" },
+      data: { content: "new-content" },
+    });
+    // Should NOT create a revision
+    expect(mockPrisma.postRevision.create).not.toHaveBeenCalled();
   });
 });

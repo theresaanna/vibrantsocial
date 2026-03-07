@@ -55,6 +55,7 @@ vi.mock("@/components/post-revision-history", () => ({
 vi.mock("@/app/feed/actions", () => ({
   editPost: vi.fn().mockResolvedValue({ success: true, message: "Post updated" }),
   deletePost: vi.fn().mockResolvedValue({ success: true, message: "Post deleted" }),
+  updatePostChecklist: vi.fn(),
 }));
 
 vi.mock("@/lib/time", () => ({

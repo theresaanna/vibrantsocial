@@ -12,6 +12,7 @@ vi.mock("@/app/feed/post-actions", () => ({
 vi.mock("@/app/feed/actions", () => ({
   editPost: vi.fn(),
   deletePost: vi.fn(),
+  updatePostChecklist: vi.fn(),
 }));
 
 const defaultRepost = {

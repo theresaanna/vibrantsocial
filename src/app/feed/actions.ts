@@ -191,6 +191,28 @@ export async function restorePostRevision(
   };
 }
 
+export async function updatePostChecklist(
+  postId: string,
+  content: string
+): Promise<PostState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const post = await prisma.post.findUnique({ where: { id: postId } });
+  if (!post || post.authorId !== session.user.id) {
+    return { success: false, message: "Not authorized" };
+  }
+
+  await prisma.post.update({
+    where: { id: postId },
+    data: { content },
+  });
+
+  return { success: true, message: "Checklist updated" };
+}
+
 export async function deletePost(
   _prevState: PostState,
   formData: FormData
