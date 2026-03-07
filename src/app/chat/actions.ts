@@ -13,6 +13,7 @@ import type {
   MessageRequestData,
   ChatUserProfile,
   ReactionGroup,
+  MediaType,
 } from "@/types/chat";
 
 const userSelect = {
@@ -151,6 +152,7 @@ export async function getMessages(
   return {
     messages: trimmed.reverse().map((m) => ({
       ...m,
+      mediaType: (m.mediaType as MediaType) ?? null,
       reactions: groupReactions(m.reactions),
     })),
     nextCursor: hasMore ? trimmed[0].id : null,
