@@ -39,7 +39,7 @@ model User {
   showNsfwByDefault Boolean   @default(false)
 
   // Phone verification
-  phoneNumber   String?   @unique
+  phoneNumber   String?
   phoneVerified DateTime?
 
   // Email notification preferences

@@ -13,6 +13,7 @@ import {
 interface PostState {
   success: boolean;
   message: string;
+  postId?: string;
 }
 
 export async function createPost(
@@ -74,7 +75,7 @@ export async function createPost(
   }
 
   revalidatePath("/feed");
-  return { success: true, message: "Post created" };
+  return { success: true, message: "Post created", postId: post.id };
 }
 
 const MAX_POST_REVISIONS = 20;
