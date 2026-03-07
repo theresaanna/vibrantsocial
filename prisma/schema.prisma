@@ -45,6 +45,7 @@ model User {
   // Email notification preferences
   emailOnComment    Boolean @default(true)
   emailOnNewChat    Boolean @default(true)
+  emailOnMention    Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -57,12 +57,43 @@ const defaultUser = {
   profileContainerColor: null as string | null,
 };
 
-function renderForm(overrides: Partial<typeof defaultUser> = {}) {
+interface RenderFormOptions {
+  userOverrides?: Partial<typeof defaultUser>;
+  emailOnComment?: boolean;
+  emailOnNewChat?: boolean;
+  emailOnMention?: boolean;
+  biometricVerified?: boolean;
+  showNsfwByDefault?: boolean;
+  phoneVerified?: boolean;
+  phoneNumber?: string | null;
+  isCredentialsUser?: boolean;
+}
+
+function renderForm(options: RenderFormOptions = {}) {
+  const {
+    userOverrides = {},
+    emailOnComment = true,
+    emailOnNewChat = true,
+    emailOnMention = true,
+    biometricVerified = false,
+    showNsfwByDefault = false,
+    phoneVerified = false,
+    phoneNumber = null,
+    isCredentialsUser = false,
+  } = options;
   return render(
     <ProfileForm
-      user={{ ...defaultUser, ...overrides }}
+      user={{ ...defaultUser, ...userOverrides }}
       currentAvatar={null}
       oauthImage={null}
+      biometricVerified={biometricVerified}
+      showNsfwByDefault={showNsfwByDefault}
+      emailOnComment={emailOnComment}
+      emailOnNewChat={emailOnNewChat}
+      emailOnMention={emailOnMention}
+      phoneVerified={phoneVerified}
+      phoneNumber={phoneNumber}
+      isCredentialsUser={isCredentialsUser}
     />
   );
 }
@@ -90,7 +121,7 @@ describe("ProfileForm", () => {
 
   describe("username status - no 'available' message for current username", () => {
     it("does not show 'available' when username matches the saved username", () => {
-      renderForm({ username: "testuser" });
+      renderForm({ userOverrides: { username: "testuser" } });
 
       const input = screen.getByPlaceholderText("your_username");
       expect(input).toHaveValue("testuser");
@@ -104,7 +135,7 @@ describe("ProfileForm", () => {
         json: () => Promise.resolve({ available: true }),
       });
 
-      renderForm({ username: "testuser" });
+      renderForm({ userOverrides: { username: "testuser" } });
 
       const input = screen.getByPlaceholderText("your_username");
       await userEvent.clear(input);
@@ -123,7 +154,7 @@ describe("ProfileForm", () => {
         json: () => Promise.resolve({ available: false }),
       });
 
-      renderForm({ username: "testuser" });
+      renderForm({ userOverrides: { username: "testuser" } });
 
       const input = screen.getByPlaceholderText("your_username");
       await userEvent.clear(input);
@@ -139,7 +170,7 @@ describe("ProfileForm", () => {
     });
 
     it("shows invalid message for bad format", async () => {
-      renderForm({ username: "testuser" });
+      renderForm({ userOverrides: { username: "testuser" } });
 
       const input = screen.getByPlaceholderText("your_username");
       await userEvent.clear(input);
@@ -157,7 +188,7 @@ describe("ProfileForm", () => {
 
   describe("public profile link", () => {
     it("shows the public profile link when user has a username", () => {
-      renderForm({ username: "testuser" });
+      renderForm({ userOverrides: { username: "testuser" } });
 
       const link = screen.getByRole("link", {
         name: /view public profile/i,
@@ -167,7 +198,7 @@ describe("ProfileForm", () => {
     });
 
     it("does not show the public profile link when user has no username", () => {
-      renderForm({ username: null });
+      renderForm({ userOverrides: { username: null } });
 
       expect(
         screen.queryByRole("link", { name: /view public profile/i })
@@ -177,7 +208,7 @@ describe("ProfileForm", () => {
 
   describe("share profile button", () => {
     it("shows share button when user has a username", () => {
-      renderForm({ username: "testuser" });
+      renderForm({ userOverrides: { username: "testuser" } });
 
       expect(
         screen.getByRole("button", { name: "Share Profile" })
@@ -185,7 +216,7 @@ describe("ProfileForm", () => {
     });
 
     it("does not show share button when user has no username", () => {
-      renderForm({ username: null });
+      renderForm({ userOverrides: { username: null } });
 
       expect(
         screen.queryByRole("button", { name: "Share Profile" })
@@ -193,7 +224,7 @@ describe("ProfileForm", () => {
     });
 
     it("copies profile URL to clipboard on click", async () => {
-      renderForm({ username: "testuser" });
+      renderForm({ userOverrides: { username: "testuser" } });
 
       const shareBtn = screen.getByRole("button", { name: "Share Profile" });
       await userEvent.click(shareBtn);
@@ -204,7 +235,7 @@ describe("ProfileForm", () => {
     });
 
     it("shows 'Copied!' text after clicking share", async () => {
-      renderForm({ username: "testuser" });
+      renderForm({ userOverrides: { username: "testuser" } });
 
       const shareBtn = screen.getByRole("button", { name: "Share Profile" });
       await userEvent.click(shareBtn);
@@ -216,7 +247,7 @@ describe("ProfileForm", () => {
     });
 
     it("reverts 'Copied!' back to 'Share Profile' after 2 seconds", async () => {
-      renderForm({ username: "testuser" });
+      renderForm({ userOverrides: { username: "testuser" } });
 
       const shareBtn = screen.getByRole("button", { name: "Share Profile" });
       await userEvent.click(shareBtn);
@@ -230,6 +261,35 @@ describe("ProfileForm", () => {
           screen.getByRole("button", { name: "Share Profile" })
         ).toBeInTheDocument();
       });
+    });
+  });
+
+  describe("email notification toggles", () => {
+    it("renders all three email notification checkboxes", () => {
+      renderForm();
+      expect(screen.getByLabelText("New comments on my posts")).toBeInTheDocument();
+      expect(screen.getByLabelText("New chat conversations")).toBeInTheDocument();
+      expect(screen.getByLabelText("Mentions in posts and comments")).toBeInTheDocument();
+    });
+
+    it("checks mention toggle when emailOnMention is true", () => {
+      renderForm({ emailOnMention: true });
+      const checkbox = screen.getByLabelText("Mentions in posts and comments");
+      expect(checkbox).toBeChecked();
+    });
+
+    it("unchecks mention toggle when emailOnMention is false", () => {
+      renderForm({ emailOnMention: false });
+      const checkbox = screen.getByLabelText("Mentions in posts and comments");
+      expect(checkbox).not.toBeChecked();
+    });
+
+    it("toggles mention checkbox on click", async () => {
+      renderForm({ emailOnMention: false });
+      const checkbox = screen.getByLabelText("Mentions in posts and comments");
+      expect(checkbox).not.toBeChecked();
+      await userEvent.click(checkbox);
+      expect(checkbox).toBeChecked();
     });
   });
 });

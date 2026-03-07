@@ -173,8 +173,8 @@ describe("createMentionNotifications", () => {
 
   it("creates notifications and sends emails for valid users", async () => {
     mockPrisma.user.findMany.mockResolvedValue([
-      { id: "u1", email: "alice@example.com", emailOnComment: true } as any,
-      { id: "u2", email: "bob@example.com", emailOnComment: true } as any,
+      { id: "u1", email: "alice@example.com", emailOnMention: true } as any,
+      { id: "u2", email: "bob@example.com", emailOnMention: true } as any,
     ]);
     mockCreateNotification.mockResolvedValue(undefined as any);
 
@@ -186,7 +186,7 @@ describe("createMentionNotifications", () => {
 
     expect(mockPrisma.user.findMany).toHaveBeenCalledWith({
       where: { username: { in: ["alice", "bob"], mode: "insensitive" } },
-      select: { id: true, email: true, emailOnComment: true },
+      select: { id: true, email: true, emailOnMention: true },
     });
 
     expect(mockCreateNotification).toHaveBeenCalledTimes(2);
@@ -217,7 +217,7 @@ describe("createMentionNotifications", () => {
 
   it("sends email with commentId when provided", async () => {
     mockPrisma.user.findMany.mockResolvedValue([
-      { id: "u1", email: "alice@example.com", emailOnComment: true } as any,
+      { id: "u1", email: "alice@example.com", emailOnMention: true } as any,
     ]);
     mockCreateNotification.mockResolvedValue(undefined as any);
 
@@ -244,9 +244,9 @@ describe("createMentionNotifications", () => {
     });
   });
 
-  it("does not send email when user has emailOnComment disabled", async () => {
+  it("does not send email when user has emailOnMention disabled", async () => {
     mockPrisma.user.findMany.mockResolvedValue([
-      { id: "u1", email: "alice@example.com", emailOnComment: false } as any,
+      { id: "u1", email: "alice@example.com", emailOnMention: false } as any,
     ]);
     mockCreateNotification.mockResolvedValue(undefined as any);
 
@@ -262,7 +262,7 @@ describe("createMentionNotifications", () => {
 
   it("does not send email when user has no email", async () => {
     mockPrisma.user.findMany.mockResolvedValue([
-      { id: "u1", email: null, emailOnComment: true } as any,
+      { id: "u1", email: null, emailOnMention: true } as any,
     ]);
     mockCreateNotification.mockResolvedValue(undefined as any);
 
@@ -278,7 +278,7 @@ describe("createMentionNotifications", () => {
 
   it("does not send email for self-mentions", async () => {
     mockPrisma.user.findMany.mockResolvedValue([
-      { id: "actor1", email: "actor@example.com", emailOnComment: true } as any,
+      { id: "actor1", email: "actor@example.com", emailOnMention: true } as any,
     ]);
     mockCreateNotification.mockResolvedValue(undefined as any);
 
@@ -327,7 +327,7 @@ describe("createMentionNotifications", () => {
       name: null,
     } as any);
     mockPrisma.user.findMany.mockResolvedValue([
-      { id: "u1", email: "alice@example.com", emailOnComment: true } as any,
+      { id: "u1", email: "alice@example.com", emailOnMention: true } as any,
     ]);
     mockCreateNotification.mockResolvedValue(undefined as any);
 

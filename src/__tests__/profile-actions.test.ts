@@ -341,6 +341,36 @@ describe("updateProfile", () => {
     });
   });
 
+  it("saves emailOnMention preference", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
+    mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+    await updateProfile(
+      prevState,
+      makeFormData({ emailOnMention: "true" })
+    );
+    expect(mockPrisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ emailOnMention: true }),
+      })
+    );
+  });
+
+  it("saves emailOnMention as false when unchecked", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
+    mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+    // When checkbox is unchecked, the field is not in FormData
+    await updateProfile(prevState, makeFormData({}));
+    expect(mockPrisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ emailOnMention: false }),
+      })
+    );
+  });
+
   it("prunes old revisions when count exceeds 20", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPrisma.user.findUnique.mockResolvedValueOnce({
