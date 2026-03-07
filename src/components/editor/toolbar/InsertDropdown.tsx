@@ -7,7 +7,7 @@ import {
   INSERT_TABLE_COMMAND,
   type InsertTableCommandPayload,
 } from "@lexical/table";
-import { useState } from "react";
+import { useState, useRef, type ChangeEvent } from "react";
 import { DropdownMenu, DropdownItem } from "../ui/DropdownMenu";
 import { Modal } from "../ui/Modal";
 import { $createImageNode } from "../nodes/ImageNode";
@@ -275,22 +275,13 @@ function ImageInsertModal({
         </div>
 
         {mode === "upload" ? (
-          <div>
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,image/heic,image/heif,.heic,.heif"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleFileUpload(file);
-              }}
-              className="w-full text-sm"
-              disabled={uploading}
-            />
-            <p className="mt-1.5 text-xs text-zinc-400">
-              Supports JPEG, PNG, GIF, WebP, SVG, HEIC, HEIF (max 5MB)
-            </p>
-            {uploading && <p className="mt-1 text-sm text-blue-600">Uploading...</p>}
-          </div>
+          <FilePickerArea
+            accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,image/heic,image/heif,.heic,.heif"
+            hint="JPEG, PNG, GIF, WebP, SVG, HEIC, HEIF (max 5MB)"
+            icon="image"
+            uploading={uploading}
+            onFileSelect={(file) => handleFileUpload(file)}
+          />
         ) : (
           <div className="space-y-2">
             <input
@@ -366,22 +357,13 @@ function VideoInsertModal({
   return (
     <Modal title="Insert Video" onClose={onClose}>
       <div className="space-y-3">
-        <div>
-          <input
-            type="file"
-            accept="video/mp4,video/webm,video/quicktime,video/ogg,.mp4,.webm,.mov,.ogv"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleFileUpload(file);
-            }}
-            className="w-full text-sm"
-            disabled={uploading}
-          />
-          <p className="mt-1.5 text-xs text-zinc-400">
-            Supports MP4, WebM, MOV, OGG (max 50MB)
-          </p>
-          {uploading && <p className="mt-1 text-sm text-blue-600">Uploading...</p>}
-        </div>
+        <FilePickerArea
+          accept="video/mp4,video/webm,video/quicktime,video/ogg,.mp4,.webm,.mov,.ogv"
+          hint="MP4, WebM, MOV, OGG (max 50MB)"
+          icon="video"
+          uploading={uploading}
+          onFileSelect={(file) => handleFileUpload(file)}
+        />
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
     </Modal>
@@ -428,22 +410,13 @@ function FileInsertModal({
   return (
     <Modal title="Insert File" onClose={onClose}>
       <div className="space-y-3">
-        <div>
-          <input
-            type="file"
-            accept="application/pdf,.pdf"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleFileUpload(file);
-            }}
-            className="w-full text-sm"
-            disabled={uploading}
-          />
-          <p className="mt-1.5 text-xs text-zinc-400">
-            Supports PDF (max 10MB)
-          </p>
-          {uploading && <p className="mt-1 text-sm text-blue-600">Uploading...</p>}
-        </div>
+        <FilePickerArea
+          accept="application/pdf,.pdf"
+          hint="PDF (max 10MB)"
+          icon="file"
+          uploading={uploading}
+          onFileSelect={(file) => handleFileUpload(file)}
+        />
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
     </Modal>
@@ -677,5 +650,61 @@ function PollInsertModal({
         </button>
       </div>
     </Modal>
+  );
+}
+
+/* ── Styled File Picker ──────────────────────────── */
+function FilePickerArea({
+  accept,
+  hint,
+  icon,
+  uploading,
+  onFileSelect,
+}: {
+  accept: string;
+  hint: string;
+  icon: "image" | "video" | "file";
+  uploading: boolean;
+  onFileSelect: (file: File) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function handleChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) onFileSelect(file);
+  }
+
+  const iconPath =
+    icon === "image"
+      ? "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+      : icon === "video"
+        ? "M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+        : "M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z";
+
+  return (
+    <div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={accept}
+        onChange={handleChange}
+        className="hidden"
+        disabled={uploading}
+      />
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={uploading}
+        className="flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed border-zinc-300 px-4 py-6 text-zinc-500 transition-colors hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:bg-zinc-800/50 dark:hover:text-zinc-300"
+      >
+        <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d={iconPath} />
+        </svg>
+        <span className="text-sm font-medium">
+          {uploading ? "Uploading..." : "Choose a file"}
+        </span>
+      </button>
+      <p className="mt-2 text-center text-xs text-zinc-400">{hint}</p>
+    </div>
   );
 }
