@@ -786,3 +786,185 @@ export async function searchUsers(
     take: 10,
   });
 }
+
+export async function updateGroupName(data: {
+  conversationId: string;
+  name: string;
+}): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const { conversationId, name } = data;
+  const trimmedName = name.trim();
+
+  if (!trimmedName) {
+    return { success: false, message: "Group name is required" };
+  }
+  if (trimmedName.length > 100) {
+    return { success: false, message: "Group name too long (max 100 characters)" };
+  }
+
+  const participant = await prisma.conversationParticipant.findUnique({
+    where: {
+      conversationId_userId: { conversationId, userId: session.user.id },
+    },
+  });
+  if (!participant) {
+    return { success: false, message: "Not a participant of this conversation" };
+  }
+  if (!participant.isAdmin) {
+    return { success: false, message: "Only admins can rename the group" };
+  }
+
+  await prisma.conversation.update({
+    where: { id: conversationId },
+    data: { name: trimmedName },
+  });
+
+  try {
+    const ably = getAblyRestClient();
+    const channel = ably.channels.get(`chat:${conversationId}`);
+    await channel.publish("group-update", {
+      type: "name",
+      name: trimmedName,
+    });
+  } catch {
+    // Non-critical
+  }
+
+  revalidatePath("/chat");
+  return { success: true, message: "Group renamed" };
+}
+
+export async function addGroupMembers(data: {
+  conversationId: string;
+  userIds: string[];
+}): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const { conversationId, userIds } = data;
+  const uniqueIds = [...new Set(userIds)];
+
+  if (uniqueIds.length === 0) {
+    return { success: false, message: "No users selected" };
+  }
+
+  const participant = await prisma.conversationParticipant.findUnique({
+    where: {
+      conversationId_userId: { conversationId, userId: session.user.id },
+    },
+  });
+  if (!participant) {
+    return { success: false, message: "Not a participant of this conversation" };
+  }
+  if (!participant.isAdmin) {
+    return { success: false, message: "Only admins can add members" };
+  }
+
+  // Check current member count
+  const currentCount = await prisma.conversationParticipant.count({
+    where: { conversationId },
+  });
+  if (currentCount + uniqueIds.length > 50) {
+    return { success: false, message: "Groups can have at most 50 members" };
+  }
+
+  // Verify users exist
+  const users = await prisma.user.findMany({
+    where: { id: { in: uniqueIds } },
+    select: { id: true },
+  });
+  if (users.length !== uniqueIds.length) {
+    return { success: false, message: "Some users were not found" };
+  }
+
+  // Filter out users already in the group
+  const existing = await prisma.conversationParticipant.findMany({
+    where: { conversationId, userId: { in: uniqueIds } },
+    select: { userId: true },
+  });
+  const existingIds = new Set(existing.map((e: { userId: string }) => e.userId));
+  const newIds = uniqueIds.filter((id) => !existingIds.has(id));
+
+  if (newIds.length === 0) {
+    return { success: false, message: "All users are already members" };
+  }
+
+  await prisma.conversationParticipant.createMany({
+    data: newIds.map((userId) => ({ conversationId, userId })),
+  });
+
+  try {
+    const ably = getAblyRestClient();
+    const channel = ably.channels.get(`chat:${conversationId}`);
+    await channel.publish("group-update", {
+      type: "members-added",
+      userIds: newIds,
+    });
+  } catch {
+    // Non-critical
+  }
+
+  revalidatePath("/chat");
+  return { success: true, message: `${newIds.length} member(s) added` };
+}
+
+export async function removeGroupMember(data: {
+  conversationId: string;
+  userId: string;
+}): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const { conversationId, userId } = data;
+
+  if (userId === session.user.id) {
+    return { success: false, message: "Cannot remove yourself" };
+  }
+
+  const participant = await prisma.conversationParticipant.findUnique({
+    where: {
+      conversationId_userId: { conversationId, userId: session.user.id },
+    },
+  });
+  if (!participant) {
+    return { success: false, message: "Not a participant of this conversation" };
+  }
+  if (!participant.isAdmin) {
+    return { success: false, message: "Only admins can remove members" };
+  }
+
+  const target = await prisma.conversationParticipant.findUnique({
+    where: {
+      conversationId_userId: { conversationId, userId },
+    },
+  });
+  if (!target) {
+    return { success: false, message: "User is not a member of this group" };
+  }
+
+  await prisma.conversationParticipant.delete({
+    where: { id: target.id },
+  });
+
+  try {
+    const ably = getAblyRestClient();
+    const channel = ably.channels.get(`chat:${conversationId}`);
+    await channel.publish("group-update", {
+      type: "member-removed",
+      userId,
+    });
+  } catch {
+    // Non-critical
+  }
+
+  revalidatePath("/chat");
+  return { success: true, message: "Member removed" };
+}

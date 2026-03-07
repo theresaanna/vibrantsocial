@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import { timeAgo } from "@/lib/time";
 import { ReadReceiptIndicator } from "./read-receipt-indicator";
 import { SeenByIndicator } from "./seen-by-indicator";
@@ -138,7 +139,21 @@ export function MessageBubble({
         {/* Avatar for group non-own messages */}
         {isGroup && !isOwn && (
           <div className="mt-auto flex-shrink-0">
-            {avatar ? (
+            {senderProfile.username ? (
+              <Link href={`/${senderProfile.username}`}>
+                {avatar ? (
+                  <img
+                    src={avatar}
+                    alt={displayName}
+                    className="h-7 w-7 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+                    {displayName[0]?.toUpperCase()}
+                  </div>
+                )}
+              </Link>
+            ) : avatar ? (
               <img
                 src={avatar}
                 alt={displayName}
