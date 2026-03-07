@@ -56,6 +56,7 @@ vi.mock("@/app/feed/actions", () => ({
   editPost: vi.fn().mockResolvedValue({ success: true, message: "Post updated" }),
   deletePost: vi.fn().mockResolvedValue({ success: true, message: "Post deleted" }),
   updatePostChecklist: vi.fn(),
+  togglePinPost: vi.fn().mockResolvedValue({ success: true, message: "" }),
 }));
 
 vi.mock("@/lib/time", () => ({
@@ -69,6 +70,7 @@ const basePost = {
   editedAt: null,
   isSensitive: false,
   isNsfw: false,
+  isPinned: false,
   author: {
     id: "user1",
     username: "testuser",

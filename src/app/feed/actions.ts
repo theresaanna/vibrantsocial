@@ -251,3 +251,55 @@ export async function deletePost(
   revalidatePath("/feed");
   return { success: true, message: "Post deleted" };
 }
+
+export async function togglePinPost(
+  _prevState: PostState,
+  formData: FormData
+): Promise<PostState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const postId = formData.get("postId") as string;
+  if (!postId) {
+    return { success: false, message: "Post ID required" };
+  }
+
+  const post = await prisma.post.findUnique({ where: { id: postId } });
+  if (!post || post.authorId !== session.user.id) {
+    return { success: false, message: "Not authorized" };
+  }
+
+  if (post.isPinned) {
+    await prisma.post.update({
+      where: { id: postId },
+      data: { isPinned: false },
+    });
+  } else {
+    // Unpin any currently pinned post by this user, then pin this one
+    await prisma.post.updateMany({
+      where: { authorId: session.user.id, isPinned: true },
+      data: { isPinned: false },
+    });
+    await prisma.post.update({
+      where: { id: postId },
+      data: { isPinned: true },
+    });
+  }
+
+  revalidatePath("/feed");
+  revalidatePath(`/post/${postId}`);
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { username: true },
+  });
+  if (user?.username) {
+    revalidatePath(`/${user.username}`);
+  }
+
+  return {
+    success: true,
+    message: post.isPinned ? "Post unpinned" : "Post pinned",
+  };
+}

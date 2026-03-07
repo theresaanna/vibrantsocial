@@ -13,6 +13,7 @@ vi.mock("@/app/feed/actions", () => ({
   editPost: vi.fn(),
   deletePost: vi.fn(),
   updatePostChecklist: vi.fn(),
+  togglePinPost: vi.fn().mockResolvedValue({ success: true, message: "" }),
 }));
 
 const defaultRepost = {
@@ -34,6 +35,7 @@ const defaultRepost = {
     editedAt: null,
     isSensitive: false,
     isNsfw: false,
+    isPinned: false,
     author: {
       id: "u2",
       username: "bob",

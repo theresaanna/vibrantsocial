@@ -6,7 +6,7 @@ import { PostActions } from "./post-actions";
 import { CommentSection } from "./comment-section";
 import { PostRevisionHistory } from "./post-revision-history";
 import { Editor } from "./editor/Editor";
-import { editPost, deletePost, updatePostChecklist } from "@/app/feed/actions";
+import { editPost, deletePost, updatePostChecklist, togglePinPost } from "@/app/feed/actions";
 import { QuotePostModal } from "./quote-post-modal";
 import { timeAgo } from "@/lib/time";
 import Link from "next/link";
@@ -35,6 +35,7 @@ interface PostCardProps {
     editedAt?: Date | null;
     isSensitive: boolean;
     isNsfw: boolean;
+    isPinned: boolean;
     author: PostAuthor;
     _count: {
       comments: number;
@@ -88,6 +89,16 @@ export function PostCard({
     async (prevState: { success: boolean; message: string }, formData: FormData) => {
       const result = await deletePost(prevState, formData);
       if (result.success) setDeleted(true);
+      return result;
+    },
+    { success: false, message: "" }
+  );
+
+  const [isPinned, setIsPinned] = useState(post.isPinned);
+  const [, pinAction, pinPending] = useActionState(
+    async (prevState: { success: boolean; message: string }, formData: FormData) => {
+      const result = await togglePinPost(prevState, formData);
+      if (result.success) setIsPinned((prev) => !prev);
       return result;
     },
     { success: false, message: "" }
@@ -160,6 +171,18 @@ export function PostCard({
 
   return (
     <div className="rounded-2xl bg-white shadow-lg dark:bg-zinc-900">
+      {/* Pinned indicator */}
+      {isPinned && (
+        <div
+          className="flex items-center gap-1.5 px-4 pt-3 pb-0 text-xs font-medium text-zinc-400"
+          data-testid="post-pinned-indicator"
+        >
+          <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M9.828.722a.5.5 0 01.354.146l4.95 4.95a.5.5 0 010 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a6 6 0 01.16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 01-.707 0l-2.829-2.828-3.182 3.182a.5.5 0 11-.707-.708l3.182-3.182L2.398 8.243a.5.5 0 010-.707c.688-.688 1.673-.767 2.375-.72a6 6 0 011.013.16l3.134-3.133a3 3 0 01-.04-.461c0-.43.109-1.022.589-1.503a.5.5 0 01.353-.146z" />
+          </svg>
+          Pinned
+        </div>
+      )}
       {/* Author header — always visible */}
       <div className="flex items-center gap-3 px-4 pt-4">
         {avatarSrc ? (
@@ -252,6 +275,17 @@ export function PostCard({
                 >
                   Revision history
                 </button>
+                <form action={pinAction}>
+                  <input type="hidden" name="postId" value={post.id} />
+                  <button
+                    type="submit"
+                    disabled={pinPending}
+                    className="w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                    data-testid="post-pin-button"
+                  >
+                    {isPinned ? "Unpin" : "Pin to profile"}
+                  </button>
+                </form>
                 <form action={deleteAction}>
                   <input type="hidden" name="postId" value={post.id} />
                   <button

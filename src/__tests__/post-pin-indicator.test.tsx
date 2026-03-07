@@ -1,36 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
-
-const { mockUpdatePostChecklist } = vi.hoisted(() => ({
-  mockUpdatePostChecklist: vi.fn(),
-}));
+import { render, screen, fireEvent } from "@testing-library/react";
 
 vi.mock("@/components/post-content", () => ({
-  PostContent: ({
-    content,
-    allowChecklistToggle,
-    onContentChange,
-  }: {
-    content: string;
-    truncate?: boolean;
-    allowChecklistToggle?: boolean;
-    onContentChange?: (json: string) => void;
-  }) => (
-    <div
-      data-testid="post-content"
-      data-allow-checklist={allowChecklistToggle ? "true" : "false"}
-      data-has-onchange={onContentChange ? "true" : "false"}
-    >
-      {content}
-      {onContentChange && (
-        <button
-          data-testid="simulate-toggle"
-          onClick={() => onContentChange('{"toggled":true}')}
-        >
-          toggle
-        </button>
-      )}
-    </div>
+  PostContent: ({ content }: { content: string }) => (
+    <div data-testid="post-content">{content}</div>
   ),
 }));
 
@@ -57,7 +30,7 @@ vi.mock("@/components/quote-post-modal", () => ({
 vi.mock("@/app/feed/actions", () => ({
   editPost: vi.fn().mockResolvedValue({ success: true, message: "" }),
   deletePost: vi.fn().mockResolvedValue({ success: true, message: "" }),
-  updatePostChecklist: mockUpdatePostChecklist,
+  updatePostChecklist: vi.fn(),
   togglePinPost: vi.fn().mockResolvedValue({ success: true, message: "" }),
 }));
 
@@ -90,8 +63,22 @@ const basePost = {
   comments: [],
 };
 
-describe("PostCard - checklist toggle", () => {
-  it("passes allowChecklistToggle=true when user is author", () => {
+describe("PostCard - pin indicator", () => {
+  it("shows pinned indicator when post is pinned", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isPinned: true }}
+        currentUserId="user1"
+        phoneVerified={true}
+        biometricVerified={false}
+        showNsfwByDefault={false}
+      />
+    );
+    expect(screen.getByTestId("post-pinned-indicator")).toBeInTheDocument();
+    expect(screen.getByText("Pinned")).toBeInTheDocument();
+  });
+
+  it("does not show pinned indicator when post is not pinned", () => {
     render(
       <PostCard
         post={basePost}
@@ -101,11 +88,38 @@ describe("PostCard - checklist toggle", () => {
         showNsfwByDefault={false}
       />
     );
-    const postContent = screen.getByTestId("post-content");
-    expect(postContent.dataset.allowChecklist).toBe("true");
+    expect(screen.queryByTestId("post-pinned-indicator")).not.toBeInTheDocument();
   });
 
-  it("passes allowChecklistToggle=false when user is not author", () => {
+  it("shows 'Unpin' in menu for pinned post when author is viewing", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isPinned: true }}
+        currentUserId="user1"
+        phoneVerified={true}
+        biometricVerified={false}
+        showNsfwByDefault={false}
+      />
+    );
+    fireEvent.click(screen.getByTestId("post-menu-button"));
+    expect(screen.getByTestId("post-pin-button")).toHaveTextContent("Unpin");
+  });
+
+  it("shows 'Pin to profile' in menu for unpinned post when author is viewing", () => {
+    render(
+      <PostCard
+        post={basePost}
+        currentUserId="user1"
+        phoneVerified={true}
+        biometricVerified={false}
+        showNsfwByDefault={false}
+      />
+    );
+    fireEvent.click(screen.getByTestId("post-menu-button"));
+    expect(screen.getByTestId("post-pin-button")).toHaveTextContent("Pin to profile");
+  });
+
+  it("does not show pin button for non-authors", () => {
     render(
       <PostCard
         post={basePost}
@@ -115,54 +129,7 @@ describe("PostCard - checklist toggle", () => {
         showNsfwByDefault={false}
       />
     );
-    const postContent = screen.getByTestId("post-content");
-    expect(postContent.dataset.allowChecklist).toBe("false");
-  });
-
-  it("passes allowChecklistToggle=false when no currentUserId", () => {
-    render(
-      <PostCard
-        post={basePost}
-        phoneVerified={true}
-        biometricVerified={false}
-        showNsfwByDefault={false}
-      />
-    );
-    const postContent = screen.getByTestId("post-content");
-    expect(postContent.dataset.allowChecklist).toBe("false");
-  });
-
-  it("provides onContentChange callback when user is author", () => {
-    render(
-      <PostCard
-        post={basePost}
-        currentUserId="user1"
-        phoneVerified={true}
-        biometricVerified={false}
-        showNsfwByDefault={false}
-      />
-    );
-    const postContent = screen.getByTestId("post-content");
-    expect(postContent.dataset.hasOnchange).toBe("true");
-  });
-
-  it("calls updatePostChecklist when checklist is toggled", () => {
-    mockUpdatePostChecklist.mockClear();
-    render(
-      <PostCard
-        post={basePost}
-        currentUserId="user1"
-        phoneVerified={true}
-        biometricVerified={false}
-        showNsfwByDefault={false}
-      />
-    );
-    const toggleBtn = screen.getByTestId("simulate-toggle");
-    toggleBtn.click();
-
-    expect(mockUpdatePostChecklist).toHaveBeenCalledWith(
-      "post1",
-      '{"toggled":true}'
-    );
+    expect(screen.queryByTestId("post-menu-button")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("post-pin-button")).not.toBeInTheDocument();
   });
 });

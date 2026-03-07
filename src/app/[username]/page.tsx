@@ -145,7 +145,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   const posts = activeTab === "posts"
     ? await prisma.post.findMany({
         where: { authorId: user.id },
-        orderBy: { createdAt: "desc" },
+        orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
         take: 20,
         include: postInclude,
       })
@@ -179,7 +179,13 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
     ? [
         ...posts.map((p) => ({ type: "post" as const, data: p, date: p.createdAt })),
         ...quoteReposts.map((r) => ({ type: "repost" as const, data: r, date: r.createdAt })),
-      ].sort((a, b) => b.date.getTime() - a.date.getTime())
+      ].sort((a, b) => {
+        // Pinned posts always come first
+        const aPinned = a.type === "post" && a.data.isPinned ? 1 : 0;
+        const bPinned = b.type === "post" && b.data.isPinned ? 1 : 0;
+        if (aPinned !== bPinned) return bPinned - aPinned;
+        return b.date.getTime() - a.date.getTime();
+      })
     : [];
 
   const displayName = user.displayName || user.name || user.username;
