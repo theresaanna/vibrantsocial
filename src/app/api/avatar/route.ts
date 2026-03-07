@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { scanImageBuffer, quarantineUpload } from "@/lib/arachnid-shield";
 import { uploadLimiter, checkRateLimit } from "@/lib/rate-limit";
+import { invalidate, cacheKeys } from "@/lib/cache";
 
 const ALLOWED_TYPES = [
   "image/jpeg",
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
   // Delete old avatar if it's a Vercel Blob URL
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { avatar: true },
+    select: { avatar: true, username: true },
   });
 
   if (user?.avatar?.includes("blob.vercel-storage.com")) {
@@ -87,6 +88,10 @@ export async function POST(request: NextRequest) {
     where: { id: session.user.id },
     data: { avatar: blob.url },
   });
+
+  if (user?.username) {
+    await invalidate(cacheKeys.userProfile(user.username));
+  }
 
   revalidatePath("/profile");
   return NextResponse.json({ url: blob.url });

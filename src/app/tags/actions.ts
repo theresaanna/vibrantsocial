@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { normalizeTag } from "@/lib/tags";
 import { PAGE_SIZE, getPostInclude } from "@/app/feed/feed-queries";
+import { cached, cacheKeys } from "@/lib/cache";
 
 /**
  * Search for existing tags matching a query prefix.
@@ -51,26 +52,32 @@ export async function searchTags(query: string) {
  * excluding NSFW/sensitive posts.
  */
 export async function getTagCloudData() {
-  const tags = await prisma.tag.findMany({
-    select: {
-      name: true,
-      _count: {
+  return cached(
+    cacheKeys.tagCloud(),
+    async () => {
+      const tags = await prisma.tag.findMany({
         select: {
-          posts: {
-            where: {
-              post: { isSensitive: false, isNsfw: false },
+          name: true,
+          _count: {
+            select: {
+              posts: {
+                where: {
+                  post: { isSensitive: false, isNsfw: false },
+                },
+              },
             },
           },
         },
-      },
-    },
-    orderBy: { name: "asc" },
-  });
+        orderBy: { name: "asc" },
+      });
 
-  return tags
-    .filter((t) => t._count.posts > 0)
-    .map((t) => ({ name: t.name, count: t._count.posts }))
-    .sort((a, b) => b.count - a.count);
+      return tags
+        .filter((t) => t._count.posts > 0)
+        .map((t) => ({ name: t.name, count: t._count.posts }))
+        .sort((a, b) => b.count - a.count);
+    },
+    300 // cache for 5 minutes
+  );
 }
 
 /**
@@ -90,12 +97,16 @@ export async function getPostsByTag(
 
   const fetchCount = PAGE_SIZE + 1;
 
-  const totalCount = await prisma.postTag.count({
-    where: {
-      tag: { name: normalized },
-      post: { isSensitive: false, isNsfw: false },
-    },
-  });
+  const totalCount = await cached(
+    cacheKeys.tagPostCount(normalized),
+    () => prisma.postTag.count({
+      where: {
+        tag: { name: normalized },
+        post: { isSensitive: false, isNsfw: false },
+      },
+    }),
+    120 // cache for 2 minutes
+  );
 
   const postTags = await prisma.postTag.findMany({
     where: {

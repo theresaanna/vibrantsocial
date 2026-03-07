@@ -45,5 +45,8 @@ export async function invalidatePattern(pattern: string) {
 // Cache key builders
 export const cacheKeys = {
   userFollowing: (userId: string) => `user:${userId}:following`,
-  userProfile: (userId: string) => `user:${userId}:profile`,
+  userProfile: (username: string) => `profile:${username}`,
+  postCounts: (postId: string) => `post:${postId}:counts`,
+  tagCloud: () => `tags:cloud`,
+  tagPostCount: (tagName: string) => `tag:${tagName}:count`,
 } as const;

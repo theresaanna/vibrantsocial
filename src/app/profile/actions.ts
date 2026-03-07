@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { del } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { isValidHexColor, THEME_COLOR_FIELDS } from "@/lib/profile-themes";
+import { invalidate, cacheKeys } from "@/lib/cache";
 
 const MAX_BIO_REVISIONS = 20;
 
@@ -110,6 +111,11 @@ export async function updateProfile(
     },
   });
 
+  // Invalidate cached public profile
+  if (username) {
+    await invalidate(cacheKeys.userProfile(username));
+  }
+
   revalidatePath("/profile");
   if (username) {
     revalidatePath(`/${username}`);
@@ -125,7 +131,7 @@ export async function removeAvatar(): Promise<ProfileState> {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { avatar: true },
+    select: { avatar: true, username: true },
   });
 
   // Delete from Vercel Blob if it's a blob URL
@@ -141,6 +147,10 @@ export async function removeAvatar(): Promise<ProfileState> {
     where: { id: session.user.id },
     data: { avatar: null },
   });
+
+  if (user?.username) {
+    await invalidate(cacheKeys.userProfile(user.username));
+  }
 
   revalidatePath("/profile");
   return { success: true, message: "Avatar removed" };
@@ -195,10 +205,19 @@ export async function restoreBioRevision(
     await pruneOldRevisions(session.user.id);
   }
 
+  const userForCache = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { username: true },
+  });
+
   await prisma.user.update({
     where: { id: session.user.id },
     data: { bio: revision.content },
   });
+
+  if (userForCache?.username) {
+    await invalidate(cacheKeys.userProfile(userForCache.username));
+  }
 
   revalidatePath("/profile");
   return {

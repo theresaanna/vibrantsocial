@@ -10,6 +10,7 @@ import {
   createMentionNotifications,
 } from "@/lib/mentions";
 import { extractTagsFromNames } from "@/lib/tags";
+import { invalidate, cacheKeys } from "@/lib/cache";
 
 interface PostState {
   success: boolean;
@@ -79,6 +80,11 @@ export async function createPost(
         data: { postId: post.id, tagId: tag.id },
       });
     }
+    // Invalidate tag caches
+    await invalidate(cacheKeys.tagCloud());
+    await Promise.all(
+      tagNames.map((name) => invalidate(cacheKeys.tagPostCount(name)))
+    );
   }
 
   // Send mention notifications
@@ -162,6 +168,14 @@ export async function editPost(
         data: { postId, tagId: tag.id },
       });
     }
+    // Invalidate tag caches
+    await invalidate(cacheKeys.tagCloud());
+    await Promise.all(
+      tagNames.map((name) => invalidate(cacheKeys.tagPostCount(name)))
+    );
+  } else {
+    // Tags were removed — invalidate cloud
+    await invalidate(cacheKeys.tagCloud());
   }
 
   // Notify users who were newly mentioned in the edit
@@ -284,7 +298,21 @@ export async function deletePost(
     return { success: false, message: "Not authorized" };
   }
 
+  // Get tags before deleting so we can invalidate their caches
+  const postTags = await prisma.postTag.findMany({
+    where: { postId },
+    include: { tag: { select: { name: true } } },
+  });
+
   await prisma.post.delete({ where: { id: postId } });
+
+  // Invalidate tag caches if the post had tags
+  if (postTags.length > 0) {
+    await invalidate(cacheKeys.tagCloud());
+    await Promise.all(
+      postTags.map((pt) => invalidate(cacheKeys.tagPostCount(pt.tag.name)))
+    );
+  }
 
   revalidatePath("/feed");
   return { success: true, message: "Post deleted" };
