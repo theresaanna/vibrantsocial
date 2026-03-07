@@ -15,7 +15,7 @@ export async function Header() {
 
   return (
     <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
-      <nav className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
+      <nav className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-2 px-4 py-3">
         <Link
           href="/"
           className="text-lg font-bold text-zinc-900 dark:text-zinc-50"
@@ -23,7 +23,7 @@ export async function Header() {
           VibrantSocial
         </Link>
 
-        <div className="flex items-center gap-4">
+        <div className="order-3 flex w-full items-center gap-4 border-t border-zinc-100 pt-2 sm:order-2 sm:w-auto sm:border-0 sm:pt-0 dark:border-zinc-800">
           <ThemeToggle />
           {session?.user ? (
             <>
