@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useChannel } from "ably/react";
 import Link from "next/link";
@@ -45,6 +46,7 @@ export function MessageThread({
   onlineUserIds = new Set(),
   phoneVerified = true,
 }: MessageThreadProps) {
+  const router = useRouter();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showGroupSettings, setShowGroupSettings] = useState(false);
@@ -362,6 +364,7 @@ export function MessageThread({
           conversation={conversation}
           currentUserId={currentUserId}
           onClose={() => setShowGroupSettings(false)}
+          onConversationUpdate={() => router.refresh()}
         />
       )}
     </div>
