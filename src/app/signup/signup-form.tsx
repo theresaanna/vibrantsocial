@@ -129,6 +129,9 @@ export function SignupForm() {
           max={new Date().toISOString().split("T")[0]}
           className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
         />
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          Used to verify you are at least 18 years old. Your birthday will not be displayed on your profile.
+        </p>
       </div>
 
       <div>
