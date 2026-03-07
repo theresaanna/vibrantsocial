@@ -39,8 +39,8 @@ export async function completeProfile(
     age--;
   }
 
-  if (age < 13) {
-    return { success: false, message: "You must be at least 13 years old" };
+  if (age < 18) {
+    return { success: false, message: "You must be at least 18 years old" };
   }
 
   await prisma.user.update({

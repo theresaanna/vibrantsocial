@@ -19,6 +19,20 @@ export default async function SignupPage() {
           </p>
         </div>
 
+        <div className="rounded-lg bg-zinc-50 px-4 py-3 text-xs leading-relaxed text-zinc-500 dark:bg-zinc-800/50 dark:text-zinc-400">
+          By using VibrantSocial you agree to label adult and sensitive content
+          per our{" "}
+          <Link
+            href="/tos"
+            target="_blank"
+            className="font-medium text-zinc-700 hover:underline dark:text-zinc-300"
+          >
+            Terms of Service
+          </Link>
+          , and to adhere to all copyright and applicable laws in your
+          jurisdiction.
+        </div>
+
         <SignupForm />
 
         <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
