@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import {
   toggleLike,
   toggleBookmark,
@@ -36,6 +36,14 @@ export function PostActions({
   const [reposts, setReposts] = useState(repostCount);
   const [bookmarked, setBookmarked] = useState(isBookmarked);
   const [bookmarks, setBookmarks] = useState(bookmarkCount);
+
+  // Sync state when server props change (e.g. after revalidation)
+  useEffect(() => { setLiked(isLiked); }, [isLiked]);
+  useEffect(() => { setLikes(likeCount); }, [likeCount]);
+  useEffect(() => { setReposted(isReposted); }, [isReposted]);
+  useEffect(() => { setReposts(repostCount); }, [repostCount]);
+  useEffect(() => { setBookmarked(isBookmarked); }, [isBookmarked]);
+  useEffect(() => { setBookmarks(bookmarkCount); }, [bookmarkCount]);
 
   const [likePending, startLikeTransition] = useTransition();
   const [repostPending, startRepostTransition] = useTransition();
@@ -123,7 +131,9 @@ export function PostActions({
       <button
         type="button"
         onClick={onToggleComments}
-        className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-zinc-500 transition-colors hover:bg-blue-50 hover:text-blue-500 dark:hover:bg-blue-900/20"
+        className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-blue-50 hover:text-blue-500 dark:hover:bg-blue-900/20 ${
+          commentCount > 0 ? "text-blue-500" : "text-zinc-500"
+        }`}
       >
         <svg
           className="h-4 w-4"
