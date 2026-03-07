@@ -127,6 +127,20 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
     },
   };
 
+  const repostInclude = {
+    user: {
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        name: true,
+        image: true,
+        avatar: true,
+      },
+    },
+    post: { include: postInclude },
+  };
+
   // Fetch user's posts or reposts based on active tab
   const posts = activeTab === "posts"
     ? await prisma.post.findMany({
@@ -137,25 +151,35 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       })
     : [];
 
+  // Quote reposts (with content) also appear on the Posts tab
+  const quoteReposts = activeTab === "posts"
+    ? await prisma.repost.findMany({
+        where: { userId: user.id, content: { not: null } },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        include: repostInclude,
+      })
+    : [];
+
   const userReposts = activeTab === "reposts"
     ? await prisma.repost.findMany({
         where: { userId: user.id },
         orderBy: { createdAt: "desc" },
         take: 20,
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-              displayName: true,
-              name: true,
-              image: true,
-              avatar: true,
-            },
-          },
-          post: { include: postInclude },
-        },
+        include: repostInclude,
       })
+    : [];
+
+  // Merge posts and quote reposts chronologically for the Posts tab
+  type FeedItem =
+    | { type: "post"; data: (typeof posts)[number]; date: Date }
+    | { type: "repost"; data: (typeof quoteReposts)[number]; date: Date };
+
+  const feedItems: FeedItem[] = activeTab === "posts"
+    ? [
+        ...posts.map((p) => ({ type: "post" as const, data: p, date: p.createdAt })),
+        ...quoteReposts.map((r) => ({ type: "repost" as const, data: r, date: r.createdAt })),
+      ].sort((a, b) => b.date.getTime() - a.date.getTime())
     : [];
 
   const displayName = user.displayName || user.name || user.username;
@@ -272,7 +296,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
 
         {/* Tab content */}
         {activeTab === "posts" ? (
-          posts.length === 0 ? (
+          feedItems.length === 0 ? (
             <div className="mt-8 text-center">
               <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
                 No posts yet.
@@ -280,9 +304,13 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             </div>
           ) : (
             <div className="mt-6 space-y-4">
-              {posts.map((post) => (
-                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showNsfwByDefault={showNsfwByDefault} />
-              ))}
+              {feedItems.map((item) =>
+                item.type === "post" ? (
+                  <PostCard key={item.data.id} post={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showNsfwByDefault={showNsfwByDefault} />
+                ) : (
+                  <RepostCard key={item.data.id} repost={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showNsfwByDefault={showNsfwByDefault} />
+                )
+              )}
             </div>
           )
         ) : (
