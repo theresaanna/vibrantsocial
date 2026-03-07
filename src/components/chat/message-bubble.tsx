@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { timeAgo } from "@/lib/time";
 import { ReadReceiptIndicator } from "./read-receipt-indicator";
+import { SeenByIndicator } from "./seen-by-indicator";
 import { MediaRenderer } from "./media-renderer";
 import type { MessageData, ChatUserProfile, MediaType } from "@/types/chat";
 
@@ -14,6 +15,7 @@ interface MessageBubbleProps {
   senderProfile: ChatUserProfile;
   isGroup: boolean;
   readStatus: "sent" | "delivered" | "read";
+  seenBy?: ChatUserProfile[];
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
   onReaction?: (messageId: string, emoji: string) => void;
@@ -28,6 +30,7 @@ export function MessageBubble({
   senderProfile,
   isGroup,
   readStatus,
+  seenBy,
   onEdit,
   onDelete,
   onReaction,
@@ -209,7 +212,7 @@ export function MessageBubble({
                   </button>
                   {showEmojiPicker && (
                     <div
-                      className={`absolute z-20 mt-1 ${
+                      className={`absolute z-50 mt-1 ${
                         isOwn ? "right-0 top-full" : "left-0 top-full"
                       }`}
                       data-testid="emoji-picker"
@@ -312,6 +315,11 @@ export function MessageBubble({
             )}
             {isOwn && <ReadReceiptIndicator status={readStatus} />}
           </div>
+
+          {/* Seen by (group chats only, own messages) */}
+          {isOwn && isGroup && seenBy && seenBy.length > 0 && (
+            <SeenByIndicator seenBy={seenBy} />
+          )}
         </div>
       </div>
     </div>

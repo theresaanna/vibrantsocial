@@ -135,6 +135,22 @@ export function MessageThread({
     setLoadingMore(false);
   }, [conversationId, messages, loadingMore, hasMore, setMessages]);
 
+  // Get list of users who have seen a specific message (group chats only)
+  const getSeenBy = useCallback(
+    (msg: MessageData): ChatUserProfile[] => {
+      if (msg.senderId !== currentUserId || !isGroup) return [];
+      const seenUsers: ChatUserProfile[] = [];
+      participantReadTimes.forEach((readAt, userId) => {
+        if (readAt >= msg.createdAt) {
+          const profile = participantMap.get(userId);
+          if (profile) seenUsers.push(profile);
+        }
+      });
+      return seenUsers;
+    },
+    [currentUserId, isGroup, participantReadTimes, participantMap]
+  );
+
   // Get read status for a message
   const getReadStatus = (msg: MessageData): "sent" | "delivered" | "read" => {
     if (msg.senderId !== currentUserId) return "sent";
@@ -309,6 +325,7 @@ export function MessageThread({
               senderProfile={senderProfile}
               isGroup={isGroup}
               readStatus={getReadStatus(msg)}
+              seenBy={getSeenBy(msg)}
               onEdit={handleEditMessage}
               onDelete={handleDeleteMessage}
               onReaction={handleReaction}

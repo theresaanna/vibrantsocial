@@ -175,4 +175,102 @@ describe("MessageThread", () => {
     expect(screen.getByText("Test Group")).toBeInTheDocument();
     expect(screen.getByText("2 members")).toBeInTheDocument();
   });
+
+  it("shows seen-by indicator for own messages in group chat when participant has read", () => {
+    const groupConv: ConversationWithParticipants = {
+      id: "conv1",
+      isGroup: true,
+      name: "Test Group",
+      avatarUrl: null,
+      participants: [
+        {
+          id: "p1",
+          userId: "me",
+          isAdmin: false,
+          lastReadAt: null,
+          user: { id: "me", username: "me", displayName: "Me", name: "Me", avatar: null, image: null },
+        },
+        {
+          id: "p2",
+          userId: "alice",
+          isAdmin: false,
+          lastReadAt: new Date("2024-01-01T10:05:00"),
+          user: { id: "alice", username: "alice", displayName: "Alice", name: "Alice", avatar: null, image: null },
+        },
+        {
+          id: "p3",
+          userId: "bob",
+          isAdmin: false,
+          lastReadAt: new Date("2024-01-01T09:59:00"),
+          user: { id: "bob", username: "bob", displayName: "Bob", name: "Bob", avatar: null, image: null },
+        },
+      ],
+    };
+
+    const groupMessages: MessageData[] = [
+      {
+        id: "msg1",
+        conversationId: "conv1",
+        senderId: "me",
+        content: "Hello group!",
+        editedAt: null,
+        deletedAt: null,
+        createdAt: new Date("2024-01-01T10:01:00"),
+        sender: groupConv.participants[0].user,
+        reactions: [],
+      },
+    ];
+
+    render(
+      <MessageThread
+        conversationId="conv1"
+        initialMessages={groupMessages}
+        conversation={groupConv}
+        currentUserId="me"
+      />
+    );
+
+    // Alice's lastReadAt (10:05) >= msg createdAt (10:01), so she saw it
+    // Bob's lastReadAt (09:59) < msg createdAt (10:01), so he didn't
+    expect(screen.getByLabelText("Seen by Alice")).toBeInTheDocument();
+  });
+
+  it("does not show seen-by indicator in 1:1 chats even when read", () => {
+    const dmConv: ConversationWithParticipants = {
+      ...mockConversation,
+      participants: [
+        mockConversation.participants[0],
+        {
+          ...mockConversation.participants[1],
+          lastReadAt: new Date("2024-01-01T10:05:00"),
+        },
+      ],
+    };
+
+    const dmMessages: MessageData[] = [
+      {
+        id: "msg1",
+        conversationId: "conv1",
+        senderId: "me",
+        content: "Hello!",
+        editedAt: null,
+        deletedAt: null,
+        createdAt: new Date("2024-01-01T10:01:00"),
+        sender: dmConv.participants[0].user,
+        reactions: [],
+      },
+    ];
+
+    render(
+      <MessageThread
+        conversationId="conv1"
+        initialMessages={dmMessages}
+        conversation={dmConv}
+        currentUserId="me"
+      />
+    );
+
+    // In 1:1 chats, seen-by should not render (only checkmark receipts)
+    expect(screen.queryByLabelText(/Seen by/)).not.toBeInTheDocument();
+  });
 });
