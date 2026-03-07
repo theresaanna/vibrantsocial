@@ -6,6 +6,28 @@ import { timeAgo } from "@/lib/time";
 import { useComments, type CommentData } from "@/hooks/use-comments";
 import Link from "next/link";
 
+/**
+ * Renders comment text, converting @username mentions into clickable profile links.
+ */
+function renderCommentContent(text: string) {
+  const parts = text.split(/(@[a-zA-Z0-9_]{3,30})/g);
+  return parts.map((part, i) => {
+    if (/^@[a-zA-Z0-9_]{3,30}$/.test(part)) {
+      const username = part.slice(1);
+      return (
+        <Link
+          key={i}
+          href={`/${username}`}
+          className="font-medium text-blue-600 hover:underline dark:text-blue-400"
+        >
+          {part}
+        </Link>
+      );
+    }
+    return part;
+  });
+}
+
 interface CommentSectionProps {
   postId: string;
   comments: CommentData[];
@@ -195,7 +217,7 @@ function CommentItem({
           </span>
         </div>
         <p className="text-sm text-zinc-700 dark:text-zinc-300">
-          {comment.content}
+          {renderCommentContent(comment.content)}
         </p>
         {onReply && (
           <button

@@ -5,6 +5,10 @@ import { prisma } from "@/lib/prisma";
 import { requirePhoneVerification } from "@/lib/phone-gate";
 import { requireMinimumAge } from "@/lib/age-gate";
 import { revalidatePath } from "next/cache";
+import {
+  extractMentionsFromLexicalJson,
+  createMentionNotifications,
+} from "@/lib/mentions";
 
 interface PostState {
   success: boolean;
@@ -55,9 +59,19 @@ export async function createPost(
   const isSensitive = formData.get("isSensitive") === "true";
   const isNsfw = formData.get("isNsfw") === "true";
 
-  await prisma.post.create({
+  const post = await prisma.post.create({
     data: { content, authorId: session.user.id, isSensitive, isNsfw },
   });
+
+  // Send mention notifications
+  const mentionedUsernames = extractMentionsFromLexicalJson(content);
+  if (mentionedUsernames.length > 0) {
+    await createMentionNotifications({
+      usernames: mentionedUsernames,
+      actorId: session.user.id,
+      postId: post.id,
+    });
+  }
 
   revalidatePath("/feed");
   return { success: true, message: "Post created" };

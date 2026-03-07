@@ -18,6 +18,7 @@ import { useState, useCallback } from "react";
 import { editorTheme } from "./theme";
 import { editorNodes } from "./nodes";
 import { Toolbar } from "./toolbar/Toolbar";
+import { MentionsPlugin } from "./plugins/MentionsPlugin";
 
 interface EditorProps {
   /** Initial content as Lexical JSON string */
@@ -120,6 +121,7 @@ export function Editor({
           <HorizontalRulePlugin />
           <TablePlugin />
           <TabIndentationPlugin />
+          <MentionsPlugin />
         </div>
       </LexicalComposer>
     </div>

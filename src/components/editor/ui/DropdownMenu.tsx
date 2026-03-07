@@ -40,6 +40,7 @@ export function DropdownMenu({ trigger, children, align = "left" }: DropdownMenu
     <div className="relative" ref={ref}>
       <button
         type="button"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => setOpen(!open)}
         className="flex items-center gap-1 rounded px-2 py-1 text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-700"
       >
@@ -72,6 +73,7 @@ export function DropdownItem({ label, active, onClick, icon }: DropdownItemProps
   return (
     <button
       type="button"
+      onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors ${
         active

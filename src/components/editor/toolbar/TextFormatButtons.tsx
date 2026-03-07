@@ -115,6 +115,7 @@ export function TextFormatButtons() {
         <button
           key={f.format}
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, f.format)}
           className={`rounded px-1.5 py-1 text-sm transition-colors ${
             activeFormats.has(f.format)

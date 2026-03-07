@@ -48,6 +48,8 @@ function getNotificationText(type: NotificationType): string {
       return "followed you";
     case "REACTION":
       return "reacted to your message";
+    case "MENTION":
+      return "mentioned you";
   }
 }
 
@@ -112,8 +114,10 @@ export function NotificationList({
           const isUnread = !notification.readAt;
           const isCommentType =
             notification.type === "COMMENT" || notification.type === "REPLY";
+          const isMentionWithComment =
+            notification.type === "MENTION" && notification.commentId;
           let href: string;
-          if (isCommentType && notification.postId && notification.commentId) {
+          if ((isCommentType || isMentionWithComment) && notification.postId && notification.commentId) {
             href = `/post/${notification.postId}?commentId=${notification.commentId}`;
           } else if (notification.type === "REACTION" && notification.message) {
             href = `/chat/${notification.message.conversationId}`;

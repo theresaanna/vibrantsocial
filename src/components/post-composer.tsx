@@ -20,6 +20,7 @@ import Link from "next/link";
 import { editorTheme } from "@/components/editor/theme";
 import { editorNodes } from "@/components/editor/nodes";
 import { Toolbar } from "@/components/editor/toolbar/Toolbar";
+import { MentionsPlugin } from "@/components/editor/plugins/MentionsPlugin";
 
 function ClearOnSuccess({
   shouldClear,
@@ -129,6 +130,7 @@ export function PostComposer({ phoneVerified, isOldEnough }: PostComposerProps) 
             <HorizontalRulePlugin />
             <TablePlugin />
             <TabIndentationPlugin />
+            <MentionsPlugin />
           </div>
           <ClearOnSuccess
             shouldClear={shouldClear}

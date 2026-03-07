@@ -26,6 +26,8 @@ function getToastText(type: NotificationType): string {
       return "followed you";
     case "REACTION":
       return "reacted to your message";
+    case "MENTION":
+      return "mentioned you";
   }
 }
 
