@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { PostCard } from "@/components/post-card";
 import { FollowButton } from "@/components/follow-button";
 import { ProfileShareButton } from "@/components/profile-share-button";
@@ -180,6 +181,26 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {isOwnProfile && (
+                    <Link
+                      href="/profile"
+                      className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                        hasCustomTheme
+                          ? "profile-share-btn"
+                          : "border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                      }`}
+                      style={
+                        hasCustomTheme
+                          ? ({
+                              borderColor: "var(--profile-secondary)",
+                              color: "var(--profile-text)",
+                            } as React.CSSProperties)
+                          : undefined
+                      }
+                    >
+                      Edit Profile
+                    </Link>
+                  )}
                   {currentUserId && !isOwnProfile && (
                     <FollowButton userId={user.id} isFollowing={isFollowing} />
                   )}
