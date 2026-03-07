@@ -25,6 +25,7 @@ export default async function ProfilePage() {
       showNsfwByDefault: true,
       emailOnComment: true,
       emailOnNewChat: true,
+      emailOnMention: true,
     },
   });
 
@@ -55,6 +56,7 @@ export default async function ProfilePage() {
           showNsfwByDefault={user?.showNsfwByDefault ?? false}
           emailOnComment={user?.emailOnComment ?? true}
           emailOnNewChat={user?.emailOnNewChat ?? true}
+          emailOnMention={user?.emailOnMention ?? true}
           phoneVerified={!!user?.phoneVerified}
           phoneNumber={user?.phoneNumber ?? null}
           isCredentialsUser={isCredentialsUser}

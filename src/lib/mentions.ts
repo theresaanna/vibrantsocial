@@ -55,7 +55,7 @@ export async function createMentionNotifications(params: {
   // Fetch mentioned users with email info
   const users = await prisma.user.findMany({
     where: { username: { in: params.usernames, mode: "insensitive" } },
-    select: { id: true, email: true, emailOnComment: true },
+    select: { id: true, email: true, emailOnMention: true },
   });
 
   // Fetch actor name for email
@@ -76,11 +76,11 @@ export async function createMentionNotifications(params: {
         commentId: params.commentId,
       });
 
-      // Send email if the user has an email and comment notifications enabled
+      // Send email if the user has an email and mention notifications enabled
       if (
         user.id !== params.actorId &&
         user.email &&
-        user.emailOnComment &&
+        user.emailOnMention &&
         params.postId
       ) {
         sendMentionEmail({
