@@ -32,7 +32,7 @@ export async function Header() {
               <DynamicFavicon
                 initialHasUnread={
                   unreadNotifications > 0 ||
-                  conversations.some((c) => c.unreadCount > 0)
+                  conversations.some((c: { unreadCount: number }) => c.unreadCount > 0)
                 }
               />
               <SearchBar />

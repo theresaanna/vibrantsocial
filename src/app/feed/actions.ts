@@ -90,7 +90,7 @@ async function prunePostRevisions(postId: string) {
       select: { id: true },
     });
     await prisma.postRevision.deleteMany({
-      where: { id: { in: toDelete.map((r) => r.id) } },
+      where: { id: { in: toDelete.map((r: { id: string }) => r.id) } },
     });
   }
 }

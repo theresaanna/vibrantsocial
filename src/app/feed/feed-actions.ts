@@ -33,7 +33,7 @@ export async function fetchFeedPage(cursor?: string) {
     where: { followerId: userId },
     select: { followingId: true },
   });
-  const followingIds = following.map((f) => f.followingId);
+  const followingIds = following.map((f: { followingId: string }) => f.followingId);
 
   const postInclude = getPostInclude(userId);
   const dateFilter = cursor ? { lt: new Date(cursor) } : undefined;
@@ -62,16 +62,16 @@ export async function fetchFeedPage(cursor?: string) {
     },
   });
 
-  const directPostIds = new Set(posts.map((p) => p.id));
-  const filteredReposts = reposts.filter((r) => !directPostIds.has(r.post.id));
+  const directPostIds = new Set(posts.map((p: { id: string }) => p.id));
+  const filteredReposts = reposts.filter((r: { post: { id: string } }) => !directPostIds.has(r.post.id));
 
   const allItems = [
-    ...posts.map((p) => ({
+    ...posts.map((p: { createdAt: Date }) => ({
       type: "post" as const,
       data: JSON.parse(JSON.stringify(p)),
       date: p.createdAt.toISOString(),
     })),
-    ...filteredReposts.map((r) => ({
+    ...filteredReposts.map((r: { createdAt: Date }) => ({
       type: "repost" as const,
       data: JSON.parse(JSON.stringify(r)),
       date: r.createdAt.toISOString(),

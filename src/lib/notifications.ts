@@ -49,7 +49,7 @@ export async function createNotification(params: CreateNotificationParams) {
     });
 
     await prisma.notification.deleteMany({
-      where: { id: { in: oldest.map((n) => n.id) } },
+      where: { id: { in: oldest.map((n: { id: string }) => n.id) } },
     });
   }
 

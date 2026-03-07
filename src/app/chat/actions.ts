@@ -63,6 +63,23 @@ async function checkMutualFollow(
   return !!(forward && reverse);
 }
 
+interface ConversationParticipantRecord {
+  lastReadAt: Date | null;
+  conversation: {
+    id: string;
+    isGroup: boolean;
+    name: string | null;
+    avatarUrl: string | null;
+    participants: Array<{ userId: string; user: ChatUserProfile }>;
+    messages: Array<{
+      content: string;
+      senderId: string;
+      createdAt: Date;
+      mediaType: string | null;
+    }>;
+  };
+}
+
 export async function getConversations(): Promise<ConversationListItem[]> {
   const session = await auth();
   if (!session?.user?.id) return [];
@@ -88,7 +105,7 @@ export async function getConversations(): Promise<ConversationListItem[]> {
     orderBy: { conversation: { updatedAt: "desc" } },
   });
 
-  return participantRecords.map((pr) => {
+  return (participantRecords as ConversationParticipantRecord[]).map((pr) => {
     const conv = pr.conversation;
     const otherParticipants = conv.participants
       .filter((p) => p.userId !== userId)
@@ -151,7 +168,7 @@ export async function getMessages(
   const trimmed = hasMore ? messages.slice(0, 50) : messages;
 
   return {
-    messages: trimmed.reverse().map((m) => ({
+    messages: trimmed.reverse().map((m: { mediaType: string | null; reactions: { emoji: string; userId: string }[] }) => ({
       ...m,
       mediaType: (m.mediaType ?? null) as MediaType | null,
       reactions: groupReactions(m.reactions),
@@ -658,7 +675,7 @@ export async function bulkDeclineMessageRequests(
   });
 
   const invalid = requests.filter(
-    (r) => r.receiverId !== session.user!.id || r.status !== "PENDING"
+    (r: { receiverId: string; status: string }) => r.receiverId !== session.user!.id || r.status !== "PENDING"
   );
   if (invalid.length > 0) {
     return { success: false, message: "Some requests are invalid" };

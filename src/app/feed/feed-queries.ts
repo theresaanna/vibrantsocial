@@ -34,7 +34,7 @@ export function getPostInclude(userId: string) {
     },
     comments: {
       where: { parentId: null },
-      orderBy: { createdAt: "asc" as const },
+      orderBy: { createdAt: "asc" },
       take: 5,
       include: {
         author: {
@@ -48,7 +48,7 @@ export function getPostInclude(userId: string) {
           },
         },
         replies: {
-          orderBy: { createdAt: "asc" as const },
+          orderBy: { createdAt: "asc" },
           include: {
             author: {
               select: {
@@ -64,7 +64,7 @@ export function getPostInclude(userId: string) {
         },
       },
     },
-  };
+  } as const;
 }
 
 export const repostUserSelect = {

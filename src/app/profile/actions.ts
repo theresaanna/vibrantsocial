@@ -23,7 +23,7 @@ async function pruneOldRevisions(userId: string) {
       select: { id: true },
     });
     await prisma.bioRevision.deleteMany({
-      where: { id: { in: toDelete.map((r) => r.id) } },
+      where: { id: { in: toDelete.map((r: { id: string }) => r.id) } },
     });
   }
 }
