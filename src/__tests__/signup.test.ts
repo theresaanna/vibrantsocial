@@ -25,6 +25,10 @@ vi.mock("bcryptjs", () => ({
   },
 }));
 
+vi.mock("@/lib/email", () => ({
+  sendWelcomeEmail: vi.fn(),
+}));
+
 import { prisma } from "@/lib/prisma";
 import { signIn } from "@/auth";
 
