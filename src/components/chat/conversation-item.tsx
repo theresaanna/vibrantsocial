@@ -70,7 +70,14 @@ export function ConversationItem({
         </div>
         <div className="flex items-center justify-between">
           <p className={`truncate text-xs ${unreadCount > 0 ? "text-zinc-700 dark:text-zinc-300" : "text-zinc-500 dark:text-zinc-400"}`}>
-            {lastMessage?.content ?? "No messages yet"}
+            {lastMessage
+              ? lastMessage.content
+                || (lastMessage.mediaType === "image" ? "Sent a photo"
+                  : lastMessage.mediaType === "video" ? "Sent a video"
+                  : lastMessage.mediaType === "audio" ? "Voice message"
+                  : lastMessage.mediaType === "document" ? "Sent a file"
+                  : "No messages yet")
+              : "No messages yet"}
           </p>
           {unreadCount > 0 && (
             <span className="ml-2 flex h-4.5 min-w-4.5 flex-shrink-0 items-center justify-center rounded-full bg-blue-500 px-1 text-[10px] font-medium text-white">

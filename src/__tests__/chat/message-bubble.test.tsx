@@ -8,6 +8,12 @@ vi.mock("@/lib/time", () => ({
   timeAgo: vi.fn().mockReturnValue("1m ago"),
 }));
 
+vi.mock("@/components/chat/media-renderer", () => ({
+  MediaRenderer: ({ mediaUrl, mediaType, mediaFileName }: { mediaUrl: string; mediaType: string; mediaFileName: string | null }) => (
+    <div data-testid={`media-${mediaType}`}>{mediaFileName ?? mediaUrl}</div>
+  ),
+}));
+
 vi.mock("emoji-picker-react", () => ({
   __esModule: true,
   default: ({ onEmojiClick }: { onEmojiClick: (data: { emoji: string }) => void }) => (
@@ -36,6 +42,10 @@ const baseMessage: MessageData = {
   conversationId: "conv1",
   senderId: "sender1",
   content: "Hello world",
+  mediaUrl: null,
+  mediaType: null,
+  mediaFileName: null,
+  mediaFileSize: null,
   editedAt: null,
   deletedAt: null,
   createdAt: new Date("2024-01-01"),
@@ -319,5 +329,86 @@ describe("MessageBubble", () => {
     );
     await user.click(screen.getByText("Cancel"));
     expect(onEditingChange).toHaveBeenCalledWith(false);
+  });
+
+  // Media attachment tests
+  it("renders image attachment", () => {
+    render(
+      <MessageBubble
+        message={{ ...baseMessage, mediaUrl: "https://example.com/photo.jpg", mediaType: "image" }}
+        isOwn={false}
+        senderProfile={baseSender}
+        isGroup={false}
+        readStatus="sent"
+      />
+    );
+    expect(screen.getByTestId("media-image")).toBeInTheDocument();
+  });
+
+  it("renders video attachment", () => {
+    render(
+      <MessageBubble
+        message={{ ...baseMessage, mediaUrl: "https://example.com/video.mp4", mediaType: "video" }}
+        isOwn={false}
+        senderProfile={baseSender}
+        isGroup={false}
+        readStatus="sent"
+      />
+    );
+    expect(screen.getByTestId("media-video")).toBeInTheDocument();
+  });
+
+  it("renders audio attachment", () => {
+    render(
+      <MessageBubble
+        message={{ ...baseMessage, mediaUrl: "https://example.com/audio.webm", mediaType: "audio" }}
+        isOwn={false}
+        senderProfile={baseSender}
+        isGroup={false}
+        readStatus="sent"
+      />
+    );
+    expect(screen.getByTestId("media-audio")).toBeInTheDocument();
+  });
+
+  it("renders document attachment", () => {
+    render(
+      <MessageBubble
+        message={{ ...baseMessage, mediaUrl: "https://example.com/doc.pdf", mediaType: "document" }}
+        isOwn={false}
+        senderProfile={baseSender}
+        isGroup={false}
+        readStatus="sent"
+      />
+    );
+    expect(screen.getByTestId("media-document")).toBeInTheDocument();
+  });
+
+  it("renders media with text", () => {
+    render(
+      <MessageBubble
+        message={{ ...baseMessage, mediaUrl: "https://example.com/photo.jpg", mediaType: "image", content: "Check this out" }}
+        isOwn={false}
+        senderProfile={baseSender}
+        isGroup={false}
+        readStatus="sent"
+      />
+    );
+    expect(screen.getByTestId("media-image")).toBeInTheDocument();
+    expect(screen.getByText("Check this out")).toBeInTheDocument();
+  });
+
+  it("renders media-only message without text paragraph", () => {
+    render(
+      <MessageBubble
+        message={{ ...baseMessage, mediaUrl: "https://example.com/photo.jpg", mediaType: "image", content: "" }}
+        isOwn={false}
+        senderProfile={baseSender}
+        isGroup={false}
+        readStatus="sent"
+      />
+    );
+    expect(screen.getByTestId("media-image")).toBeInTheDocument();
+    expect(screen.queryByText("Hello world")).not.toBeInTheDocument();
   });
 });

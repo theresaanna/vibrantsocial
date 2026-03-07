@@ -21,18 +21,27 @@ const VIDEO_TYPES = [
   "video/ogg",
 ];
 
+const AUDIO_TYPES = [
+  "audio/webm",
+  "audio/ogg",
+  "audio/mp4",
+  "audio/mpeg",
+];
+
 const DOCUMENT_TYPES = ["application/pdf"];
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_AUDIO_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024; // 10MB
 
-type FileCategory = "image" | "convertible-image" | "video" | "document";
+type FileCategory = "image" | "convertible-image" | "video" | "audio" | "document";
 
 function getFileCategory(mimeType: string): FileCategory | null {
   if (IMAGE_TYPES.includes(mimeType)) return "image";
   if (CONVERTIBLE_IMAGE_TYPES.includes(mimeType)) return "convertible-image";
   if (VIDEO_TYPES.includes(mimeType)) return "video";
+  if (AUDIO_TYPES.includes(mimeType)) return "audio";
   if (DOCUMENT_TYPES.includes(mimeType)) return "document";
   return null;
 }
@@ -44,6 +53,8 @@ function getMaxSize(category: FileCategory): number {
       return MAX_IMAGE_SIZE;
     case "video":
       return MAX_VIDEO_SIZE;
+    case "audio":
+      return MAX_AUDIO_SIZE;
     case "document":
       return MAX_DOCUMENT_SIZE;
   }
@@ -56,6 +67,8 @@ function getSizeLimitLabel(category: FileCategory): string {
       return "5MB";
     case "video":
       return "50MB";
+    case "audio":
+      return "10MB";
     case "document":
       return "10MB";
   }
@@ -79,7 +92,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         error:
-          "Invalid file type. Supported: JPEG, PNG, GIF, WebP, SVG, HEIC, HEIF, MP4, WebM, MOV, OGG, PDF",
+          "Invalid file type. Supported: JPEG, PNG, GIF, WebP, SVG, HEIC, HEIF, MP4, WebM, MOV, OGG, MP3, PDF",
       },
       { status: 400 }
     );
@@ -143,7 +156,9 @@ export async function POST(req: Request) {
       ? "image"
       : category === "video"
         ? "video"
-        : "document";
+        : category === "audio"
+          ? "audio"
+          : "document";
 
   return NextResponse.json({
     url: blob.url,

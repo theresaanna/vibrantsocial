@@ -221,18 +221,18 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
                   </span>{" "}
                   posts
                 </span>
-                <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                <Link href={`/${user.username}/followers`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
                   <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
                     {user._count.followers}
                   </span>{" "}
                   followers
-                </span>
-                <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                </Link>
+                <Link href={`/${user.username}/following`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
                   <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
                     {user._count.following}
                   </span>{" "}
                   following
-                </span>
+                </Link>
               </div>
             </div>
           </div>

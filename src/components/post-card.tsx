@@ -5,6 +5,7 @@ import { PostContent } from "./post-content";
 import { PostActions } from "./post-actions";
 import { CommentSection } from "./comment-section";
 import { PostRevisionHistory } from "./post-revision-history";
+import { Editor } from "./editor/Editor";
 import { editPost, deletePost } from "@/app/feed/actions";
 import { timeAgo } from "@/lib/time";
 import Link from "next/link";
@@ -66,13 +67,11 @@ export function PostCard({
   const [revealed, setRevealed] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState(post.content);
   const [showRevisionHistory, setShowRevisionHistory] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [currentContent, setCurrentContent] = useState(post.content);
   const [wasEdited, setWasEdited] = useState(!!post.editedAt);
   const menuRef = useRef<HTMLDivElement>(null);
-  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isAuthor = currentUserId === post.author.id;
 
@@ -102,13 +101,6 @@ export function PostCard({
       return () => document.removeEventListener("mousedown", handleClick);
     }
   }, [showMenu]);
-
-  // Focus textarea when entering edit mode
-  useEffect(() => {
-    if (isEditing && editTextareaRef.current) {
-      editTextareaRef.current.focus();
-    }
-  }, [isEditing]);
 
   if (deleted) return null;
 
@@ -238,7 +230,6 @@ export function PostCard({
                   type="button"
                   onClick={() => {
                     setIsEditing(true);
-                    setEditContent(currentContent);
                     setShowMenu(false);
                   }}
                   className="w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
@@ -298,15 +289,14 @@ export function PostCard({
             {isEditing ? (
               <form action={handleEditSubmit}>
                 <input type="hidden" name="postId" value={post.id} />
-                <textarea
-                  ref={editTextareaRef}
-                  name="content"
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-200 p-3 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-                  rows={4}
-                  data-testid="post-edit-textarea"
-                />
+                <div data-testid="post-edit-editor">
+                  <Editor
+                    initialContent={currentContent}
+                    inputName="content"
+                    placeholder="Edit your post..."
+                    minHeight="80px"
+                  />
+                </div>
                 <div className="mt-2 flex gap-2">
                   <button
                     type="submit"

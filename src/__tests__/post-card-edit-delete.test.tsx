@@ -8,6 +8,22 @@ vi.mock("@/components/post-content", () => ({
   ),
 }));
 
+vi.mock("@/components/editor/Editor", () => ({
+  Editor: ({
+    initialContent,
+    inputName,
+  }: {
+    initialContent?: string;
+    inputName?: string;
+  }) => (
+    <div data-testid="mock-editor">
+      {inputName && (
+        <input type="hidden" name={inputName} value={initialContent ?? ""} />
+      )}
+    </div>
+  ),
+}));
+
 vi.mock("@/components/post-actions", () => ({
   PostActions: ({ onToggleComments }: { onToggleComments: () => void }) => (
     <div data-testid="post-actions">
@@ -180,7 +196,7 @@ describe("PostCard - edit mode", () => {
     fireEvent.click(screen.getByTestId("post-menu-button"));
     fireEvent.click(screen.getByTestId("post-edit-button"));
 
-    expect(screen.getByTestId("post-edit-textarea")).toBeInTheDocument();
+    expect(screen.getByTestId("post-edit-editor")).toBeInTheDocument();
     expect(screen.getByTestId("post-edit-save")).toBeInTheDocument();
     expect(screen.getByTestId("post-edit-cancel")).toBeInTheDocument();
   });
@@ -197,10 +213,10 @@ describe("PostCard - edit mode", () => {
     );
     fireEvent.click(screen.getByTestId("post-menu-button"));
     fireEvent.click(screen.getByTestId("post-edit-button"));
-    expect(screen.getByTestId("post-edit-textarea")).toBeInTheDocument();
+    expect(screen.getByTestId("post-edit-editor")).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("post-edit-cancel"));
-    expect(screen.queryByTestId("post-edit-textarea")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("post-edit-editor")).not.toBeInTheDocument();
   });
 
   it("hides post content when editing", () => {
