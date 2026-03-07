@@ -36,6 +36,7 @@
     "@lexical/yjs": "^0.41.0",
     "@prisma/adapter-pg": "^7.4.2",
     "@prisma/client": "^6.19.2",
+    "@sentry/nextjs": "^10.42.0",
     "@types/d3": "^7.4.3",
     "@types/katex": "^0.16.8",
     "@upstash/ratelimit": "^2.0.8",
