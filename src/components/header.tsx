@@ -25,7 +25,7 @@ export async function Header() {
           VibrantSocial
         </Link>
 
-        <div className="order-3 flex w-full items-center gap-4 border-t border-zinc-100 pt-2 sm:order-2 sm:w-auto sm:border-0 sm:pt-0 dark:border-zinc-800">
+        <div className="order-3 flex w-full items-center justify-between border-t border-zinc-100 pt-2 sm:order-2 sm:w-auto sm:justify-start sm:gap-4 sm:border-0 sm:pt-0 dark:border-zinc-800">
           <ThemeToggle />
           {session?.user ? (
             <>
