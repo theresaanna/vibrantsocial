@@ -26,8 +26,15 @@ export async function toggleLike(
     where: { postId_userId: { postId, userId: session.user.id } },
   });
 
+  let authorUsername: string | null = null;
+
   if (existing) {
     await prisma.like.delete({ where: { id: existing.id } });
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { author: { select: { username: true } } },
+    });
+    authorUsername = post?.author?.username ?? null;
   } else {
     await prisma.like.create({
       data: { postId, userId: session.user.id },
@@ -35,9 +42,10 @@ export async function toggleLike(
 
     const post = await prisma.post.findUnique({
       where: { id: postId },
-      select: { authorId: true },
+      select: { authorId: true, author: { select: { username: true } } },
     });
     if (post) {
+      authorUsername = post.author?.username ?? null;
       await createNotification({
         type: "LIKE",
         actorId: session.user.id,
@@ -50,6 +58,9 @@ export async function toggleLike(
   revalidatePath("/feed");
   revalidatePath(`/post/${postId}`);
   revalidatePath("/likes");
+  if (authorUsername) {
+    revalidatePath(`/${authorUsername}`);
+  }
   return { success: true, message: existing ? "Unliked" : "Liked" };
 }
 

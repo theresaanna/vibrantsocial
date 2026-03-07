@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useOptimistic } from "react";
 import {
   toggleLike,
   toggleBookmark,
@@ -32,12 +32,37 @@ export function PostActions({
   isReposted,
   onToggleComments,
 }: PostActionsProps) {
-  const [, likeAction, likePending] = useActionState(toggleLike, initial);
-  const [, repostAction, repostPending] = useActionState(toggleRepost, initial);
-  const [, bookmarkAction, bookmarkPending] = useActionState(
+  const [optimisticLiked, setOptimisticLiked] = useOptimistic(isLiked);
+  const [optimisticLikeCount, setOptimisticLikeCount] = useOptimistic(likeCount);
+  const [optimisticReposted, setOptimisticReposted] = useOptimistic(isReposted);
+  const [optimisticRepostCount, setOptimisticRepostCount] = useOptimistic(repostCount);
+  const [optimisticBookmarked, setOptimisticBookmarked] = useOptimistic(isBookmarked);
+  const [optimisticBookmarkCount, setOptimisticBookmarkCount] = useOptimistic(bookmarkCount);
+
+  const [, baseLikeAction, likePending] = useActionState(toggleLike, initial);
+  const [, baseRepostAction, repostPending] = useActionState(toggleRepost, initial);
+  const [, baseBookmarkAction, bookmarkPending] = useActionState(
     toggleBookmark,
     initial
   );
+
+  const likeAction = (formData: FormData) => {
+    setOptimisticLiked(!optimisticLiked);
+    setOptimisticLikeCount(optimisticLiked ? optimisticLikeCount - 1 : optimisticLikeCount + 1);
+    return baseLikeAction(formData);
+  };
+
+  const repostAction = (formData: FormData) => {
+    setOptimisticReposted(!optimisticReposted);
+    setOptimisticRepostCount(optimisticReposted ? optimisticRepostCount - 1 : optimisticRepostCount + 1);
+    return baseRepostAction(formData);
+  };
+
+  const bookmarkAction = (formData: FormData) => {
+    setOptimisticBookmarked(!optimisticBookmarked);
+    setOptimisticBookmarkCount(optimisticBookmarked ? optimisticBookmarkCount - 1 : optimisticBookmarkCount + 1);
+    return baseBookmarkAction(formData);
+  };
 
   return (
     <div className="flex items-center gap-1">
@@ -48,14 +73,14 @@ export function PostActions({
           type="submit"
           disabled={likePending}
           className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-red-50 dark:hover:bg-red-900/20 ${
-            isLiked
+            optimisticLiked
               ? "text-red-500"
               : "text-zinc-500 hover:text-red-500"
           }`}
         >
           <svg
             className="h-4 w-4"
-            fill={isLiked ? "currentColor" : "none"}
+            fill={optimisticLiked ? "currentColor" : "none"}
             stroke="currentColor"
             strokeWidth={2}
             viewBox="0 0 24 24"
@@ -66,7 +91,7 @@ export function PostActions({
               d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
             />
           </svg>
-          {likeCount > 0 && <span>{likeCount}</span>}
+          {optimisticLikeCount > 0 && <span>{optimisticLikeCount}</span>}
         </button>
       </form>
 
@@ -99,7 +124,7 @@ export function PostActions({
           type="submit"
           disabled={repostPending}
           className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-green-50 dark:hover:bg-green-900/20 ${
-            isReposted
+            optimisticReposted
               ? "text-green-500"
               : "text-zinc-500 hover:text-green-500"
           }`}
@@ -117,7 +142,7 @@ export function PostActions({
               d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"
             />
           </svg>
-          {repostCount > 0 && <span>{repostCount}</span>}
+          {optimisticRepostCount > 0 && <span>{optimisticRepostCount}</span>}
         </button>
       </form>
 
@@ -128,14 +153,14 @@ export function PostActions({
           type="submit"
           disabled={bookmarkPending}
           className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-yellow-50 dark:hover:bg-yellow-900/20 ${
-            isBookmarked
+            optimisticBookmarked
               ? "text-yellow-500"
               : "text-zinc-500 hover:text-yellow-500"
           }`}
         >
           <svg
             className="h-4 w-4"
-            fill={isBookmarked ? "currentColor" : "none"}
+            fill={optimisticBookmarked ? "currentColor" : "none"}
             stroke="currentColor"
             strokeWidth={2}
             viewBox="0 0 24 24"
@@ -146,7 +171,7 @@ export function PostActions({
               d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"
             />
           </svg>
-          {bookmarkCount > 0 && <span>{bookmarkCount}</span>}
+          {optimisticBookmarkCount > 0 && <span>{optimisticBookmarkCount}</span>}
         </button>
       </form>
     </div>
