@@ -26,6 +26,10 @@ const makeMessage = (id: string, content = "hello"): MessageData => ({
   conversationId: "conv1",
   senderId: "sender1",
   content,
+  mediaUrl: null,
+  mediaType: null,
+  mediaFileName: null,
+  mediaFileSize: null,
   editedAt: null,
   deletedAt: null,
   createdAt: new Date("2024-01-01T10:00:00Z"),
@@ -220,5 +224,59 @@ describe("useChatMessages", () => {
     });
 
     expect(result.current.messages[0].reactions).toEqual([]);
+  });
+
+  it("includes media fields on 'new' event with media", () => {
+    const { result } = renderHook(() => useChatMessages("conv1", []));
+
+    act(() => {
+      channelCallback({
+        name: "new",
+        data: {
+          id: "m1",
+          conversationId: "conv1",
+          senderId: "sender1",
+          content: "check this out",
+          sender: makeSender(),
+          editedAt: null,
+          deletedAt: null,
+          createdAt: "2024-01-01T10:00:00Z",
+          mediaUrl: "https://example.com/photo.jpg",
+          mediaType: "image",
+          mediaFileName: "photo.jpg",
+          mediaFileSize: "500000",
+        },
+      });
+    });
+
+    expect(result.current.messages[0].mediaUrl).toBe("https://example.com/photo.jpg");
+    expect(result.current.messages[0].mediaType).toBe("image");
+    expect(result.current.messages[0].mediaFileName).toBe("photo.jpg");
+    expect(result.current.messages[0].mediaFileSize).toBe(500000);
+  });
+
+  it("sets media fields to null on 'new' event without media", () => {
+    const { result } = renderHook(() => useChatMessages("conv1", []));
+
+    act(() => {
+      channelCallback({
+        name: "new",
+        data: {
+          id: "m1",
+          conversationId: "conv1",
+          senderId: "sender1",
+          content: "hello",
+          sender: makeSender(),
+          editedAt: null,
+          deletedAt: null,
+          createdAt: "2024-01-01T10:00:00Z",
+        },
+      });
+    });
+
+    expect(result.current.messages[0].mediaUrl).toBeNull();
+    expect(result.current.messages[0].mediaType).toBeNull();
+    expect(result.current.messages[0].mediaFileName).toBeNull();
+    expect(result.current.messages[0].mediaFileSize).toBeNull();
   });
 });

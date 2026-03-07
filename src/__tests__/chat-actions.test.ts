@@ -359,6 +359,106 @@ describe("sendMessage", () => {
       },
     });
   });
+
+  it("sends message with media attachment successfully", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
+    mockPrisma.conversationParticipant.findUnique.mockResolvedValueOnce({
+      id: "p1",
+    } as never);
+    mockPrisma.message.create.mockResolvedValueOnce({
+      id: "msg2",
+    } as never);
+    mockPrisma.conversation.update.mockResolvedValueOnce({} as never);
+    mockPrisma.conversationParticipant.update.mockResolvedValueOnce(
+      {} as never
+    );
+
+    const result = await sendMessage({
+      conversationId: "conv1",
+      content: "check this out",
+      mediaUrl: "https://example.com/photo.jpg",
+      mediaType: "image",
+      mediaFileName: "photo.jpg",
+      mediaFileSize: 500000,
+    });
+    expect(result.success).toBe(true);
+    expect(result.messageId).toBe("msg2");
+    expect(mockPrisma.message.create).toHaveBeenCalledWith({
+      data: {
+        conversationId: "conv1",
+        senderId: "user1",
+        content: "check this out",
+        mediaUrl: "https://example.com/photo.jpg",
+        mediaType: "image",
+        mediaFileName: "photo.jpg",
+        mediaFileSize: 500000,
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            name: true,
+            avatar: true,
+            image: true,
+          },
+        },
+      },
+    });
+  });
+
+  it("allows empty content when media is present", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
+    mockPrisma.conversationParticipant.findUnique.mockResolvedValueOnce({
+      id: "p1",
+    } as never);
+    mockPrisma.message.create.mockResolvedValueOnce({
+      id: "msg3",
+    } as never);
+    mockPrisma.conversation.update.mockResolvedValueOnce({} as never);
+    mockPrisma.conversationParticipant.update.mockResolvedValueOnce(
+      {} as never
+    );
+
+    const result = await sendMessage({
+      conversationId: "conv1",
+      content: "",
+      mediaUrl: "https://example.com/photo.jpg",
+      mediaType: "image",
+      mediaFileName: "photo.jpg",
+      mediaFileSize: 500000,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects empty content and no media", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
+
+    const result = await sendMessage({
+      conversationId: "conv1",
+      content: "",
+    });
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Message cannot be empty");
+  });
+
+  it("rejects invalid mediaType", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
+
+    const result = await sendMessage({
+      conversationId: "conv1",
+      content: "hello",
+      mediaUrl: "https://example.com/malware.exe",
+      mediaType: "exe",
+    });
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Invalid media type");
+  });
 });
 
 describe("editMessage", () => {

@@ -3,7 +3,7 @@
 import type * as Ably from "ably";
 import { useChannel } from "ably/react";
 import { useState } from "react";
-import type { MessageData, ReactionGroup } from "@/types/chat";
+import type { MessageData, MediaType, ReactionGroup } from "@/types/chat";
 
 export function useChatMessages(
   conversationId: string,
@@ -21,6 +21,10 @@ export function useChatMessages(
           conversationId: data.conversationId as string,
           senderId: data.senderId as string,
           content: data.content as string,
+          mediaUrl: (data.mediaUrl as string) ?? null,
+          mediaType: (data.mediaType as MediaType) ?? null,
+          mediaFileName: (data.mediaFileName as string) ?? null,
+          mediaFileSize: data.mediaFileSize ? parseInt(data.mediaFileSize as string, 10) : null,
           sender: JSON.parse(data.sender as string),
           editedAt: data.editedAt ? new Date(data.editedAt) : null,
           deletedAt: data.deletedAt ? new Date(data.deletedAt) : null,

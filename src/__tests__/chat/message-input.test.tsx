@@ -3,8 +3,17 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MessageInput } from "@/components/chat/message-input";
 
+vi.mock("@/components/chat/voice-recorder", () => ({
+  VoiceRecorder: ({ onRecordingComplete, onCancel }: { onRecordingComplete: (blob: Blob) => void; onCancel: () => void }) => (
+    <div data-testid="voice-recorder">
+      <button data-testid="mock-voice-stop" onClick={() => onRecordingComplete(new Blob(["audio"], { type: "audio/webm" }))}>Stop</button>
+      <button data-testid="mock-voice-cancel" onClick={() => onCancel()}>Cancel</button>
+    </div>
+  ),
+}));
+
 describe("MessageInput", () => {
-  it("renders input and send button", () => {
+  it("renders input and attach button", () => {
     render(
       <MessageInput
         onSendMessage={vi.fn()}
@@ -15,10 +24,10 @@ describe("MessageInput", () => {
     expect(
       screen.getByPlaceholderText("Type a message...")
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Send message")).toBeInTheDocument();
+    expect(screen.getByLabelText("Attach file")).toBeInTheDocument();
   });
 
-  it("disables send button when input is empty", () => {
+  it("shows voice record button when input is empty instead of send button", () => {
     render(
       <MessageInput
         onSendMessage={vi.fn()}
@@ -26,7 +35,8 @@ describe("MessageInput", () => {
         onStopTyping={vi.fn()}
       />
     );
-    expect(screen.getByLabelText("Send message")).toBeDisabled();
+    expect(screen.getByTestId("voice-record-button")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Send message")).not.toBeInTheDocument();
   });
 
   it("enables send button when input has text", async () => {
@@ -78,7 +88,7 @@ describe("MessageInput", () => {
 
     const input = screen.getByPlaceholderText("Type a message...");
     await user.type(input, "Hello{Enter}");
-    expect(onSendMessage).toHaveBeenCalledWith("Hello");
+    expect(onSendMessage).toHaveBeenCalledWith("Hello", undefined);
     expect(onStopTyping).toHaveBeenCalled();
   });
 
@@ -192,5 +202,64 @@ describe("MessageInput", () => {
     await user.click(input);
     // Should not throw when pressing ArrowUp without the callback
     await user.keyboard("{ArrowUp}");
+  });
+
+  // File attach and voice recorder tests
+  it("renders attach file button", () => {
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+      />
+    );
+    expect(screen.getByLabelText("Attach file")).toBeInTheDocument();
+  });
+
+  it("renders voice record button when input is empty", () => {
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+      />
+    );
+    expect(screen.getByTestId("voice-record-button")).toBeInTheDocument();
+  });
+
+  it("hides voice button when text is entered", async () => {
+    const user = userEvent.setup();
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+      />
+    );
+
+    expect(screen.getByTestId("voice-record-button")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Send message")).not.toBeInTheDocument();
+
+    await user.type(
+      screen.getByPlaceholderText("Type a message..."),
+      "Hello"
+    );
+
+    expect(screen.queryByTestId("voice-record-button")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Send message")).toBeInTheDocument();
+  });
+
+  it("shows voice recorder when mic button clicked", async () => {
+    const user = userEvent.setup();
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByTestId("voice-record-button"));
+    expect(screen.getByTestId("voice-recorder")).toBeInTheDocument();
   });
 });

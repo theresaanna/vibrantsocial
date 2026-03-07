@@ -7,6 +7,8 @@ export interface ChatUserProfile {
   image: string | null;
 }
 
+export type MediaType = "image" | "video" | "audio" | "document";
+
 export interface ConversationListItem {
   id: string;
   isGroup: boolean;
@@ -17,6 +19,7 @@ export interface ConversationListItem {
     content: string;
     senderId: string;
     createdAt: Date;
+    mediaType?: MediaType | null;
   } | null;
   unreadCount: number;
 }
@@ -31,6 +34,10 @@ export interface MessageData {
   conversationId: string;
   senderId: string;
   content: string;
+  mediaUrl: string | null;
+  mediaType: MediaType | null;
+  mediaFileName: string | null;
+  mediaFileSize: number | null;
   editedAt: Date | null;
   deletedAt: Date | null;
   createdAt: Date;

@@ -258,6 +258,10 @@ model Message {
   conversationId String
   senderId       String
   content        String    @db.Text
+  mediaUrl       String?
+  mediaType      String?
+  mediaFileName  String?
+  mediaFileSize  Int?
   editedAt       DateTime?
   deletedAt      DateTime?
   createdAt      DateTime  @default(now())

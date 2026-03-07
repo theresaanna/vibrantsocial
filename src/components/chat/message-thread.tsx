@@ -22,9 +22,11 @@ import {
 } from "@/app/chat/actions";
 import type {
   MessageData,
+  MediaType,
   ConversationWithParticipants,
   ChatUserProfile,
 } from "@/types/chat";
+import type { MediaAttachment } from "./message-input";
 
 interface MessageThreadProps {
   conversationId: string;
@@ -143,8 +145,17 @@ export function MessageThread({
     return anyRead ? "read" : "delivered";
   };
 
-  const handleSendMessage = async (content: string) => {
-    const result = await sendMessage({ conversationId, content });
+  const handleSendMessage = async (content: string, media?: MediaAttachment) => {
+    const result = await sendMessage({
+      conversationId,
+      content,
+      ...(media && {
+        mediaUrl: media.url,
+        mediaType: media.type,
+        mediaFileName: media.fileName,
+        mediaFileSize: media.fileSize,
+      }),
+    });
     if (!result.success) return;
 
     // The message will arrive via Ably subscription
@@ -154,6 +165,10 @@ export function MessageThread({
       conversationId,
       senderId: currentUserId,
       content,
+      mediaUrl: media?.url ?? null,
+      mediaType: (media?.type as MediaType) ?? null,
+      mediaFileName: media?.fileName ?? null,
+      mediaFileSize: media?.fileSize ?? null,
       editedAt: null,
       deletedAt: null,
       createdAt: new Date(),

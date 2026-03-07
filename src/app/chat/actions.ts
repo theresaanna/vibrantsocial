@@ -13,6 +13,7 @@ import type {
   MessageRequestData,
   ChatUserProfile,
   ReactionGroup,
+  MediaType,
 } from "@/types/chat";
 
 const userSelect = {
@@ -112,6 +113,7 @@ export async function getConversations(): Promise<ConversationListItem[]> {
             content: lastMessage.content,
             senderId: lastMessage.senderId,
             createdAt: lastMessage.createdAt,
+            mediaType: (lastMessage.mediaType as import("@/types/chat").MediaType) ?? null,
           }
         : null,
       unreadCount,
@@ -150,8 +152,9 @@ export async function getMessages(
   return {
     messages: trimmed.reverse().map((m) => ({
       ...m,
+      mediaType: (m.mediaType ?? null) as MediaType | null,
       reactions: groupReactions(m.reactions),
-    })),
+    })) as MessageData[],
     nextCursor: hasMore ? trimmed[0].id : null,
   };
 }
@@ -299,6 +302,10 @@ export async function createGroupConversation(data: {
 export async function sendMessage(data: {
   conversationId: string;
   content: string;
+  mediaUrl?: string;
+  mediaType?: string;
+  mediaFileName?: string;
+  mediaFileSize?: number;
 }): Promise<ActionState & { messageId?: string }> {
   const session = await auth();
   if (!session?.user?.id) {
@@ -310,14 +317,21 @@ export async function sendMessage(data: {
     return { success: false, message: "Phone verification required to send messages" };
   }
 
-  const { conversationId, content } = data;
+  const { conversationId, content, mediaUrl, mediaType, mediaFileName, mediaFileSize } = data;
   const trimmedContent = content.trim();
+  const hasMedia = !!mediaUrl;
 
-  if (!trimmedContent) {
+  if (!trimmedContent && !hasMedia) {
     return { success: false, message: "Message cannot be empty" };
   }
   if (trimmedContent.length > 5000) {
     return { success: false, message: "Message too long (max 5000 characters)" };
+  }
+  if (hasMedia) {
+    const validMediaTypes = ["image", "video", "audio", "document"];
+    if (!mediaType || !validMediaTypes.includes(mediaType)) {
+      return { success: false, message: "Invalid media type" };
+    }
   }
 
   // Verify participant
@@ -335,6 +349,12 @@ export async function sendMessage(data: {
       conversationId,
       senderId: session.user.id,
       content: trimmedContent,
+      ...(hasMedia && {
+        mediaUrl,
+        mediaType,
+        mediaFileName: mediaFileName ?? null,
+        mediaFileSize: mediaFileSize ?? null,
+      }),
     },
     include: { sender: { select: userSelect } },
   });
@@ -366,6 +386,10 @@ export async function sendMessage(data: {
       editedAt: null,
       deletedAt: null,
       createdAt: message.createdAt.toISOString(),
+      mediaUrl: message.mediaUrl ?? null,
+      mediaType: message.mediaType ?? null,
+      mediaFileName: message.mediaFileName ?? null,
+      mediaFileSize: message.mediaFileSize?.toString() ?? null,
     });
   } catch {
     // Non-critical — message is saved, real-time delivery failed

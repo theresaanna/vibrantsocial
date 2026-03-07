@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { timeAgo } from "@/lib/time";
 import { ReadReceiptIndicator } from "./read-receipt-indicator";
-import type { MessageData, ChatUserProfile } from "@/types/chat";
+import { MediaRenderer } from "./media-renderer";
+import type { MessageData, ChatUserProfile, MediaType } from "@/types/chat";
 
 const LazyEmojiPicker = lazy(() => import("emoji-picker-react"));
 
@@ -171,7 +172,20 @@ export function MessageBubble({
                     : "rounded-bl-sm bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
                 }`}
               >
-                <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                {message.mediaUrl && message.mediaType && (
+                  <div className="mb-1">
+                    <MediaRenderer
+                      mediaUrl={message.mediaUrl}
+                      mediaType={message.mediaType as MediaType}
+                      mediaFileName={message.mediaFileName}
+                      mediaFileSize={message.mediaFileSize}
+                      isOwn={isOwn}
+                    />
+                  </div>
+                )}
+                {message.content && (
+                  <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                )}
               </div>
             )}
 
@@ -236,15 +250,17 @@ export function MessageBubble({
                     </button>
                     {showMenu && (
                       <div className="absolute right-0 top-full z-10 mt-1 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
-                        <button
-                          onClick={() => {
-                            setIsEditing(true);
-                            setShowMenu(false);
-                          }}
-                          className="block w-full px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                        >
-                          Edit
-                        </button>
+                        {!message.mediaUrl && (
+                          <button
+                            onClick={() => {
+                              setIsEditing(true);
+                              setShowMenu(false);
+                            }}
+                            className="block w-full px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                          >
+                            Edit
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             onDelete?.(message.id);
