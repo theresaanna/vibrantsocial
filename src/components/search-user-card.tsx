@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { extractTextFromLexicalJson } from "@/lib/lexical-text";
 
 interface SearchUserCardProps {
   user: {
@@ -47,7 +48,7 @@ export function SearchUserCard({ user }: SearchUserCardProps) {
         </div>
         {user.bio && (
           <p className="mt-0.5 line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">
-            {user.bio}
+            {extractTextFromLexicalJson(user.bio) || user.bio}
           </p>
         )}
         <div className="mt-1 flex gap-3 text-xs text-zinc-400">
