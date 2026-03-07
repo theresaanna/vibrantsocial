@@ -5,6 +5,7 @@ import { getUnreadNotificationCount } from "@/app/notifications/actions";
 import { ChatNav } from "@/components/chat-nav";
 import { DynamicFavicon } from "@/components/dynamic-favicon";
 import { NotificationBell } from "@/components/notification-bell";
+import { SearchBar } from "@/components/search-bar";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export async function Header() {
@@ -34,6 +35,7 @@ export async function Header() {
                   conversations.some((c) => c.unreadCount > 0)
                 }
               />
+              <SearchBar />
               <Link
                 href="/feed"
                 className="rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-purple-50 hover:text-purple-500 dark:text-zinc-400 dark:hover:bg-purple-900/20 dark:hover:text-purple-500"

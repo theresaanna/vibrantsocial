@@ -1,0 +1,143 @@
+import { describe, it, expect } from "vitest";
+import { extractTextFromLexicalJson } from "@/lib/lexical-text";
+
+function makeLexical(children: unknown[]) {
+  return JSON.stringify({
+    root: {
+      children,
+      direction: "ltr",
+      format: "",
+      indent: 0,
+      type: "root",
+      version: 1,
+    },
+  });
+}
+
+function makeParagraph(children: unknown[]) {
+  return {
+    children,
+    direction: "ltr",
+    format: "",
+    indent: 0,
+    type: "paragraph",
+    version: 1,
+  };
+}
+
+function makeTextNode(text: string) {
+  return {
+    detail: 0,
+    format: 0,
+    mode: "normal",
+    style: "",
+    text,
+    type: "text",
+    version: 1,
+  };
+}
+
+function makeMentionNode(username: string) {
+  return {
+    type: "mention",
+    username,
+    version: 1,
+  };
+}
+
+describe("extractTextFromLexicalJson", () => {
+  it("extracts text from a simple paragraph", () => {
+    const json = makeLexical([makeParagraph([makeTextNode("Hello world")])]);
+    expect(extractTextFromLexicalJson(json)).toBe("Hello world");
+  });
+
+  it("extracts text from multiple paragraphs", () => {
+    const json = makeLexical([
+      makeParagraph([makeTextNode("First paragraph")]),
+      makeParagraph([makeTextNode("Second paragraph")]),
+    ]);
+    expect(extractTextFromLexicalJson(json)).toBe(
+      "First paragraph Second paragraph"
+    );
+  });
+
+  it("extracts text from multiple text nodes in one paragraph", () => {
+    const json = makeLexical([
+      makeParagraph([makeTextNode("Hello "), makeTextNode("world")]),
+    ]);
+    expect(extractTextFromLexicalJson(json)).toBe("Hello  world");
+  });
+
+  it("extracts mention usernames as @username", () => {
+    const json = makeLexical([
+      makeParagraph([
+        makeTextNode("Hey "),
+        makeMentionNode("alice"),
+        makeTextNode(" check this out"),
+      ]),
+    ]);
+    expect(extractTextFromLexicalJson(json)).toBe(
+      "Hey  @alice  check this out"
+    );
+  });
+
+  it("handles nested structures like lists", () => {
+    const json = makeLexical([
+      {
+        type: "list",
+        children: [
+          {
+            type: "listitem",
+            children: [makeTextNode("Item one")],
+          },
+          {
+            type: "listitem",
+            children: [makeTextNode("Item two")],
+          },
+        ],
+      },
+    ]);
+    expect(extractTextFromLexicalJson(json)).toBe("Item one Item two");
+  });
+
+  it("returns empty string for invalid JSON", () => {
+    expect(extractTextFromLexicalJson("not valid json")).toBe("");
+  });
+
+  it("returns empty string for JSON without root", () => {
+    expect(extractTextFromLexicalJson(JSON.stringify({ foo: "bar" }))).toBe("");
+  });
+
+  it("returns empty string for empty document", () => {
+    const json = makeLexical([]);
+    expect(extractTextFromLexicalJson(json)).toBe("");
+  });
+
+  it("handles nodes without text property gracefully", () => {
+    const json = makeLexical([
+      makeParagraph([
+        { type: "linebreak", version: 1 },
+        makeTextNode("After break"),
+      ]),
+    ]);
+    expect(extractTextFromLexicalJson(json)).toBe("After break");
+  });
+
+  it("handles deeply nested content", () => {
+    const json = makeLexical([
+      {
+        type: "quote",
+        children: [
+          makeParagraph([
+            {
+              type: "link",
+              children: [makeTextNode("linked text")],
+              url: "https://example.com",
+            },
+          ]),
+        ],
+      },
+    ]);
+    expect(extractTextFromLexicalJson(json)).toBe("linked text");
+  });
+});
