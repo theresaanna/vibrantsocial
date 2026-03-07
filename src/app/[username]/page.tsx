@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { cached, cacheKeys } from "@/lib/cache";
 import Link from "next/link";
 import { PostCard } from "@/components/post-card";
 import { FollowButton } from "@/components/follow-button";
@@ -19,30 +20,34 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   const { tab } = await searchParams;
   const activeTab = tab === "reposts" ? "reposts" as const : "posts" as const;
 
-  const user = await prisma.user.findUnique({
-    where: { username },
-    select: {
-      id: true,
-      username: true,
-      displayName: true,
-      name: true,
-      image: true,
-      avatar: true,
-      bio: true,
-      profileBgColor: true,
-      profileTextColor: true,
-      profileLinkColor: true,
-      profileSecondaryColor: true,
-      profileContainerColor: true,
-      _count: {
-        select: {
-          posts: true,
-          followers: true,
-          following: true,
+  const user = await cached(
+    cacheKeys.userProfile(username),
+    () => prisma.user.findUnique({
+      where: { username },
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        name: true,
+        image: true,
+        avatar: true,
+        bio: true,
+        profileBgColor: true,
+        profileTextColor: true,
+        profileLinkColor: true,
+        profileSecondaryColor: true,
+        profileContainerColor: true,
+        _count: {
+          select: {
+            posts: true,
+            followers: true,
+            following: true,
+          },
         },
       },
-    },
-  });
+    }),
+    120 // cache for 2 minutes
+  );
 
   if (!user) notFound();
 

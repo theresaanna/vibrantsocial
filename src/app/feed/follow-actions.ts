@@ -137,11 +137,23 @@ export async function toggleFollow(
     ]);
   }
 
-  // Invalidate following cache for both users
-  await Promise.all([
+  // Invalidate caches for both users
+  const [currentUserData, targetUserData] = await Promise.all([
+    prisma.user.findUnique({ where: { id: session.user.id }, select: { username: true } }),
+    prisma.user.findUnique({ where: { id: targetUserId }, select: { username: true } }),
+  ]);
+
+  const invalidations = [
     invalidate(cacheKeys.userFollowing(session.user.id)),
     invalidate(cacheKeys.userFollowing(targetUserId)),
-  ]);
+  ];
+  if (currentUserData?.username) {
+    invalidations.push(invalidate(cacheKeys.userProfile(currentUserData.username)));
+  }
+  if (targetUserData?.username) {
+    invalidations.push(invalidate(cacheKeys.userProfile(targetUserData.username)));
+  }
+  await Promise.all(invalidations);
 
   revalidatePath("/feed");
   return { success: true, message: existing ? "Removed friend" : "Added friend" };
