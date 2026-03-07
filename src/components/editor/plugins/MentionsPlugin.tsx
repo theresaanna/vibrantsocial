@@ -12,6 +12,7 @@ import {
   KEY_ESCAPE_COMMAND,
   KEY_TAB_COMMAND,
   COMMAND_PRIORITY_HIGH,
+  type LexicalEditor,
   type TextNode,
 } from "lexical";
 import { createPortal } from "react-dom";
@@ -47,22 +48,59 @@ function getMentionMatch(
   return { query, matchStart };
 }
 
+/**
+ * Reads the current cursor rect from the DOM, with fallbacks for mobile
+ * browsers that return all-zero rects for collapsed ranges.
+ */
+function getCursorRect(editor: LexicalEditor): DOMRect | null {
+  const nativeSelection = window.getSelection();
+  if (nativeSelection && nativeSelection.rangeCount > 0) {
+    const range = nativeSelection.getRangeAt(0);
+    const rangeRect = range.getBoundingClientRect();
+    if (rangeRect.height > 0 && rangeRect.bottom > 0) return rangeRect;
+    // getClientRects() sometimes works when getBoundingClientRect doesn't
+    const rects = range.getClientRects();
+    if (rects.length > 0 && rects[0].height > 0) return rects[0];
+  }
+  // Fallback: editor root element
+  const rootEl = editor.getRootElement();
+  return rootEl ? rootEl.getBoundingClientRect() : null;
+}
+
 interface MentionDropdownProps {
   results: ChatUserProfile[];
   selectedIndex: number;
-  anchorRect: DOMRect | null;
+  editor: LexicalEditor;
   onSelect: (user: ChatUserProfile) => void;
 }
 
 function MentionDropdown({
   results,
   selectedIndex,
-  anchorRect,
+  editor,
   onSelect,
 }: MentionDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [, forceRender] = useState(0);
 
-  if (!anchorRect || results.length === 0) return null;
+  // Re-render when the visual viewport changes (keyboard show/hide, scroll)
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const handler = () => forceRender((n) => n + 1);
+    vv.addEventListener("resize", handler);
+    vv.addEventListener("scroll", handler);
+    return () => {
+      vv.removeEventListener("resize", handler);
+      vv.removeEventListener("scroll", handler);
+    };
+  }, []);
+
+  if (results.length === 0) return null;
+
+  // Compute position from current DOM state (not a stored rect)
+  const anchorRect = getCursorRect(editor);
+  if (!anchorRect) return null;
 
   const dropdownWidth = 256; // w-64
   const dropdownMaxHeight = 208; // max-h-52
@@ -158,7 +196,6 @@ export function MentionsPlugin() {
   const [query, setQuery] = useState<string | null>(null);
   const [results, setResults] = useState<ChatUserProfile[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
   const matchInfoRef = useRef<{ matchStart: number } | null>(null);
 
   const debouncedQuery = useDebounce(query, 300);
@@ -257,40 +294,6 @@ export function MentionsPlugin() {
         if (match) {
           setQuery(match.query);
           matchInfoRef.current = { matchStart: match.matchStart };
-
-          // Get cursor position for dropdown
-          const nativeSelection = window.getSelection();
-          let rect: DOMRect | null = null;
-          if (nativeSelection && nativeSelection.rangeCount > 0) {
-            const range = nativeSelection.getRangeAt(0);
-            const rangeRect = range.getBoundingClientRect();
-            // On mobile, collapsed ranges can return all-zero rects
-            if (rangeRect.height > 0 && rangeRect.bottom > 0) {
-              rect = rangeRect;
-            }
-            // Try getClientRects() — sometimes works when getBoundingClientRect doesn't
-            if (!rect) {
-              const rects = range.getClientRects();
-              if (rects.length > 0 && rects[0].height > 0) {
-                rect = rects[0];
-              }
-            }
-          }
-          // Fallback: use the DOM element of the text node being edited
-          if (!rect) {
-            const element = editor.getElementByKey(anchorNode.getKey());
-            if (element) {
-              rect = element.getBoundingClientRect();
-            }
-          }
-          // Last fallback: editor root element
-          if (!rect) {
-            const rootEl = editor.getRootElement();
-            if (rootEl) {
-              rect = rootEl.getBoundingClientRect();
-            }
-          }
-          if (rect) setAnchorRect(rect);
         } else {
           setQuery(null);
           matchInfoRef.current = null;
@@ -372,7 +375,7 @@ export function MentionsPlugin() {
     <MentionDropdown
       results={results}
       selectedIndex={selectedIndex}
-      anchorRect={anchorRect}
+      editor={editor}
       onSelect={insertMention}
     />
   );
