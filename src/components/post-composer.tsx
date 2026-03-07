@@ -47,9 +47,10 @@ function ClearOnSuccess({
 interface PostComposerProps {
   phoneVerified: boolean;
   isOldEnough: boolean;
+  onPostCreated?: (postId: string) => void;
 }
 
-export function PostComposer({ phoneVerified, isOldEnough }: PostComposerProps) {
+export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: PostComposerProps) {
   const [editorJson, setEditorJson] = useState("");
   const [shouldClear, setShouldClear] = useState(false);
 
@@ -62,6 +63,7 @@ export function PostComposer({ phoneVerified, isOldEnough }: PostComposerProps) 
       if (result.success) {
         setShouldClear(true);
         setEditorJson("");
+        if (result.postId) onPostCreated?.(result.postId);
       }
       return result;
     },

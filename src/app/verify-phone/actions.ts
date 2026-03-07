@@ -32,17 +32,6 @@ export async function sendPhoneCode(
     };
   }
 
-  const existing = await prisma.user.findFirst({
-    where: { phoneNumber, id: { not: session.user.id } },
-  });
-  if (existing) {
-    return {
-      step: "input",
-      message: "This phone number is already associated with another account",
-      success: false,
-    };
-  }
-
   await prisma.user.update({
     where: { id: session.user.id },
     data: { phoneNumber },

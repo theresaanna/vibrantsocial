@@ -1,8 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { PostComposer } from "@/components/post-composer";
-import { FeedList } from "@/components/feed-list";
+import { FeedClient } from "@/components/feed-client";
 import { calculateAge } from "@/lib/age-gate";
 import { getPostInclude, repostUserSelect, PAGE_SIZE } from "./feed-queries";
 
@@ -83,12 +82,12 @@ export default async function FeedPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
-      <PostComposer phoneVerified={phoneVerified} isOldEnough={isOldEnough} />
-      <FeedList
+      <FeedClient
+        phoneVerified={phoneVerified}
+        isOldEnough={isOldEnough}
         initialItems={initialItems}
         initialHasMore={hasMore}
         currentUserId={userId}
-        phoneVerified={phoneVerified}
         biometricVerified={biometricVerified}
         showNsfwByDefault={showNsfwByDefault}
       />

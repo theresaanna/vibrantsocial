@@ -15,6 +15,7 @@ export function FeedList({
   phoneVerified,
   biometricVerified,
   showNsfwByDefault,
+  newItems = [],
 }: {
   initialItems: FeedItem[];
   initialHasMore: boolean;
@@ -22,8 +23,27 @@ export function FeedList({
   phoneVerified: boolean;
   biometricVerified: boolean;
   showNsfwByDefault: boolean;
+  newItems?: FeedItem[];
 }) {
   const [items, setItems] = useState(initialItems);
+
+  // Prepend newly created posts
+  useEffect(() => {
+    if (newItems.length === 0) return;
+    setItems((prev) => {
+      const existingIds = new Set(
+        prev.map((item) =>
+          item.type === "post" ? item.data.id : `repost-${item.data.id}`
+        )
+      );
+      const toAdd = newItems.filter((item) => {
+        const key =
+          item.type === "post" ? item.data.id : `repost-${item.data.id}`;
+        return !existingIds.has(key);
+      });
+      return toAdd.length > 0 ? [...toAdd, ...prev] : prev;
+    });
+  }, [newItems]);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [isPending, startTransition] = useTransition();
   const sentinelRef = useRef<HTMLDivElement>(null);

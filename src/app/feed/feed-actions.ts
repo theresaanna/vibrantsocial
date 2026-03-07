@@ -4,6 +4,23 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getPostInclude, repostUserSelect, PAGE_SIZE } from "./feed-queries";
 
+export async function fetchSinglePost(postId: string) {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+
+  const post = await prisma.post.findUnique({
+    where: { id: postId },
+    include: getPostInclude(session.user.id),
+  });
+  if (!post) return null;
+
+  return {
+    type: "post" as const,
+    data: JSON.parse(JSON.stringify(post)),
+    date: post.createdAt.toISOString(),
+  };
+}
+
 export async function fetchFeedPage(cursor?: string) {
   const session = await auth();
   if (!session?.user?.id) {
