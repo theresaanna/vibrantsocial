@@ -411,4 +411,83 @@ describe("MessageBubble", () => {
     expect(screen.getByTestId("media-image")).toBeInTheDocument();
     expect(screen.queryByText("Hello world")).not.toBeInTheDocument();
   });
+
+  // Seen by indicator tests
+  it("shows SeenByIndicator for own messages in group chat with seenBy data", () => {
+    const seenByUsers: ChatUserProfile[] = [
+      { id: "u2", username: "bob", displayName: "Bob", name: "Bob", avatar: null, image: null },
+    ];
+    render(
+      <MessageBubble
+        message={baseMessage}
+        isOwn={true}
+        senderProfile={baseSender}
+        isGroup={true}
+        readStatus="read"
+        seenBy={seenByUsers}
+      />
+    );
+    expect(screen.getByLabelText("Seen by Bob")).toBeInTheDocument();
+  });
+
+  it("does not show SeenByIndicator for non-own messages", () => {
+    const seenByUsers: ChatUserProfile[] = [
+      { id: "u2", username: "bob", displayName: "Bob", name: "Bob", avatar: null, image: null },
+    ];
+    render(
+      <MessageBubble
+        message={baseMessage}
+        isOwn={false}
+        senderProfile={baseSender}
+        isGroup={true}
+        readStatus="sent"
+        seenBy={seenByUsers}
+      />
+    );
+    expect(screen.queryByLabelText("Seen by Bob")).not.toBeInTheDocument();
+  });
+
+  it("does not show SeenByIndicator in 1:1 chats", () => {
+    const seenByUsers: ChatUserProfile[] = [
+      { id: "u2", username: "bob", displayName: "Bob", name: "Bob", avatar: null, image: null },
+    ];
+    render(
+      <MessageBubble
+        message={baseMessage}
+        isOwn={true}
+        senderProfile={baseSender}
+        isGroup={false}
+        readStatus="read"
+        seenBy={seenByUsers}
+      />
+    );
+    expect(screen.queryByLabelText("Seen by Bob")).not.toBeInTheDocument();
+  });
+
+  it("does not show SeenByIndicator when seenBy is not provided", () => {
+    render(
+      <MessageBubble
+        message={baseMessage}
+        isOwn={true}
+        senderProfile={baseSender}
+        isGroup={true}
+        readStatus="read"
+      />
+    );
+    expect(screen.queryByText("Seen by")).not.toBeInTheDocument();
+  });
+
+  it("does not show SeenByIndicator when seenBy is empty", () => {
+    render(
+      <MessageBubble
+        message={baseMessage}
+        isOwn={true}
+        senderProfile={baseSender}
+        isGroup={true}
+        readStatus="delivered"
+        seenBy={[]}
+      />
+    );
+    expect(screen.queryByText("Seen by")).not.toBeInTheDocument();
+  });
 });
