@@ -10,7 +10,7 @@ vi.mock("resend", () => ({
   })),
 }));
 
-import { sendCommentEmail, sendNewChatEmail, sendWelcomeEmail } from "@/lib/email";
+import { sendCommentEmail, sendNewChatEmail, sendWelcomeEmail, sendPasswordResetEmail } from "@/lib/email";
 
 describe("sendCommentEmail", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -133,5 +133,38 @@ describe("sendWelcomeEmail", () => {
     mockSend.mockRejectedValueOnce(new Error("Resend down"));
 
     await expect(sendWelcomeEmail("newuser@example.com")).resolves.toBeUndefined();
+  });
+});
+
+describe("sendPasswordResetEmail", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("sends a reset email with the correct fields", async () => {
+    mockSend.mockResolvedValueOnce({ id: "email-6" });
+
+    await sendPasswordResetEmail({
+      toEmail: "user@example.com",
+      token: "test-token-uuid",
+    });
+
+    expect(mockSend).toHaveBeenCalledOnce();
+    const call = mockSend.mock.calls[0][0];
+    expect(call.from).toBe("VibrantSocial <hello@vibrantsocial.app>");
+    expect(call.to).toBe("user@example.com");
+    expect(call.subject).toBe("Reset your password");
+    expect(call.html).toContain("Reset your password");
+    expect(call.html).toContain("/reset-password?token=test-token-uuid");
+    expect(call.html).toContain("1 hour");
+  });
+
+  it("does not throw on Resend failure", async () => {
+    mockSend.mockRejectedValueOnce(new Error("Resend down"));
+
+    await expect(
+      sendPasswordResetEmail({
+        toEmail: "user@example.com",
+        token: "test-token-uuid",
+      })
+    ).resolves.toBeUndefined();
   });
 });

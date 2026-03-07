@@ -1,12 +1,11 @@
 "use client";
 
 import { useActionState } from "react";
-import Link from "next/link";
-import { loginWithCredentials } from "./actions";
+import { requestPasswordReset } from "./actions";
 
-export function LoginForm() {
+export function ForgotPasswordForm() {
   const [state, formAction, isPending] = useActionState(
-    loginWithCredentials,
+    requestPasswordReset,
     { success: false, message: "" }
   );
 
@@ -29,41 +28,22 @@ export function LoginForm() {
         />
       </div>
 
-      <div>
-        <label
-          htmlFor="password"
-          className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-        >
-          Password
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          required
-          className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
-        />
-      </div>
-
-      <div className="flex justify-end">
-        <Link
-          href="/forgot-password"
-          className="text-sm text-zinc-600 hover:underline dark:text-zinc-400"
-        >
-          Forgot password?
-        </Link>
-      </div>
-
       <button
         type="submit"
         disabled={isPending}
         className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
       >
-        {isPending ? "Signing in..." : "Sign In"}
+        {isPending ? "Sending..." : "Send Reset Link"}
       </button>
 
       {state.message && (
-        <p className="text-sm text-red-600">{state.message}</p>
+        <p
+          className={`text-sm ${
+            state.success ? "text-green-600" : "text-red-600"
+          }`}
+        >
+          {state.message}
+        </p>
       )}
     </form>
   );

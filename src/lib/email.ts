@@ -85,6 +85,38 @@ export async function sendNewChatEmail(params: {
   }
 }
 
+export async function sendPasswordResetEmail(params: {
+  toEmail: string;
+  token: string;
+}) {
+  const { toEmail, token } = params;
+  const resetUrl = `${getBaseUrl()}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(toEmail)}`;
+
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: toEmail,
+      subject: "Reset your password",
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #18181b; margin-bottom: 16px;">Reset your password</h2>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            We received a request to reset your password. Click the button below to choose a new one.
+          </p>
+          <a href="${resetUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
+            Reset Password
+          </a>
+          <p style="color: #a1a1aa; font-size: 12px; margin-top: 32px;">
+            This link will expire in 1 hour. If you didn&apos;t request this, you can safely ignore this email.
+          </p>
+        </div>
+      `,
+    });
+  } catch {
+    // Non-critical — don't break the reset flow
+  }
+}
+
 export async function sendWelcomeEmail(toEmail: string) {
   try {
     await getResend().emails.send({
