@@ -93,6 +93,25 @@ export async function Header() {
                   />
                 </svg>
               </Link>
+              <Link
+                href="/communities"
+                className="rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-emerald-50 hover:text-emerald-500 dark:text-zinc-400 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-500"
+                aria-label="Communities"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M5.25 8.25h15m-16.5 7.5h15m-1.8-13.5l-3.9 19.5m-2.1-19.5l-3.9 19.5"
+                  />
+                </svg>
+              </Link>
               <NotificationBell initialUnreadCount={unreadNotifications} />
               <ChatNav initialConversations={conversations} />
               <Link

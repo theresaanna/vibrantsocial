@@ -31,6 +31,17 @@ vi.mock("next-auth/react", () => ({
   useSession: vi.fn().mockReturnValue({ data: { user: { id: "me" } } }),
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn().mockReturnValue({
+    push: vi.fn(),
+    replace: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
+  }),
+}));
+
 const mockConversation: ConversationWithParticipants = {
   id: "conv1",
   isGroup: false,

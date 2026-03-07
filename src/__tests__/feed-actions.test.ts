@@ -19,6 +19,7 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: vi.fn(),
       delete: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
     },
     postRevision: {
       create: vi.fn(),
@@ -26,6 +27,16 @@ vi.mock("@/lib/prisma", () => ({
       findMany: vi.fn().mockResolvedValue([]),
       findUnique: vi.fn(),
       deleteMany: vi.fn(),
+    },
+    tag: {
+      upsert: vi.fn().mockResolvedValue({ id: "tag1", name: "test" }),
+    },
+    postTag: {
+      create: vi.fn(),
+      deleteMany: vi.fn(),
+    },
+    user: {
+      findUnique: vi.fn(),
     },
   },
 }));

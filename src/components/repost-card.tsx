@@ -28,6 +28,7 @@ interface RepostCardProps {
       isNsfw: boolean;
       isPinned: boolean;
       author: RepostUser;
+      tags?: Array<{ tag: { name: string } }>;
       _count: {
         comments: number;
         likes: number;

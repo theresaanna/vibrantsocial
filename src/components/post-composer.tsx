@@ -22,6 +22,7 @@ import { editorNodes } from "@/components/editor/nodes";
 import { Toolbar } from "@/components/editor/toolbar/Toolbar";
 import { AutoLinkPlugin } from "@/components/editor/plugins/AutoLinkPlugin";
 import { MentionsPlugin } from "@/components/editor/plugins/MentionsPlugin";
+import { TagInput } from "@/components/tag-input";
 
 function ClearOnSuccess({
   shouldClear,
@@ -53,6 +54,9 @@ interface PostComposerProps {
 export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: PostComposerProps) {
   const [editorJson, setEditorJson] = useState("");
   const [shouldClear, setShouldClear] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
+  const [isSensitive, setIsSensitive] = useState(false);
+  const [isNsfw, setIsNsfw] = useState(false);
 
   const [state, formAction, isPending] = useActionState(
     async (
@@ -63,6 +67,7 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
       if (result.success) {
         setShouldClear(true);
         setEditorJson("");
+        setTags([]);
         if (result.postId) onPostCreated?.(result.postId);
       }
       return result;
@@ -141,14 +146,33 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
             onCleared={() => setShouldClear(false)}
           />
         </LexicalComposer>
+        <TagInput
+          tags={tags}
+          onChange={setTags}
+          disabled={isSensitive || isNsfw}
+        />
         <div className="border-t border-zinc-200 px-4 py-2 dark:border-zinc-700">
           <div className="flex items-center gap-4">
             <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
-              <input type="checkbox" name="isSensitive" value="true" className="rounded" />
+              <input
+                type="checkbox"
+                name="isSensitive"
+                value="true"
+                className="rounded"
+                checked={isSensitive}
+                onChange={(e) => setIsSensitive(e.target.checked)}
+              />
               Sensitive
             </label>
             <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
-              <input type="checkbox" name="isNsfw" value="true" className="rounded" />
+              <input
+                type="checkbox"
+                name="isNsfw"
+                value="true"
+                className="rounded"
+                checked={isNsfw}
+                onChange={(e) => setIsNsfw(e.target.checked)}
+              />
               NSFW
             </label>
             <p className="ml-auto text-xs text-zinc-400 dark:text-zinc-500">

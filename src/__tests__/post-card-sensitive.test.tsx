@@ -46,6 +46,7 @@ const basePost = {
     image: null,
     avatar: null,
   },
+  tags: [],
   _count: { comments: 0, likes: 0, bookmarks: 0, reposts: 0 },
   likes: [],
   bookmarks: [],

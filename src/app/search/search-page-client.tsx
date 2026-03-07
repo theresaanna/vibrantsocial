@@ -53,6 +53,17 @@ export function SearchPageClient({
     inputRef.current?.focus();
   }, []);
 
+  // Redirect #tag searches to the tag page
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed.startsWith("#") && trimmed.length > 1) {
+      const tagName = trimmed.slice(1).toLowerCase().replace(/[^a-z0-9-]/g, "");
+      if (tagName) {
+        router.push(`/tag/${tagName}`);
+      }
+    }
+  }, [query, router]);
+
   // Debounced search on query change
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
