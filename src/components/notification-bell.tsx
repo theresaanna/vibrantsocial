@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import type { InboundMessage } from "ably";
 import { useAblyReady } from "@/app/providers";
 import { getAblyRealtimeClient } from "@/lib/ably";
+import { getUnreadNotificationCount } from "@/app/notifications/actions";
 
 export function NotificationBell({
   initialUnreadCount,
@@ -15,10 +17,27 @@ export function NotificationBell({
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount);
   const { data: session } = useSession();
   const ablyReady = useAblyReady();
+  const pathname = usePathname();
+  const wasOnNotificationsRef = useRef(false);
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
 
   const handleNewNotification = useCallback((_msg: InboundMessage) => {
+    // Don't increment badge while user is viewing notifications
+    if (pathnameRef.current === "/notifications") return;
     setUnreadCount((prev) => prev + 1);
   }, []);
+
+  // Clear badge on notifications page, re-fetch actual count when leaving
+  useEffect(() => {
+    if (pathname === "/notifications") {
+      setUnreadCount(0);
+      wasOnNotificationsRef.current = true;
+    } else if (wasOnNotificationsRef.current) {
+      wasOnNotificationsRef.current = false;
+      getUnreadNotificationCount().then(setUnreadCount);
+    }
+  }, [pathname]);
 
   useEffect(() => {
     if (!ablyReady || !session?.user?.id) return;
