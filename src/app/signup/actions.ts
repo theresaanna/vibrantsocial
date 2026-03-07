@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { signIn } from "@/auth";
 import { AuthError } from "next-auth";
+import { autoFriendNewUser } from "@/lib/auto-friend";
 
 interface SignupState {
   success: boolean;
@@ -102,24 +103,7 @@ export async function signup(
   });
 
   // Auto-friend with theresa so new users see content and have a connection
-  try {
-    const theresa = await prisma.user.findUnique({
-      where: { username: "theresa" },
-      select: { id: true },
-    });
-    if (theresa && theresa.id !== newUser.id) {
-      await prisma.$transaction([
-        prisma.follow.create({
-          data: { followerId: newUser.id, followingId: theresa.id },
-        }),
-        prisma.follow.create({
-          data: { followerId: theresa.id, followingId: newUser.id },
-        }),
-      ]);
-    }
-  } catch {
-    // Non-critical — don't block signup if auto-friend fails
-  }
+  await autoFriendNewUser(newUser.id);
 
   try {
     await signIn("credentials", {

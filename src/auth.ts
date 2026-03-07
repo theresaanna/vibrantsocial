@@ -5,6 +5,7 @@ import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { autoFriendNewUser } from "@/lib/auto-friend";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -47,6 +48,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
+  },
+  events: {
+    async createUser({ user }) {
+      if (user.id) {
+        await autoFriendNewUser(user.id);
+      }
+    },
   },
   callbacks: {
     async jwt({ token, user, trigger, session }) {

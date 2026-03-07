@@ -48,6 +48,8 @@ export async function toggleLike(
   }
 
   revalidatePath("/feed");
+  revalidatePath(`/post/${postId}`);
+  revalidatePath("/likes");
   return { success: true, message: existing ? "Unliked" : "Liked" };
 }
 
@@ -87,6 +89,8 @@ export async function toggleBookmark(
   }
 
   revalidatePath("/feed");
+  revalidatePath(`/post/${postId}`);
+  revalidatePath("/bookmarks");
   return { success: true, message: existing ? "Unbookmarked" : "Bookmarked" };
 }
 
@@ -126,6 +130,7 @@ export async function toggleRepost(
   }
 
   revalidatePath("/feed");
+  revalidatePath(`/post/${postId}`);
   return { success: true, message: existing ? "Unreposted" : "Reposted" };
 }
 
@@ -222,5 +227,6 @@ export async function createComment(
   }
 
   revalidatePath("/feed");
+  revalidatePath(`/post/${postId}`);
   return { success: true, message: "Comment added" };
 }
