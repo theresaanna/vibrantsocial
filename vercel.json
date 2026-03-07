@@ -1,0 +1,16 @@
+{
+  "functions": {
+    "app/api/upload/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/upload/client/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/avatar/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/inngest/route.ts": {
+      "maxDuration": 60
+    }
+  }
+}

@@ -6,7 +6,7 @@ import { requirePhoneVerification } from "@/lib/phone-gate";
 import { revalidatePath } from "next/cache";
 import { getAblyRestClient } from "@/lib/ably";
 import { createNotification } from "@/lib/notifications";
-import { sendCommentEmail } from "@/lib/email";
+import { inngest } from "@/lib/inngest";
 import {
   extractMentionsFromPlainText,
   createMentionNotifications,
@@ -15,6 +15,31 @@ import {
 interface ActionState {
   success: boolean;
   message: string;
+}
+
+const commentAuthorSelect = {
+  id: true,
+  username: true,
+  displayName: true,
+  name: true,
+  image: true,
+  avatar: true,
+} as const;
+
+export async function fetchComments(postId: string) {
+  const comments = await prisma.comment.findMany({
+    where: { postId, parentId: null },
+    orderBy: { createdAt: "asc" },
+    include: {
+      author: { select: commentAuthorSelect },
+      replies: {
+        orderBy: { createdAt: "asc" },
+        include: { author: { select: commentAuthorSelect } },
+      },
+    },
+  });
+
+  return JSON.parse(JSON.stringify(comments));
 }
 
 export async function toggleLike(
@@ -270,7 +295,7 @@ export async function createComment(
       commentId: comment.id,
     });
 
-    // Send email notification if the post author has it enabled
+    // Send email notification via background job
     if (
       post.authorId !== session.user.id &&
       post.author.email &&
@@ -278,10 +303,9 @@ export async function createComment(
     ) {
       const commenterName =
         comment.author.displayName ?? comment.author.username ?? "Someone";
-      sendCommentEmail({
-        toEmail: post.author.email,
-        commenterName,
-        postId,
+      await inngest.send({
+        name: "email/comment",
+        data: { toEmail: post.author.email, commenterName, postId },
       });
     }
   }

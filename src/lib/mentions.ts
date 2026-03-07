@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notifications";
-import { sendMentionEmail } from "@/lib/email";
+import { inngest } from "@/lib/inngest";
 
 interface LexicalJsonNode {
   type: string;
@@ -83,11 +83,14 @@ export async function createMentionNotifications(params: {
         user.emailOnMention &&
         params.postId
       ) {
-        sendMentionEmail({
-          toEmail: user.email,
-          mentionerName: actorName,
-          postId: params.postId,
-          commentId: params.commentId,
+        await inngest.send({
+          name: "email/mention",
+          data: {
+            toEmail: user.email,
+            mentionerName: actorName,
+            postId: params.postId,
+            commentId: params.commentId,
+          },
         });
       }
     })

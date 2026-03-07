@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { requirePhoneVerification } from "@/lib/phone-gate";
 import { getAblyRestClient } from "@/lib/ably";
 import { createNotification } from "@/lib/notifications";
-import { sendNewChatEmail } from "@/lib/email";
+import { inngest } from "@/lib/inngest";
 import type {
   ActionState,
   ConversationListItem,
@@ -417,10 +417,13 @@ export async function sendMessage(data: {
         if (otherParticipant?.user.email && otherParticipant.user.emailOnNewChat) {
           const senderName =
             message.sender.displayName ?? message.sender.username ?? "Someone";
-          sendNewChatEmail({
-            toEmail: otherParticipant.user.email,
-            senderName,
-            conversationId,
+          await inngest.send({
+            name: "email/chat",
+            data: {
+              toEmail: otherParticipant.user.email,
+              senderName,
+              conversationId,
+            },
           });
         }
       }

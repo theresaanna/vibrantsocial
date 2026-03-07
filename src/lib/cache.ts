@@ -1,0 +1,49 @@
+import { Redis } from "@upstash/redis";
+
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
+
+/**
+ * Generic cache-aside helper.
+ * Returns cached value if present, otherwise calls `fn`, caches the result, and returns it.
+ */
+export async function cached<T>(
+  key: string,
+  fn: () => Promise<T>,
+  ttlSeconds: number
+): Promise<T> {
+  const hit = await redis.get<T>(key);
+  if (hit !== null && hit !== undefined) return hit;
+
+  const value = await fn();
+  await redis.set(key, JSON.stringify(value), { ex: ttlSeconds });
+  return value;
+}
+
+/** Invalidate a specific cache key */
+export async function invalidate(key: string) {
+  await redis.del(key);
+}
+
+/** Invalidate all keys matching a pattern (use sparingly) */
+export async function invalidatePattern(pattern: string) {
+  let cursor = "0";
+  do {
+    const [nextCursor, keys] = await redis.scan(Number(cursor), {
+      match: pattern,
+      count: 100,
+    });
+    cursor = String(nextCursor);
+    if (keys.length > 0) {
+      await redis.del(...keys);
+    }
+  } while (cursor !== "0");
+}
+
+// Cache key builders
+export const cacheKeys = {
+  userFollowing: (userId: string) => `user:${userId}:following`,
+  userProfile: (userId: string) => `user:${userId}:profile`,
+} as const;
