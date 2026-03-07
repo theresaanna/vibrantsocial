@@ -11,6 +11,7 @@ import type {
   ActionState,
   ConversationListItem,
   MessageData,
+  MessageReplyTo,
   MessageRequestData,
   ChatUserProfile,
   ReactionGroup,
@@ -25,6 +26,41 @@ const userSelect = {
   avatar: true,
   image: true,
 } as const;
+
+const replyToInclude = {
+  select: {
+    id: true,
+    content: true,
+    senderId: true,
+    deletedAt: true,
+    mediaType: true,
+    sender: {
+      select: { displayName: true, username: true, name: true },
+    },
+  },
+} as const;
+
+function formatReplyTo(
+  replyTo: {
+    id: string;
+    content: string;
+    senderId: string;
+    deletedAt: Date | null;
+    mediaType: string | null;
+    sender: { displayName: string | null; username: string | null; name: string | null };
+  } | null
+): MessageReplyTo | null {
+  if (!replyTo) return null;
+  return {
+    id: replyTo.id,
+    content: replyTo.content,
+    senderId: replyTo.senderId,
+    senderName:
+      replyTo.sender.displayName ?? replyTo.sender.username ?? replyTo.sender.name ?? "User",
+    mediaType: (replyTo.mediaType ?? null) as MediaType | null,
+    deletedAt: replyTo.deletedAt,
+  };
+}
 
 function groupReactions(
   reactions: { emoji: string; userId: string }[]
@@ -161,6 +197,7 @@ export async function getMessages(
     include: {
       sender: { select: userSelect },
       reactions: { select: { emoji: true, userId: true } },
+      replyTo: replyToInclude,
     },
   });
 
@@ -168,10 +205,11 @@ export async function getMessages(
   const trimmed = hasMore ? messages.slice(0, 50) : messages;
 
   return {
-    messages: trimmed.reverse().map((m: { mediaType: string | null; reactions: { emoji: string; userId: string }[] }) => ({
+    messages: trimmed.reverse().map((m) => ({
       ...m,
       mediaType: (m.mediaType ?? null) as MediaType | null,
       reactions: groupReactions(m.reactions),
+      replyTo: formatReplyTo(m.replyTo),
     })) as MessageData[],
     nextCursor: hasMore ? trimmed[0].id : null,
   };
@@ -324,6 +362,7 @@ export async function sendMessage(data: {
   mediaType?: string;
   mediaFileName?: string;
   mediaFileSize?: number;
+  replyToId?: string;
 }): Promise<ActionState & { messageId?: string }> {
   const session = await auth();
   if (!session?.user?.id) {
@@ -335,7 +374,7 @@ export async function sendMessage(data: {
     return { success: false, message: "Phone verification required to send messages" };
   }
 
-  const { conversationId, content, mediaUrl, mediaType, mediaFileName, mediaFileSize } = data;
+  const { conversationId, content, mediaUrl, mediaType, mediaFileName, mediaFileSize, replyToId } = data;
   const trimmedContent = content.trim();
   const hasMedia = !!mediaUrl;
 
@@ -362,11 +401,36 @@ export async function sendMessage(data: {
     return { success: false, message: "Not a participant of this conversation" };
   }
 
+  // Validate replyToId belongs to the same conversation
+  let replyToData: MessageReplyTo | null = null;
+  if (replyToId) {
+    const replyTarget = await prisma.message.findUnique({
+      where: { id: replyToId },
+      include: {
+        sender: {
+          select: { displayName: true, username: true, name: true },
+        },
+      },
+    });
+    if (!replyTarget || replyTarget.conversationId !== conversationId) {
+      return { success: false, message: "Reply target not found in this conversation" };
+    }
+    replyToData = formatReplyTo({
+      id: replyTarget.id,
+      content: replyTarget.content,
+      senderId: replyTarget.senderId,
+      deletedAt: replyTarget.deletedAt,
+      mediaType: replyTarget.mediaType,
+      sender: replyTarget.sender,
+    });
+  }
+
   const message = await prisma.message.create({
     data: {
       conversationId,
       senderId: session.user.id,
       content: trimmedContent,
+      ...(replyToId && { replyToId }),
       ...(hasMedia && {
         mediaUrl,
         mediaType,
@@ -449,6 +513,7 @@ export async function sendMessage(data: {
       mediaType: message.mediaType ?? null,
       mediaFileName: message.mediaFileName ?? null,
       mediaFileSize: message.mediaFileSize?.toString() ?? null,
+      replyTo: replyToData ? JSON.stringify(replyToData) : null,
     });
   } catch {
     // Non-critical — message is saved, real-time delivery failed

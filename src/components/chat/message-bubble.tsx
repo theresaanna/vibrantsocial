@@ -21,6 +21,8 @@ interface MessageBubbleProps {
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
   onReaction?: (messageId: string, emoji: string) => void;
+  onReply?: (message: MessageData) => void;
+  onScrollToMessage?: (messageId: string) => void;
   currentUserId?: string;
   isEditing?: boolean;
   onEditingChange?: (editing: boolean) => void;
@@ -37,6 +39,8 @@ export function MessageBubble({
   onEdit,
   onDelete,
   onReaction,
+  onReply,
+  onScrollToMessage,
   currentUserId,
   isEditing: externalIsEditing,
   onEditingChange,
@@ -177,6 +181,36 @@ export function MessageBubble({
             </span>
           )}
 
+          {/* Reply quote */}
+          {message.replyTo && (
+            <button
+              onClick={() => onScrollToMessage?.(message.replyTo!.id)}
+              className={`mb-0.5 flex w-full cursor-pointer items-start gap-1.5 rounded-xl border-l-2 px-3 py-1.5 text-left transition-colors hover:opacity-80 ${
+                isOwn
+                  ? "border-blue-300 bg-blue-400/20 dark:border-blue-400 dark:bg-blue-500/10"
+                  : "border-zinc-400 bg-zinc-200/60 dark:border-zinc-500 dark:bg-zinc-700/60"
+              }`}
+              data-testid="reply-quote"
+            >
+              <div className="min-w-0 flex-1">
+                <span className="block truncate text-[11px] font-semibold text-zinc-600 dark:text-zinc-300">
+                  {message.replyTo.senderName}
+                </span>
+                {message.replyTo.deletedAt ? (
+                  <span className="text-xs italic text-zinc-400">This message was deleted</span>
+                ) : (
+                  <span className="block truncate text-xs text-zinc-500 dark:text-zinc-400">
+                    {message.replyTo.mediaType && !message.replyTo.content
+                      ? `[${message.replyTo.mediaType}]`
+                      : message.replyTo.content.length > 80
+                        ? message.replyTo.content.slice(0, 80) + "..."
+                        : message.replyTo.content}
+                  </span>
+                )}
+              </div>
+            </button>
+          )}
+
           {/* Message content */}
           <div className="relative">
             {isEditing ? (
@@ -240,6 +274,18 @@ export function MessageBubble({
                   isOwn ? "-left-16 flex flex-row" : "-right-16 flex flex-row-reverse"
                 }`}
               >
+                {/* Reply button */}
+                <button
+                  onClick={() => onReply?.(message)}
+                  className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-700 dark:hover:text-zinc-300"
+                  aria-label="Reply"
+                  data-testid="reply-button"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                    <path fillRule="evenodd" d="M7.793 2.232a.75.75 0 01-.025 1.06L3.622 7.25h10.003a5.375 5.375 0 010 10.75H10.75a.75.75 0 010-1.5h2.875a3.875 3.875 0 000-7.75H3.622l4.146 3.957a.75.75 0 01-1.036 1.085l-5.5-5.25a.75.75 0 010-1.085l5.5-5.25a.75.75 0 011.06.025z" clipRule="evenodd" />
+                  </svg>
+                </button>
+
                 {/* Emoji reaction button */}
                 <div className="relative">
                   <button

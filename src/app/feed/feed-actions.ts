@@ -46,28 +46,30 @@ export async function fetchFeedPage(cursor?: string) {
   const dateFilter = cursor ? { lt: new Date(cursor) } : undefined;
   const fetchCount = PAGE_SIZE + 1;
 
-  const posts = await prisma.post.findMany({
-    where: {
-      authorId: { in: [...followingIds, userId] },
-      ...(dateFilter ? { createdAt: dateFilter } : {}),
-    },
-    orderBy: { createdAt: "desc" },
-    take: fetchCount,
-    include: postInclude,
-  });
-
-  const reposts = await prisma.repost.findMany({
-    where: {
-      userId: { in: followingIds },
-      ...(dateFilter ? { createdAt: dateFilter } : {}),
-    },
-    orderBy: { createdAt: "desc" },
-    take: fetchCount,
-    include: {
-      user: { select: repostUserSelect },
-      post: { include: postInclude },
-    },
-  });
+  // Run posts + reposts queries in parallel
+  const [posts, reposts] = await Promise.all([
+    prisma.post.findMany({
+      where: {
+        authorId: { in: [...followingIds, userId] },
+        ...(dateFilter ? { createdAt: dateFilter } : {}),
+      },
+      orderBy: { createdAt: "desc" },
+      take: fetchCount,
+      include: postInclude,
+    }),
+    prisma.repost.findMany({
+      where: {
+        userId: { in: followingIds },
+        ...(dateFilter ? { createdAt: dateFilter } : {}),
+      },
+      orderBy: { createdAt: "desc" },
+      take: fetchCount,
+      include: {
+        user: { select: repostUserSelect },
+        post: { include: postInclude },
+      },
+    }),
+  ]);
 
   const directPostIds = new Set(posts.map((p: { id: string }) => p.id));
   const filteredReposts = reposts.filter((r: { post: { id: string } }) => !directPostIds.has(r.post.id));

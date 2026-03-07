@@ -167,6 +167,9 @@ export function MessageThread({
   };
 
   const handleSendMessage = async (content: string, media?: MediaAttachment) => {
+    const currentReply = replyingTo;
+    setReplyingTo(null); // Clear reply state immediately for responsiveness
+
     const result = await sendMessage({
       conversationId,
       content,
@@ -176,8 +179,26 @@ export function MessageThread({
         mediaFileName: media.fileName,
         mediaFileSize: media.fileSize,
       }),
+      ...(currentReply && { replyToId: currentReply.id }),
     });
     if (!result.success) return;
+
+    // Build reply-to data for optimistic update
+    const senderProfile = participantMap.get(currentUserId);
+    const replyToForOptimistic = currentReply
+      ? {
+          id: currentReply.id,
+          content: currentReply.content,
+          senderId: currentReply.senderId,
+          senderName:
+            currentReply.sender.displayName ??
+            currentReply.sender.username ??
+            currentReply.sender.name ??
+            "User",
+          mediaType: currentReply.mediaType,
+          deletedAt: currentReply.deletedAt,
+        }
+      : null;
 
     // The message will arrive via Ably subscription
     // But we can also optimistically add it
@@ -194,7 +215,8 @@ export function MessageThread({
       deletedAt: null,
       createdAt: new Date(),
       reactions: [],
-      sender: participantMap.get(currentUserId) ?? {
+      replyTo: replyToForOptimistic,
+      sender: senderProfile ?? {
         id: currentUserId,
         username: null,
         displayName: null,
@@ -263,6 +285,32 @@ export function MessageThread({
     }
   }, [messages, currentUserId]);
 
+  // Reply state
+  const [replyingTo, setReplyingTo] = useState<MessageData | null>(null);
+
+  const handleReply = useCallback((msg: MessageData) => {
+    setReplyingTo(msg);
+  }, []);
+
+  const handleCancelReply = useCallback(() => {
+    setReplyingTo(null);
+  }, []);
+
+  // Scroll to a specific message (used when clicking reply quotes)
+  const handleScrollToMessage = useCallback((messageId: string) => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const el = container.querySelector(`[data-message-id="${messageId}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Brief highlight effect
+      el.classList.add("bg-blue-50", "dark:bg-blue-900/20");
+      setTimeout(() => {
+        el.classList.remove("bg-blue-50", "dark:bg-blue-900/20");
+      }, 1500);
+    }
+  }, []);
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Header */}
@@ -323,24 +371,27 @@ export function MessageThread({
         {messages.map((msg) => {
           const senderProfile = participantMap.get(msg.senderId) ?? msg.sender;
           return (
-            <MessageBubble
-              key={msg.id}
-              message={msg}
-              isOwn={msg.senderId === currentUserId}
-              senderProfile={senderProfile}
-              isGroup={isGroup}
-              readStatus={getReadStatus(msg)}
-              seenBy={getSeenBy(msg)}
-              onEdit={handleEditMessage}
-              onDelete={handleDeleteMessage}
-              onReaction={handleReaction}
-              currentUserId={currentUserId}
-              isEditing={editingMessageId === msg.id}
-              onEditingChange={(editing) =>
-                setEditingMessageId(editing ? msg.id : null)
-              }
-              themeColors={themeColors}
-            />
+            <div key={msg.id} data-message-id={msg.id} className="transition-colors duration-500">
+              <MessageBubble
+                message={msg}
+                isOwn={msg.senderId === currentUserId}
+                senderProfile={senderProfile}
+                isGroup={isGroup}
+                readStatus={getReadStatus(msg)}
+                seenBy={getSeenBy(msg)}
+                onEdit={handleEditMessage}
+                onDelete={handleDeleteMessage}
+                onReaction={handleReaction}
+                onReply={handleReply}
+                onScrollToMessage={handleScrollToMessage}
+                currentUserId={currentUserId}
+                isEditing={editingMessageId === msg.id}
+                onEditingChange={(editing) =>
+                  setEditingMessageId(editing ? msg.id : null)
+                }
+                themeColors={themeColors}
+              />
+            </div>
           );
         })}
         <div ref={messagesEndRef} />
@@ -360,6 +411,8 @@ export function MessageThread({
         onStopTyping={stopTyping}
         phoneVerified={phoneVerified}
         onEditLastMessage={handleEditLastMessage}
+        replyingTo={replyingTo}
+        onCancelReply={handleCancelReply}
       />
 
       {/* Group settings modal */}
