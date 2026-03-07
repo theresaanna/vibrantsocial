@@ -66,6 +66,11 @@ export default async function PostPage({ params, searchParams }: Props) {
         where: { userId },
         select: { id: true },
       },
+      tags: {
+        include: {
+          tag: { select: { name: true } },
+        },
+      },
       comments: {
         where: { parentId: null },
         orderBy: { createdAt: "asc" },

@@ -63,6 +63,11 @@ export default async function LikesPage() {
             where: { userId },
             select: { id: true },
           },
+          tags: {
+            include: {
+              tag: { select: { name: true } },
+            },
+          },
           comments: {
             where: { parentId: null },
             orderBy: { createdAt: "asc" as const },

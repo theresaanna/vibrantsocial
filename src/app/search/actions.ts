@@ -77,6 +77,13 @@ export async function searchPosts(query: string, cursor?: string) {
           reposts: true,
         },
       },
+      tags: {
+        include: {
+          tag: {
+            select: { name: true },
+          },
+        },
+      },
     },
   });
 

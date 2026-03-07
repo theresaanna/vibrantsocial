@@ -8,6 +8,7 @@ import { PostRevisionHistory } from "./post-revision-history";
 import { Editor } from "./editor/Editor";
 import { editPost, deletePost, updatePostChecklist, togglePinPost } from "@/app/feed/actions";
 import { QuotePostModal } from "./quote-post-modal";
+import { TagInput } from "./tag-input";
 import { timeAgo } from "@/lib/time";
 import Link from "next/link";
 
@@ -77,6 +78,9 @@ export function PostCard({
   const [deleted, setDeleted] = useState(false);
   const [currentContent, setCurrentContent] = useState(post.content);
   const [wasEdited, setWasEdited] = useState(!!post.editedAt);
+  const [editTags, setEditTags] = useState<string[]>(
+    post.tags?.map((pt) => pt.tag.name) ?? []
+  );
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isAuthor = currentUserId === post.author.id;
@@ -257,6 +261,7 @@ export function PostCard({
                 <button
                   type="button"
                   onClick={() => {
+                    setEditTags(post.tags?.map((pt) => pt.tag.name) ?? []);
                     setIsEditing(true);
                     setShowMenu(false);
                   }}
@@ -336,6 +341,13 @@ export function PostCard({
                     minHeight="80px"
                   />
                 </div>
+                <div className="mt-2">
+                  <TagInput
+                    tags={editTags}
+                    onChange={setEditTags}
+                    disabled={post.isSensitive || post.isNsfw}
+                  />
+                </div>
                 <div className="mt-2 flex gap-2">
                   <button
                     type="submit"
@@ -375,7 +387,7 @@ export function PostCard({
                 <Link
                   key={pt.tag.name}
                   href={`/tag/${pt.tag.name}`}
-                  className="inline-block rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
+                  className="inline-block rounded-full bg-fuchsia-50 px-2.5 py-0.5 text-xs font-medium text-fuchsia-600 transition-colors hover:bg-fuchsia-100 dark:bg-fuchsia-950/30 dark:text-fuchsia-400 dark:hover:bg-fuchsia-900/40"
                 >
                   #{pt.tag.name}
                 </Link>
