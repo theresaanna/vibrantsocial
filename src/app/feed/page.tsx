@@ -2,9 +2,9 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { PostComposer } from "@/components/post-composer";
-import { PostCard } from "@/components/post-card";
-import { RepostCard } from "@/components/repost-card";
+import { FeedList } from "@/components/feed-list";
 import { calculateAge } from "@/lib/age-gate";
+import { getPostInclude, repostUserSelect, PAGE_SIZE } from "./feed-queries";
 
 export default async function FeedPage() {
   const session = await auth();
@@ -34,71 +34,8 @@ export default async function FeedPage() {
   });
 
   const followingIds = following.map((f) => f.followingId);
-
-  const postInclude = {
-    author: {
-      select: {
-        id: true,
-        username: true,
-        displayName: true,
-        name: true,
-        image: true,
-        avatar: true,
-      },
-    },
-    _count: {
-      select: {
-        comments: true,
-        likes: true,
-        bookmarks: true,
-        reposts: true,
-      },
-    },
-    likes: {
-      where: { userId },
-      select: { id: true },
-    },
-    bookmarks: {
-      where: { userId },
-      select: { id: true },
-    },
-    reposts: {
-      where: { userId },
-      select: { id: true },
-    },
-    comments: {
-      where: { parentId: null },
-      orderBy: { createdAt: "asc" as const },
-      take: 5,
-      include: {
-        author: {
-          select: {
-            id: true,
-            username: true,
-            displayName: true,
-            name: true,
-            image: true,
-            avatar: true,
-          },
-        },
-        replies: {
-          orderBy: { createdAt: "asc" as const },
-          include: {
-            author: {
-              select: {
-                id: true,
-                username: true,
-                displayName: true,
-                name: true,
-                image: true,
-                avatar: true,
-              },
-            },
-          },
-        },
-      },
-    },
-  };
+  const postInclude = getPostInclude(userId);
+  const fetchCount = PAGE_SIZE + 1;
 
   // Posts from followed users + own posts
   const posts = await prisma.post.findMany({
@@ -106,7 +43,7 @@ export default async function FeedPage() {
       authorId: { in: [...followingIds, userId] },
     },
     orderBy: { createdAt: "desc" },
-    take: 20,
+    take: fetchCount,
     include: postInclude,
   });
 
@@ -116,58 +53,45 @@ export default async function FeedPage() {
       userId: { in: followingIds },
     },
     orderBy: { createdAt: "desc" },
-    take: 20,
+    take: fetchCount,
     include: {
-      user: {
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          name: true,
-          image: true,
-          avatar: true,
-        },
-      },
+      user: { select: repostUserSelect },
       post: { include: postInclude },
     },
   });
-
-  // Merge posts and reposts chronologically
-  type FeedItem =
-    | { type: "post"; data: (typeof posts)[number]; date: Date }
-    | { type: "repost"; data: (typeof reposts)[number]; date: Date };
 
   // Deduplicate: if a post appears both directly and via repost, keep the direct post
   const directPostIds = new Set(posts.map((p) => p.id));
   const filteredReposts = reposts.filter((r) => !directPostIds.has(r.post.id));
 
-  const feedItems: FeedItem[] = [
-    ...posts.map((p) => ({ type: "post" as const, data: p, date: p.createdAt })),
-    ...filteredReposts.map((r) => ({ type: "repost" as const, data: r, date: r.createdAt })),
-  ].sort((a, b) => b.date.getTime() - a.date.getTime());
+  // Merge and sort chronologically, serialize for client component
+  const allItems = [
+    ...posts.map((p) => ({
+      type: "post" as const,
+      data: JSON.parse(JSON.stringify(p)),
+      date: p.createdAt.toISOString(),
+    })),
+    ...filteredReposts.map((r) => ({
+      type: "repost" as const,
+      data: JSON.parse(JSON.stringify(r)),
+      date: r.createdAt.toISOString(),
+    })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const hasMore = allItems.length > PAGE_SIZE;
+  const initialItems = allItems.slice(0, PAGE_SIZE);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
       <PostComposer phoneVerified={phoneVerified} isOldEnough={isOldEnough} />
-
-      {feedItems.length === 0 ? (
-        <div className="mt-8 text-center">
-          <p className="text-zinc-500">No posts yet.</p>
-          <p className="mt-1 text-sm text-zinc-400">
-            Follow people to see their posts here, or create your own!
-          </p>
-        </div>
-      ) : (
-        <div className="mt-6 space-y-4">
-          {feedItems.map((item) =>
-            item.type === "post" ? (
-              <PostCard key={item.data.id} post={item.data} currentUserId={userId} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showNsfwByDefault={showNsfwByDefault} />
-            ) : (
-              <RepostCard key={`repost-${item.data.id}`} repost={item.data} currentUserId={userId} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showNsfwByDefault={showNsfwByDefault} />
-            )
-          )}
-        </div>
-      )}
+      <FeedList
+        initialItems={initialItems}
+        initialHasMore={hasMore}
+        currentUserId={userId}
+        phoneVerified={phoneVerified}
+        biometricVerified={biometricVerified}
+        showNsfwByDefault={showNsfwByDefault}
+      />
     </main>
   );
 }
