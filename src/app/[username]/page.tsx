@@ -248,7 +248,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
         ) : (
           <div className="mt-6 space-y-4">
             {posts.map((post) => (
-              <PostCard key={post.id} post={post} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showNsfwByDefault={showNsfwByDefault} />
+              <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showNsfwByDefault={showNsfwByDefault} />
             ))}
           </div>
         )}

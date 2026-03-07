@@ -24,10 +24,12 @@ interface NotificationItem {
   actorId: string;
   postId: string | null;
   commentId: string | null;
+  messageId: string | null;
   readAt: Date | null;
   createdAt: Date;
   actor: NotificationActor;
   post: { id: string; content: string } | null;
+  message: { id: string; conversationId: string } | null;
 }
 
 function getNotificationText(type: NotificationType): string {
@@ -44,6 +46,8 @@ function getNotificationText(type: NotificationType): string {
       return "bookmarked your post";
     case "FOLLOW":
       return "followed you";
+    case "REACTION":
+      return "reacted to your message";
   }
 }
 
@@ -111,6 +115,8 @@ export function NotificationList({
           let href: string;
           if (isCommentType && notification.postId && notification.commentId) {
             href = `/post/${notification.postId}?commentId=${notification.commentId}`;
+          } else if (notification.type === "REACTION" && notification.message) {
+            href = `/chat/${notification.message.conversationId}`;
           } else if (notification.postId) {
             href = `/post/${notification.postId}`;
           } else {

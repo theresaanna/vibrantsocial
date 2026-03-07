@@ -121,6 +121,7 @@ export default async function LikesPage() {
             <PostCard
               key={post.id}
               post={post}
+              currentUserId={userId}
               phoneVerified={phoneVerified}
               biometricVerified={biometricVerified}
               showNsfwByDefault={showNsfwByDefault}

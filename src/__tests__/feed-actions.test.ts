@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createPost, deletePost } from "@/app/feed/actions";
+import {
+  createPost,
+  deletePost,
+  editPost,
+  getPostRevisions,
+  restorePostRevision,
+} from "@/app/feed/actions";
 
 vi.mock("@/auth", () => ({
   auth: vi.fn(),
@@ -11,6 +17,14 @@ vi.mock("@/lib/prisma", () => ({
       create: vi.fn(),
       findUnique: vi.fn(),
       delete: vi.fn(),
+      update: vi.fn(),
+    },
+    postRevision: {
+      create: vi.fn(),
+      count: vi.fn().mockResolvedValue(0),
+      findMany: vi.fn().mockResolvedValue([]),
+      findUnique: vi.fn(),
+      deleteMany: vi.fn(),
     },
   },
 }));
@@ -259,5 +273,163 @@ describe("deletePost", () => {
     expect(result.success).toBe(true);
     expect(result.message).toBe("Post deleted");
     expect(mockPrisma.post.delete).toHaveBeenCalledWith({ where: { id: "p1" } });
+  });
+});
+
+describe("editPost", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPrisma.postRevision.count.mockResolvedValue(0 as never);
+  });
+
+  it("returns error if not authenticated", async () => {
+    mockAuth.mockResolvedValueOnce(null as never);
+    const result = await editPost(prevState, makeFormData({ postId: "p1", content: "new" }));
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Not authenticated");
+  });
+
+  it("requires postId and content", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    const result = await editPost(prevState, makeFormData({}));
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Post ID and content required");
+  });
+
+  it("rejects edit by non-author", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce({
+      id: "p1",
+      authorId: "other-user",
+      content: "old",
+    } as never);
+
+    const result = await editPost(
+      prevState,
+      makeFormData({ postId: "p1", content: "new content" })
+    );
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Not authorized");
+  });
+
+  it("saves current content as revision and updates post", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce({
+      id: "p1",
+      authorId: "user1",
+      content: "old content",
+    } as never);
+    mockPrisma.postRevision.create.mockResolvedValueOnce({} as never);
+    mockPrisma.post.update.mockResolvedValueOnce({} as never);
+
+    const result = await editPost(
+      prevState,
+      makeFormData({ postId: "p1", content: "new content" })
+    );
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("Post updated");
+    expect(mockPrisma.postRevision.create).toHaveBeenCalledWith({
+      data: { postId: "p1", content: "old content" },
+    });
+    expect(mockPrisma.post.update).toHaveBeenCalledWith({
+      where: { id: "p1" },
+      data: { content: "new content", editedAt: expect.any(Date) },
+    });
+  });
+});
+
+describe("getPostRevisions", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns empty array if not authenticated", async () => {
+    mockAuth.mockResolvedValueOnce(null as never);
+    const result = await getPostRevisions("p1");
+    expect(result).toEqual([]);
+  });
+
+  it("returns empty array if not post author", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce({
+      authorId: "other-user",
+    } as never);
+    const result = await getPostRevisions("p1");
+    expect(result).toEqual([]);
+  });
+
+  it("returns revisions for post author", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce({
+      authorId: "user1",
+    } as never);
+    const mockRevisions = [
+      { id: "rev1", content: "old", createdAt: new Date() },
+    ];
+    mockPrisma.postRevision.findMany.mockResolvedValueOnce(mockRevisions as never);
+
+    const result = await getPostRevisions("p1");
+    expect(result).toEqual(mockRevisions);
+    expect(mockPrisma.postRevision.findMany).toHaveBeenCalledWith({
+      where: { postId: "p1" },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      select: { id: true, content: true, createdAt: true },
+    });
+  });
+});
+
+describe("restorePostRevision", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPrisma.postRevision.count.mockResolvedValue(0 as never);
+  });
+
+  it("returns error if not authenticated", async () => {
+    mockAuth.mockResolvedValueOnce(null as never);
+    const result = await restorePostRevision("rev1");
+    expect(result.success).toBe(false);
+  });
+
+  it("returns error if revision not found", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.postRevision.findUnique.mockResolvedValueOnce(null as never);
+    const result = await restorePostRevision("rev1");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Revision not found");
+  });
+
+  it("rejects restore by non-author", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.postRevision.findUnique.mockResolvedValueOnce({
+      id: "rev1",
+      content: "old content",
+      post: { id: "p1", authorId: "other-user", content: "current" },
+    } as never);
+    const result = await restorePostRevision("rev1");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Revision not found");
+  });
+
+  it("saves current content and restores revision", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.postRevision.findUnique.mockResolvedValueOnce({
+      id: "rev1",
+      content: "old content",
+      post: { id: "p1", authorId: "user1", content: "current content" },
+    } as never);
+    mockPrisma.postRevision.create.mockResolvedValueOnce({} as never);
+    mockPrisma.post.update.mockResolvedValueOnce({} as never);
+
+    const result = await restorePostRevision("rev1");
+    expect(result.success).toBe(true);
+    expect(result.restoredContent).toBe("old content");
+    expect(mockPrisma.postRevision.create).toHaveBeenCalledWith({
+      data: { postId: "p1", content: "current content" },
+    });
+    expect(mockPrisma.post.update).toHaveBeenCalledWith({
+      where: { id: "p1" },
+      data: { content: "old content", editedAt: expect.any(Date) },
+    });
   });
 });

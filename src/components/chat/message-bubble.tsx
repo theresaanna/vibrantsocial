@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { timeAgo } from "@/lib/time";
 import { ReadReceiptIndicator } from "./read-receipt-indicator";
 import type { MessageData, ChatUserProfile } from "@/types/chat";
 
-const EMOJI_OPTIONS = ["\u{1F44D}", "\u{2764}\u{FE0F}", "\u{1F602}", "\u{1F62E}", "\u{1F622}", "\u{1F64F}"];
+const LazyEmojiPicker = lazy(() => import("emoji-picker-react"));
 
 interface MessageBubbleProps {
   message: MessageData;
@@ -44,6 +44,7 @@ export function MessageBubble({
   const [editContent, setEditContent] = useState(message.content);
   const [showMenu, setShowMenu] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
 
   // When externally triggered to edit (e.g., up-arrow), reset content
   useEffect(() => {
@@ -51,6 +52,18 @@ export function MessageBubble({
       setEditContent(message.content);
     }
   }, [externalIsEditing, message.content]);
+
+  // Close emoji picker on outside click
+  useEffect(() => {
+    if (!showEmojiPicker) return;
+    function handleClick(e: MouseEvent) {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+        setShowEmojiPicker(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showEmojiPicker]);
 
   if (message.deletedAt) {
     return (
@@ -92,7 +105,6 @@ export function MessageBubble({
       className={`group flex ${isOwn ? "justify-end" : "justify-start"} px-4 py-0.5`}
       onMouseLeave={() => {
         setShowMenu(false);
-        setShowEmojiPicker(false);
       }}
     >
       <div className={`flex max-w-[70%] gap-2 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
@@ -171,7 +183,7 @@ export function MessageBubble({
                 }`}
               >
                 {/* Emoji reaction button */}
-                <div className="relative">
+                <div className="relative" ref={emojiPickerRef}>
                   <button
                     onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                     className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-700 dark:hover:text-zinc-300"
@@ -183,23 +195,29 @@ export function MessageBubble({
                   </button>
                   {showEmojiPicker && (
                     <div
-                      className={`absolute z-20 mt-1 flex gap-1 rounded-full border border-zinc-200 bg-white px-2 py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-800 ${
+                      className={`absolute z-20 mt-1 ${
                         isOwn ? "right-0 top-full" : "left-0 top-full"
                       }`}
+                      data-testid="emoji-picker"
                     >
-                      {EMOJI_OPTIONS.map((emoji) => (
-                        <button
-                          key={emoji}
-                          onClick={() => {
-                            onReaction?.(message.id, emoji);
+                      <Suspense
+                        fallback={
+                          <div className="flex h-[350px] w-[350px] items-center justify-center rounded-lg border border-zinc-200 bg-white text-sm text-zinc-400 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+                            Loading...
+                          </div>
+                        }
+                      >
+                        <LazyEmojiPicker
+                          onEmojiClick={(emojiData) => {
+                            onReaction?.(message.id, emojiData.emoji);
                             setShowEmojiPicker(false);
                           }}
-                          className="rounded p-1 text-base transition-transform hover:scale-125 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                          aria-label={`React with ${emoji}`}
-                        >
-                          {emoji}
-                        </button>
-                      ))}
+                          width={350}
+                          height={400}
+                          searchPlaceholder="Search emoji..."
+                          previewConfig={{ showPreview: false }}
+                        />
+                      </Suspense>
                     </div>
                   )}
                 </div>

@@ -183,6 +183,30 @@ describe("NotificationList", () => {
     expect(link).toHaveAttribute("href", "/post/post123");
   });
 
+  it("links REACTION notification to /chat/[conversationId]", () => {
+    render(
+      <NotificationList
+        initialNotifications={[
+          {
+            id: "n-reaction",
+            type: "REACTION",
+            actorId: "actor1",
+            postId: null,
+            commentId: null,
+            messageId: "msg1",
+            readAt: null,
+            createdAt: new Date(),
+            actor: baseActor,
+            post: null,
+            message: { id: "msg1", conversationId: "conv123" },
+          },
+        ]}
+      />
+    );
+    const link = screen.getByText("reacted to your message").closest("a");
+    expect(link).toHaveAttribute("href", "/chat/conv123");
+  });
+
   it("shows unread indicator for unread notifications", () => {
     const { container } = render(
       <NotificationList

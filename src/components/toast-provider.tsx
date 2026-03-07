@@ -24,6 +24,8 @@ function getToastText(type: NotificationType): string {
       return "bookmarked your post";
     case "FOLLOW":
       return "followed you";
+    case "REACTION":
+      return "reacted to your message";
   }
 }
 

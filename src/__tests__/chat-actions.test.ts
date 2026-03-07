@@ -13,6 +13,7 @@ import {
   declineMessageRequest,
   bulkDeclineMessageRequests,
   searchUsers,
+  toggleReaction,
 } from "@/app/chat/actions";
 
 vi.mock("@/auth", () => ({
@@ -32,6 +33,11 @@ vi.mock("@/lib/ably", () => ({
   }),
 }));
 
+const mockCreateNotification = vi.fn();
+vi.mock("@/lib/notifications", () => ({
+  createNotification: (...args: unknown[]) => mockCreateNotification(...args),
+}));
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     conversation: {
@@ -49,6 +55,12 @@ vi.mock("@/lib/prisma", () => ({
       create: vi.fn(),
       findUnique: vi.fn(),
       update: vi.fn(),
+      findMany: vi.fn(),
+    },
+    messageReaction: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      delete: vi.fn(),
       findMany: vi.fn(),
     },
     messageRequest: {
@@ -907,5 +919,94 @@ describe("searchUsers", () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     const result = await searchUsers("a");
     expect(result).toEqual([]);
+  });
+});
+
+describe("toggleReaction", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns error if not authenticated", async () => {
+    mockAuth.mockResolvedValueOnce(null as never);
+    const result = await toggleReaction({ messageId: "msg1", emoji: "\u{1F44D}" });
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Not authenticated");
+  });
+
+  it("returns error if message not found", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.message.findUnique.mockResolvedValueOnce(null as never);
+    const result = await toggleReaction({ messageId: "msg1", emoji: "\u{1F44D}" });
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Message not found");
+  });
+
+  it("creates notification when reacting to another user's message", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.message.findUnique.mockResolvedValueOnce({
+      id: "msg1",
+      senderId: "user2",
+      conversationId: "conv1",
+      deletedAt: null,
+    } as never);
+    mockPrisma.conversationParticipant.findUnique.mockResolvedValueOnce({
+      id: "p1",
+    } as never);
+    // No existing reaction
+    mockPrisma.messageReaction.findUnique.mockResolvedValueOnce(null as never);
+    mockPrisma.messageReaction.create.mockResolvedValueOnce({} as never);
+    mockPrisma.messageReaction.findMany.mockResolvedValueOnce([] as never);
+    mockCreateNotification.mockResolvedValueOnce(undefined);
+
+    const result = await toggleReaction({ messageId: "msg1", emoji: "\u{1F44D}" });
+    expect(result.success).toBe(true);
+    expect(mockCreateNotification).toHaveBeenCalledWith({
+      type: "REACTION",
+      actorId: "user1",
+      targetUserId: "user2",
+      messageId: "msg1",
+    });
+  });
+
+  it("does not create notification when reacting to own message", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.message.findUnique.mockResolvedValueOnce({
+      id: "msg1",
+      senderId: "user1",
+      conversationId: "conv1",
+      deletedAt: null,
+    } as never);
+    mockPrisma.conversationParticipant.findUnique.mockResolvedValueOnce({
+      id: "p1",
+    } as never);
+    mockPrisma.messageReaction.findUnique.mockResolvedValueOnce(null as never);
+    mockPrisma.messageReaction.create.mockResolvedValueOnce({} as never);
+    mockPrisma.messageReaction.findMany.mockResolvedValueOnce([] as never);
+
+    const result = await toggleReaction({ messageId: "msg1", emoji: "\u{1F44D}" });
+    expect(result.success).toBe(true);
+    expect(mockCreateNotification).not.toHaveBeenCalled();
+  });
+
+  it("does not create notification when removing a reaction", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.message.findUnique.mockResolvedValueOnce({
+      id: "msg1",
+      senderId: "user2",
+      conversationId: "conv1",
+      deletedAt: null,
+    } as never);
+    mockPrisma.conversationParticipant.findUnique.mockResolvedValueOnce({
+      id: "p1",
+    } as never);
+    // Existing reaction (toggle removes it)
+    mockPrisma.messageReaction.findUnique.mockResolvedValueOnce({
+      id: "reaction1",
+    } as never);
+    mockPrisma.messageReaction.delete.mockResolvedValueOnce({} as never);
+    mockPrisma.messageReaction.findMany.mockResolvedValueOnce([] as never);
+
+    const result = await toggleReaction({ messageId: "msg1", emoji: "\u{1F44D}" });
+    expect(result.success).toBe(true);
+    expect(mockCreateNotification).not.toHaveBeenCalled();
   });
 });

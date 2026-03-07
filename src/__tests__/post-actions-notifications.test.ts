@@ -22,6 +22,11 @@ vi.mock("@/lib/notifications", () => ({
   createNotification: vi.fn(),
 }));
 
+const mockRevalidatePath = vi.fn();
+vi.mock("next/cache", () => ({
+  revalidatePath: (...args: unknown[]) => mockRevalidatePath(...args),
+}));
+
 const mockAblyPublish = vi.fn();
 vi.mock("@/lib/ably", () => ({
   getAblyRestClient: () => ({
@@ -288,5 +293,65 @@ describe("post actions → notifications", () => {
         postId: "p1",
       });
     });
+  });
+});
+
+describe("post actions → revalidation", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("toggleLike revalidates /feed, /post/[id], and /likes", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "u1" } } as never);
+    mockPrisma.like.findUnique.mockResolvedValueOnce(null as never);
+    mockPrisma.like.create.mockResolvedValueOnce({} as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce({ authorId: "a1" } as never);
+
+    await toggleLike(prevState, makeFormData({ postId: "p1" }));
+
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/feed");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/post/p1");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/likes");
+  });
+
+  it("toggleBookmark revalidates /feed, /post/[id], and /bookmarks", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "u1" } } as never);
+    mockPrisma.bookmark.findUnique.mockResolvedValueOnce(null as never);
+    mockPrisma.bookmark.create.mockResolvedValueOnce({} as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce({ authorId: "a1" } as never);
+
+    await toggleBookmark(prevState, makeFormData({ postId: "p1" }));
+
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/feed");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/post/p1");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/bookmarks");
+  });
+
+  it("toggleRepost revalidates /feed and /post/[id]", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "u1" } } as never);
+    mockPrisma.repost.findUnique.mockResolvedValueOnce(null as never);
+    mockPrisma.repost.create.mockResolvedValueOnce({} as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce({ authorId: "a1" } as never);
+
+    await toggleRepost(prevState, makeFormData({ postId: "p1" }));
+
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/feed");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/post/p1");
+  });
+
+  it("createComment revalidates /feed and /post/[id]", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "u1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
+    mockPrisma.comment.create.mockResolvedValueOnce({
+      id: "c1",
+      content: "Nice!",
+      parentId: null,
+      createdAt: new Date(),
+      author: { id: "u1", username: "alice" },
+    } as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce({ authorId: "a1" } as never);
+
+    await createComment(prevState, makeFormData({ postId: "p1", content: "Nice!" }));
+
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/feed");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/post/p1");
   });
 });

@@ -106,6 +106,7 @@ export default async function PostPage({ params, searchParams }: Props) {
     <main className="mx-auto max-w-3xl px-4 py-6">
       <PostPageClient
         post={post}
+        currentUserId={userId}
         phoneVerified={phoneVerified}
         biometricVerified={biometricVerified}
         showNsfwByDefault={showNsfwByDefault}
