@@ -45,6 +45,10 @@ vi.mock("@/components/theme-toggle", () => ({
   ThemeToggle: () => <div data-testid="theme-toggle">Toggle</div>,
 }));
 
+vi.mock("@/components/search-bar", () => ({
+  SearchBar: () => <div data-testid="search-bar">Search</div>,
+}));
+
 import { auth } from "@/auth";
 
 const authedSession = {
