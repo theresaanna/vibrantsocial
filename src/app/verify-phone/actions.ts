@@ -20,13 +20,14 @@ export async function sendPhoneCode(
     return { step: "input", message: "Not authenticated", success: false };
   }
 
-  const phoneNumber = formData.get("phoneNumber") as string;
+  const countryCode = formData.get("countryCode") as string;
+  const localNumber = (formData.get("localNumber") as string).replace(/\D/g, "");
+  const phoneNumber = `${countryCode}${localNumber}`;
 
   if (!/^\+[1-9]\d{1,14}$/.test(phoneNumber)) {
     return {
       step: "input",
-      message:
-        "Enter a valid phone number with country code (e.g., +12125551234)",
+      message: "Please enter a valid phone number",
       success: false,
     };
   }
