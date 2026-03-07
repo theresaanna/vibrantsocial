@@ -4,7 +4,6 @@ import { Header } from "@/components/header";
 
 vi.mock("@/auth", () => ({
   auth: vi.fn(),
-  signOut: vi.fn(),
 }));
 
 vi.mock("@/app/chat/actions", () => ({
@@ -44,6 +43,11 @@ vi.mock("@/components/theme-toggle", () => ({
 
 import { auth } from "@/auth";
 
+const authedSession = {
+  user: { id: "u1", name: "Test User" },
+  expires: "",
+} as ReturnType<typeof auth> extends Promise<infer T> ? T : never;
+
 describe("Header", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -64,32 +68,39 @@ describe("Header", () => {
     render(jsx);
 
     expect(screen.getByText("Sign In")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Feed")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Likes")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Bookmarks")).not.toBeInTheDocument();
   });
 
-  it("shows Bookmarks link when authenticated", async () => {
-    vi.mocked(auth).mockResolvedValue({
-      user: { id: "u1", name: "Test User" },
-      expires: "",
-    } as ReturnType<typeof auth> extends Promise<infer T> ? T : never);
+  it("shows Feed icon link when authenticated", async () => {
+    vi.mocked(auth).mockResolvedValue(authedSession);
+    const jsx = await Header();
+    render(jsx);
+
+    const feedLink = screen.getByLabelText("Feed");
+    expect(feedLink.closest("a")).toHaveAttribute("href", "/feed");
+    expect(feedLink.querySelector("svg")).toBeInTheDocument();
+  });
+
+  it("shows Likes icon link when authenticated", async () => {
+    vi.mocked(auth).mockResolvedValue(authedSession);
+    const jsx = await Header();
+    render(jsx);
+
+    const likesLink = screen.getByLabelText("Likes");
+    expect(likesLink.closest("a")).toHaveAttribute("href", "/likes");
+    expect(likesLink.querySelector("svg")).toBeInTheDocument();
+  });
+
+  it("shows Bookmarks icon link when authenticated", async () => {
+    vi.mocked(auth).mockResolvedValue(authedSession);
     const jsx = await Header();
     render(jsx);
 
     const bookmarksLink = screen.getByLabelText("Bookmarks");
-    expect(bookmarksLink).toBeInTheDocument();
     expect(bookmarksLink.closest("a")).toHaveAttribute("href", "/bookmarks");
-  });
-
-  it("shows Feed link when authenticated", async () => {
-    vi.mocked(auth).mockResolvedValue({
-      user: { id: "u1", name: "Test User" },
-      expires: "",
-    } as ReturnType<typeof auth> extends Promise<infer T> ? T : never);
-    const jsx = await Header();
-    render(jsx);
-
-    const feedLink = screen.getByText("Feed");
-    expect(feedLink.closest("a")).toHaveAttribute("href", "/feed");
+    expect(bookmarksLink.querySelector("svg")).toBeInTheDocument();
   });
 
   it("shows profile link with display name when authenticated", async () => {
@@ -104,10 +115,7 @@ describe("Header", () => {
   });
 
   it("renders notification bell and chat nav when authenticated", async () => {
-    vi.mocked(auth).mockResolvedValue({
-      user: { id: "u1", name: "Test User" },
-      expires: "",
-    } as ReturnType<typeof auth> extends Promise<infer T> ? T : never);
+    vi.mocked(auth).mockResolvedValue(authedSession);
     const jsx = await Header();
     render(jsx);
 
@@ -115,27 +123,11 @@ describe("Header", () => {
     expect(screen.getByTestId("chat-nav")).toBeInTheDocument();
   });
 
-  it("renders Sign Out button when authenticated", async () => {
-    vi.mocked(auth).mockResolvedValue({
-      user: { id: "u1", name: "Test User" },
-      expires: "",
-    } as ReturnType<typeof auth> extends Promise<infer T> ? T : never);
+  it("does not render Sign Out button in header", async () => {
+    vi.mocked(auth).mockResolvedValue(authedSession);
     const jsx = await Header();
     render(jsx);
 
-    expect(screen.getByText("Sign Out")).toBeInTheDocument();
-  });
-
-  it("bookmarks link contains bookmark icon SVG", async () => {
-    vi.mocked(auth).mockResolvedValue({
-      user: { id: "u1", name: "Test User" },
-      expires: "",
-    } as ReturnType<typeof auth> extends Promise<infer T> ? T : never);
-    const jsx = await Header();
-    render(jsx);
-
-    const bookmarksLink = screen.getByLabelText("Bookmarks");
-    const svg = bookmarksLink.querySelector("svg");
-    expect(svg).toBeInTheDocument();
+    expect(screen.queryByText("Sign Out")).not.toBeInTheDocument();
   });
 });

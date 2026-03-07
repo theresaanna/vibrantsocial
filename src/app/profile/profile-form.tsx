@@ -24,6 +24,9 @@ interface ProfileFormProps {
   oauthImage: string | null;
   biometricVerified: boolean;
   showNsfwByDefault: boolean;
+  phoneVerified: boolean;
+  phoneNumber: string | null;
+  isCredentialsUser: boolean;
 }
 
 interface ProfileState {
@@ -33,7 +36,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified, showNsfwByDefault }: ProfileFormProps) {
+export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified, showNsfwByDefault, phoneVerified, phoneNumber, isCredentialsUser }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>("idle");
@@ -265,30 +268,63 @@ export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified
         </div>
       </div>
 
-      {/* Public profile link & share */}
-      {savedUsername && (
-        <div className="flex items-center justify-between rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-          <Link
-            href={`/${savedUsername}`}
-            className="text-lg font-semibold text-zinc-900 transition-colors hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-400"
-          >
-            View public profile &rarr;
-          </Link>
-          <button
-            type="button"
-            onClick={() => {
-              navigator.clipboard.writeText(
-                `${window.location.origin}/${savedUsername}`
-              );
-              setCopied(true);
-              setTimeout(() => setCopied(false), 2000);
-            }}
-            className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-          >
-            {copied ? "Copied!" : "Share Profile"}
-          </button>
+      {/* Phone verification & profile link */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+            Phone Verification
+          </p>
+          {phoneVerified ? (
+            <p className="mt-1 text-sm text-green-600 dark:text-green-400">
+              Verified: {phoneNumber?.replace(/(\+\d{1,3})\d+(\d{4})/, "$1****$2")}
+            </p>
+          ) : (
+            <div className="mt-1 flex items-center justify-between">
+              <p className="text-sm text-zinc-500">
+                {isCredentialsUser
+                  ? "Verify your phone to secure your account"
+                  : "Add a phone number for extra security"}
+              </p>
+              <Link
+                href="/verify-phone"
+                className="ml-2 shrink-0 rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              >
+                Verify
+              </Link>
+            </div>
+          )}
         </div>
-      )}
+
+        {savedUsername ? (
+          <div className="flex flex-col justify-between rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+            <Link
+              href={`/${savedUsername}`}
+              className="text-sm font-semibold text-zinc-900 transition-colors hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-400"
+            >
+              View public profile &rarr;
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(
+                  `${window.location.origin}/${savedUsername}`
+                );
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+              className="mt-2 self-start rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+            >
+              {copied ? "Copied!" : "Share Profile"}
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+            <p className="text-sm text-zinc-500">
+              Set a username below to get your profile link
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Profile fields */}
       <form
