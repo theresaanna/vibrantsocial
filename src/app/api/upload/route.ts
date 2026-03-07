@@ -87,12 +87,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  const category = getFileCategory(file.type);
+  // Strip codec params (e.g. "audio/webm;codecs=opus" → "audio/webm")
+  const mimeType = file.type.split(";")[0].trim();
+  const category = getFileCategory(mimeType);
   if (!category) {
     return NextResponse.json(
       {
         error:
-          "Invalid file type. Supported: JPEG, PNG, GIF, WebP, SVG, HEIC, HEIF, MP4, WebM, MOV, OGG, MP3, PDF",
+          "Invalid file type. Supported: JPEG, PNG, GIF, WebP, SVG, HEIC, HEIF, MP4, WebM, MOV, OGG, MP3, PDF, Audio",
       },
       { status: 400 }
     );
