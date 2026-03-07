@@ -150,10 +150,10 @@ export async function getMessages(
   const trimmed = hasMore ? messages.slice(0, 50) : messages;
 
   return {
-    messages: trimmed.reverse().map((m) => ({
-      ...m,
-      mediaType: (m.mediaType as MediaType) ?? null,
-      reactions: groupReactions(m.reactions),
+    messages: trimmed.reverse().map(({ mediaType, reactions, ...rest }) => ({
+      ...rest,
+      mediaType: (mediaType as MediaType) ?? null,
+      reactions: groupReactions(reactions),
     })),
     nextCursor: hasMore ? trimmed[0].id : null,
   };
