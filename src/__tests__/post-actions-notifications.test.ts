@@ -22,6 +22,10 @@ vi.mock("@/lib/notifications", () => ({
   createNotification: vi.fn(),
 }));
 
+vi.mock("@/lib/email", () => ({
+  sendCommentEmail: vi.fn(),
+}));
+
 const mockRevalidatePath = vi.fn();
 vi.mock("next/cache", () => ({
   revalidatePath: (...args: unknown[]) => mockRevalidatePath(...args),
@@ -182,6 +186,7 @@ describe("post actions → notifications", () => {
       } as never);
       mockPrisma.post.findUnique.mockResolvedValueOnce({
         authorId: "author1",
+        author: { email: null, emailOnComment: true },
       } as never);
 
       await createComment(
@@ -211,6 +216,7 @@ describe("post actions → notifications", () => {
       // First findUnique call is for post author
       mockPrisma.post.findUnique.mockResolvedValueOnce({
         authorId: "author1",
+        author: { email: null, emailOnComment: true },
       } as never);
       // Second findUnique call is for parent comment author
       mockPrisma.comment.findUnique.mockResolvedValueOnce({
@@ -252,6 +258,7 @@ describe("post actions → notifications", () => {
       } as never);
       mockPrisma.post.findUnique.mockResolvedValueOnce({
         authorId: "author1",
+        author: { email: null, emailOnComment: true },
       } as never);
       // Parent comment author is the same as post author
       mockPrisma.comment.findUnique.mockResolvedValueOnce({
@@ -347,7 +354,10 @@ describe("post actions → revalidation", () => {
       createdAt: new Date(),
       author: { id: "u1", username: "alice" },
     } as never);
-    mockPrisma.post.findUnique.mockResolvedValueOnce({ authorId: "a1" } as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce({
+      authorId: "a1",
+      author: { email: null, emailOnComment: true },
+    } as never);
 
     await createComment(prevState, makeFormData({ postId: "p1", content: "Nice!" }));
 

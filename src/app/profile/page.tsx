@@ -23,6 +23,8 @@ export default async function ProfilePage() {
       profileContainerColor: true,
       biometricVerified: true,
       showNsfwByDefault: true,
+      emailOnComment: true,
+      emailOnNewChat: true,
     },
   });
 
@@ -51,6 +53,8 @@ export default async function ProfilePage() {
           oauthImage={oauthImage}
           biometricVerified={!!user?.biometricVerified}
           showNsfwByDefault={user?.showNsfwByDefault ?? false}
+          emailOnComment={user?.emailOnComment ?? true}
+          emailOnNewChat={user?.emailOnNewChat ?? true}
           phoneVerified={!!user?.phoneVerified}
           phoneNumber={user?.phoneNumber ?? null}
           isCredentialsUser={isCredentialsUser}

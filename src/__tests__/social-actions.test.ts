@@ -44,6 +44,10 @@ vi.mock("@/lib/notifications", () => ({
   createNotification: vi.fn(),
 }));
 
+vi.mock("@/lib/email", () => ({
+  sendCommentEmail: vi.fn(),
+}));
+
 vi.mock("@/lib/phone-gate", () => ({
   requirePhoneVerification: vi.fn(),
 }));
@@ -227,7 +231,10 @@ describe("createComment", () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPhoneGate.mockResolvedValueOnce(true);
     mockPrisma.comment.create.mockResolvedValueOnce(fakeComment as never);
-    mockPrisma.post.findUnique.mockResolvedValueOnce({ authorId: "author1" } as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce({
+      authorId: "author1",
+      author: { email: null, emailOnComment: true },
+    } as never);
 
     const result = await createComment(
       prevState,
@@ -245,7 +252,10 @@ describe("createComment", () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPhoneGate.mockResolvedValueOnce(true);
     mockPrisma.comment.create.mockResolvedValueOnce({ ...fakeComment, parentId: "c1" } as never);
-    mockPrisma.post.findUnique.mockResolvedValueOnce({ authorId: "author1" } as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce({
+      authorId: "author1",
+      author: { email: null, emailOnComment: true },
+    } as never);
     mockPrisma.comment.findUnique.mockResolvedValueOnce({ authorId: "parent-author" } as never);
 
     const result = await createComment(

@@ -38,6 +38,10 @@ vi.mock("@/lib/notifications", () => ({
   createNotification: (...args: unknown[]) => mockCreateNotification(...args),
 }));
 
+vi.mock("@/lib/email", () => ({
+  sendNewChatEmail: vi.fn(),
+}));
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     conversation: {
@@ -49,6 +53,7 @@ vi.mock("@/lib/prisma", () => ({
     conversationParticipant: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       update: vi.fn(),
     },
     message: {
@@ -56,6 +61,7 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: vi.fn(),
       update: vi.fn(),
       findMany: vi.fn(),
+      count: vi.fn(),
     },
     messageReaction: {
       findUnique: vi.fn(),
