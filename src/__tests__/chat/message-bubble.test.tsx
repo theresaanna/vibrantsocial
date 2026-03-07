@@ -8,6 +8,20 @@ vi.mock("@/lib/time", () => ({
   timeAgo: vi.fn().mockReturnValue("1m ago"),
 }));
 
+vi.mock("emoji-picker-react", () => ({
+  __esModule: true,
+  default: ({ onEmojiClick }: { onEmojiClick: (data: { emoji: string }) => void }) => (
+    <div data-testid="emoji-picker">
+      <button
+        data-testid="pick-emoji-thumbsup"
+        onClick={() => onEmojiClick({ emoji: "\u{1F44D}" })}
+      >
+        Pick thumbsup
+      </button>
+    </div>
+  ),
+}));
+
 const baseSender: ChatUserProfile = {
   id: "sender1",
   username: "alice",
@@ -239,10 +253,7 @@ describe("MessageBubble", () => {
       />
     );
     await user.click(screen.getByLabelText("Add reaction"));
-    // Check emoji options are shown
-    expect(screen.getByLabelText("React with \u{1F44D}")).toBeInTheDocument();
-    expect(screen.getByLabelText("React with \u{2764}\u{FE0F}")).toBeInTheDocument();
-    expect(screen.getByLabelText("React with \u{1F602}")).toBeInTheDocument();
+    expect(screen.getByTestId("emoji-picker")).toBeInTheDocument();
   });
 
   it("calls onReaction when picking an emoji from the picker", () => {
@@ -257,9 +268,8 @@ describe("MessageBubble", () => {
         onReaction={onReaction}
       />
     );
-    // Use fireEvent to avoid mouseLeave side effects from userEvent pointer movement
     fireEvent.click(screen.getByLabelText("Add reaction"));
-    fireEvent.click(screen.getByLabelText("React with \u{1F44D}"));
+    fireEvent.click(screen.getByTestId("pick-emoji-thumbsup"));
     expect(onReaction).toHaveBeenCalledWith("msg1", "\u{1F44D}");
   });
 

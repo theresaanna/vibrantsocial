@@ -124,6 +124,7 @@ export default async function BookmarksPage() {
             <PostCard
               key={post.id}
               post={post}
+              currentUserId={userId}
               phoneVerified={phoneVerified}
               biometricVerified={biometricVerified}
               showNsfwByDefault={showNsfwByDefault}

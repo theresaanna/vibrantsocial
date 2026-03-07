@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { requirePhoneVerification } from "@/lib/phone-gate";
 import { getAblyRestClient } from "@/lib/ably";
+import { createNotification } from "@/lib/notifications";
 import type {
   ActionState,
   ConversationListItem,
@@ -663,6 +664,20 @@ export async function toggleReaction(data: {
     await prisma.messageReaction.create({
       data: { messageId, userId: session.user.id, emoji },
     });
+
+    // Notify message author about the reaction
+    if (message.senderId !== session.user.id) {
+      try {
+        await createNotification({
+          type: "REACTION",
+          actorId: session.user.id,
+          targetUserId: message.senderId,
+          messageId,
+        });
+      } catch {
+        // Non-critical
+      }
+    }
   }
 
   // Fetch updated reactions for this message

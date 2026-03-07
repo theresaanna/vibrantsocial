@@ -5,6 +5,7 @@ import { PostCard } from "@/components/post-card";
 
 interface PostPageClientProps {
   post: React.ComponentProps<typeof PostCard>["post"];
+  currentUserId: string;
   phoneVerified: boolean;
   biometricVerified: boolean;
   showNsfwByDefault: boolean;
@@ -13,6 +14,7 @@ interface PostPageClientProps {
 
 export function PostPageClient({
   post,
+  currentUserId,
   phoneVerified,
   biometricVerified,
   showNsfwByDefault,
@@ -40,6 +42,7 @@ export function PostPageClient({
       </Link>
       <PostCard
         post={post}
+        currentUserId={currentUserId}
         phoneVerified={phoneVerified}
         biometricVerified={biometricVerified}
         showNsfwByDefault={showNsfwByDefault}

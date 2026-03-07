@@ -30,6 +30,15 @@ vi.mock("@/components/comment-section", () => ({
   ),
 }));
 
+vi.mock("@/components/post-revision-history", () => ({
+  PostRevisionHistory: () => <div data-testid="post-revision-history" />,
+}));
+
+vi.mock("@/app/feed/actions", () => ({
+  editPost: vi.fn(),
+  deletePost: vi.fn(),
+}));
+
 vi.mock("@/lib/time", () => ({
   timeAgo: () => "1m ago",
 }));

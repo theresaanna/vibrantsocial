@@ -121,7 +121,7 @@ export default async function FeedPage() {
       ) : (
         <div className="mt-6 space-y-4">
           {posts.map((post) => (
-            <PostCard key={post.id} post={post} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showNsfwByDefault={showNsfwByDefault} />
+            <PostCard key={post.id} post={post} currentUserId={userId} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showNsfwByDefault={showNsfwByDefault} />
           ))}
         </div>
       )}

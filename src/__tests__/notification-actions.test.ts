@@ -73,6 +73,7 @@ describe("notification actions", () => {
             },
           },
           post: { select: { id: true, content: true } },
+          message: { select: { id: true, conversationId: true } },
         },
       });
     });
