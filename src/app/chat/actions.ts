@@ -446,7 +446,7 @@ export async function sendMessage(data: {
     data: { lastReadAt: new Date() },
   });
 
-  // Send email for the first message in a 1:1 conversation
+  // Send email on first unread message in a 1:1 conversation
   try {
     const conversation = await prisma.conversation.findUnique({
       where: { id: conversationId },
@@ -454,22 +454,29 @@ export async function sendMessage(data: {
     });
 
     if (conversation && !conversation.isGroup) {
-      const messageCount = await prisma.message.count({
-        where: { conversationId },
+      const otherParticipant = await prisma.conversationParticipant.findFirst({
+        where: { conversationId, userId: { not: session.user.id } },
+        include: {
+          user: {
+            select: { email: true, emailOnNewChat: true },
+          },
+        },
       });
 
-      // Only send email on the very first message (the one we just created)
-      if (messageCount === 1) {
-        const otherParticipant = await prisma.conversationParticipant.findFirst({
-          where: { conversationId, userId: { not: session.user.id } },
-          include: {
-            user: {
-              select: { email: true, emailOnNewChat: true },
-            },
+      if (otherParticipant?.user.email && otherParticipant.user.emailOnNewChat) {
+        // Count messages the recipient hasn't read yet (sent by others)
+        const unreadCount = await prisma.message.count({
+          where: {
+            conversationId,
+            senderId: { not: otherParticipant.userId },
+            ...(otherParticipant.lastReadAt
+              ? { createdAt: { gt: otherParticipant.lastReadAt } }
+              : {}),
           },
         });
 
-        if (otherParticipant?.user.email && otherParticipant.user.emailOnNewChat) {
+        // Only email on the first unread message; skip if they already have unread
+        if (unreadCount === 1) {
           const senderName =
             message.sender.displayName ?? message.sender.username ?? "Someone";
           await inngest.send({
