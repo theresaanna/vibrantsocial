@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 import { getFollowers } from "@/app/feed/follow-actions";
 import { UserList } from "@/components/user-list";
 import Link from "next/link";
@@ -10,7 +11,8 @@ interface FollowersPageProps {
 export default async function FollowersPage({ params }: FollowersPageProps) {
   const { username } = await params;
   const session = await auth();
-  const currentUserId = session?.user?.id ?? null;
+  if (!session?.user?.id) redirect("/login");
+  const currentUserId = session.user.id;
 
   const followers = await getFollowers(username);
 
