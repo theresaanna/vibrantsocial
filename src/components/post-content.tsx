@@ -19,9 +19,20 @@ export function PostContent({ content, truncate = true, allowChecklistToggle, on
     if (!truncate || expanded) return;
 
     const el = contentRef.current;
-    if (el && el.scrollHeight > el.clientHeight) {
-      setIsOverflowing(true);
-    }
+    if (!el) return;
+
+    const check = () => {
+      if (el.scrollHeight > el.clientHeight) {
+        setIsOverflowing(true);
+      }
+    };
+
+    check();
+
+    // Re-check when images load and resize the content
+    const observer = new ResizeObserver(check);
+    observer.observe(el);
+    return () => observer.disconnect();
   }, [truncate, expanded, content]);
 
   const shouldTruncate = truncate && !expanded;
