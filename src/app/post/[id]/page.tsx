@@ -47,6 +47,7 @@ export default async function PostPage({ params, searchParams }: Props) {
           name: true,
           image: true,
           avatar: true,
+          isProfilePublic: true,
         },
       },
       _count: {
@@ -109,6 +110,9 @@ export default async function PostPage({ params, searchParams }: Props) {
   });
 
   if (!post) notFound();
+
+  // Redirect unauthenticated visitors if author's profile is private
+  if (!post.author.isProfilePublic && !userId) redirect("/login");
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">

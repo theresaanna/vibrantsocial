@@ -64,6 +64,8 @@ interface RenderFormOptions {
   emailOnMention?: boolean;
   biometricVerified?: boolean;
   showNsfwByDefault?: boolean;
+  pushEnabled?: boolean;
+  isProfilePublic?: boolean;
   phoneVerified?: boolean;
   phoneNumber?: string | null;
   isCredentialsUser?: boolean;
@@ -77,6 +79,8 @@ function renderForm(options: RenderFormOptions = {}) {
     emailOnMention = true,
     biometricVerified = false,
     showNsfwByDefault = false,
+    pushEnabled = false,
+    isProfilePublic = true,
     phoneVerified = false,
     phoneNumber = null,
     isCredentialsUser = false,
@@ -91,6 +95,8 @@ function renderForm(options: RenderFormOptions = {}) {
       emailOnComment={emailOnComment}
       emailOnNewChat={emailOnNewChat}
       emailOnMention={emailOnMention}
+      pushEnabled={pushEnabled}
+      isProfilePublic={isProfilePublic}
       phoneVerified={phoneVerified}
       phoneNumber={phoneNumber}
       isCredentialsUser={isCredentialsUser}

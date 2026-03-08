@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cached, cacheKeys } from "@/lib/cache";
 import Link from "next/link";
 import { PostCard } from "@/components/post-card";
@@ -38,6 +38,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
         profileLinkColor: true,
         profileSecondaryColor: true,
         profileContainerColor: true,
+        isProfilePublic: true,
         _count: {
           select: {
             posts: true,
@@ -54,6 +55,10 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
 
   const session = await auth();
   const currentUserId = session?.user?.id;
+
+  // Redirect unauthenticated visitors if profile is private
+  if (!user.isProfilePublic && !currentUserId) redirect("/login");
+
   const isOwnProfile = currentUserId === user.id;
 
   // Check if current user follows this profile
