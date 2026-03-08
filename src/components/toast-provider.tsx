@@ -28,6 +28,8 @@ function getToastText(type: NotificationType): string {
       return "reacted to your message";
     case "MENTION":
       return "mentioned you";
+    case "FRIEND_REQUEST":
+      return "sent you a friend request";
   }
 }
 
