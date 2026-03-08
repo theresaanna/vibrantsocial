@@ -12,7 +12,7 @@ import { getConversations } from "@/app/chat/actions";
 const TADA_FAVICON =
   "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎉</text></svg>";
 const ALERT_FAVICON =
-  "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2371717a'/><g transform='translate(14,12) scale(3)' stroke-linecap='round' stroke-linejoin='round'><path d='M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9' fill='%23c026d3' stroke='%23c026d3' stroke-width='2'/><path d='M13.73 21a2 2 0 0 1-3.46 0' fill='none' stroke='%23c026d3' stroke-width='2'/></g></svg>";
+  "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23d4d4d8'/><g transform='translate(14,12) scale(3)' stroke-linecap='round' stroke-linejoin='round'><path d='M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9' fill='%23c026d3' stroke='%23c026d3' stroke-width='2'/><path d='M13.73 21a2 2 0 0 1-3.46 0' fill='none' stroke='%23c026d3' stroke-width='2'/></g></svg>";
 
 function setFavicon(hasUnread: boolean) {
   let link = document.querySelector(
