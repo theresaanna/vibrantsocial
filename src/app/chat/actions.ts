@@ -74,29 +74,20 @@ function groupReactions(
   return Array.from(map, ([emoji, userIds]) => ({ emoji, userIds }));
 }
 
-async function checkMutualFollow(
+async function checkFriendship(
   userId1: string,
   userId2: string
 ): Promise<boolean> {
-  const [forward, reverse] = await Promise.all([
-    prisma.follow.findUnique({
-      where: {
-        followerId_followingId: {
-          followerId: userId1,
-          followingId: userId2,
-        },
-      },
-    }),
-    prisma.follow.findUnique({
-      where: {
-        followerId_followingId: {
-          followerId: userId2,
-          followingId: userId1,
-        },
-      },
-    }),
-  ]);
-  return !!(forward && reverse);
+  const friendship = await prisma.friendRequest.findFirst({
+    where: {
+      status: "ACCEPTED",
+      OR: [
+        { senderId: userId1, receiverId: userId2 },
+        { senderId: userId2, receiverId: userId1 },
+      ],
+    },
+  });
+  return !!friendship;
 }
 
 interface ConversationParticipantRecord {
@@ -268,8 +259,8 @@ export async function startConversation(
     return { success: true, message: "Conversation found", conversationId: existingConversation.id };
   }
 
-  // Check mutual follow (friends)
-  const areFriends = await checkMutualFollow(userId, targetUserId);
+  // Check friendship
+  const areFriends = await checkFriendship(userId, targetUserId);
 
   if (areFriends) {
     const conversation = await prisma.conversation.create({

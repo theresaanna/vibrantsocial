@@ -36,6 +36,9 @@ vi.mock("@/lib/prisma", () => ({
       delete: vi.fn(),
       deleteMany: vi.fn(),
     },
+    user: {
+      findUnique: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
 }));
@@ -50,6 +53,14 @@ vi.mock("@/lib/email", () => ({
 
 vi.mock("@/lib/phone-gate", () => ({
   requirePhoneVerification: vi.fn(),
+}));
+
+vi.mock("@/lib/cache", () => ({
+  invalidate: vi.fn(),
+  cacheKeys: {
+    userFollowing: (id: string) => `following:${id}`,
+    userProfile: (username: string) => `profile:${username}`,
+  },
 }));
 
 const mockAblyPublish = vi.fn();
@@ -287,25 +298,26 @@ describe("toggleFollow", () => {
     expect(result.message).toBe("Cannot follow yourself");
   });
 
-  it("creates mutual follow (friendship) if not following", async () => {
+  it("creates single follow if not following", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPrisma.follow.findUnique.mockResolvedValueOnce(null as never);
-    mockPrisma.$transaction.mockResolvedValueOnce(undefined as never);
 
     const result = await toggleFollow(prevState, makeFormData({ userId: "user2" }));
     expect(result.success).toBe(true);
-    expect(result.message).toBe("Added friend");
-    expect(mockPrisma.$transaction).toHaveBeenCalled();
+    expect(result.message).toBe("Followed");
+    expect(mockPrisma.follow.create).toHaveBeenCalledWith({
+      data: { followerId: "user1", followingId: "user2" },
+    });
   });
 
-  it("removes both follow directions (unfriends) if already following", async () => {
+  it("removes single follow if already following", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPrisma.follow.findUnique.mockResolvedValueOnce({ id: "f1" } as never);
-    mockPrisma.follow.deleteMany.mockResolvedValueOnce({ count: 2 } as never);
+    mockPrisma.follow.delete.mockResolvedValueOnce({ id: "f1" } as never);
 
     const result = await toggleFollow(prevState, makeFormData({ userId: "user2" }));
     expect(result.success).toBe(true);
-    expect(result.message).toBe("Removed friend");
-    expect(mockPrisma.follow.deleteMany).toHaveBeenCalled();
+    expect(result.message).toBe("Unfollowed");
+    expect(mockPrisma.follow.delete).toHaveBeenCalledWith({ where: { id: "f1" } });
   });
 });

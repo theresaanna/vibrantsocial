@@ -88,6 +88,7 @@ export async function createNotification(params: CreateNotificationParams) {
       FOLLOW: "followed you",
       REACTION: "reacted to your message",
       MENTION: "mentioned you",
+      FRIEND_REQUEST: "sent you a friend request",
     };
     const body = `${actorName} ${typeText[type] || "sent you a notification"}`;
     const url = postId ? `/notifications` : "/notifications";

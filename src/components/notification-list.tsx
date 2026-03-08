@@ -50,6 +50,8 @@ function getNotificationText(type: NotificationType): string {
       return "reacted to your message";
     case "MENTION":
       return "mentioned you";
+    case "FRIEND_REQUEST":
+      return "sent you a friend request";
   }
 }
 
@@ -121,6 +123,8 @@ export function NotificationList({
             href = `/post/${notification.postId}?commentId=${notification.commentId}`;
           } else if (notification.type === "REACTION" && notification.message) {
             href = `/chat/${notification.message.conversationId}`;
+          } else if (notification.type === "FRIEND_REQUEST") {
+            href = `/${notification.actor.username}`;
           } else if (notification.postId) {
             href = `/post/${notification.postId}`;
           } else {

@@ -66,6 +66,8 @@ model User {
   reposts   Repost[]
   followers    Follow[]       @relation("followers")
   following    Follow[]       @relation("following")
+  sentFriendRequests     FriendRequest[] @relation("sentFriendRequests")
+  receivedFriendRequests FriendRequest[] @relation("receivedFriendRequests")
   bioRevisions BioRevision[]
 
   // Chat relations
@@ -258,6 +260,29 @@ model Follow {
   @@index([followingId])
 }
 
+// Friend requests
+
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+}
+
+model FriendRequest {
+  id         String              @id @default(cuid())
+  senderId   String
+  receiverId String
+  status     FriendRequestStatus @default(PENDING)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  sender   User @relation("sentFriendRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("receivedFriendRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@index([receiverId, status])
+  @@index([senderId])
+}
+
 // Chat models
 
 model Conversation {
@@ -363,6 +388,7 @@ enum NotificationType {
   FOLLOW
   REACTION
   MENTION
+  FRIEND_REQUEST
 }
 
 model Notification {

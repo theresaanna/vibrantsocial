@@ -8,6 +8,7 @@ import { ReadReceiptIndicator } from "./read-receipt-indicator";
 import { SeenByIndicator } from "./seen-by-indicator";
 import { MediaRenderer } from "./media-renderer";
 import type { MessageData, ChatUserProfile, MediaType, ChatThemeColors } from "@/types/chat";
+import { LinkifyText } from "./linkify-text";
 
 const LazyEmojiPicker = lazy(() => import("emoji-picker-react"));
 
@@ -304,7 +305,7 @@ export function MessageBubble({
                   </div>
                 )}
                 {message.content && (
-                  <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                  <p className="whitespace-pre-wrap break-words"><LinkifyText text={message.content} /></p>
                 )}
               </div>
             )}

@@ -79,22 +79,33 @@ export function RepostCard({
         <span className="text-zinc-400 dark:text-zinc-500">{timeAgo(repost.createdAt)}</span>
       </div>
 
-      {/* Quote content */}
-      {repost.content && (
-        <div className="mb-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800/50">
-          <EditorContent content={repost.content} />
-        </div>
-      )}
+      {repost.content ? (
+        <div className="overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-700">
+          {/* Quote content */}
+          <div className="bg-zinc-50 px-4 py-3 dark:bg-zinc-800/50">
+            <EditorContent content={repost.content} />
+          </div>
 
-      {/* Original post */}
-      <PostCard
-        post={repost.post}
-        currentUserId={currentUserId}
-        phoneVerified={phoneVerified}
-        biometricVerified={biometricVerified}
-        showGraphicByDefault={showGraphicByDefault}
-        showNsfwContent={showNsfwContent}
-      />
+          {/* Original post */}
+          <PostCard
+            post={repost.post}
+            currentUserId={currentUserId}
+            phoneVerified={phoneVerified}
+            biometricVerified={biometricVerified}
+            showGraphicByDefault={showGraphicByDefault}
+            showNsfwContent={showNsfwContent}
+          />
+        </div>
+      ) : (
+        <PostCard
+          post={repost.post}
+          currentUserId={currentUserId}
+          phoneVerified={phoneVerified}
+          biometricVerified={biometricVerified}
+          showGraphicByDefault={showGraphicByDefault}
+          showNsfwContent={showNsfwContent}
+        />
+      )}
     </div>
   );
 }
