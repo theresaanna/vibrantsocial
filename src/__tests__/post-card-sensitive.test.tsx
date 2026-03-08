@@ -136,9 +136,9 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
     expect(screen.getByText("Sensitive")).toBeInTheDocument();
   });
 
-  // ── Graphic/Nudity content (isGraphicNudity) ─────────────────────
+  // ── Graphic/Explicit content (isGraphicNudity) ─────────────────────
 
-  it("shows locked overlay for Graphic/Nudity post when not biometric verified", () => {
+  it("shows locked overlay for Graphic/Explicit post when not biometric verified", () => {
     render(
       <PostCard
         post={{ ...basePost, isGraphicNudity: true }}
@@ -154,7 +154,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
     expect(screen.queryByText("Show content")).not.toBeInTheDocument();
   });
 
-  it("shows click-to-reveal for Graphic/Nudity post when biometric verified and showGraphicByDefault is false", () => {
+  it("shows click-to-reveal for Graphic/Explicit post when biometric verified and showGraphicByDefault is false", () => {
     render(
       <PostCard
         post={{ ...basePost, isGraphicNudity: true }}
@@ -170,7 +170,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
     expect(screen.queryByTestId("post-content")).not.toBeInTheDocument();
   });
 
-  it("shows Graphic/Nudity content by default when biometric verified and showGraphicByDefault is true", () => {
+  it("shows Graphic/Explicit content by default when biometric verified and showGraphicByDefault is true", () => {
     render(
       <PostCard
         post={{ ...basePost, isGraphicNudity: true }}
@@ -185,7 +185,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
     expect(screen.queryByText("Click to view graphic content")).not.toBeInTheDocument();
   });
 
-  it("shows Graphic/Nudity badge on Graphic/Nudity post shown by default", () => {
+  it("shows Graphic/Explicit badge on Graphic/Explicit post shown by default", () => {
     render(
       <PostCard
         post={{ ...basePost, isGraphicNudity: true }}
@@ -196,7 +196,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
         showNsfwContent={false}
       />
     );
-    expect(screen.getByText("Graphic/Nudity")).toBeInTheDocument();
+    expect(screen.getByText("Graphic/Explicit")).toBeInTheDocument();
   });
 
   // ── NSFW content (isNsfw) ─────────────────────────────────────────
@@ -264,7 +264,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
     expect(screen.getByText("Sensitive / NSFW")).toBeInTheDocument();
   });
 
-  it("shows combined Sensitive / Graphic/Nudity badge when both flags are set", () => {
+  it("shows combined Sensitive / Graphic/Explicit badge when both flags are set", () => {
     render(
       <PostCard
         post={{ ...basePost, isSensitive: true, isGraphicNudity: true }}
@@ -277,7 +277,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
     );
     // Sensitive requires click-to-reveal even when biometric verified
     fireEvent.click(screen.getByText("Show content"));
-    expect(screen.getByText("Sensitive / Graphic/Nudity")).toBeInTheDocument();
+    expect(screen.getByText("Sensitive / Graphic/Explicit")).toBeInTheDocument();
   });
 
   // ── Not authenticated ─────────────────────────────────────────────
@@ -308,7 +308,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
     expect(container.innerHTML).toBe("");
   });
 
-  it("returns null for Graphic/Nudity post when not authenticated", () => {
+  it("returns null for Graphic/Explicit post when not authenticated", () => {
     const { container } = render(
       <PostCard
         post={{ ...basePost, isGraphicNudity: true }}

@@ -192,7 +192,7 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
                 checked={isGraphicNudity}
                 onChange={(e) => setIsGraphicNudity(e.target.checked)}
               />
-              Graphic/Nudity
+              Graphic/Explicit
             </label>
             <button
               type="button"

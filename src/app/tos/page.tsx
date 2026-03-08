@@ -64,7 +64,7 @@ export default function TermsOfServicePage() {
         </li>
         <li>
           <strong className="text-zinc-800 dark:text-zinc-200">
-            Graphic/Nudity:
+            Graphic/Explicit:
           </strong>{" "}
           Graphic descriptions of adult topics, media containing sexual acts,
           extreme violence, anything that is of great importance to be kept
@@ -73,7 +73,7 @@ export default function TermsOfServicePage() {
       </ul>
       <p className="mt-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
         Only users who biometrically age verify can see posts marked Sensitive
-        and Graphic/Nudity. All users can opt into NSFW content, but it will
+        and Graphic/Explicit. All users can opt into NSFW content, but it will
         not be shown publicly to users who are not logged into the platform.
         This is for the safety of everyone, including minors who must not see
         adult content.
@@ -82,7 +82,7 @@ export default function TermsOfServicePage() {
         No illegal media or hate speech is allowed under any circumstances.
       </p>
       <p className="mt-3 text-sm font-medium leading-relaxed text-red-600 dark:text-red-400">
-        Three failures to mark material Sensitive or Graphic/Nudity according
+        Three failures to mark material Sensitive or Graphic/Explicit according
         to the guidelines above will result in deactivation of your account.
       </p>
 
@@ -110,10 +110,10 @@ export default function TermsOfServicePage() {
       <p className="mt-4 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
         If you have questions about these Terms of Service, please contact us at{" "}
         <a
-          href="mailto:hello@vibrantsocial.com"
+          href="mailto:vibrantsocial@proton.me"
           className="font-medium text-zinc-900 hover:underline dark:text-zinc-100"
         >
-          hello@vibrantsocial.com
+          vibrantsocial@proton.me
         </a>
         .
       </p>

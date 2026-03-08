@@ -456,11 +456,11 @@ export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified
                     className="rounded"
                   />
                   <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                    Show Graphic/Nudity content by default
+                    Show Graphic/Explicit content by default
                   </span>
                 </label>
                 <p className="ml-6 text-xs text-zinc-500 dark:text-zinc-400">
-                  When enabled, Graphic/Nudity posts will be visible without clicking to reveal.
+                  When enabled, Graphic/Explicit posts will be visible without clicking to reveal.
                 </p>
               </>
             )}
