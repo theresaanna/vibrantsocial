@@ -243,21 +243,21 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       <main className="mx-auto max-w-3xl px-4 py-6">
         {/* Profile header */}
         <div className={`rounded-2xl p-6 shadow-lg ${hasCustomTheme ? "profile-container" : "bg-white dark:bg-zinc-900"}`}>
-          <div className="flex items-start gap-4">
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start sm:gap-4">
             {avatarSrc ? (
               <img
                 src={avatarSrc}
                 alt=""
                 referrerPolicy="no-referrer"
-                className="h-16 w-16 rounded-full"
+                className="h-16 w-16 shrink-0 rounded-full"
               />
             ) : (
-              <div className={`flex h-16 w-16 items-center justify-center rounded-full text-xl font-bold ${hasCustomTheme ? "profile-container" : "bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300"}`}>
+              <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-bold ${hasCustomTheme ? "profile-container" : "bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300"}`}>
                 {initial}
               </div>
             )}
 
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 w-full sm:flex-1">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                 <div className="min-w-0">
                   <h1 className={`text-xl font-bold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>

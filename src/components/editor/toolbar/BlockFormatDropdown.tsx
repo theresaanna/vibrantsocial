@@ -3,6 +3,7 @@
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import {
   $createParagraphNode,
+  $getRoot,
   $getSelection,
   $isRangeSelection,
   COMMAND_PRIORITY_CRITICAL,
@@ -99,6 +100,26 @@ export function BlockFormatDropdown() {
     editor.update(() => {
       const selection = $getSelection();
       if (!$isRangeSelection(selection)) return;
+
+      // When the selection anchor or focus points to the root node,
+      // $setBlocksType converts ALL top-level blocks instead of just
+      // the block at the cursor. Normalize to the specific child block.
+      const root = $getRoot();
+      const rootKey = root.getKey();
+      if (selection.anchor.key === rootKey) {
+        const idx = Math.min(selection.anchor.offset, root.getChildrenSize() - 1);
+        const child = root.getChildAtIndex(idx);
+        if (child) {
+          selection.anchor.set(child.getKey(), 0, "element");
+        }
+      }
+      if (selection.focus.key === rootKey) {
+        const idx = Math.min(selection.focus.offset, root.getChildrenSize() - 1);
+        const child = root.getChildAtIndex(idx);
+        if (child) {
+          selection.focus.set(child.getKey(), 0, "element");
+        }
+      }
 
       if (type === "paragraph") {
         $setBlocksType(selection, () => $createParagraphNode());

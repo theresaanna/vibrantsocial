@@ -187,9 +187,15 @@ export function MessageBubble({
               onClick={() => onScrollToMessage?.(message.replyTo!.id)}
               className={`mb-0.5 flex w-full cursor-pointer items-start gap-1.5 rounded-xl border-l-2 px-3 py-1.5 text-left transition-colors hover:opacity-80 ${
                 isOwn
-                  ? "border-blue-300 bg-blue-400/20 dark:border-blue-400 dark:bg-blue-500/10"
+                  ? themeColors?.bgColor
+                    ? ""
+                    : "border-blue-300 bg-blue-400/20 dark:border-blue-400 dark:bg-blue-500/10"
                   : "border-zinc-400 bg-zinc-200/60 dark:border-zinc-500 dark:bg-zinc-700/60"
               }`}
+              style={isOwn && themeColors?.bgColor ? {
+                borderColor: "var(--chat-bubble-bg)",
+                backgroundColor: "color-mix(in srgb, var(--chat-bubble-bg) 20%, transparent)",
+              } : undefined}
               data-testid="reply-quote"
             >
               <div className="min-w-0 flex-1">
