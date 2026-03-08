@@ -99,8 +99,9 @@ export function MessageInput({
     } finally {
       setIsSending(false);
       setIsUploading(false);
+      // Re-focus the textarea after send completes
+      requestAnimationFrame(() => textareaRef.current?.focus());
     }
-    setTimeout(() => textareaRef.current?.focus(), 0);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

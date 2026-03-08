@@ -46,11 +46,26 @@ h6 {
   }
 }
 
-/* Profile theme overrides */
+/* Profile theme overrides — light mode (default) */
 .profile-themed {
+  --profile-bg: var(--profile-bg-light);
+  --profile-text: var(--profile-text-light);
+  --profile-link: var(--profile-link-light);
+  --profile-secondary: var(--profile-secondary-light);
+  --profile-container: var(--profile-container-light);
+
   background-color: var(--profile-bg);
   color: var(--profile-text);
   min-height: calc(100vh - 57px);
+}
+
+/* Profile theme overrides — dark mode */
+.dark .profile-themed {
+  --profile-bg: var(--profile-bg-dark);
+  --profile-text: var(--profile-text-dark);
+  --profile-link: var(--profile-link-dark);
+  --profile-secondary: var(--profile-secondary-dark);
+  --profile-container: var(--profile-container-dark);
 }
 
 .profile-themed .profile-container {

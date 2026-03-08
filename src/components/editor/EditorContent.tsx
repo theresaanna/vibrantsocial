@@ -8,6 +8,8 @@ import { CheckListPlugin } from "@lexical/react/LexicalCheckListPlugin";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import type { EditorState } from "lexical";
 
+import { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin";
+
 import { editorTheme } from "./theme";
 import { editorNodes } from "./nodes";
 import { ReadOnlyChecklistPlugin } from "./plugins/ReadOnlyChecklistPlugin";
@@ -101,6 +103,7 @@ export function EditorContent({
         placeholder={null}
         ErrorBoundary={({ children }) => <>{children}</>}
       />
+      <ClickableLinkPlugin />
       {allowChecklistToggle && (
         <>
           <ListPlugin />

@@ -11,6 +11,7 @@ import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
 import { HorizontalRulePlugin } from "@lexical/react/LexicalHorizontalRulePlugin";
 import { TablePlugin } from "@lexical/react/LexicalTablePlugin";
 import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin";
+import { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $getRoot, type EditorState } from "lexical";
 import { useState, useCallback } from "react";
@@ -120,6 +121,7 @@ export function Editor({
           <CheckListPlugin />
           <LinkPlugin />
           <AutoLinkPlugin />
+          <ClickableLinkPlugin />
           <HorizontalRulePlugin />
           <TablePlugin />
           <TabIndentationPlugin />
