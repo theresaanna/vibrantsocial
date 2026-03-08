@@ -11,8 +11,8 @@ import { inngest } from "@/lib/inngest";
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [
-    Google,
-    Discord,
+    Google({ allowDangerousEmailAccountLinking: true }),
+    Discord({ allowDangerousEmailAccountLinking: true }),
     Credentials({
       credentials: {
         email: { label: "Email", type: "email" },
