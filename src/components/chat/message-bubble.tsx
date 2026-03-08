@@ -248,7 +248,7 @@ export function MessageBubble({
                     ? `rounded-br-sm ${themeColors?.bgColor ? "" : "bg-blue-500 text-white"}`
                     : "rounded-bl-sm bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
                 }`}
-                style={isOwn && themeColors?.bgColor ? { backgroundColor: themeColors.bgColor, color: themeColors.textColor ?? "#ffffff" } : undefined}
+                style={isOwn && themeColors?.bgColor ? { backgroundColor: "var(--chat-bubble-bg)", color: "var(--chat-bubble-text)" } : undefined}
               >
                 {message.mediaUrl && message.mediaType && (
                   <div className="mb-1">
@@ -402,7 +402,7 @@ export function MessageBubble({
             {message.editedAt && (
               <span className="text-[10px] text-zinc-400">(edited)</span>
             )}
-            {isOwn && <ReadReceiptIndicator status={readStatus} bgColor={themeColors?.bgColor ?? undefined} textColor={themeColors?.textColor ?? undefined} />}
+            {isOwn && <ReadReceiptIndicator status={readStatus} hasCustomTheme={!!themeColors?.bgColor} />}
           </div>
 
           {/* Seen by (group chats only, own messages) */}

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { getConversations, getMessageRequests } from "./actions";
 import { ChatPageClient } from "./chat-page-client";
+import { generateAdaptiveTheme } from "@/lib/profile-themes";
 
 export default async function ChatPage() {
   const session = await auth();
@@ -14,6 +15,7 @@ export default async function ChatPage() {
       dateOfBirth: true,
       profileBgColor: true,
       profileTextColor: true,
+      profileLinkColor: true,
       profileContainerColor: true,
       profileSecondaryColor: true,
     },
@@ -23,6 +25,14 @@ export default async function ChatPage() {
   const conversations = await getConversations();
   const messageRequests = await getMessageRequests();
 
+  const hasCustomTheme = !!(
+    user.profileBgColor ||
+    user.profileTextColor ||
+    user.profileLinkColor ||
+    user.profileSecondaryColor ||
+    user.profileContainerColor
+  );
+
   const themeColors = {
     bgColor: user.profileBgColor ?? null,
     textColor: user.profileTextColor ?? null,
@@ -30,11 +40,36 @@ export default async function ChatPage() {
     secondaryColor: user.profileSecondaryColor ?? null,
   };
 
+  const themeStyle = hasCustomTheme
+    ? (() => {
+        const userColors = {
+          profileBgColor: user.profileBgColor ?? "#ffffff",
+          profileTextColor: user.profileTextColor ?? "#18181b",
+          profileLinkColor: user.profileLinkColor ?? "#2563eb",
+          profileSecondaryColor: user.profileSecondaryColor ?? "#71717a",
+          profileContainerColor: user.profileContainerColor ?? "#f4f4f5",
+        };
+        const { light, dark } = generateAdaptiveTheme(userColors);
+        return {
+          "--chat-bubble-bg-light": light.profileBgColor,
+          "--chat-bubble-text-light": light.profileTextColor,
+          "--chat-active-bg-light": light.profileContainerColor,
+          "--chat-active-text-light": light.profileSecondaryColor,
+          "--chat-bubble-bg-dark": dark.profileBgColor,
+          "--chat-bubble-text-dark": dark.profileTextColor,
+          "--chat-active-bg-dark": dark.profileContainerColor,
+          "--chat-active-text-dark": dark.profileSecondaryColor,
+        } as React.CSSProperties;
+      })()
+    : undefined;
+
   return (
     <ChatPageClient
       conversations={conversations}
       messageRequests={messageRequests}
       themeColors={themeColors}
+      hasCustomTheme={hasCustomTheme}
+      themeStyle={themeStyle}
     />
   );
 }

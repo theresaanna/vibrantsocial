@@ -21,6 +21,7 @@ interface MessageInputProps {
   onEditLastMessage?: () => void;
   replyingTo?: MessageData | null;
   onCancelReply?: () => void;
+  hasCustomTheme?: boolean;
 }
 
 export function MessageInput({
@@ -32,6 +33,7 @@ export function MessageInput({
   onEditLastMessage,
   replyingTo,
   onCancelReply,
+  hasCustomTheme,
 }: MessageInputProps) {
   const [value, setValue] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -295,7 +297,9 @@ export function MessageInput({
           placeholder="Type a message..."
           disabled={disabled || isSending}
           rows={1}
-          className="flex-1 resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-500 focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-400"
+          className={`flex-1 resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-400 ${
+            hasCustomTheme ? "chat-input-themed" : "focus:border-blue-500"
+          }`}
         />
 
         {/* Voice record button - show when no text and no file */}
@@ -320,7 +324,11 @@ export function MessageInput({
           <button
             type="submit"
             disabled={(!value.trim() && !hasMedia) || isSending || disabled}
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:opacity-50 disabled:hover:bg-blue-500"
+            className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full transition-colors disabled:opacity-50 ${
+              hasCustomTheme
+                ? "chat-btn-themed"
+                : "bg-blue-500 text-white hover:bg-blue-600 disabled:hover:bg-blue-500"
+            }`}
             aria-label="Send message"
           >
             {isUploading ? (

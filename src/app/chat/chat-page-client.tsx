@@ -13,6 +13,8 @@ interface ChatPageClientProps {
   conversations: ConversationListItem[];
   messageRequests: MessageRequestData[];
   themeColors?: ChatThemeColors;
+  hasCustomTheme?: boolean;
+  themeStyle?: React.CSSProperties;
 }
 
 function PresenceAwareSidebar({
@@ -46,13 +48,15 @@ export function ChatPageClient({
   conversations,
   messageRequests,
   themeColors,
+  hasCustomTheme,
+  themeStyle,
 }: ChatPageClientProps) {
   const ablyReady = useAblyReady();
 
   return (
     <main
-      className="mx-auto flex max-w-5xl px-2 py-2 md:px-4 md:py-6"
-      style={{ height: "calc(100vh - 57px)" }}
+      className={`mx-auto flex max-w-5xl px-2 py-2 md:px-4 md:py-6 ${hasCustomTheme ? "chat-themed" : ""}`}
+      style={{ height: "calc(100vh - 57px)", ...themeStyle }}
     >
       {/* Sidebar */}
       <div className="flex w-full flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white md:w-80 md:flex-shrink-0 md:rounded-l-2xl md:rounded-r-none dark:border-zinc-800 dark:bg-zinc-900">

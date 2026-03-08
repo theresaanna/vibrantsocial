@@ -41,7 +41,7 @@ export function ConversationItem({
           ? "bg-zinc-100 dark:bg-zinc-800"
           : ""
       }`}
-      style={hasThemedActive ? { backgroundColor: `${themeColors.containerColor}33`, color: themeColors.secondaryColor ?? undefined } : undefined}
+      style={hasThemedActive ? { backgroundColor: "color-mix(in srgb, var(--chat-active-bg) 20%, transparent)", color: "var(--chat-active-text)" } : undefined}
     >
       <div className="relative flex-shrink-0">
         {avatar ? (

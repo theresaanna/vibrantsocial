@@ -26,6 +26,8 @@ interface ConversationPageClientProps {
   currentUserId: string;
   phoneVerified: boolean;
   themeColors?: ChatThemeColors;
+  hasCustomTheme?: boolean;
+  themeStyle?: React.CSSProperties;
 }
 
 function PresenceAwareSidebar({
@@ -107,6 +109,8 @@ export function ConversationPageClient({
   currentUserId,
   phoneVerified,
   themeColors,
+  hasCustomTheme,
+  themeStyle,
 }: ConversationPageClientProps) {
   const ablyReady = useAblyReady();
   const [liveConversations, setLiveConversations] = useState(conversations);
@@ -125,8 +129,8 @@ export function ConversationPageClient({
 
   return (
     <main
-      className="mx-auto flex max-w-5xl px-2 py-2 md:px-4 md:py-6"
-      style={{ height: "calc(100vh - 57px)" }}
+      className={`mx-auto flex max-w-5xl px-2 py-2 md:px-4 md:py-6 ${hasCustomTheme ? "chat-themed" : ""}`}
+      style={{ height: "calc(100vh - 57px)", ...themeStyle }}
     >
       {/* Sidebar */}
       <div className="hidden flex-col overflow-hidden rounded-l-2xl border border-zinc-200 bg-white md:flex md:w-80 md:flex-shrink-0 dark:border-zinc-800 dark:bg-zinc-900">
