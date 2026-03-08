@@ -62,9 +62,10 @@ export function PushNotificationToggle({ enabled, onToggle }: PushNotificationTo
           return;
         }
 
+        const key = urlBase64ToUint8Array(vapidKey);
         const subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidKey),
+          applicationServerKey: key.buffer as ArrayBuffer,
         });
 
         const json = subscription.toJSON();
