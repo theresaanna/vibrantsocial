@@ -1,6 +1,7 @@
 "use client";
 
 import { PostCard } from "./post-card";
+import { EditorContent } from "@/components/editor/EditorContent";
 import { timeAgo } from "@/lib/time";
 import Link from "next/link";
 
@@ -80,8 +81,8 @@ export function RepostCard({
 
       {/* Quote content */}
       {repost.content && (
-        <div className="mb-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-300">
-          {repost.content}
+        <div className="mb-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800/50">
+          <EditorContent content={repost.content} />
         </div>
       )}
 
