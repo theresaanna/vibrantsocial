@@ -60,7 +60,8 @@
     "resend": "^6.9.3",
     "sharp": "^0.34.5",
     "sonner": "^2.0.7",
-    "twilio": "^5.12.2"
+    "twilio": "^5.12.2",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -73,6 +74,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/sharp": "^0.31.1",
+    "@types/web-push": "^3.6.4",
     "babel-plugin-react-compiler": "1.0.0",
     "dotenv": "^17.3.1",
     "eslint": "^9",

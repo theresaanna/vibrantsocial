@@ -21,6 +21,10 @@ vi.mock("@/lib/ably", () => ({
   }),
 }));
 
+vi.mock("@/lib/web-push", () => ({
+  sendPushNotification: vi.fn(),
+}));
+
 import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notifications";
 

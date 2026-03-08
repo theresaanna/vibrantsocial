@@ -7,6 +7,7 @@ import { updateProfile, removeAvatar } from "./actions";
 import { BioEditor } from "@/components/bio-editor";
 import { BioRevisionHistory } from "@/components/bio-revision-history";
 import { ThemeEditor } from "@/components/theme-editor";
+import { PushNotificationToggle } from "@/components/push-notification-toggle";
 
 interface ProfileFormProps {
   user: {
@@ -27,6 +28,7 @@ interface ProfileFormProps {
   emailOnComment: boolean;
   emailOnNewChat: boolean;
   emailOnMention: boolean;
+  pushEnabled: boolean;
   phoneVerified: boolean;
   phoneNumber: string | null;
   isCredentialsUser: boolean;
@@ -39,7 +41,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified, showNsfwByDefault, emailOnComment, emailOnNewChat, emailOnMention, phoneVerified, phoneNumber, isCredentialsUser }: ProfileFormProps) {
+export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified, showNsfwByDefault, emailOnComment, emailOnNewChat, emailOnMention, pushEnabled: initialPushEnabled, phoneVerified, phoneNumber, isCredentialsUser }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>("idle");
@@ -56,6 +58,7 @@ export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [showRevisions, setShowRevisions] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [pushEnabled, setPushEnabled] = useState(initialPushEnabled);
 
   const displayedAvatar = avatarPreview || oauthImage;
   const displayName = user.displayName ?? "?";
@@ -484,6 +487,24 @@ export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified
           </div>
           <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
             Choose which email notifications you&apos;d like to receive.
+          </p>
+        </div>
+
+        {/* Push notifications */}
+        <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+          <p className="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+            Push Notifications
+          </p>
+          <input type="hidden" name="pushEnabled" value={pushEnabled ? "true" : "false"} />
+          <PushNotificationToggle
+            enabled={pushEnabled}
+            onToggle={(val) => {
+              setPushEnabled(val);
+              scheduleAutosave();
+            }}
+          />
+          <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+            Receive browser notifications even when the tab is closed.
           </p>
         </div>
 

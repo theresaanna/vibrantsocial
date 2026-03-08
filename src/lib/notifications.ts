@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getAblyRestClient } from "@/lib/ably";
+import { sendPushNotification } from "@/lib/web-push";
 import type { NotificationType } from "@/generated/prisma/client";
 
 const MAX_NOTIFICATIONS = 50;
@@ -69,6 +70,34 @@ export async function createNotification(params: CreateNotificationParams) {
     });
   } catch {
     // Non-critical — DB write succeeded
+  }
+
+  // Send web push notification
+  try {
+    const actorName =
+      notification.actor.displayName ||
+      notification.actor.username ||
+      notification.actor.name ||
+      "Someone";
+    const typeText: Record<string, string> = {
+      LIKE: "liked your post",
+      COMMENT: "commented on your post",
+      REPLY: "replied to your comment",
+      REPOST: "reposted your post",
+      BOOKMARK: "bookmarked your post",
+      FOLLOW: "followed you",
+      REACTION: "reacted to your message",
+      MENTION: "mentioned you",
+    };
+    const body = `${actorName} ${typeText[type] || "sent you a notification"}`;
+    const url = postId ? `/notifications` : "/notifications";
+    await sendPushNotification(targetUserId, {
+      title: "VibrantSocial",
+      body,
+      url,
+    });
+  } catch {
+    // Non-critical — DB write and Ably succeeded
   }
 
   return notification;
