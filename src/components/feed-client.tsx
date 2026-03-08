@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { AddToHomeBanner } from "@/components/add-to-home-banner";
 import { PostComposer } from "@/components/post-composer";
 import { FeedList } from "@/components/feed-list";
 import { fetchSinglePost } from "@/app/feed/feed-actions";
@@ -38,6 +39,7 @@ export function FeedClient({
 
   return (
     <>
+      <AddToHomeBanner />
       <PostComposer
         phoneVerified={phoneVerified}
         isOldEnough={isOldEnough}

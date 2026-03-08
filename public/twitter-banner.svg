@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="500" viewBox="0 0 1500 500">
+  <defs>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#c026d3"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+  <!-- Gray background -->
+  <rect width="1500" height="500" fill="#18181b"/>
+  <!-- Subtle decorative circles -->
+  <circle cx="200" cy="250" r="320" fill="white" opacity="0.02"/>
+  <circle cx="1300" cy="250" r="280" fill="white" opacity="0.02"/>
+  <circle cx="750" cy="420" r="200" fill="white" opacity="0.015"/>
+  <!-- Gradient accent line -->
+  <rect x="550" y="320" width="400" height="3" rx="1.5" fill="url(#accent)" opacity="0.8"/>
+  <!-- Logo text with brand colors -->
+  <text x="750" y="280" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="72" letter-spacing="-1">
+    <tspan fill="#c026d3">Vibrant</tspan><tspan fill="#2563eb">Social</tspan>
+  </text>
+</svg>
