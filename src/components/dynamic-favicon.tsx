@@ -15,16 +15,16 @@ const ALERT_FAVICON =
   "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='2 1 20 22'><path d='M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9' fill='%232563eb' stroke='%232563eb' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/><path d='M13.73 21a2 2 0 0 1-3.46 0' fill='none' stroke='%232563eb' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>";
 
 function setFavicon(hasUnread: boolean) {
-  let link = document.querySelector(
-    "link[rel='icon']"
-  ) as HTMLLinkElement | null;
-  if (!link) {
-    link = document.createElement("link");
-    link.rel = "icon";
-    document.head.appendChild(link);
-  }
+  // Remove all existing icon links to prevent Next.js static icon from overriding
+  document
+    .querySelectorAll("link[rel='icon']")
+    .forEach((el) => el.remove());
+
+  const link = document.createElement("link");
+  link.rel = "icon";
   link.type = "image/svg+xml";
   link.href = hasUnread ? ALERT_FAVICON : DEFAULT_FAVICON;
+  document.head.appendChild(link);
 }
 
 async function fetchHasUnread(): Promise<boolean> {
@@ -52,10 +52,11 @@ export function DynamicFavicon({
   pathnameRef.current = pathname;
   const prevPathnameRef = useRef(pathname);
 
-  // Update favicon element when state changes
+  // Update favicon element when state changes or on navigation
+  // (Next.js may re-insert its static icon during client-side routing)
   useEffect(() => {
     setFavicon(hasUnread);
-  }, [hasUnread]);
+  }, [hasUnread, pathname]);
 
   // Re-check when leaving notifications or chat pages
   useEffect(() => {
