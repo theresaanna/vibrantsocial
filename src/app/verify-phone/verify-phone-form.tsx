@@ -138,8 +138,8 @@ export function VerifyPhoneForm() {
           />
         </div>
         <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-          Your phone number will not be displayed on your profile. We collect it
-          to help prevent spam and abuse accounts.
+          Your phone number will not be displayed on your profile or sold to
+          third parties. We collect it to help prevent spam and abuse accounts.
         </p>
       </div>
 
