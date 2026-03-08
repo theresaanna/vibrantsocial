@@ -24,15 +24,15 @@ describe("ReadReceiptIndicator", () => {
     expect(indicator.className).toContain("text-white");
   });
 
-  it("uses custom bgColor for unread status", () => {
-    render(<ReadReceiptIndicator status="sent" bgColor="#ff00ff" />);
+  it("uses CSS variable for bubble bg when custom themed (unread)", () => {
+    render(<ReadReceiptIndicator status="sent" hasCustomTheme />);
     const indicator = screen.getByLabelText("Sent");
-    expect(indicator.style.color).toBe("rgb(255, 0, 255)");
+    expect(indicator.style.color).toBe("var(--chat-bubble-bg)");
   });
 
-  it("uses custom textColor for read status", () => {
-    render(<ReadReceiptIndicator status="read" textColor="#00ff00" />);
+  it("uses CSS variable for bubble text when custom themed (read)", () => {
+    render(<ReadReceiptIndicator status="read" hasCustomTheme />);
     const indicator = screen.getByLabelText("Read");
-    expect(indicator.style.color).toBe("rgb(0, 255, 0)");
+    expect(indicator.style.color).toBe("var(--chat-bubble-text)");
   });
 });

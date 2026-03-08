@@ -413,6 +413,7 @@ export function MessageThread({
         onEditLastMessage={handleEditLastMessage}
         replyingTo={replyingTo}
         onCancelReply={handleCancelReply}
+        hasCustomTheme={!!themeColors?.bgColor}
       />
 
       {/* Group settings modal */}

@@ -2,8 +2,7 @@
 
 interface ReadReceiptIndicatorProps {
   status: "sent" | "delivered" | "read";
-  bgColor?: string;
-  textColor?: string;
+  hasCustomTheme?: boolean;
 }
 
 function CheckIcon({ className }: { className?: string }) {
@@ -23,13 +22,13 @@ function CheckIcon({ className }: { className?: string }) {
   );
 }
 
-export function ReadReceiptIndicator({ status, bgColor, textColor }: ReadReceiptIndicatorProps) {
+export function ReadReceiptIndicator({ status, hasCustomTheme }: ReadReceiptIndicatorProps) {
   if (status === "read") {
     // Read: match text color so checkmark is clearly visible
     return (
       <span
-        className={`inline-flex ${textColor ? "" : "text-white"}`}
-        style={textColor ? { color: textColor } : undefined}
+        className={`inline-flex ${hasCustomTheme ? "" : "text-white"}`}
+        style={hasCustomTheme ? { color: "var(--chat-bubble-text)" } : undefined}
         aria-label="Read"
       >
         <CheckIcon />
@@ -40,8 +39,8 @@ export function ReadReceiptIndicator({ status, bgColor, textColor }: ReadReceipt
   // Sent/delivered: match bg color so checkmark is subtle
   return (
     <span
-      className={`inline-flex ${bgColor ? "" : "text-blue-500"}`}
-      style={bgColor ? { color: bgColor } : undefined}
+      className={`inline-flex ${hasCustomTheme ? "" : "text-blue-500"}`}
+      style={hasCustomTheme ? { color: "var(--chat-bubble-bg)" } : undefined}
       aria-label={status === "delivered" ? "Delivered" : "Sent"}
     >
       <CheckIcon />

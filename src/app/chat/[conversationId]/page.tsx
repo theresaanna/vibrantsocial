@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePhoneVerification } from "@/lib/phone-gate";
 import { getConversations, getMessages, getMessageRequests } from "../actions";
 import { ConversationPageClient } from "./conversation-page-client";
+import { generateAdaptiveTheme } from "@/lib/profile-themes";
 
 interface Props {
   params: Promise<{ conversationId: string }>;
@@ -55,6 +56,7 @@ export default async function ConversationPage({ params }: Props) {
         select: {
           profileBgColor: true,
           profileTextColor: true,
+          profileLinkColor: true,
           profileContainerColor: true,
           profileSecondaryColor: true,
         },
@@ -63,12 +65,43 @@ export default async function ConversationPage({ params }: Props) {
 
   if (!conversation) redirect("/chat");
 
+  const hasCustomTheme = !!(
+    currentUser?.profileBgColor ||
+    currentUser?.profileTextColor ||
+    currentUser?.profileLinkColor ||
+    currentUser?.profileSecondaryColor ||
+    currentUser?.profileContainerColor
+  );
+
   const themeColors = {
     bgColor: currentUser?.profileBgColor ?? null,
     textColor: currentUser?.profileTextColor ?? null,
     containerColor: currentUser?.profileContainerColor ?? null,
     secondaryColor: currentUser?.profileSecondaryColor ?? null,
   };
+
+  const themeStyle = hasCustomTheme
+    ? (() => {
+        const userColors = {
+          profileBgColor: currentUser?.profileBgColor ?? "#ffffff",
+          profileTextColor: currentUser?.profileTextColor ?? "#18181b",
+          profileLinkColor: currentUser?.profileLinkColor ?? "#2563eb",
+          profileSecondaryColor: currentUser?.profileSecondaryColor ?? "#71717a",
+          profileContainerColor: currentUser?.profileContainerColor ?? "#f4f4f5",
+        };
+        const { light, dark } = generateAdaptiveTheme(userColors);
+        return {
+          "--chat-bubble-bg-light": light.profileBgColor,
+          "--chat-bubble-text-light": light.profileTextColor,
+          "--chat-active-bg-light": light.profileContainerColor,
+          "--chat-active-text-light": light.profileSecondaryColor,
+          "--chat-bubble-bg-dark": dark.profileBgColor,
+          "--chat-bubble-text-dark": dark.profileTextColor,
+          "--chat-active-bg-dark": dark.profileContainerColor,
+          "--chat-active-text-dark": dark.profileSecondaryColor,
+        } as React.CSSProperties;
+      })()
+    : undefined;
 
   return (
     <ConversationPageClient
@@ -80,6 +113,8 @@ export default async function ConversationPage({ params }: Props) {
       currentUserId={session.user.id}
       phoneVerified={phoneVerified}
       themeColors={themeColors}
+      hasCustomTheme={hasCustomTheme}
+      themeStyle={themeStyle}
     />
   );
 }

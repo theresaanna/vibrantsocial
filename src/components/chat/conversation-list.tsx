@@ -28,7 +28,11 @@ export function ConversationList({
         </h2>
         <button
           onClick={() => setShowModal(true)}
-          className="rounded-lg bg-zinc-900 p-2 text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          className={`rounded-lg p-2 transition-colors ${
+            themeColors?.bgColor
+              ? "chat-btn-themed"
+              : "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          }`}
           aria-label="New message"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">

@@ -258,8 +258,8 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             )}
 
             <div className="min-w-0 flex-1">
-              <div className="flex items-start justify-between gap-3">
-                <div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                <div className="min-w-0">
                   <h1 className={`text-xl font-bold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
                     {displayName}
                   </h1>
@@ -268,11 +268,11 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2">
                   {isOwnProfile && (
                     <Link
                       href="/profile"
-                      className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                      className={`rounded-lg border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
                         hasCustomTheme
                           ? "profile-share-btn"
                           : "border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
