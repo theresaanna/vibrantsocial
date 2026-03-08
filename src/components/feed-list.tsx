@@ -14,7 +14,8 @@ export function FeedList({
   currentUserId,
   phoneVerified,
   biometricVerified,
-  showNsfwByDefault,
+  showGraphicByDefault,
+  showNsfwContent,
   newItems = [],
 }: {
   initialItems: FeedItem[];
@@ -22,7 +23,8 @@ export function FeedList({
   currentUserId: string;
   phoneVerified: boolean;
   biometricVerified: boolean;
-  showNsfwByDefault: boolean;
+  showGraphicByDefault: boolean;
+  showNsfwContent: boolean;
   newItems?: FeedItem[];
 }) {
   const [items, setItems] = useState(initialItems);
@@ -118,7 +120,8 @@ export function FeedList({
             currentUserId={currentUserId}
             phoneVerified={phoneVerified}
             biometricVerified={biometricVerified}
-            showNsfwByDefault={showNsfwByDefault}
+            showGraphicByDefault={showGraphicByDefault}
+            showNsfwContent={showNsfwContent}
           />
         ) : (
           <RepostCard
@@ -127,7 +130,8 @@ export function FeedList({
             currentUserId={currentUserId}
             phoneVerified={phoneVerified}
             biometricVerified={biometricVerified}
-            showNsfwByDefault={showNsfwByDefault}
+            showGraphicByDefault={showGraphicByDefault}
+            showNsfwContent={showNsfwContent}
           />
         )
       )}

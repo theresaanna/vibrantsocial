@@ -16,7 +16,8 @@ export default async function PostPage({ params, searchParams }: Props) {
 
   let phoneVerified = false;
   let biometricVerified = false;
-  let showNsfwByDefault = false;
+  let showGraphicByDefault = false;
+  let showNsfwContent = false;
 
   if (userId) {
     const currentUser = await prisma.user.findUnique({
@@ -25,7 +26,8 @@ export default async function PostPage({ params, searchParams }: Props) {
         phoneVerified: true,
         dateOfBirth: true,
         biometricVerified: true,
-        showNsfwByDefault: true,
+        showGraphicByDefault: true,
+        showNsfwContent: true,
       },
     });
 
@@ -33,7 +35,8 @@ export default async function PostPage({ params, searchParams }: Props) {
 
     phoneVerified = !!currentUser?.phoneVerified;
     biometricVerified = !!currentUser?.biometricVerified;
-    showNsfwByDefault = currentUser?.showNsfwByDefault ?? false;
+    showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
+    showNsfwContent = currentUser?.showNsfwContent ?? false;
   }
 
   const post = await prisma.post.findUnique({
@@ -114,6 +117,9 @@ export default async function PostPage({ params, searchParams }: Props) {
   // Redirect unauthenticated visitors if author's profile is private
   if (!post.author.isProfilePublic && !userId) redirect("/login");
 
+  // Redirect unauthenticated visitors away from flagged content
+  if (!userId && (post.isSensitive || post.isNsfw || post.isGraphicNudity)) redirect("/login");
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
       <PostPageClient
@@ -121,7 +127,8 @@ export default async function PostPage({ params, searchParams }: Props) {
         currentUserId={userId}
         phoneVerified={phoneVerified}
         biometricVerified={biometricVerified}
-        showNsfwByDefault={showNsfwByDefault}
+        showGraphicByDefault={showGraphicByDefault}
+        showNsfwContent={showNsfwContent}
         highlightCommentId={commentId ?? null}
       />
     </main>

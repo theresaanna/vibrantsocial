@@ -51,6 +51,7 @@ const basePost = {
   createdAt: new Date(),
   isSensitive: false,
   isNsfw: false,
+  isGraphicNudity: false,
   isPinned: false,
   author: {
     id: "user1",
@@ -75,7 +76,7 @@ describe("PostCard - comment display", () => {
         post={basePost}
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     expect(screen.queryByTestId("comment-section")).not.toBeInTheDocument();
@@ -87,7 +88,7 @@ describe("PostCard - comment display", () => {
         post={basePost}
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
         defaultShowComments
       />
     );
@@ -100,7 +101,7 @@ describe("PostCard - comment display", () => {
         post={basePost}
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
         defaultShowComments
         highlightCommentId="comment123"
       />
@@ -115,7 +116,7 @@ describe("PostCard - comment display", () => {
         post={basePost}
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     expect(screen.queryByTestId("comment-section")).not.toBeInTheDocument();
@@ -133,7 +134,7 @@ describe("PostCard - comment display", () => {
         post={basePost}
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
         defaultShowComments
       />
     );

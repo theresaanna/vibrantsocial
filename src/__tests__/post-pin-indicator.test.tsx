@@ -47,6 +47,7 @@ const basePost = {
   editedAt: null,
   isSensitive: false,
   isNsfw: false,
+  isGraphicNudity: false,
   isPinned: false,
   author: {
     id: "user1",
@@ -72,7 +73,7 @@ describe("PostCard - pin indicator", () => {
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     expect(screen.getByTestId("post-pinned-indicator")).toBeInTheDocument();
@@ -86,7 +87,7 @@ describe("PostCard - pin indicator", () => {
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     expect(screen.queryByTestId("post-pinned-indicator")).not.toBeInTheDocument();
@@ -99,7 +100,7 @@ describe("PostCard - pin indicator", () => {
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     fireEvent.click(screen.getByTestId("post-menu-button"));
@@ -113,7 +114,7 @@ describe("PostCard - pin indicator", () => {
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     fireEvent.click(screen.getByTestId("post-menu-button"));
@@ -127,7 +128,7 @@ describe("PostCard - pin indicator", () => {
         currentUserId="other-user"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     expect(screen.queryByTestId("post-menu-button")).not.toBeInTheDocument();

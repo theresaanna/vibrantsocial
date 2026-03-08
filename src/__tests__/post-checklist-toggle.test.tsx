@@ -74,6 +74,7 @@ const basePost = {
   editedAt: null,
   isSensitive: false,
   isNsfw: false,
+  isGraphicNudity: false,
   isPinned: false,
   author: {
     id: "user1",
@@ -99,7 +100,7 @@ describe("PostCard - checklist toggle", () => {
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     const postContent = screen.getByTestId("post-content");
@@ -113,7 +114,7 @@ describe("PostCard - checklist toggle", () => {
         currentUserId="other-user"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     const postContent = screen.getByTestId("post-content");
@@ -126,7 +127,7 @@ describe("PostCard - checklist toggle", () => {
         post={basePost}
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     const postContent = screen.getByTestId("post-content");
@@ -140,7 +141,7 @@ describe("PostCard - checklist toggle", () => {
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     const postContent = screen.getByTestId("post-content");
@@ -155,7 +156,7 @@ describe("PostCard - checklist toggle", () => {
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     const toggleBtn = screen.getByTestId("simulate-toggle");

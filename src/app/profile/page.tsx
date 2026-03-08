@@ -22,7 +22,8 @@ export default async function ProfilePage() {
       profileSecondaryColor: true,
       profileContainerColor: true,
       biometricVerified: true,
-      showNsfwByDefault: true,
+      showGraphicByDefault: true,
+      showNsfwContent: true,
       emailOnComment: true,
       emailOnNewChat: true,
       emailOnMention: true,
@@ -55,7 +56,8 @@ export default async function ProfilePage() {
           currentAvatar={user?.avatar ?? null}
           oauthImage={oauthImage}
           biometricVerified={!!user?.biometricVerified}
-          showNsfwByDefault={user?.showNsfwByDefault ?? false}
+          showGraphicByDefault={user?.showGraphicByDefault ?? false}
+          showNsfwContent={user?.showNsfwContent ?? false}
           emailOnComment={user?.emailOnComment ?? true}
           emailOnNewChat={user?.emailOnNewChat ?? true}
           emailOnMention={user?.emailOnMention ?? true}

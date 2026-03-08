@@ -12,7 +12,8 @@ interface TagPostListProps {
   currentUserId?: string;
   phoneVerified: boolean;
   biometricVerified: boolean;
-  showNsfwByDefault: boolean;
+  showGraphicByDefault: boolean;
+  showNsfwContent: boolean;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
@@ -23,7 +24,8 @@ export function TagPostList({
   currentUserId,
   phoneVerified,
   biometricVerified,
-  showNsfwByDefault,
+  showGraphicByDefault,
+  showNsfwContent,
 }: TagPostListProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [posts, setPosts] = useState<any[]>(initialPosts);
@@ -87,7 +89,8 @@ export function TagPostList({
           currentUserId={currentUserId}
           phoneVerified={phoneVerified}
           biometricVerified={biometricVerified}
-          showNsfwByDefault={showNsfwByDefault}
+          showGraphicByDefault={showGraphicByDefault}
+          showNsfwContent={showNsfwContent}
         />
       ))}
 

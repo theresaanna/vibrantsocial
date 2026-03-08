@@ -37,6 +37,7 @@ const basePost = {
   createdAt: new Date(),
   isSensitive: false,
   isNsfw: false,
+  isGraphicNudity: false,
   isPinned: false,
   author: {
     id: "user1",
@@ -54,41 +55,33 @@ const basePost = {
   comments: [],
 };
 
-describe("PostCard - sensitive/NSFW content gating", () => {
+describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
   it("renders normal post content regardless of verification", () => {
     render(
       <PostCard
         post={basePost}
+        currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false}
+        showNsfwContent={false}
       />
     );
     expect(screen.getByTestId("post-content")).toBeInTheDocument();
     expect(screen.queryByText("Verify your age to view this content.")).not.toBeInTheDocument();
   });
 
+  // ── Sensitive content (isSensitive) ───────────────────────────────
+
   it("shows locked overlay for sensitive post when not biometric verified", () => {
     render(
       <PostCard
         post={{ ...basePost, isSensitive: true }}
+        currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
-      />
-    );
-    expect(screen.getByText("Verify your age to view this content.")).toBeInTheDocument();
-    expect(screen.queryByTestId("post-content")).not.toBeInTheDocument();
-    expect(screen.queryByText("Show content")).not.toBeInTheDocument();
-  });
-
-  it("shows locked overlay for NSFW post when not biometric verified", () => {
-    render(
-      <PostCard
-        post={{ ...basePost, isNsfw: true }}
-        phoneVerified={true}
-        biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false}
+        showNsfwContent={false}
       />
     );
     expect(screen.getByText("Verify your age to view this content.")).toBeInTheDocument();
@@ -100,9 +93,11 @@ describe("PostCard - sensitive/NSFW content gating", () => {
     render(
       <PostCard
         post={{ ...basePost, isSensitive: true }}
+        currentUserId="user1"
         phoneVerified={true}
         biometricVerified={true}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false}
+        showNsfwContent={false}
       />
     );
     expect(screen.getByText("Click to view sensitive content")).toBeInTheDocument();
@@ -114,9 +109,11 @@ describe("PostCard - sensitive/NSFW content gating", () => {
     render(
       <PostCard
         post={{ ...basePost, isSensitive: true }}
+        currentUserId="user1"
         phoneVerified={true}
         biometricVerified={true}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false}
+        showNsfwContent={false}
       />
     );
     fireEvent.click(screen.getByText("Show content"));
@@ -124,13 +121,95 @@ describe("PostCard - sensitive/NSFW content gating", () => {
     expect(screen.queryByText("Click to view sensitive content")).not.toBeInTheDocument();
   });
 
-  it("shows click-to-reveal for NSFW post when biometric verified and showNsfwByDefault is false", () => {
+  it("shows Sensitive badge on revealed sensitive post", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isSensitive: true }}
+        currentUserId="user1"
+        phoneVerified={true}
+        biometricVerified={true}
+        showGraphicByDefault={false}
+        showNsfwContent={false}
+      />
+    );
+    fireEvent.click(screen.getByText("Show content"));
+    expect(screen.getByText("Sensitive")).toBeInTheDocument();
+  });
+
+  // ── Graphic/Nudity content (isGraphicNudity) ─────────────────────
+
+  it("shows locked overlay for Graphic/Nudity post when not biometric verified", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isGraphicNudity: true }}
+        currentUserId="user1"
+        phoneVerified={true}
+        biometricVerified={false}
+        showGraphicByDefault={false}
+        showNsfwContent={false}
+      />
+    );
+    expect(screen.getByText("Verify your age to view this content.")).toBeInTheDocument();
+    expect(screen.queryByTestId("post-content")).not.toBeInTheDocument();
+    expect(screen.queryByText("Show content")).not.toBeInTheDocument();
+  });
+
+  it("shows click-to-reveal for Graphic/Nudity post when biometric verified and showGraphicByDefault is false", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isGraphicNudity: true }}
+        currentUserId="user1"
+        phoneVerified={true}
+        biometricVerified={true}
+        showGraphicByDefault={false}
+        showNsfwContent={false}
+      />
+    );
+    expect(screen.getByText("Click to view graphic content")).toBeInTheDocument();
+    expect(screen.getByText("Show content")).toBeInTheDocument();
+    expect(screen.queryByTestId("post-content")).not.toBeInTheDocument();
+  });
+
+  it("shows Graphic/Nudity content by default when biometric verified and showGraphicByDefault is true", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isGraphicNudity: true }}
+        currentUserId="user1"
+        phoneVerified={true}
+        biometricVerified={true}
+        showGraphicByDefault={true}
+        showNsfwContent={false}
+      />
+    );
+    expect(screen.getByTestId("post-content")).toBeInTheDocument();
+    expect(screen.queryByText("Click to view graphic content")).not.toBeInTheDocument();
+  });
+
+  it("shows Graphic/Nudity badge on Graphic/Nudity post shown by default", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isGraphicNudity: true }}
+        currentUserId="user1"
+        phoneVerified={true}
+        biometricVerified={true}
+        showGraphicByDefault={true}
+        showNsfwContent={false}
+      />
+    );
+    expect(screen.getByText("Graphic/Nudity")).toBeInTheDocument();
+  });
+
+  // ── NSFW content (isNsfw) ─────────────────────────────────────────
+
+  it("shows click-to-reveal for NSFW post when showNsfwContent is false", () => {
     render(
       <PostCard
         post={{ ...basePost, isNsfw: true }}
+        currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={true}
-        showNsfwByDefault={false}
+        biometricVerified={false}
+        showGraphicByDefault={false}
+        showNsfwContent={false}
       />
     );
     expect(screen.getByText("Click to view NSFW content")).toBeInTheDocument();
@@ -138,51 +217,121 @@ describe("PostCard - sensitive/NSFW content gating", () => {
     expect(screen.queryByTestId("post-content")).not.toBeInTheDocument();
   });
 
-  it("shows NSFW content by default when biometric verified and showNsfwByDefault is true", () => {
+  it("shows NSFW content by default when showNsfwContent is true", () => {
     render(
       <PostCard
         post={{ ...basePost, isNsfw: true }}
+        currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={true}
-        showNsfwByDefault={true}
+        biometricVerified={false}
+        showGraphicByDefault={false}
+        showNsfwContent={true}
       />
     );
     expect(screen.getByTestId("post-content")).toBeInTheDocument();
     expect(screen.queryByText("Click to view NSFW content")).not.toBeInTheDocument();
   });
 
-  it("shows Sensitive badge on revealed sensitive post", () => {
-    render(
-      <PostCard
-        post={{ ...basePost, isSensitive: true }}
-        phoneVerified={true}
-        biometricVerified={true}
-        showNsfwByDefault={false}
-      />
-    );
-    fireEvent.click(screen.getByText("Show content"));
-    expect(screen.getByText("Sensitive")).toBeInTheDocument();
-  });
-
   it("shows NSFW badge on NSFW post shown by default", () => {
     render(
       <PostCard
         post={{ ...basePost, isNsfw: true }}
+        currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={true}
-        showNsfwByDefault={true}
+        biometricVerified={false}
+        showGraphicByDefault={false}
+        showNsfwContent={true}
       />
     );
     expect(screen.getByText("NSFW")).toBeInTheDocument();
   });
 
+  // ── Combined badges ───────────────────────────────────────────────
+
+  it("shows combined Sensitive / NSFW badge when both flags are set", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isSensitive: true, isNsfw: true }}
+        currentUserId="user1"
+        phoneVerified={true}
+        biometricVerified={true}
+        showGraphicByDefault={false}
+        showNsfwContent={true}
+      />
+    );
+    // Sensitive requires click-to-reveal even when biometric verified, so click to reveal first
+    fireEvent.click(screen.getByText("Show content"));
+    expect(screen.getByText("Sensitive / NSFW")).toBeInTheDocument();
+  });
+
+  it("shows combined Sensitive / Graphic/Nudity badge when both flags are set", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isSensitive: true, isGraphicNudity: true }}
+        currentUserId="user1"
+        phoneVerified={true}
+        biometricVerified={true}
+        showGraphicByDefault={true}
+        showNsfwContent={false}
+      />
+    );
+    // Sensitive requires click-to-reveal even when biometric verified
+    fireEvent.click(screen.getByText("Show content"));
+    expect(screen.getByText("Sensitive / Graphic/Nudity")).toBeInTheDocument();
+  });
+
+  // ── Not authenticated ─────────────────────────────────────────────
+
+  it("returns null for sensitive post when not authenticated", () => {
+    const { container } = render(
+      <PostCard
+        post={{ ...basePost, isSensitive: true }}
+        phoneVerified={false}
+        biometricVerified={false}
+        showGraphicByDefault={false}
+        showNsfwContent={false}
+      />
+    );
+    expect(container.innerHTML).toBe("");
+  });
+
+  it("returns null for NSFW post when not authenticated", () => {
+    const { container } = render(
+      <PostCard
+        post={{ ...basePost, isNsfw: true }}
+        phoneVerified={false}
+        biometricVerified={false}
+        showGraphicByDefault={false}
+        showNsfwContent={false}
+      />
+    );
+    expect(container.innerHTML).toBe("");
+  });
+
+  it("returns null for Graphic/Nudity post when not authenticated", () => {
+    const { container } = render(
+      <PostCard
+        post={{ ...basePost, isGraphicNudity: true }}
+        phoneVerified={false}
+        biometricVerified={false}
+        showGraphicByDefault={false}
+        showNsfwContent={false}
+      />
+    );
+    expect(container.innerHTML).toBe("");
+  });
+
+  // ── General ───────────────────────────────────────────────────────
+
   it("always shows author header even when content is hidden", () => {
     render(
       <PostCard
         post={{ ...basePost, isSensitive: true }}
+        currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false}
+        showNsfwContent={false}
       />
     );
     expect(screen.getByText("Test User")).toBeInTheDocument();

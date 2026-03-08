@@ -18,7 +18,8 @@ export async function FeedContent({ userId }: { userId: string }) {
         phoneVerified: true,
         dateOfBirth: true,
         biometricVerified: true,
-        showNsfwByDefault: true,
+        showGraphicByDefault: true,
+        showNsfwContent: true,
       },
     }),
     cached(
@@ -38,7 +39,8 @@ export async function FeedContent({ userId }: { userId: string }) {
 
   const phoneVerified = !!currentUser.phoneVerified;
   const biometricVerified = !!currentUser.biometricVerified;
-  const showNsfwByDefault = currentUser.showNsfwByDefault ?? false;
+  const showGraphicByDefault = currentUser.showGraphicByDefault ?? false;
+  const showNsfwContent = currentUser.showNsfwContent ?? false;
   const isOldEnough = currentUser.dateOfBirth
     ? calculateAge(currentUser.dateOfBirth) >= 18
     : false;
@@ -51,6 +53,7 @@ export async function FeedContent({ userId }: { userId: string }) {
     prisma.post.findMany({
       where: {
         authorId: { in: [...followingIds, userId] },
+        ...(!showNsfwContent ? { isNsfw: false } : {}),
       },
       orderBy: { createdAt: "desc" },
       take: fetchCount,
@@ -100,7 +103,8 @@ export async function FeedContent({ userId }: { userId: string }) {
       initialHasMore={hasMore}
       currentUserId={userId}
       biometricVerified={biometricVerified}
-      showNsfwByDefault={showNsfwByDefault}
+      showGraphicByDefault={showGraphicByDefault}
+      showNsfwContent={showNsfwContent}
     />
   );
 }

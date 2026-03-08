@@ -182,7 +182,7 @@ describe("createPost", () => {
     expect(result.success).toBe(true);
     expect(result.message).toBe("Post created");
     expect(mockPrisma.post.create).toHaveBeenCalledWith({
-      data: { content: validLexicalContent, authorId: "user1", isSensitive: false, isNsfw: false },
+      data: { content: validLexicalContent, authorId: "user1", isSensitive: false, isNsfw: false, isGraphicNudity: false },
     });
   });
 
@@ -198,7 +198,7 @@ describe("createPost", () => {
     );
     expect(result.success).toBe(true);
     expect(mockPrisma.post.create).toHaveBeenCalledWith({
-      data: { content: validLexicalContent, authorId: "user1", isSensitive: true, isNsfw: false },
+      data: { content: validLexicalContent, authorId: "user1", isSensitive: true, isNsfw: false, isGraphicNudity: false },
     });
   });
 
@@ -214,11 +214,27 @@ describe("createPost", () => {
     );
     expect(result.success).toBe(true);
     expect(mockPrisma.post.create).toHaveBeenCalledWith({
-      data: { content: validLexicalContent, authorId: "user1", isSensitive: false, isNsfw: true },
+      data: { content: validLexicalContent, authorId: "user1", isSensitive: false, isNsfw: true, isGraphicNudity: false },
     });
   });
 
-  it("defaults isSensitive and isNsfw to false when not provided", async () => {
+  it("creates post with isGraphicNudity flag", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
+    mockAgeGate.mockResolvedValueOnce(true);
+    mockPrisma.post.create.mockResolvedValueOnce({} as never);
+
+    const result = await createPost(
+      prevState,
+      makeFormData({ content: validLexicalContent, isGraphicNudity: "true" })
+    );
+    expect(result.success).toBe(true);
+    expect(mockPrisma.post.create).toHaveBeenCalledWith({
+      data: { content: validLexicalContent, authorId: "user1", isSensitive: false, isNsfw: false, isGraphicNudity: true },
+    });
+  });
+
+  it("defaults isSensitive, isNsfw, and isGraphicNudity to false when not provided", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPhoneGate.mockResolvedValueOnce(true);
     mockAgeGate.mockResolvedValueOnce(true);
@@ -227,7 +243,7 @@ describe("createPost", () => {
     await createPost(prevState, makeFormData({ content: validLexicalContent }));
     expect(mockPrisma.post.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ isSensitive: false, isNsfw: false }),
+        data: expect.objectContaining({ isSensitive: false, isNsfw: false, isGraphicNudity: false }),
       })
     );
   });

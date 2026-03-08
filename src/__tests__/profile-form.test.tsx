@@ -63,7 +63,8 @@ interface RenderFormOptions {
   emailOnNewChat?: boolean;
   emailOnMention?: boolean;
   biometricVerified?: boolean;
-  showNsfwByDefault?: boolean;
+  showGraphicByDefault?: boolean;
+  showNsfwContent?: boolean;
   pushEnabled?: boolean;
   isProfilePublic?: boolean;
   phoneVerified?: boolean;
@@ -78,7 +79,8 @@ function renderForm(options: RenderFormOptions = {}) {
     emailOnNewChat = true,
     emailOnMention = true,
     biometricVerified = false,
-    showNsfwByDefault = false,
+    showGraphicByDefault = false,
+    showNsfwContent = false,
     pushEnabled = false,
     isProfilePublic = true,
     phoneVerified = false,
@@ -91,7 +93,8 @@ function renderForm(options: RenderFormOptions = {}) {
       currentAvatar={null}
       oauthImage={null}
       biometricVerified={biometricVerified}
-      showNsfwByDefault={showNsfwByDefault}
+      showGraphicByDefault={showGraphicByDefault}
+      showNsfwContent={showNsfwContent}
       emailOnComment={emailOnComment}
       emailOnNewChat={emailOnNewChat}
       emailOnMention={emailOnMention}

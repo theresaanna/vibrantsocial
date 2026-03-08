@@ -23,7 +23,8 @@ export default async function TagPage({ params }: TagPageProps) {
 
   let phoneVerified = false;
   let biometricVerified = false;
-  let showNsfwByDefault = false;
+  let showGraphicByDefault = false;
+  let showNsfwContent = false;
 
   if (currentUserId) {
     const currentUser = await prisma.user.findUnique({
@@ -31,12 +32,14 @@ export default async function TagPage({ params }: TagPageProps) {
       select: {
         phoneVerified: true,
         biometricVerified: true,
-        showNsfwByDefault: true,
+        showGraphicByDefault: true,
+        showNsfwContent: true,
       },
     });
     phoneVerified = !!currentUser?.phoneVerified;
     biometricVerified = !!currentUser?.biometricVerified;
-    showNsfwByDefault = currentUser?.showNsfwByDefault ?? false;
+    showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
+    showNsfwContent = currentUser?.showNsfwContent ?? false;
   }
 
   const initialData = await getPostsByTag(decodedName, currentUserId);
@@ -60,7 +63,8 @@ export default async function TagPage({ params }: TagPageProps) {
         currentUserId={currentUserId}
         phoneVerified={phoneVerified}
         biometricVerified={biometricVerified}
-        showNsfwByDefault={showNsfwByDefault}
+        showGraphicByDefault={showGraphicByDefault}
+        showNsfwContent={showNsfwContent}
       />
     </main>
   );

@@ -17,7 +17,8 @@ interface FeedClientProps {
   initialHasMore: boolean;
   currentUserId: string;
   biometricVerified: boolean;
-  showNsfwByDefault: boolean;
+  showGraphicByDefault: boolean;
+  showNsfwContent: boolean;
 }
 
 export function FeedClient({
@@ -27,7 +28,8 @@ export function FeedClient({
   initialHasMore,
   currentUserId,
   biometricVerified,
-  showNsfwByDefault,
+  showGraphicByDefault,
+  showNsfwContent,
 }: FeedClientProps) {
   const [newItems, setNewItems] = useState<FeedItem[]>([]);
 
@@ -53,7 +55,8 @@ export function FeedClient({
         currentUserId={currentUserId}
         phoneVerified={phoneVerified}
         biometricVerified={biometricVerified}
-        showNsfwByDefault={showNsfwByDefault}
+        showGraphicByDefault={showGraphicByDefault}
+        showNsfwContent={showNsfwContent}
         newItems={newItems}
       />
     </>

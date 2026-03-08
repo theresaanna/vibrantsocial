@@ -4,11 +4,12 @@ import Link from "next/link";
 
 interface ProfileTabsProps {
   username: string;
-  activeTab: "posts" | "reposts";
+  activeTab: "posts" | "reposts" | "nsfw";
   hasCustomTheme: boolean;
+  showNsfwTab: boolean;
 }
 
-export function ProfileTabs({ username, activeTab, hasCustomTheme }: ProfileTabsProps) {
+export function ProfileTabs({ username, activeTab, hasCustomTheme, showNsfwTab }: ProfileTabsProps) {
   const baseClass = "px-4 py-2 text-sm font-medium border-b-2 transition-colors";
 
   const activeClass = hasCustomTheme
@@ -34,6 +35,14 @@ export function ProfileTabs({ username, activeTab, hasCustomTheme }: ProfileTabs
         >
           Reposts
         </Link>
+        {showNsfwTab && (
+          <Link
+            href={`/${username}?tab=nsfw`}
+            className={`${baseClass} ${activeTab === "nsfw" ? activeClass : inactiveClass}`}
+          >
+            NSFW
+          </Link>
+        )}
       </div>
     </div>
   );

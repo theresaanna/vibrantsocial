@@ -42,6 +42,13 @@ export async function fetchFeedPage(cursor?: string) {
     60 // cache for 60 seconds
   );
 
+  // Fetch user preferences for content filtering
+  const currentUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { showNsfwContent: true },
+  });
+  const showNsfwContent = currentUser?.showNsfwContent ?? false;
+
   const postInclude = getPostInclude(userId);
   const dateFilter = cursor ? { lt: new Date(cursor) } : undefined;
   const fetchCount = PAGE_SIZE + 1;
@@ -52,6 +59,7 @@ export async function fetchFeedPage(cursor?: string) {
       where: {
         authorId: { in: [...followingIds, userId] },
         ...(dateFilter ? { createdAt: dateFilter } : {}),
+        ...(!showNsfwContent ? { isNsfw: false } : {}),
       },
       orderBy: { createdAt: "desc" },
       take: fetchCount,

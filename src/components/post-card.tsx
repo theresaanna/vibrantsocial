@@ -9,6 +9,7 @@ import { Editor } from "./editor/Editor";
 import { editPost, deletePost, updatePostChecklist, togglePinPost } from "@/app/feed/actions";
 import { QuotePostModal } from "./quote-post-modal";
 import { TagInput } from "./tag-input";
+import { ContentFlagsInfoModal } from "./content-flags-info-modal";
 import { timeAgo } from "@/lib/time";
 import Link from "next/link";
 
@@ -36,6 +37,7 @@ interface PostCardProps {
     editedAt?: Date | null;
     isSensitive: boolean;
     isNsfw: boolean;
+    isGraphicNudity: boolean;
     isPinned: boolean;
     author: PostAuthor;
     tags?: Array<{ tag: { name: string } }>;
@@ -53,7 +55,8 @@ interface PostCardProps {
   currentUserId?: string;
   phoneVerified: boolean;
   biometricVerified: boolean;
-  showNsfwByDefault: boolean;
+  showGraphicByDefault: boolean;
+  showNsfwContent: boolean;
   defaultShowComments?: boolean;
   defaultExpanded?: boolean;
   highlightCommentId?: string | null;
@@ -64,7 +67,8 @@ export function PostCard({
   currentUserId,
   phoneVerified,
   biometricVerified,
-  showNsfwByDefault,
+  showGraphicByDefault,
+  showNsfwContent,
   defaultShowComments = false,
   defaultExpanded = false,
   highlightCommentId,
@@ -82,6 +86,10 @@ export function PostCard({
   const [editTags, setEditTags] = useState<string[]>(
     post.tags?.map((pt) => pt.tag.name) ?? []
   );
+  const [editIsSensitive, setEditIsSensitive] = useState(post.isSensitive);
+  const [editIsNsfw, setEditIsNsfw] = useState(post.isNsfw);
+  const [editIsGraphicNudity, setEditIsGraphicNudity] = useState(post.isGraphicNudity);
+  const [showInfoModal, setShowInfoModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isAuthor = currentUserId === post.author.id;
@@ -131,41 +139,59 @@ export function PostCard({
   const authorInitial = authorName[0].toUpperCase();
   const avatarSrc = post.author.avatar || post.author.image;
 
-  const isRestricted = post.isSensitive || post.isNsfw;
+  const isRestricted = post.isSensitive || post.isNsfw || post.isGraphicNudity;
 
   // Determine if content should be hidden
   let showOverlay = false;
   let overlayMessage = "";
   let canReveal = false;
-  let badge = "";
+
+  // Client-side safety net: hide all flagged content from logged-out users
+  if (isRestricted && !isAuthenticated) return null;
 
   if (isRestricted && !revealed) {
-    if (!biometricVerified) {
-      showOverlay = true;
-      overlayMessage = "Verify your age to view this content.";
-      canReveal = false;
-      badge = post.isNsfw ? "NSFW" : "Sensitive";
-    } else if (post.isSensitive) {
-      showOverlay = true;
-      overlayMessage = "Click to view sensitive content";
-      canReveal = true;
-      badge = "Sensitive";
-    } else if (post.isNsfw) {
-      if (showNsfwByDefault) {
-        showOverlay = false;
-        badge = "NSFW";
+    // Sensitive: requires biometric verification
+    if (post.isSensitive) {
+      if (!biometricVerified) {
+        showOverlay = true;
+        overlayMessage = "Verify your age to view this content.";
+        canReveal = false;
       } else {
+        showOverlay = true;
+        overlayMessage = "Click to view sensitive content";
+        canReveal = true;
+      }
+    }
+
+    // Graphic/Nudity: requires biometric verification
+    if (post.isGraphicNudity) {
+      if (!biometricVerified) {
+        showOverlay = true;
+        overlayMessage = "Verify your age to view this content.";
+        canReveal = false;
+      } else if (!showGraphicByDefault) {
+        showOverlay = true;
+        overlayMessage = "Click to view graphic content";
+        canReveal = true;
+      }
+    }
+
+    // NSFW (new tier): available to all logged-in users
+    if (post.isNsfw && !showOverlay) {
+      if (!showNsfwContent) {
         showOverlay = true;
         overlayMessage = "Click to view NSFW content";
         canReveal = true;
-        badge = "NSFW";
       }
     }
   }
 
-  if (post.isSensitive && !showOverlay) badge = "Sensitive";
-  if (post.isNsfw && !showOverlay) badge = "NSFW";
-  if (post.isSensitive && post.isNsfw && !showOverlay) badge = "Sensitive / NSFW";
+  // Build badge from active flags
+  const badges: string[] = [];
+  if (post.isSensitive) badges.push("Sensitive");
+  if (post.isNsfw) badges.push("NSFW");
+  if (post.isGraphicNudity) badges.push("Graphic/Nudity");
+  const badge = badges.join(" / ");
 
   async function handleEditSubmit(formData: FormData) {
     const result = await editPost({ success: false, message: "" }, formData);
@@ -336,6 +362,9 @@ export function PostCard({
             {isEditing ? (
               <form action={handleEditSubmit}>
                 <input type="hidden" name="postId" value={post.id} />
+                <input type="hidden" name="isSensitive" value={editIsSensitive ? "true" : "false"} />
+                <input type="hidden" name="isNsfw" value={editIsNsfw ? "true" : "false"} />
+                <input type="hidden" name="isGraphicNudity" value={editIsGraphicNudity ? "true" : "false"} />
                 <div data-testid="post-edit-editor">
                   <Editor
                     initialContent={currentContent}
@@ -348,8 +377,48 @@ export function PostCard({
                   <TagInput
                     tags={editTags}
                     onChange={setEditTags}
-                    disabled={post.isSensitive || post.isNsfw}
+                    disabled={editIsSensitive || editIsNsfw || editIsGraphicNudity}
                   />
+                </div>
+                <div className="mt-2 flex items-center gap-4">
+                  <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+                    <input
+                      type="checkbox"
+                      className="rounded"
+                      checked={editIsSensitive}
+                      onChange={(e) => setEditIsSensitive(e.target.checked)}
+                    />
+                    Sensitive
+                  </label>
+                  <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+                    <input
+                      type="checkbox"
+                      className="rounded"
+                      checked={editIsNsfw}
+                      onChange={(e) => setEditIsNsfw(e.target.checked)}
+                    />
+                    NSFW
+                  </label>
+                  <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+                    <input
+                      type="checkbox"
+                      className="rounded"
+                      checked={editIsGraphicNudity}
+                      onChange={(e) => setEditIsGraphicNudity(e.target.checked)}
+                    />
+                    Graphic/Nudity
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowInfoModal(true)}
+                    className="rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+                    title="Content flag guidelines"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" />
+                      <path strokeLinecap="round" d="M12 16v-4M12 8h.01" />
+                    </svg>
+                  </button>
                 </div>
                 <div className="mt-2 flex gap-2">
                   <button
@@ -449,6 +518,11 @@ export function PostCard({
           onClose={() => setShowQuoteModal(false)}
           onSuccess={() => {}}
         />
+      )}
+
+      {/* Content flags info modal */}
+      {showInfoModal && (
+        <ContentFlagsInfoModal onClose={() => setShowInfoModal(false)} />
       )}
     </div>
   );

@@ -19,7 +19,7 @@ export async function searchTags(query: string) {
       name: { startsWith: normalized },
       posts: {
         some: {
-          post: { isSensitive: false, isNsfw: false },
+          post: { isSensitive: false, isNsfw: false, isGraphicNudity: false },
         },
       },
     },
@@ -30,7 +30,7 @@ export async function searchTags(query: string) {
         select: {
           posts: {
             where: {
-              post: { isSensitive: false, isNsfw: false },
+              post: { isSensitive: false, isNsfw: false, isGraphicNudity: false },
             },
           },
         },
@@ -62,7 +62,7 @@ export async function getTagCloudData() {
             select: {
               posts: {
                 where: {
-                  post: { isSensitive: false, isNsfw: false },
+                  post: { isSensitive: false, isNsfw: false, isGraphicNudity: false },
                 },
               },
             },
@@ -102,7 +102,7 @@ export async function getPostsByTag(
     () => prisma.postTag.count({
       where: {
         tag: { name: normalized },
-        post: { isSensitive: false, isNsfw: false },
+        post: { isSensitive: false, isNsfw: false, isGraphicNudity: false },
       },
     }),
     120 // cache for 2 minutes
@@ -111,7 +111,7 @@ export async function getPostsByTag(
   const postTags = await prisma.postTag.findMany({
     where: {
       tag: { name: normalized },
-      post: { isSensitive: false, isNsfw: false },
+      post: { isSensitive: false, isNsfw: false, isGraphicNudity: false },
     },
     orderBy: { post: { createdAt: "desc" } },
     take: fetchCount,
