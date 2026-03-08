@@ -20,9 +20,10 @@ export async function Header() {
       <nav className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-2 px-4 py-3">
         <Link
           href="/"
-          className="text-lg font-bold text-zinc-900 dark:text-zinc-50"
+          className="text-lg font-bold"
         >
-          VibrantSocial
+          <span className="text-fuchsia-600 dark:text-fuchsia-400">Vibrant</span>
+          <span className="text-blue-600 dark:text-blue-400">Social</span>
         </Link>
 
         <div className="order-3 flex w-full items-center justify-between border-t border-zinc-100 pt-2 sm:order-2 sm:w-auto sm:justify-start sm:gap-4 sm:border-0 sm:pt-0 dark:border-zinc-800">

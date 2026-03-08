@@ -8,6 +8,7 @@ import { ProfileShareButton } from "@/components/profile-share-button";
 import { BioContent } from "@/components/bio-content";
 import { ProfileTabs } from "@/components/profile-tabs";
 import { RepostCard } from "@/components/repost-card";
+import { generateAdaptiveTheme } from "@/lib/profile-themes";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
@@ -208,13 +209,28 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   );
 
   const themeStyle = hasCustomTheme
-    ? ({
-        "--profile-bg": user.profileBgColor ?? "#ffffff",
-        "--profile-text": user.profileTextColor ?? "#18181b",
-        "--profile-link": user.profileLinkColor ?? "#2563eb",
-        "--profile-secondary": user.profileSecondaryColor ?? "#71717a",
-        "--profile-container": user.profileContainerColor ?? "#f4f4f5",
-      } as React.CSSProperties)
+    ? (() => {
+        const userColors = {
+          profileBgColor: user.profileBgColor ?? "#ffffff",
+          profileTextColor: user.profileTextColor ?? "#18181b",
+          profileLinkColor: user.profileLinkColor ?? "#2563eb",
+          profileSecondaryColor: user.profileSecondaryColor ?? "#71717a",
+          profileContainerColor: user.profileContainerColor ?? "#f4f4f5",
+        };
+        const { light, dark } = generateAdaptiveTheme(userColors);
+        return {
+          "--profile-bg-light": light.profileBgColor,
+          "--profile-text-light": light.profileTextColor,
+          "--profile-link-light": light.profileLinkColor,
+          "--profile-secondary-light": light.profileSecondaryColor,
+          "--profile-container-light": light.profileContainerColor,
+          "--profile-bg-dark": dark.profileBgColor,
+          "--profile-text-dark": dark.profileTextColor,
+          "--profile-link-dark": dark.profileLinkColor,
+          "--profile-secondary-dark": dark.profileSecondaryColor,
+          "--profile-container-dark": dark.profileContainerColor,
+        } as React.CSSProperties;
+      })()
     : undefined;
 
   return (
