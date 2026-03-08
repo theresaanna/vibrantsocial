@@ -18,6 +18,7 @@ interface PostActionsProps {
   isReposted: boolean;
   onToggleComments: () => void;
   onQuotePost?: () => void;
+  readOnly?: boolean;
 }
 
 export function PostActions({
@@ -31,6 +32,7 @@ export function PostActions({
   isReposted,
   onToggleComments,
   onQuotePost,
+  readOnly,
 }: PostActionsProps) {
   const [liked, setLiked] = useState(isLiked);
   const [likes, setLikes] = useState(likeCount);
@@ -118,31 +120,40 @@ export function PostActions({
   return (
     <div className="flex items-center gap-1">
       {/* Like */}
-      <button
-        type="button"
-        onClick={handleLike}
-        className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-red-50 dark:hover:bg-red-900/20 ${
-          liked
-            ? "text-red-500"
-            : "text-zinc-500 hover:text-red-500"
-        }`}
-        aria-label={liked ? "Unlike" : "Like"}
-      >
-        <svg
-          className="h-4 w-4"
-          fill={liked ? "currentColor" : "none"}
-          stroke="currentColor"
-          strokeWidth={2}
-          viewBox="0 0 24 24"
+      {readOnly ? (
+        <span className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-zinc-400" data-testid="like-readonly">
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+          </svg>
+          {likes > 0 && <span>{likes}</span>}
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={handleLike}
+          className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-red-50 dark:hover:bg-red-900/20 ${
+            liked
+              ? "text-red-500"
+              : "text-zinc-500 hover:text-red-500"
+          }`}
+          aria-label={liked ? "Unlike" : "Like"}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
-          />
-        </svg>
-        {likes > 0 && <span>{likes}</span>}
-      </button>
+          <svg
+            className="h-4 w-4"
+            fill={liked ? "currentColor" : "none"}
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
+            />
+          </svg>
+          {likes > 0 && <span>{likes}</span>}
+        </button>
+      )}
 
       {/* Comment */}
       <button
@@ -174,34 +185,44 @@ export function PostActions({
         reposts={reposts}
         onRepost={handleRepost}
         onQuotePost={onQuotePost}
+        readOnly={readOnly}
       />
 
       {/* Bookmark */}
-      <button
-        type="button"
-        onClick={handleBookmark}
-        className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-yellow-50 dark:hover:bg-yellow-900/20 ${
-          bookmarked
-            ? "text-yellow-500"
-            : "text-zinc-500 hover:text-yellow-500"
-        }`}
-        aria-label={bookmarked ? "Unbookmark" : "Bookmark"}
-      >
-        <svg
-          className="h-4 w-4"
-          fill={bookmarked ? "currentColor" : "none"}
-          stroke="currentColor"
-          strokeWidth={2}
-          viewBox="0 0 24 24"
+      {readOnly ? (
+        <span className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-zinc-400" data-testid="bookmark-readonly">
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+          </svg>
+          {bookmarks > 0 && <span>{bookmarks}</span>}
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={handleBookmark}
+          className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-yellow-50 dark:hover:bg-yellow-900/20 ${
+            bookmarked
+              ? "text-yellow-500"
+              : "text-zinc-500 hover:text-yellow-500"
+          }`}
+          aria-label={bookmarked ? "Unbookmark" : "Bookmark"}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"
-          />
-        </svg>
-        {bookmarks > 0 && <span>{bookmarks}</span>}
-      </button>
+          <svg
+            className="h-4 w-4"
+            fill={bookmarked ? "currentColor" : "none"}
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"
+            />
+          </svg>
+          {bookmarks > 0 && <span>{bookmarks}</span>}
+        </button>
+      )}
     </div>
   );
 }
@@ -211,11 +232,13 @@ function RepostButton({
   reposts,
   onRepost,
   onQuotePost,
+  readOnly,
 }: {
   reposted: boolean;
   reposts: number;
   onRepost: () => void;
   onQuotePost?: () => void;
+  readOnly?: boolean;
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -238,6 +261,17 @@ function RepostButton({
       setShowMenu((v) => !v);
     }
   };
+
+  if (readOnly) {
+    return (
+      <span className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-zinc-400" data-testid="repost-readonly">
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3" />
+        </svg>
+        {reposts > 0 && <span>{reposts}</span>}
+      </span>
+    );
+  }
 
   return (
     <div className="relative" ref={menuRef}>

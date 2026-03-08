@@ -85,6 +85,7 @@ export function PostCard({
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isAuthor = currentUserId === post.author.id;
+  const isAuthenticated = !!currentUserId;
 
   const [, editAction, editPending] = useActionState(editPost, {
     success: false,
@@ -409,7 +410,8 @@ export function PostCard({
               isBookmarked={post.bookmarks.length > 0}
               isReposted={post.reposts.length > 0}
               onToggleComments={() => setShowComments((prev) => !prev)}
-              onQuotePost={() => setShowQuoteModal(true)}
+              onQuotePost={isAuthenticated ? () => setShowQuoteModal(true) : undefined}
+              readOnly={!isAuthenticated}
             />
           </div>
 
@@ -419,6 +421,7 @@ export function PostCard({
               postId={post.id}
               comments={post.comments}
               phoneVerified={phoneVerified}
+              isAuthenticated={isAuthenticated}
               highlightCommentId={highlightCommentId}
             />
           )}
