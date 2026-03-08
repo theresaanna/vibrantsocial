@@ -35,8 +35,9 @@ model User {
   dateOfBirth  DateTime?
 
   // Biometric age verification
-  biometricVerified DateTime?
-  showNsfwByDefault Boolean   @default(false)
+  biometricVerified    DateTime?
+  showGraphicByDefault Boolean   @default(false)
+  showNsfwContent      Boolean   @default(false)
 
   // Phone verification
   phoneNumber   String?
@@ -126,9 +127,10 @@ model Post {
   id          String    @id @default(cuid())
   content     String    @db.Text
   authorId    String
-  isSensitive Boolean   @default(false)
-  isNsfw      Boolean   @default(false)
-  isPinned    Boolean   @default(false)
+  isSensitive     Boolean   @default(false)
+  isNsfw          Boolean   @default(false)
+  isGraphicNudity Boolean   @default(false)
+  isPinned        Boolean   @default(false)
   editedAt    DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

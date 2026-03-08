@@ -35,6 +35,7 @@ const defaultRepost = {
     editedAt: null,
     isSensitive: false,
     isNsfw: false,
+    isGraphicNudity: false,
     isPinned: false,
     author: {
       id: "u2",
@@ -56,7 +57,7 @@ const defaultRepost = {
 describe("RepostCard", () => {
   it("renders reposter name and reposted label", () => {
     render(
-      <RepostCard repost={defaultRepost} phoneVerified={false} biometricVerified={false} showNsfwByDefault={false} />
+      <RepostCard repost={defaultRepost} phoneVerified={false} biometricVerified={false} showGraphicByDefault={false} showNsfwContent={false} />
     );
     expect(screen.getByText("Alice")).toBeInTheDocument();
     expect(screen.getByText("reposted")).toBeInTheDocument();
@@ -64,7 +65,7 @@ describe("RepostCard", () => {
 
   it("renders the original post content", () => {
     render(
-      <RepostCard repost={defaultRepost} phoneVerified={false} biometricVerified={false} showNsfwByDefault={false} />
+      <RepostCard repost={defaultRepost} phoneVerified={false} biometricVerified={false} showGraphicByDefault={false} showNsfwContent={false} />
     );
     expect(screen.getByText("Hello world")).toBeInTheDocument();
   });
@@ -75,14 +76,14 @@ describe("RepostCard", () => {
       content: "This is my commentary",
     };
     render(
-      <RepostCard repost={repostWithQuote} phoneVerified={false} biometricVerified={false} showNsfwByDefault={false} />
+      <RepostCard repost={repostWithQuote} phoneVerified={false} biometricVerified={false} showGraphicByDefault={false} showNsfwContent={false} />
     );
     expect(screen.getByText("This is my commentary")).toBeInTheDocument();
   });
 
   it("does not render quote section for simple reposts", () => {
     const { container } = render(
-      <RepostCard repost={defaultRepost} phoneVerified={false} biometricVerified={false} showNsfwByDefault={false} />
+      <RepostCard repost={defaultRepost} phoneVerified={false} biometricVerified={false} showGraphicByDefault={false} showNsfwContent={false} />
     );
     // The quote box has a specific styling, ensure it's not there
     const quoteBox = container.querySelector(".mb-2.rounded-lg.border");
@@ -91,7 +92,7 @@ describe("RepostCard", () => {
 
   it("links reposter name to their profile", () => {
     render(
-      <RepostCard repost={defaultRepost} phoneVerified={false} biometricVerified={false} showNsfwByDefault={false} />
+      <RepostCard repost={defaultRepost} phoneVerified={false} biometricVerified={false} showGraphicByDefault={false} showNsfwContent={false} />
     );
     const link = screen.getByText("Alice").closest("a");
     expect(link).toHaveAttribute("href", "/alice");

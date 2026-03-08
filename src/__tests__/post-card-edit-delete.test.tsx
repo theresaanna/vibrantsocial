@@ -70,6 +70,7 @@ const basePost = {
   editedAt: null,
   isSensitive: false,
   isNsfw: false,
+  isGraphicNudity: false,
   isPinned: false,
   author: {
     id: "user1",
@@ -94,7 +95,7 @@ describe("PostCard - timestamp permalink", () => {
         post={basePost}
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     const link = screen.getByText("1m ago").closest("a");
@@ -109,7 +110,7 @@ describe("PostCard - edited indicator", () => {
         post={{ ...basePost, editedAt: new Date() }}
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     expect(screen.getByText("(edited)")).toBeInTheDocument();
@@ -121,7 +122,7 @@ describe("PostCard - edited indicator", () => {
         post={basePost}
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     expect(screen.queryByText("(edited)")).not.toBeInTheDocument();
@@ -136,7 +137,7 @@ describe("PostCard - author menu", () => {
         currentUserId="other-user"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     expect(screen.queryByTestId("post-menu-button")).not.toBeInTheDocument();
@@ -148,7 +149,7 @@ describe("PostCard - author menu", () => {
         post={basePost}
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     expect(screen.queryByTestId("post-menu-button")).not.toBeInTheDocument();
@@ -161,7 +162,7 @@ describe("PostCard - author menu", () => {
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     expect(screen.getByTestId("post-menu-button")).toBeInTheDocument();
@@ -174,7 +175,7 @@ describe("PostCard - author menu", () => {
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     expect(screen.queryByTestId("post-edit-button")).not.toBeInTheDocument();
@@ -194,7 +195,7 @@ describe("PostCard - edit mode", () => {
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     fireEvent.click(screen.getByTestId("post-menu-button"));
@@ -212,7 +213,7 @@ describe("PostCard - edit mode", () => {
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     fireEvent.click(screen.getByTestId("post-menu-button"));
@@ -230,7 +231,7 @@ describe("PostCard - edit mode", () => {
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     expect(screen.getByTestId("post-content")).toBeInTheDocument();
@@ -249,7 +250,7 @@ describe("PostCard - revision history", () => {
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     fireEvent.click(screen.getByTestId("post-menu-button"));
@@ -265,7 +266,7 @@ describe("PostCard - revision history", () => {
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     fireEvent.click(screen.getByTestId("post-menu-button"));

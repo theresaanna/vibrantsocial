@@ -23,6 +23,7 @@ import { Toolbar } from "@/components/editor/toolbar/Toolbar";
 import { AutoLinkPlugin } from "@/components/editor/plugins/AutoLinkPlugin";
 import { MentionsPlugin } from "@/components/editor/plugins/MentionsPlugin";
 import { TagInput } from "@/components/tag-input";
+import { ContentFlagsInfoModal } from "@/components/content-flags-info-modal";
 
 function ClearOnSuccess({
   shouldClear,
@@ -57,6 +58,8 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
   const [tags, setTags] = useState<string[]>([]);
   const [isSensitive, setIsSensitive] = useState(false);
   const [isNsfw, setIsNsfw] = useState(false);
+  const [isGraphicNudity, setIsGraphicNudity] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
   const [state, formAction, isPending] = useActionState(
     async (
@@ -68,6 +71,9 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
         setShouldClear(true);
         setEditorJson("");
         setTags([]);
+        setIsSensitive(false);
+        setIsNsfw(false);
+        setIsGraphicNudity(false);
         if (result.postId) onPostCreated?.(result.postId);
       }
       return result;
@@ -149,8 +155,9 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
         <TagInput
           tags={tags}
           onChange={setTags}
-          disabled={isSensitive || isNsfw}
+          disabled={isSensitive || isNsfw || isGraphicNudity}
         />
+        <input type="hidden" name="isGraphicNudity" value={isGraphicNudity ? "true" : "false"} />
         <div className="border-t border-zinc-200 px-4 py-2 dark:border-zinc-700">
           <div className="flex items-center gap-4">
             <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
@@ -175,11 +182,31 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
               />
               NSFW
             </label>
-            <p className="ml-auto text-xs text-zinc-400 dark:text-zinc-500">
-              Posts marked sensitive or NSFW will only be visible to age-verified users.
-            </p>
+            <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+              <input
+                type="checkbox"
+                name="isGraphicNudity"
+                value="true"
+                className="rounded"
+                checked={isGraphicNudity}
+                onChange={(e) => setIsGraphicNudity(e.target.checked)}
+              />
+              Graphic/Nudity
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowInfoModal(true)}
+              className="ml-auto rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+              title="Content flag guidelines"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" />
+                <path strokeLinecap="round" d="M12 16v-4M12 8h.01" />
+              </svg>
+            </button>
           </div>
         </div>
+        {showInfoModal && <ContentFlagsInfoModal onClose={() => setShowInfoModal(false)} />}
         <div className="flex items-center justify-between border-t border-zinc-200 px-4 py-3 dark:border-zinc-700">
           {state.message && !state.success && (
             <p className="text-sm text-red-600">{state.message}</p>

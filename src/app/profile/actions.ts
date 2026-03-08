@@ -92,7 +92,8 @@ export async function updateProfile(
     await pruneOldRevisions(session.user.id);
   }
 
-  const showNsfwByDefault = formData.get("showNsfwByDefault") === "true";
+  const showGraphicByDefault = formData.get("showGraphicByDefault") === "true";
+  const showNsfwContent = formData.get("showNsfwContent") === "true";
   const emailOnComment = formData.get("emailOnComment") === "true";
   const emailOnNewChat = formData.get("emailOnNewChat") === "true";
   const emailOnMention = formData.get("emailOnMention") === "true";
@@ -105,7 +106,8 @@ export async function updateProfile(
       username: username || null,
       displayName: displayName || null,
       bio: newBio,
-      showNsfwByDefault,
+      showGraphicByDefault,
+      showNsfwContent,
       emailOnComment,
       emailOnNewChat,
       emailOnMention,

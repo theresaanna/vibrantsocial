@@ -47,6 +47,7 @@ const basePost = {
   editedAt: null,
   isSensitive: false,
   isNsfw: false,
+  isGraphicNudity: false,
   isPinned: false,
   author: {
     id: "user1",
@@ -80,7 +81,7 @@ describe("PostCard - tag display", () => {
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
 
@@ -101,7 +102,7 @@ describe("PostCard - tag display", () => {
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
 
@@ -116,7 +117,7 @@ describe("PostCard - tag display", () => {
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
 
@@ -133,7 +134,7 @@ describe("PostCard - tag display", () => {
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
 

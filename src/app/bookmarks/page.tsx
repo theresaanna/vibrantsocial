@@ -16,7 +16,8 @@ export default async function BookmarksPage() {
       phoneVerified: true,
       dateOfBirth: true,
       biometricVerified: true,
-      showNsfwByDefault: true,
+      showGraphicByDefault: true,
+      showNsfwContent: true,
     },
   });
 
@@ -24,7 +25,8 @@ export default async function BookmarksPage() {
 
   const phoneVerified = !!currentUser?.phoneVerified;
   const biometricVerified = !!currentUser?.biometricVerified;
-  const showNsfwByDefault = currentUser?.showNsfwByDefault ?? false;
+  const showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
+  const showNsfwContent = currentUser?.showNsfwContent ?? false;
   const isOldEnough = currentUser?.dateOfBirth
     ? calculateAge(currentUser.dateOfBirth) >= 18
     : false;
@@ -132,7 +134,8 @@ export default async function BookmarksPage() {
               currentUserId={userId}
               phoneVerified={phoneVerified}
               biometricVerified={biometricVerified}
-              showNsfwByDefault={showNsfwByDefault}
+              showGraphicByDefault={showGraphicByDefault}
+              showNsfwContent={showNsfwContent}
             />
           ))}
         </div>

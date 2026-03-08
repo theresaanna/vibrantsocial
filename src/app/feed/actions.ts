@@ -61,14 +61,15 @@ export async function createPost(
 
   const isSensitive = formData.get("isSensitive") === "true";
   const isNsfw = formData.get("isNsfw") === "true";
+  const isGraphicNudity = formData.get("isGraphicNudity") === "true";
 
   const post = await prisma.post.create({
-    data: { content, authorId: session.user.id, isSensitive, isNsfw },
+    data: { content, authorId: session.user.id, isSensitive, isNsfw, isGraphicNudity },
   });
 
-  // Attach tags (skip for NSFW/sensitive posts)
+  // Attach tags (skip for flagged posts)
   const rawTags = formData.get("tags") as string;
-  if (rawTags && !isSensitive && !isNsfw) {
+  if (rawTags && !isSensitive && !isNsfw && !isGraphicNudity) {
     const tagNames = extractTagsFromNames(rawTags.split(","));
     for (const name of tagNames) {
       const tag = await prisma.tag.upsert({
@@ -144,19 +145,21 @@ export async function editPost(
   });
   await prunePostRevisions(postId);
 
+  const isSensitive = formData.get("isSensitive") === "true";
+  const isNsfw = formData.get("isNsfw") === "true";
+  const isGraphicNudity = formData.get("isGraphicNudity") === "true";
+
   await prisma.post.update({
     where: { id: postId },
-    data: { content, editedAt: new Date() },
+    data: { content, editedAt: new Date(), isSensitive, isNsfw, isGraphicNudity },
   });
 
   // Update tags
   const rawTags = formData.get("tags") as string;
-  const isSensitive = formData.get("isSensitive") === "true";
-  const isNsfw = formData.get("isNsfw") === "true";
   // Delete existing tags first
   await prisma.postTag.deleteMany({ where: { postId } });
-  // Re-create if not sensitive/nsfw
-  if (rawTags && !isSensitive && !isNsfw) {
+  // Re-create if not flagged
+  if (rawTags && !isSensitive && !isNsfw && !isGraphicNudity) {
     const tagNames = extractTagsFromNames(rawTags.split(","));
     for (const name of tagNames) {
       const tag = await prisma.tag.upsert({

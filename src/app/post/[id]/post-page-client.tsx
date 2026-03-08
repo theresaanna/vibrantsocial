@@ -8,7 +8,8 @@ interface PostPageClientProps {
   currentUserId?: string;
   phoneVerified: boolean;
   biometricVerified: boolean;
-  showNsfwByDefault: boolean;
+  showGraphicByDefault: boolean;
+  showNsfwContent: boolean;
   highlightCommentId: string | null;
 }
 
@@ -17,7 +18,8 @@ export function PostPageClient({
   currentUserId,
   phoneVerified,
   biometricVerified,
-  showNsfwByDefault,
+  showGraphicByDefault,
+  showNsfwContent,
   highlightCommentId,
 }: PostPageClientProps) {
   return (
@@ -46,7 +48,8 @@ export function PostPageClient({
         currentUserId={currentUserId}
         phoneVerified={phoneVerified}
         biometricVerified={biometricVerified}
-        showNsfwByDefault={showNsfwByDefault}
+        showGraphicByDefault={showGraphicByDefault}
+        showNsfwContent={showNsfwContent}
         defaultShowComments
         defaultExpanded
         highlightCommentId={highlightCommentId}

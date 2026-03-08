@@ -26,6 +26,7 @@ interface RepostCardProps {
       editedAt?: Date | null;
       isSensitive: boolean;
       isNsfw: boolean;
+      isGraphicNudity: boolean;
       isPinned: boolean;
       author: RepostUser;
       tags?: Array<{ tag: { name: string } }>;
@@ -49,7 +50,8 @@ interface RepostCardProps {
   currentUserId?: string;
   phoneVerified: boolean;
   biometricVerified: boolean;
-  showNsfwByDefault: boolean;
+  showGraphicByDefault: boolean;
+  showNsfwContent: boolean;
 }
 
 export function RepostCard({
@@ -57,7 +59,8 @@ export function RepostCard({
   currentUserId,
   phoneVerified,
   biometricVerified,
-  showNsfwByDefault,
+  showGraphicByDefault,
+  showNsfwContent,
 }: RepostCardProps) {
   const reposterName = repost.user.displayName || repost.user.name || repost.user.username;
 
@@ -88,7 +91,8 @@ export function RepostCard({
         currentUserId={currentUserId}
         phoneVerified={phoneVerified}
         biometricVerified={biometricVerified}
-        showNsfwByDefault={showNsfwByDefault}
+        showGraphicByDefault={showGraphicByDefault}
+        showNsfwContent={showNsfwContent}
       />
     </div>
   );

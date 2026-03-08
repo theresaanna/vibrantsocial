@@ -16,7 +16,8 @@ export default async function LikesPage() {
       phoneVerified: true,
       dateOfBirth: true,
       biometricVerified: true,
-      showNsfwByDefault: true,
+      showGraphicByDefault: true,
+      showNsfwContent: true,
     },
   });
 
@@ -24,7 +25,8 @@ export default async function LikesPage() {
 
   const phoneVerified = !!currentUser?.phoneVerified;
   const biometricVerified = !!currentUser?.biometricVerified;
-  const showNsfwByDefault = currentUser?.showNsfwByDefault ?? false;
+  const showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
+  const showNsfwContent = currentUser?.showNsfwContent ?? false;
 
   const likes = await prisma.like.findMany({
     where: { userId },
@@ -129,7 +131,8 @@ export default async function LikesPage() {
               currentUserId={userId}
               phoneVerified={phoneVerified}
               biometricVerified={biometricVerified}
-              showNsfwByDefault={showNsfwByDefault}
+              showGraphicByDefault={showGraphicByDefault}
+              showNsfwContent={showNsfwContent}
             />
           ))}
         </div>

@@ -136,6 +136,7 @@ const makePost = (overrides = {}) => ({
   editedAt: null,
   isSensitive: false,
   isNsfw: false,
+  isGraphicNudity: false,
   isPinned: false,
   author: baseAuthor,
   tags: [],
@@ -440,7 +441,7 @@ describe("PostCard - public access (no currentUserId)", () => {
         post={makePost()}
         phoneVerified={false}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     expect(screen.getByTestId("editor-content")).toBeInTheDocument();
@@ -452,7 +453,7 @@ describe("PostCard - public access (no currentUserId)", () => {
         post={makePost()}
         phoneVerified={false}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     expect(screen.queryByTestId("post-menu-button")).not.toBeInTheDocument();
@@ -464,7 +465,7 @@ describe("PostCard - public access (no currentUserId)", () => {
         post={makePost()}
         phoneVerified={false}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     expect(screen.getByTestId("like-readonly")).toBeInTheDocument();
@@ -479,7 +480,7 @@ describe("PostCard - public access (no currentUserId)", () => {
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={true}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     expect(screen.getByLabelText("Like")).toBeInTheDocument();
@@ -494,7 +495,7 @@ describe("PostCard - public access (no currentUserId)", () => {
         post={makePost()}
         phoneVerified={false}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
         defaultShowComments
       />
     );
@@ -508,7 +509,7 @@ describe("PostCard - public access (no currentUserId)", () => {
         post={makePost({ author: { ...baseAuthor, id: "author1" } })}
         phoneVerified={false}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     expect(screen.queryByTestId("post-menu-button")).not.toBeInTheDocument();
@@ -520,7 +521,7 @@ describe("PostCard - public access (no currentUserId)", () => {
         post={makePost()}
         phoneVerified={false}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     expect(screen.getByText("Alice")).toBeInTheDocument();
@@ -533,7 +534,7 @@ describe("PostCard - public access (no currentUserId)", () => {
         post={makePost({ tags: [{ tag: { name: "react" } }, { tag: { name: "nextjs" } }] })}
         phoneVerified={false}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     const tags = screen.getByTestId("post-tags");
@@ -547,7 +548,7 @@ describe("PostCard - public access (no currentUserId)", () => {
         post={makePost({ _count: { comments: 3, likes: 42, bookmarks: 7, reposts: 11 } })}
         phoneVerified={false}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
       />
     );
     expect(screen.getByTestId("like-readonly")).toHaveTextContent("42");
@@ -565,7 +566,7 @@ describe("PostPageClient - public access", () => {
         post={makePost()}
         phoneVerified={false}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
         highlightCommentId={null}
       />
     );
@@ -578,7 +579,7 @@ describe("PostPageClient - public access", () => {
         post={makePost()}
         phoneVerified={false}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
         highlightCommentId={null}
       />
     );
@@ -595,7 +596,7 @@ describe("PostPageClient - public access", () => {
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={true}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
         highlightCommentId={null}
       />
     );
@@ -610,7 +611,7 @@ describe("PostPageClient - public access", () => {
         post={makePost()}
         phoneVerified={false}
         biometricVerified={false}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
         highlightCommentId={null}
       />
     );
@@ -624,7 +625,7 @@ describe("PostPageClient - public access", () => {
         currentUserId="user1"
         phoneVerified={true}
         biometricVerified={true}
-        showNsfwByDefault={false}
+        showGraphicByDefault={false} showNsfwContent={false}
         highlightCommentId={null}
       />
     );

@@ -19,7 +19,7 @@ interface ProfilePageProps {
 export default async function PublicProfilePage({ params, searchParams }: ProfilePageProps) {
   const { username } = await params;
   const { tab } = await searchParams;
-  const activeTab = tab === "reposts" ? "reposts" as const : "posts" as const;
+  const activeTab = tab === "reposts" ? "reposts" as const : tab === "nsfw" ? "nsfw" as const : "posts" as const;
 
   const user = await cached(
     cacheKeys.userProfile(username),
@@ -65,7 +65,8 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   let isFollowing = false;
   let phoneVerified = false;
   let biometricVerified = false;
-  let showNsfwByDefault = false;
+  let showGraphicByDefault = false;
+  let showNsfwContent = false;
 
   if (currentUserId && !isOwnProfile) {
     const follow = await prisma.follow.findUnique({
@@ -82,11 +83,12 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   if (currentUserId) {
     const currentUser = await prisma.user.findUnique({
       where: { id: currentUserId },
-      select: { phoneVerified: true, biometricVerified: true, showNsfwByDefault: true },
+      select: { phoneVerified: true, biometricVerified: true, showGraphicByDefault: true, showNsfwContent: true },
     });
     phoneVerified = !!currentUser?.phoneVerified;
     biometricVerified = !!currentUser?.biometricVerified;
-    showNsfwByDefault = currentUser?.showNsfwByDefault ?? false;
+    showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
+    showNsfwContent = currentUser?.showNsfwContent ?? false;
   }
 
   const postInclude = {
@@ -159,10 +161,20 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
     post: { include: postInclude },
   };
 
+  // Build content flag filter for logged-out users
+  const loggedOutFilter = !currentUserId
+    ? { isSensitive: false, isNsfw: false, isGraphicNudity: false }
+    : {};
+
   // Fetch user's posts or reposts based on active tab
   const posts = activeTab === "posts"
     ? await prisma.post.findMany({
-        where: { authorId: user.id },
+        where: {
+          authorId: user.id,
+          ...loggedOutFilter,
+          // Hide NSFW posts from Posts tab unless viewer opted in
+          ...(currentUserId && !showNsfwContent ? { isNsfw: false } : {}),
+        },
         orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
         take: 20,
         include: postInclude,
@@ -185,6 +197,16 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
         orderBy: { createdAt: "desc" },
         take: 20,
         include: repostInclude,
+      })
+    : [];
+
+  // NSFW tab: only isNsfw posts, only for logged-in users
+  const nsfwPosts = activeTab === "nsfw" && currentUserId
+    ? await prisma.post.findMany({
+        where: { authorId: user.id, isNsfw: true },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        include: postInclude,
       })
     : [];
 
@@ -349,7 +371,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           </div>
         </div>
 
-        <ProfileTabs username={user.username!} activeTab={activeTab} hasCustomTheme={hasCustomTheme} />
+        <ProfileTabs username={user.username!} activeTab={activeTab} hasCustomTheme={hasCustomTheme} showNsfwTab={!!currentUserId} />
 
         {/* Tab content */}
         {activeTab === "posts" ? (
@@ -363,11 +385,31 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             <div className="mt-6 space-y-4">
               {feedItems.map((item) =>
                 item.type === "post" ? (
-                  <PostCard key={item.data.id} post={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showNsfwByDefault={showNsfwByDefault} />
+                  <PostCard key={item.data.id} post={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} />
                 ) : (
-                  <RepostCard key={item.data.id} repost={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showNsfwByDefault={showNsfwByDefault} />
+                  <RepostCard key={item.data.id} repost={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} />
                 )
               )}
+            </div>
+          )
+        ) : activeTab === "nsfw" ? (
+          !currentUserId ? (
+            <div className="mt-8 text-center">
+              <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                Log in to view NSFW content.
+              </p>
+            </div>
+          ) : nsfwPosts.length === 0 ? (
+            <div className="mt-8 text-center">
+              <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                No NSFW posts.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-6 space-y-4">
+              {nsfwPosts.map((post) => (
+                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} />
+              ))}
             </div>
           )
         ) : (
@@ -380,7 +422,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           ) : (
             <div className="mt-6 space-y-4">
               {userReposts.map((repost) => (
-                <RepostCard key={repost.id} repost={repost} currentUserId={currentUserId} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showNsfwByDefault={showNsfwByDefault} />
+                <RepostCard key={repost.id} repost={repost} currentUserId={currentUserId} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} />
               ))}
             </div>
           )

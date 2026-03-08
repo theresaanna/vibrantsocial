@@ -24,7 +24,8 @@ interface ProfileFormProps {
   currentAvatar: string | null;
   oauthImage: string | null;
   biometricVerified: boolean;
-  showNsfwByDefault: boolean;
+  showGraphicByDefault: boolean;
+  showNsfwContent: boolean;
   emailOnComment: boolean;
   emailOnNewChat: boolean;
   emailOnMention: boolean;
@@ -42,7 +43,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified, showNsfwByDefault, emailOnComment, emailOnNewChat, emailOnMention, pushEnabled: initialPushEnabled, isProfilePublic, phoneVerified, phoneNumber, isCredentialsUser }: ProfileFormProps) {
+export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, pushEnabled: initialPushEnabled, isProfilePublic, phoneVerified, phoneNumber, isCredentialsUser }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>("idle");
@@ -423,25 +424,47 @@ export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified
           onChange={scheduleAutosave}
         />
 
-        {biometricVerified && (
-          <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+        <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+          <p className="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+            Content Visibility
+          </p>
+          <div className="space-y-3">
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
-                name="showNsfwByDefault"
+                name="showNsfwContent"
                 value="true"
-                defaultChecked={showNsfwByDefault}
+                defaultChecked={showNsfwContent}
                 className="rounded"
               />
               <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Show NSFW content by default
+                Show NSFW content
               </span>
             </label>
-            <p className="mt-1 ml-6 text-xs text-zinc-500 dark:text-zinc-400">
-              When enabled, NSFW posts will be visible without clicking to reveal.
+            <p className="ml-6 text-xs text-zinc-500 dark:text-zinc-400">
+              When enabled, NSFW posts will appear in your feed and on profile Posts tabs without an overlay.
             </p>
+            {biometricVerified && (
+              <>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    name="showGraphicByDefault"
+                    value="true"
+                    defaultChecked={showGraphicByDefault}
+                    className="rounded"
+                  />
+                  <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    Show Graphic/Nudity content by default
+                  </span>
+                </label>
+                <p className="ml-6 text-xs text-zinc-500 dark:text-zinc-400">
+                  When enabled, Graphic/Nudity posts will be visible without clicking to reveal.
+                </p>
+              </>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Email notifications */}
         <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
