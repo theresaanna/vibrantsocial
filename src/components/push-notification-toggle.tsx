@@ -23,6 +23,7 @@ type PermissionState = "default" | "granted" | "denied" | "unsupported";
 export function PushNotificationToggle({ enabled, onToggle }: PushNotificationToggleProps) {
   const [permission, setPermission] = useState<PermissionState>("default");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!("Notification" in window) || !("serviceWorker" in navigator)) {
@@ -42,6 +43,7 @@ export function PushNotificationToggle({ enabled, onToggle }: PushNotificationTo
   const handleToggle = useCallback(async () => {
     if (loading) return;
     setLoading(true);
+    setError(null);
 
     try {
       if (!enabled) {
@@ -58,6 +60,7 @@ export function PushNotificationToggle({ enabled, onToggle }: PushNotificationTo
 
         const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
         if (!vapidKey) {
+          setError("Push notifications are not configured on this server.");
           setLoading(false);
           return;
         }
@@ -96,7 +99,7 @@ export function PushNotificationToggle({ enabled, onToggle }: PushNotificationTo
         onToggle(false);
       }
     } catch {
-      // Failed silently
+      setError("Failed to set up push notifications. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -127,6 +130,11 @@ export function PushNotificationToggle({ enabled, onToggle }: PushNotificationTo
       {permission === "denied" && (
         <p className="ml-6 text-xs text-red-600 dark:text-red-400">
           Notifications are blocked. Enable them in your browser settings for this site.
+        </p>
+      )}
+      {error && (
+        <p className="ml-6 text-xs text-red-600 dark:text-red-400">
+          {error}
         </p>
       )}
     </div>
