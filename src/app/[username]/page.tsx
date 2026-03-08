@@ -309,18 +309,36 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                   </span>{" "}
                   posts
                 </span>
-                <Link href={`/${user.username}/followers`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
-                  <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
-                    {user._count.followers}
-                  </span>{" "}
-                  followers
-                </Link>
-                <Link href={`/${user.username}/following`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
-                  <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
-                    {user._count.following}
-                  </span>{" "}
-                  following
-                </Link>
+                {currentUserId ? (
+                  <Link href={`/${user.username}/followers`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
+                    <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                      {user._count.followers}
+                    </span>{" "}
+                    followers
+                  </Link>
+                ) : (
+                  <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                    <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                      {user._count.followers}
+                    </span>{" "}
+                    followers
+                  </span>
+                )}
+                {currentUserId ? (
+                  <Link href={`/${user.username}/following`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
+                    <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                      {user._count.following}
+                    </span>{" "}
+                    following
+                  </Link>
+                ) : (
+                  <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                    <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                      {user._count.following}
+                    </span>{" "}
+                    following
+                  </span>
+                )}
               </div>
             </div>
           </div>
