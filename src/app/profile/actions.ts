@@ -97,6 +97,7 @@ export async function updateProfile(
   const emailOnNewChat = formData.get("emailOnNewChat") === "true";
   const emailOnMention = formData.get("emailOnMention") === "true";
   const pushEnabled = formData.get("pushEnabled") === "true";
+  const isProfilePublic = formData.get("isProfilePublic") === "true";
 
   await prisma.user.update({
     where: { id: session.user.id },
@@ -109,6 +110,7 @@ export async function updateProfile(
       emailOnNewChat,
       emailOnMention,
       pushEnabled,
+      isProfilePublic,
       ...themeColors,
     },
   });

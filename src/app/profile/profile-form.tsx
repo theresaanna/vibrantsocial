@@ -29,6 +29,7 @@ interface ProfileFormProps {
   emailOnNewChat: boolean;
   emailOnMention: boolean;
   pushEnabled: boolean;
+  isProfilePublic: boolean;
   phoneVerified: boolean;
   phoneNumber: string | null;
   isCredentialsUser: boolean;
@@ -41,7 +42,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified, showNsfwByDefault, emailOnComment, emailOnNewChat, emailOnMention, pushEnabled: initialPushEnabled, phoneVerified, phoneNumber, isCredentialsUser }: ProfileFormProps) {
+export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified, showNsfwByDefault, emailOnComment, emailOnNewChat, emailOnMention, pushEnabled: initialPushEnabled, isProfilePublic, phoneVerified, phoneNumber, isCredentialsUser }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>("idle");
@@ -505,6 +506,25 @@ export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified
           />
           <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
             Receive browser notifications even when the tab is closed.
+          </p>
+        </div>
+
+        {/* Profile visibility */}
+        <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              name="isProfilePublic"
+              value="true"
+              defaultChecked={isProfilePublic}
+              className="rounded"
+            />
+            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Public profile
+            </span>
+          </label>
+          <p className="mt-1 ml-6 text-xs text-zinc-500 dark:text-zinc-400">
+            When disabled, only logged-in users can view your profile and posts.
           </p>
         </div>
 
