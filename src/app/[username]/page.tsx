@@ -371,7 +371,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           </div>
         </div>
 
-        <ProfileTabs username={user.username!} activeTab={activeTab} hasCustomTheme={hasCustomTheme} showNsfwTab={!!currentUserId} />
+        <ProfileTabs username={user.username!} activeTab={activeTab} hasCustomTheme={hasCustomTheme} showNsfwTab={showNsfwContent} />
 
         {/* Tab content */}
         {activeTab === "posts" ? (
