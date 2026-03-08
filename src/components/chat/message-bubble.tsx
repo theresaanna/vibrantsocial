@@ -59,6 +59,37 @@ export function MessageBubble({
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
   const [pickerPos, setPickerPos] = useState<{ top: number; left: number } | null>(null);
+  const dragRef = useRef({ isDragging: false, offsetX: 0, offsetY: 0, didDrag: false });
+
+  const handlePickerMouseDown = useCallback((e: React.MouseEvent) => {
+    // Don't drag if clicking inside the emoji picker's own UI (inputs, buttons, etc.)
+    const target = e.target as HTMLElement;
+    if (target.closest(".EmojiPickerReact")) return;
+
+    e.preventDefault();
+    dragRef.current.isDragging = true;
+    dragRef.current.didDrag = false;
+    dragRef.current.offsetX = e.clientX - (pickerPos?.left ?? 0);
+    dragRef.current.offsetY = e.clientY - (pickerPos?.top ?? 0);
+
+    const handleMouseMove = (ev: MouseEvent) => {
+      if (!dragRef.current.isDragging) return;
+      dragRef.current.didDrag = true;
+      setPickerPos({
+        left: ev.clientX - dragRef.current.offsetX,
+        top: ev.clientY - dragRef.current.offsetY,
+      });
+    };
+
+    const handleMouseUp = () => {
+      dragRef.current.isDragging = false;
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  }, [pickerPos]);
 
   const openEmojiPicker = useCallback(() => {
     if (showEmojiPicker) {
@@ -86,6 +117,11 @@ export function MessageBubble({
   useEffect(() => {
     if (!showEmojiPicker) return;
     function handleClick(e: MouseEvent) {
+      // Don't close if the user was dragging the picker
+      if (dragRef.current.didDrag) {
+        dragRef.current.didDrag = false;
+        return;
+      }
       if (
         emojiPickerRef.current &&
         !emojiPickerRef.current.contains(e.target as Node) &&
@@ -307,8 +343,9 @@ export function MessageBubble({
                   {showEmojiPicker && pickerPos && createPortal(
                     <div
                       ref={emojiPickerRef}
-                      className="fixed z-50"
+                      className="fixed z-50 cursor-grab active:cursor-grabbing"
                       style={{ top: pickerPos.top, left: pickerPos.left }}
+                      onMouseDown={handlePickerMouseDown}
                       data-testid="emoji-picker"
                     >
                       <Suspense
