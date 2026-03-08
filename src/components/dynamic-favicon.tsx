@@ -15,16 +15,22 @@ const ALERT_FAVICON =
   "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='2 1 20 22'><path d='M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9' fill='%232563eb' stroke='%232563eb' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/><path d='M13.73 21a2 2 0 0 1-3.46 0' fill='none' stroke='%232563eb' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>";
 
 function setFavicon(hasUnread: boolean) {
-  // Remove all existing icon links to prevent Next.js static icon from overriding
-  document
-    .querySelectorAll("link[rel='icon']")
-    .forEach((el) => el.remove());
-
-  const link = document.createElement("link");
-  link.rel = "icon";
-  link.type = "image/svg+xml";
-  link.href = hasUnread ? ALERT_FAVICON : DEFAULT_FAVICON;
-  document.head.appendChild(link);
+  const href = hasUnread ? ALERT_FAVICON : DEFAULT_FAVICON;
+  // Overwrite all existing icon links in place (don't remove — Next.js tracks them)
+  const links = document.querySelectorAll("link[rel='icon']");
+  if (links.length === 0) {
+    const link = document.createElement("link");
+    link.rel = "icon";
+    link.type = "image/svg+xml";
+    link.href = href;
+    document.head.appendChild(link);
+  } else {
+    links.forEach((el) => {
+      const link = el as HTMLLinkElement;
+      link.type = "image/svg+xml";
+      link.href = href;
+    });
+  }
 }
 
 async function fetchHasUnread(): Promise<boolean> {
