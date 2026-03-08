@@ -5,7 +5,7 @@ import { PostCard } from "@/components/post-card";
 
 interface PostPageClientProps {
   post: React.ComponentProps<typeof PostCard>["post"];
-  currentUserId: string;
+  currentUserId?: string;
   phoneVerified: boolean;
   biometricVerified: boolean;
   showNsfwByDefault: boolean;
@@ -23,8 +23,9 @@ export function PostPageClient({
   return (
     <div>
       <Link
-        href="/feed"
+        href={currentUserId ? "/feed" : "/"}
         className="mb-4 inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+        data-testid="back-link"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -38,7 +39,7 @@ export function PostPageClient({
             clipRule="evenodd"
           />
         </svg>
-        Back to feed
+        {currentUserId ? "Back to feed" : "Back"}
       </Link>
       <PostCard
         post={post}

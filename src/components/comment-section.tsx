@@ -32,6 +32,7 @@ interface CommentSectionProps {
   postId: string;
   comments?: CommentData[];
   phoneVerified: boolean;
+  isAuthenticated?: boolean;
   highlightCommentId?: string | null;
 }
 
@@ -39,6 +40,7 @@ export function CommentSection({
   postId,
   comments: initialComments,
   phoneVerified,
+  isAuthenticated = true,
   highlightCommentId,
 }: CommentSectionProps) {
   const [loadedComments, setLoadedComments] = useState<CommentData[] | null>(
@@ -114,7 +116,7 @@ export function CommentSection({
             <div key={comment.id} id={`comment-${comment.id}`}>
               <CommentItem
                 comment={comment}
-                onReply={phoneVerified ? (id, name) => setReplyingTo({ id, name }) : undefined}
+                onReply={isAuthenticated && phoneVerified ? (id, name) => setReplyingTo({ id, name }) : undefined}
                 isHighlighted={highlightCommentId === comment.id}
               />
               {comment.replies && comment.replies.length > 0 && (
@@ -123,7 +125,7 @@ export function CommentSection({
                     <div key={reply.id} id={`comment-${reply.id}`}>
                       <CommentItem
                         comment={reply}
-                        onReply={phoneVerified ? (id, name) => setReplyingTo({ id, name }) : undefined}
+                        onReply={isAuthenticated && phoneVerified ? (id, name) => setReplyingTo({ id, name }) : undefined}
                         isHighlighted={highlightCommentId === reply.id}
                       />
                     </div>
@@ -135,7 +137,17 @@ export function CommentSection({
         </div>
       )}
 
-      {phoneVerified ? (
+      {!isAuthenticated ? (
+        <p className="text-sm text-zinc-500" data-testid="sign-in-to-comment">
+          <Link
+            href="/login"
+            className="font-medium text-zinc-900 hover:underline dark:text-zinc-100"
+          >
+            Sign in
+          </Link>{" "}
+          to comment.
+        </p>
+      ) : phoneVerified ? (
         <div>
           {replyingTo && (
             <div className="mb-1.5 flex items-center gap-1.5 text-xs text-zinc-500">

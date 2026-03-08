@@ -1,7 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
-import { calculateAge } from "@/lib/age-gate";
 import { PostPageClient } from "./post-page-client";
 
 interface Props {
@@ -13,25 +12,29 @@ export default async function PostPage({ params, searchParams }: Props) {
   const { id } = await params;
   const { commentId } = await searchParams;
   const session = await auth();
-  if (!session?.user?.id) redirect("/login");
+  const userId = session?.user?.id;
 
-  const userId = session.user.id;
+  let phoneVerified = false;
+  let biometricVerified = false;
+  let showNsfwByDefault = false;
 
-  const currentUser = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      phoneVerified: true,
-      dateOfBirth: true,
-      biometricVerified: true,
-      showNsfwByDefault: true,
-    },
-  });
+  if (userId) {
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        phoneVerified: true,
+        dateOfBirth: true,
+        biometricVerified: true,
+        showNsfwByDefault: true,
+      },
+    });
 
-  if (!currentUser?.dateOfBirth) redirect("/complete-profile");
+    if (!currentUser?.dateOfBirth) redirect("/complete-profile");
 
-  const phoneVerified = !!currentUser?.phoneVerified;
-  const biometricVerified = !!currentUser?.biometricVerified;
-  const showNsfwByDefault = currentUser?.showNsfwByDefault ?? false;
+    phoneVerified = !!currentUser?.phoneVerified;
+    biometricVerified = !!currentUser?.biometricVerified;
+    showNsfwByDefault = currentUser?.showNsfwByDefault ?? false;
+  }
 
   const post = await prisma.post.findUnique({
     where: { id },
@@ -55,15 +58,15 @@ export default async function PostPage({ params, searchParams }: Props) {
         },
       },
       likes: {
-        where: { userId },
+        where: { userId: userId ?? "" },
         select: { id: true },
       },
       bookmarks: {
-        where: { userId },
+        where: { userId: userId ?? "" },
         select: { id: true },
       },
       reposts: {
-        where: { userId },
+        where: { userId: userId ?? "" },
         select: { id: true },
       },
       tags: {
