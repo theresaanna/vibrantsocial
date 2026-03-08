@@ -12,6 +12,8 @@ import {
   extractMentionsFromLexicalJson,
   createMentionNotifications,
 } from "@/lib/mentions";
+import { extractTagsFromNames } from "@/lib/tags";
+import { invalidate, cacheKeys } from "@/lib/cache";
 
 interface ActionState {
   success: boolean;
@@ -190,6 +192,9 @@ export async function createQuoteRepost(
 
   const postId = formData.get("postId") as string;
   const content = (formData.get("content") as string)?.trim();
+  const isSensitive = formData.get("isSensitive") === "true";
+  const isNsfw = formData.get("isNsfw") === "true";
+  const isGraphicNudity = formData.get("isGraphicNudity") === "true";
 
   if (!content) {
     return { success: false, message: "Quote text cannot be empty" };
@@ -203,9 +208,33 @@ export async function createQuoteRepost(
     return { success: false, message: "You have already reposted this post" };
   }
 
-  await prisma.repost.create({
-    data: { postId, userId: session.user.id, content },
+  const repost = await prisma.repost.create({
+    data: { postId, userId: session.user.id, content, isSensitive, isNsfw, isGraphicNudity },
   });
+
+  // Attach tags (skip for sensitive/graphic; NSFW can have tags)
+  const rawTags = formData.get("tags") as string;
+  if (rawTags && !isSensitive && !isGraphicNudity) {
+    const tagNames = extractTagsFromNames(rawTags.split(","));
+    for (const name of tagNames) {
+      const tag = await prisma.tag.upsert({
+        where: { name },
+        create: { name },
+        update: {},
+      });
+      await prisma.repostTag.create({
+        data: { repostId: repost.id, tagId: tag.id },
+      });
+    }
+    if (isNsfw) {
+      await invalidate(cacheKeys.nsfwTagCloud());
+    } else {
+      await invalidate(cacheKeys.tagCloud());
+    }
+    await Promise.all(
+      tagNames.map((name) => invalidate(cacheKeys.tagPostCount(name)))
+    );
+  }
 
   const post = await prisma.post.findUnique({
     where: { id: postId },

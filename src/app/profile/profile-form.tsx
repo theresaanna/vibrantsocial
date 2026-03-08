@@ -29,6 +29,7 @@ interface ProfileFormProps {
   emailOnComment: boolean;
   emailOnNewChat: boolean;
   emailOnMention: boolean;
+  emailOnFriendRequest: boolean;
   pushEnabled: boolean;
   isProfilePublic: boolean;
   phoneVerified: boolean;
@@ -43,7 +44,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, pushEnabled: initialPushEnabled, isProfilePublic, phoneVerified, phoneNumber, isCredentialsUser }: ProfileFormProps) {
+export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, pushEnabled: initialPushEnabled, isProfilePublic, phoneVerified, phoneNumber, isCredentialsUser }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>("idle");
@@ -506,6 +507,18 @@ export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified
               />
               <span className="text-sm text-zinc-700 dark:text-zinc-300">
                 Mentions in posts and comments
+              </span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="emailOnFriendRequest"
+                value="true"
+                defaultChecked={emailOnFriendRequest}
+                className="rounded"
+              />
+              <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                Friend requests
               </span>
             </label>
           </div>
