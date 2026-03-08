@@ -171,7 +171,7 @@ export function QuotePostModal({
                   checked={isGraphicNudity}
                   onChange={(e) => setIsGraphicNudity(e.target.checked)}
                 />
-                Graphic/Nudity
+                Graphic/Explicit
               </label>
               <button
                 type="button"

@@ -141,10 +141,10 @@ export default function PrivacyPolicyPage() {
         If you have questions or concerns about this Privacy Policy, please
         contact us at{" "}
         <a
-          href="mailto:hello@vibrantsocial.com"
+          href="mailto:vibrantsocial@proton.me"
           className="font-medium text-zinc-900 hover:underline dark:text-zinc-100"
         >
-          hello@vibrantsocial.com
+          vibrantsocial@proton.me
         </a>
         .
       </p>

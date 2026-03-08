@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { auth, signIn } from "@/auth";
 import { redirect } from "next/navigation";
 import { SignupForm } from "./signup-form";
 import Link from "next/link";
@@ -34,6 +34,47 @@ export default async function SignupPage() {
         </div>
 
         <SignupForm />
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-zinc-200 dark:border-zinc-700" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="bg-white px-2 text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
+              or continue with
+            </span>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <form
+            action={async () => {
+              "use server";
+              await signIn("google", { redirectTo: "/feed" });
+            }}
+          >
+            <button
+              type="submit"
+              className="flex w-full items-center justify-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+            >
+              Continue with Google
+            </button>
+          </form>
+
+          <form
+            action={async () => {
+              "use server";
+              await signIn("discord", { redirectTo: "/feed" });
+            }}
+          >
+            <button
+              type="submit"
+              className="flex w-full items-center justify-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+            >
+              Continue with Discord
+            </button>
+          </form>
+        </div>
 
         <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
           Already have an account?{" "}

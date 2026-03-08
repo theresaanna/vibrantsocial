@@ -163,7 +163,7 @@ export function PostCard({
       }
     }
 
-    // Graphic/Nudity: requires biometric verification
+    // Graphic/Explicit: requires biometric verification
     if (post.isGraphicNudity) {
       if (!biometricVerified) {
         showOverlay = true;
@@ -190,7 +190,7 @@ export function PostCard({
   const badges: string[] = [];
   if (post.isSensitive) badges.push("Sensitive");
   if (post.isNsfw) badges.push("NSFW");
-  if (post.isGraphicNudity) badges.push("Graphic/Nudity");
+  if (post.isGraphicNudity) badges.push("Graphic/Explicit");
   const badge = badges.join(" / ");
 
   async function handleEditSubmit(formData: FormData) {
@@ -407,7 +407,7 @@ export function PostCard({
                       checked={editIsGraphicNudity}
                       onChange={(e) => setEditIsGraphicNudity(e.target.checked)}
                     />
-                    Graphic/Nudity
+                    Graphic/Explicit
                   </label>
                   <button
                     type="button"

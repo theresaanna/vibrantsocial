@@ -1,8 +1,8 @@
 -- Step 1: Add isGraphicNudity column to Post
 ALTER TABLE "Post" ADD COLUMN "isGraphicNudity" BOOLEAN NOT NULL DEFAULT false;
 
--- Step 2: Migrate existing NSFW data to Graphic/Nudity
--- (All current NSFW-flagged posts become Graphic/Nudity posts)
+-- Step 2: Migrate existing NSFW data to Graphic/Explicit
+-- (All current NSFW-flagged posts become Graphic/Explicit posts)
 UPDATE "Post" SET "isGraphicNudity" = "isNsfw";
 
 -- Step 3: Reset isNsfw to false for all posts
