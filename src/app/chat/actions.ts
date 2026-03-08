@@ -515,6 +515,19 @@ export async function sendMessage(data: {
       mediaFileSize: message.mediaFileSize?.toString() ?? null,
       replyTo: replyToData ? JSON.stringify(replyToData) : null,
     });
+
+    // Notify other participants for favicon/toast updates
+    const participants = await prisma.conversationParticipant.findMany({
+      where: { conversationId, userId: { not: session.user.id } },
+      select: { userId: true },
+    });
+    for (const p of participants) {
+      const notifyChannel = ably.channels.get(`chat-notify:${p.userId}`);
+      await notifyChannel.publish("new", {
+        conversationId,
+        senderId: message.senderId,
+      });
+    }
   } catch {
     // Non-critical — message is saved, real-time delivery failed
   }

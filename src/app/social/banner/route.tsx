@@ -22,7 +22,7 @@ export async function GET() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "#18181b",
+          background: "#d4d4d8",
           fontFamily: "Lexend",
         }}
       >

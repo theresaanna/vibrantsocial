@@ -22,7 +22,7 @@ export async function GET() {
           alignItems: "center",
           justifyContent: "center",
           borderRadius: 88,
-          background: "#18181b",
+          background: "#d4d4d8",
           fontFamily: "Lexend",
           overflow: "hidden",
         }}
