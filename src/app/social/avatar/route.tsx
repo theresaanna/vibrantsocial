@@ -1,17 +1,6 @@
 import { ImageResponse } from "next/og";
 
-async function loadLexend() {
-  const css = await fetch(
-    "https://fonts.googleapis.com/css2?family=Lexend:wght@400"
-  ).then((r) => r.text());
-  const url = css.match(/url\(([^)]+)\)/)?.[1];
-  if (!url) throw new Error("Lexend font URL not found");
-  return fetch(url).then((r) => r.arrayBuffer());
-}
-
 export async function GET() {
-  const fontData = await loadLexend();
-
   return new ImageResponse(
     (
       <div
@@ -22,27 +11,37 @@ export async function GET() {
           alignItems: "center",
           justifyContent: "center",
           borderRadius: 88,
-          background: "#d4d4d8",
-          fontFamily: "Lexend",
+          background: "#ffffff",
           overflow: "hidden",
         }}
       >
-        <span
-          style={{
-            fontSize: 180,
-            fontWeight: 400,
-            letterSpacing: "-0.04em",
-          }}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          width="340"
+          height="340"
         >
-          <span style={{ color: "#c026d3" }}>V</span>
-          <span style={{ color: "#2563eb" }}>S</span>
-        </span>
+          {/* Blue heart */}
+          <path
+            d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
+            fill="#2563eb"
+          />
+          {/* Magenta hashtag centered inside the heart */}
+          <path
+            d="M5.25 8.25h15m-16.5 7.5h15m-1.8-13.5l-3.9 19.5m-2.1-19.5l-3.9 19.5"
+            fill="none"
+            stroke="#c026d3"
+            stroke-width="3.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            transform="translate(5.4, 3.9) scale(0.55)"
+          />
+        </svg>
       </div>
     ),
     {
       width: 400,
       height: 400,
-      fonts: [{ name: "Lexend", data: fontData, weight: 400, style: "normal" }],
     }
   );
 }
