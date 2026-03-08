@@ -9,10 +9,10 @@ import { getAblyRealtimeClient } from "@/lib/ably";
 import { getUnreadNotificationCount } from "@/app/notifications/actions";
 import { getConversations } from "@/app/chat/actions";
 
-const TADA_FAVICON =
-  "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎉</text></svg>";
+const DEFAULT_FAVICON =
+  "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z' fill='%2371717a' stroke='%2371717a' stroke-width='0.5' stroke-linecap='round' stroke-linejoin='round'/></svg>";
 const ALERT_FAVICON =
-  "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23d4d4d8'/><g transform='translate(14,12) scale(3)' stroke-linecap='round' stroke-linejoin='round'><path d='M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9' fill='%23c026d3' stroke='%23c026d3' stroke-width='2'/><path d='M13.73 21a2 2 0 0 1-3.46 0' fill='none' stroke='%23c026d3' stroke-width='2'/></g></svg>";
+  "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9' fill='%232563eb' stroke='%232563eb' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/><path d='M13.73 21a2 2 0 0 1-3.46 0' fill='none' stroke='%232563eb' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>";
 
 function setFavicon(hasUnread: boolean) {
   let link = document.querySelector(
@@ -24,7 +24,7 @@ function setFavicon(hasUnread: boolean) {
     document.head.appendChild(link);
   }
   link.type = "image/svg+xml";
-  link.href = hasUnread ? ALERT_FAVICON : TADA_FAVICON;
+  link.href = hasUnread ? ALERT_FAVICON : DEFAULT_FAVICON;
 }
 
 async function fetchHasUnread(): Promise<boolean> {
