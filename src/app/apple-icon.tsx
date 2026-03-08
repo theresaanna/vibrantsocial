@@ -14,18 +14,18 @@ export default function AppleIcon() {
           alignItems: "center",
           justifyContent: "center",
           borderRadius: "22%",
-          background: "linear-gradient(135deg, #c026d3 0%, #2563eb 100%)",
+          background: "#18181b",
         }}
       >
         <span
           style={{
             fontSize: 100,
             fontWeight: 700,
-            color: "white",
             letterSpacing: "-0.05em",
           }}
         >
-          VS
+          <span style={{ color: "#c026d3" }}>V</span>
+          <span style={{ color: "#2563eb" }}>S</span>
         </span>
       </div>
     ),
