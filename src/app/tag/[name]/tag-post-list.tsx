@@ -45,7 +45,8 @@ export function TagPostList({
         const result = await getPostsByTag(
           tagName,
           currentUserId,
-          lastPost.postTagId
+          lastPost.postTagId,
+          showNsfwContent
         );
         setPosts((prev) => [...prev, ...result.posts]);
         setHasMore(result.hasMore);
@@ -53,7 +54,7 @@ export function TagPostList({
         loadingRef.current = false;
       }
     });
-  }, [tagName, currentUserId, posts, hasMore]);
+  }, [tagName, currentUserId, posts, hasMore, showNsfwContent]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;

@@ -27,7 +27,16 @@ vi.mock("@/app/feed/feed-queries", () => ({
   }),
 }));
 
-import { searchTags, getTagCloudData } from "@/app/tags/actions";
+vi.mock("@/lib/cache", () => ({
+  cached: vi.fn((_key: string, fn: () => Promise<unknown>) => fn()),
+  cacheKeys: {
+    tagCloud: () => "tagCloud",
+    nsfwTagCloud: () => "nsfwTagCloud",
+    tagPostCount: (name: string) => `tagPostCount:${name}`,
+  },
+}));
+
+import { searchTags, getTagCloudData, getPostsByTag } from "@/app/tags/actions";
 
 describe("searchTags", () => {
   beforeEach(() => {
@@ -86,6 +95,42 @@ describe("searchTags", () => {
     const result = await searchTags("tag");
     expect(result.length).toBeLessThanOrEqual(10);
   });
+
+  it("excludes NSFW posts by default", async () => {
+    mockFindMany.mockResolvedValue([]);
+
+    await searchTags("test");
+
+    expect(mockFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          posts: {
+            some: {
+              post: { isSensitive: false, isNsfw: false, isGraphicNudity: false },
+            },
+          },
+        }),
+      })
+    );
+  });
+
+  it("includes NSFW posts when includeNsfw is true", async () => {
+    mockFindMany.mockResolvedValue([]);
+
+    await searchTags("test", true);
+
+    expect(mockFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          posts: {
+            some: {
+              post: { isSensitive: false, isGraphicNudity: false },
+            },
+          },
+        }),
+      })
+    );
+  });
 });
 
 describe("getTagCloudData", () => {
@@ -114,5 +159,60 @@ describe("getTagCloudData", () => {
 
     const result = await getTagCloudData();
     expect(result).toEqual([]);
+  });
+});
+
+describe("getPostsByTag", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns empty result for empty tag name", async () => {
+    const result = await getPostsByTag("");
+    expect(result).toEqual({ posts: [], hasMore: false, totalCount: 0 });
+  });
+
+  it("excludes NSFW posts by default", async () => {
+    mockCount.mockResolvedValue(0);
+    mockFindMany.mockResolvedValue([]);
+
+    await getPostsByTag("react");
+
+    expect(mockCount).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          post: { isSensitive: false, isNsfw: false, isGraphicNudity: false },
+        }),
+      })
+    );
+    expect(mockFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          post: { isSensitive: false, isNsfw: false, isGraphicNudity: false },
+        }),
+      })
+    );
+  });
+
+  it("includes NSFW posts when includeNsfw is true", async () => {
+    mockCount.mockResolvedValue(0);
+    mockFindMany.mockResolvedValue([]);
+
+    await getPostsByTag("react", undefined, undefined, true);
+
+    expect(mockCount).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          post: { isSensitive: false, isGraphicNudity: false },
+        }),
+      })
+    );
+    expect(mockFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          post: { isSensitive: false, isGraphicNudity: false },
+        }),
+      })
+    );
   });
 });

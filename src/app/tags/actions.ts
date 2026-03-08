@@ -8,18 +8,22 @@ import { cached, cacheKeys } from "@/lib/cache";
 
 /**
  * Search for existing tags matching a query prefix.
- * Only returns tags used on 2+ non-NSFW/non-sensitive posts.
+ * When includeNsfw is true, also searches tags used on NSFW posts.
  */
-export async function searchTags(query: string) {
+export async function searchTags(query: string, includeNsfw?: boolean) {
   const normalized = normalizeTag(query);
   if (!normalized) return [];
+
+  const postFilter = includeNsfw
+    ? { isSensitive: false, isGraphicNudity: false }
+    : { isSensitive: false, isNsfw: false, isGraphicNudity: false };
 
   const tags = await prisma.tag.findMany({
     where: {
       name: { startsWith: normalized },
       posts: {
         some: {
-          post: { isSensitive: false, isNsfw: false, isGraphicNudity: false },
+          post: postFilter,
         },
       },
     },
@@ -30,7 +34,7 @@ export async function searchTags(query: string) {
         select: {
           posts: {
             where: {
-              post: { isSensitive: false, isNsfw: false, isGraphicNudity: false },
+              post: postFilter,
             },
           },
         },
@@ -49,7 +53,7 @@ export async function searchTags(query: string) {
 
 /**
  * Get tag cloud data: tag names with their post counts,
- * excluding NSFW/sensitive posts.
+ * excluding NSFW/sensitive/graphic posts.
  */
 export async function getTagCloudData() {
   return cached(
@@ -81,19 +85,57 @@ export async function getTagCloudData() {
 }
 
 /**
+ * Get NSFW tag cloud data: tags with counts from NSFW posts only.
+ * Only for opted-in users.
+ */
+export async function getNsfwTagCloudData() {
+  return cached(
+    cacheKeys.nsfwTagCloud(),
+    async () => {
+      const tags = await prisma.tag.findMany({
+        select: {
+          name: true,
+          _count: {
+            select: {
+              posts: {
+                where: {
+                  post: { isNsfw: true, isSensitive: false, isGraphicNudity: false },
+                },
+              },
+            },
+          },
+        },
+        orderBy: { name: "asc" },
+      });
+
+      return tags
+        .filter((t) => t._count.posts > 0)
+        .map((t) => ({ name: t.name, count: t._count.posts }))
+        .sort((a, b) => b.count - a.count);
+    },
+    300 // cache for 5 minutes
+  );
+}
+
+/**
  * Get posts by tag name with cursor-based pagination.
- * Excludes NSFW/sensitive posts.
+ * When includeNsfw is true, also includes NSFW posts.
  */
 export async function getPostsByTag(
   tagName: string,
   userId?: string,
-  cursor?: string
+  cursor?: string,
+  includeNsfw?: boolean
 ) {
   const session = await auth();
   const currentUserId = userId || session?.user?.id || "";
 
   const normalized = normalizeTag(tagName);
   if (!normalized) return { posts: [], hasMore: false, totalCount: 0 };
+
+  const postFilter = includeNsfw
+    ? { isSensitive: false, isGraphicNudity: false }
+    : { isSensitive: false, isNsfw: false, isGraphicNudity: false };
 
   const fetchCount = PAGE_SIZE + 1;
 
@@ -102,7 +144,7 @@ export async function getPostsByTag(
     () => prisma.postTag.count({
       where: {
         tag: { name: normalized },
-        post: { isSensitive: false, isNsfw: false, isGraphicNudity: false },
+        post: postFilter,
       },
     }),
     120 // cache for 2 minutes
@@ -111,7 +153,7 @@ export async function getPostsByTag(
   const postTags = await prisma.postTag.findMany({
     where: {
       tag: { name: normalized },
-      post: { isSensitive: false, isNsfw: false, isGraphicNudity: false },
+      post: postFilter,
     },
     orderBy: { post: { createdAt: "desc" } },
     take: fetchCount,
