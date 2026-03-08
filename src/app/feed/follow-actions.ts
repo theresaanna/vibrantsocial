@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { invalidate, cacheKeys } from "@/lib/cache";
+import { createNotification } from "@/lib/notifications";
 
 export interface FollowUser {
   id: string;
@@ -116,37 +117,29 @@ export async function toggleFollow(
   });
 
   if (existing) {
-    // Remove both directions of the friendship
-    await prisma.follow.deleteMany({
-      where: {
-        OR: [
-          { followerId: session.user.id, followingId: targetUserId },
-          { followerId: targetUserId, followingId: session.user.id },
-        ],
-      },
-    });
+    await prisma.follow.delete({ where: { id: existing.id } });
   } else {
-    // Create mutual follows (friendship)
-    await prisma.$transaction([
-      prisma.follow.create({
-        data: { followerId: session.user.id, followingId: targetUserId },
-      }),
-      prisma.follow.create({
-        data: { followerId: targetUserId, followingId: session.user.id },
-      }),
-    ]);
+    await prisma.follow.create({
+      data: { followerId: session.user.id, followingId: targetUserId },
+    });
+
+    try {
+      await createNotification({
+        type: "FOLLOW",
+        actorId: session.user.id,
+        targetUserId,
+      });
+    } catch {
+      // Non-critical
+    }
   }
 
-  // Invalidate caches for both users
   const [currentUserData, targetUserData] = await Promise.all([
     prisma.user.findUnique({ where: { id: session.user.id }, select: { username: true } }),
     prisma.user.findUnique({ where: { id: targetUserId }, select: { username: true } }),
   ]);
 
-  const invalidations = [
-    invalidate(cacheKeys.userFollowing(session.user.id)),
-    invalidate(cacheKeys.userFollowing(targetUserId)),
-  ];
+  const invalidations = [invalidate(cacheKeys.userFollowing(session.user.id))];
   if (currentUserData?.username) {
     invalidations.push(invalidate(cacheKeys.userProfile(currentUserData.username)));
   }
@@ -156,5 +149,5 @@ export async function toggleFollow(
   await Promise.all(invalidations);
 
   revalidatePath("/feed");
-  return { success: true, message: existing ? "Removed friend" : "Added friend" };
+  return { success: true, message: existing ? "Unfollowed" : "Followed" };
 }

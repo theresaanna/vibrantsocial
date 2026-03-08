@@ -26,7 +26,7 @@ export function FollowButton({ userId, isFollowing }: FollowButtonProps) {
             : "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
         }`}
       >
-        {isPending ? "..." : isFollowing ? "Remove Friend" : "Add Friend"}
+        {isPending ? "..." : isFollowing ? "Unfollow" : "Follow"}
       </button>
     </form>
   );

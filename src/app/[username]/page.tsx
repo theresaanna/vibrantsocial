@@ -5,6 +5,9 @@ import { cached, cacheKeys } from "@/lib/cache";
 import Link from "next/link";
 import { PostCard } from "@/components/post-card";
 import { FollowButton } from "@/components/follow-button";
+import { FriendButton } from "@/components/friend-button";
+import { getFriendshipStatus } from "@/app/feed/friend-actions";
+import type { FriendshipStatus } from "@/app/feed/friend-actions";
 import { ProfileShareButton } from "@/components/profile-share-button";
 import { BioContent } from "@/components/bio-content";
 import { ProfileTabs } from "@/components/profile-tabs";
@@ -67,17 +70,24 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   let biometricVerified = false;
   let showGraphicByDefault = false;
   let showNsfwContent = false;
+  let friendshipStatus: FriendshipStatus = "none";
+  let friendRequestId: string | undefined;
 
   if (currentUserId && !isOwnProfile) {
-    const follow = await prisma.follow.findUnique({
-      where: {
-        followerId_followingId: {
-          followerId: currentUserId,
-          followingId: user.id,
+    const [follow, friendship] = await Promise.all([
+      prisma.follow.findUnique({
+        where: {
+          followerId_followingId: {
+            followerId: currentUserId,
+            followingId: user.id,
+          },
         },
-      },
-    });
+      }),
+      getFriendshipStatus(user.id),
+    ]);
     isFollowing = !!follow;
+    friendshipStatus = friendship.status;
+    friendRequestId = friendship.requestId;
   }
 
   if (currentUserId) {
@@ -317,7 +327,10 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                     </Link>
                   )}
                   {currentUserId && !isOwnProfile && (
-                    <FollowButton userId={user.id} isFollowing={isFollowing} />
+                    <>
+                      <FollowButton userId={user.id} isFollowing={isFollowing} />
+                      <FriendButton userId={user.id} friendshipStatus={friendshipStatus} requestId={friendRequestId} />
+                    </>
                   )}
                   <ProfileShareButton username={user.username!} hasCustomTheme={hasCustomTheme} />
                 </div>

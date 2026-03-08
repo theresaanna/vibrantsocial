@@ -4,7 +4,7 @@ const AUTO_FRIEND_USERNAME = "theresa";
 
 /**
  * Auto-friend a new user with the default account so they have content
- * and a connection right away. Creates mutual follows.
+ * and a connection right away. Creates mutual follows and a friendship.
  */
 export async function autoFriendNewUser(userId: string): Promise<boolean> {
   try {
@@ -20,6 +20,13 @@ export async function autoFriendNewUser(userId: string): Promise<boolean> {
       }),
       prisma.follow.create({
         data: { followerId: defaultUser.id, followingId: userId },
+      }),
+      prisma.friendRequest.create({
+        data: {
+          senderId: defaultUser.id,
+          receiverId: userId,
+          status: "ACCEPTED",
+        },
       }),
     ]);
     return true;
