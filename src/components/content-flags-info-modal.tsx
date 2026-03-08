@@ -80,7 +80,7 @@ export function ContentFlagsInfoModal({ onClose }: ContentFlagsInfoModalProps) {
               who must not see adult content.
             </p>
             <p className="mt-2 font-medium text-red-600 dark:text-red-400">
-              Three failures to mark material Sensitive, NSFW, or
+              Three failures to mark material Sensitive or
               Graphic/Nudity according to the guidelines above will result in
               deactivation of your account.
             </p>
