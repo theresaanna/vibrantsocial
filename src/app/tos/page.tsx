@@ -45,25 +45,45 @@ export default function TermsOfServicePage() {
       </h2>
       <p className="mt-4 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
         VibrantSocial requires accurate content labeling to keep the community
-        safe and informed:
+        safe and informed. All posts must be labeled using the following
+        categories where applicable:
       </p>
       <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
         <li>
+          <strong className="text-zinc-800 dark:text-zinc-200">Sensitive:</strong>{" "}
+          Content with detailed or graphic mentions of suicide or self harm,
+          drug or substance use, violence, media depicting bodily harm, or
+          anything you suspect of being harmful to a wider audience.
+        </li>
+        <li>
           <strong className="text-zinc-800 dark:text-zinc-200">NSFW:</strong>{" "}
-          Any content containing nudity or depictions of sex acts must be labeled
-          as NSFW (Not Safe for Work).
+          Content dealing with or depicting adult topics but not outright
+          graphic adult material or sexualized nudity. Nudity in artwork or
+          general photography does not need to be marked NSFW. Use good
+          judgment.
         </li>
         <li>
           <strong className="text-zinc-800 dark:text-zinc-200">
-            Sensitive:
+            Graphic/Nudity:
           </strong>{" "}
-          Any content that is upsetting, disturbing, or graphic in nature must
-          be labeled as Sensitive.
+          Graphic descriptions of adult topics, media containing sexual acts,
+          extreme violence, anything that is of great importance to be kept
+          from minor or unwilling eyes.
         </li>
       </ul>
       <p className="mt-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-        Failure to label content appropriately may result in content removal or
-        account suspension.
+        Only users who biometrically age verify can see posts marked Sensitive
+        and Graphic/Nudity. All users can opt into NSFW content, but it will
+        not be shown publicly to users who are not logged into the platform.
+        This is for the safety of everyone, including minors who must not see
+        adult content.
+      </p>
+      <p className="mt-3 text-sm font-medium leading-relaxed text-red-600 dark:text-red-400">
+        No illegal media or hate speech is allowed under any circumstances.
+      </p>
+      <p className="mt-3 text-sm font-medium leading-relaxed text-red-600 dark:text-red-400">
+        Three failures to mark material Sensitive or Graphic/Nudity according
+        to the guidelines above will result in deactivation of your account.
       </p>
 
       <h2 className="mt-10 text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">

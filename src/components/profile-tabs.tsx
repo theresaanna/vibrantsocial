@@ -14,11 +14,11 @@ export function ProfileTabs({ username, activeTab, hasCustomTheme, showNsfwTab }
 
   const activeClass = hasCustomTheme
     ? "border-current"
-    : "border-fuchsia-500 text-fuchsia-600 dark:border-fuchsia-400 dark:text-fuchsia-400";
+    : "border-fuchsia-700 text-fuchsia-700 dark:border-fuchsia-300 dark:text-fuchsia-300";
 
   const inactiveClass = hasCustomTheme
     ? "border-transparent opacity-60 hover:opacity-100"
-    : "border-transparent text-zinc-600 hover:text-fuchsia-500 dark:text-zinc-400 dark:hover:text-fuchsia-400";
+    : "border-transparent text-zinc-700 hover:text-fuchsia-600 dark:text-zinc-300 dark:hover:text-fuchsia-300";
 
   return (
     <div className={`mt-6 flex border-b ${hasCustomTheme ? "border-current opacity-20" : "border-zinc-200 dark:border-zinc-700"}`} style={hasCustomTheme ? { borderColor: "var(--profile-secondary)" } : undefined}>
