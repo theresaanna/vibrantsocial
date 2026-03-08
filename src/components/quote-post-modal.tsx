@@ -20,6 +20,8 @@ import { editorNodes } from "@/components/editor/nodes";
 import { Toolbar } from "@/components/editor/toolbar/Toolbar";
 import { AutoLinkPlugin } from "@/components/editor/plugins/AutoLinkPlugin";
 import { MentionsPlugin } from "@/components/editor/plugins/MentionsPlugin";
+import { TagInput } from "@/components/tag-input";
+import { ContentFlagsInfoModal } from "@/components/content-flags-info-modal";
 
 interface QuotePostModalProps {
   postId: string;
@@ -39,6 +41,11 @@ export function QuotePostModal({
   const [editorJson, setEditorJson] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [tags, setTags] = useState<string[]>([]);
+  const [isSensitive, setIsSensitive] = useState(false);
+  const [isNsfw, setIsNsfw] = useState(false);
+  const [isGraphicNudity, setIsGraphicNudity] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
   function handleChange(editorState: EditorState) {
     setEditorJson(JSON.stringify(editorState.toJSON()));
@@ -53,6 +60,12 @@ export function QuotePostModal({
     const formData = new FormData();
     formData.set("postId", postId);
     formData.set("content", editorJson);
+    formData.set("isSensitive", isSensitive ? "true" : "false");
+    formData.set("isNsfw", isNsfw ? "true" : "false");
+    formData.set("isGraphicNudity", isGraphicNudity ? "true" : "false");
+    if (tags.length > 0) {
+      formData.set("tags", tags.join(","));
+    }
 
     startTransition(async () => {
       const result = await createQuoteRepost({ success: false, message: "" }, formData);
@@ -125,7 +138,57 @@ export function QuotePostModal({
               <MentionsPlugin />
             </div>
           </LexicalComposer>
+          <TagInput
+            tags={tags}
+            onChange={setTags}
+            disabled={isSensitive || isGraphicNudity}
+            includeNsfw={isNsfw}
+          />
+          <div className="border-t border-zinc-200 px-4 py-2 dark:border-zinc-700">
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+                <input
+                  type="checkbox"
+                  className="rounded"
+                  checked={isSensitive}
+                  onChange={(e) => setIsSensitive(e.target.checked)}
+                />
+                Sensitive
+              </label>
+              <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+                <input
+                  type="checkbox"
+                  className="rounded"
+                  checked={isNsfw}
+                  onChange={(e) => setIsNsfw(e.target.checked)}
+                />
+                NSFW
+              </label>
+              <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+                <input
+                  type="checkbox"
+                  className="rounded"
+                  checked={isGraphicNudity}
+                  onChange={(e) => setIsGraphicNudity(e.target.checked)}
+                />
+                Graphic/Nudity
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowInfoModal(true)}
+                className="ml-auto rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+                title="Content flag guidelines"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" />
+                  <path strokeLinecap="round" d="M12 16v-4M12 8h.01" />
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
+
+        {showInfoModal && <ContentFlagsInfoModal onClose={() => setShowInfoModal(false)} />}
 
         {error && (
           <div className="mt-1 text-xs text-red-500">{error}</div>

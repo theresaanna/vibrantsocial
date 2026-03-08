@@ -4,6 +4,7 @@ import {
   sendNewChatEmail,
   sendMentionEmail,
   sendWelcomeEmail,
+  sendFriendRequestEmail,
 } from "./email";
 
 export const sendCommentEmailFn = inngest.createFunction(
@@ -46,9 +47,18 @@ export const sendWelcomeEmailFn = inngest.createFunction(
   }
 );
 
+export const sendFriendRequestEmailFn = inngest.createFunction(
+  { id: "send-friend-request-email", retries: 3 },
+  { event: "email/friend-request" },
+  async ({ event }) => {
+    await sendFriendRequestEmail(event.data);
+  }
+);
+
 export const allFunctions = [
   sendCommentEmailFn,
   sendChatEmailFn,
   sendMentionEmailFn,
   sendWelcomeEmailFn,
+  sendFriendRequestEmailFn,
 ];

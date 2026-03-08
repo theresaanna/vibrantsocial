@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/notifications";
+import { inngest } from "@/lib/inngest";
 
 interface FriendActionState {
   success: boolean;
@@ -79,6 +80,31 @@ export async function sendFriendRequest(
       actorId: session.user.id,
       targetUserId,
     });
+  } catch {
+    // Non-critical
+  }
+
+  // Send email notification
+  try {
+    const [receiver, sender] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: targetUserId },
+        select: { email: true, emailOnFriendRequest: true },
+      }),
+      prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { displayName: true, username: true, name: true },
+      }),
+    ]);
+
+    if (receiver?.email && receiver.emailOnFriendRequest) {
+      const senderName =
+        sender?.displayName ?? sender?.username ?? sender?.name ?? "Someone";
+      await inngest.send({
+        name: "email/friend-request",
+        data: { toEmail: receiver.email, senderName },
+      });
+    }
   } catch {
     // Non-critical
   }

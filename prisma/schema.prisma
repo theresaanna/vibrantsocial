@@ -44,9 +44,10 @@ model User {
   phoneVerified DateTime?
 
   // Email notification preferences
-  emailOnComment    Boolean @default(true)
-  emailOnNewChat    Boolean @default(true)
-  emailOnMention    Boolean @default(true)
+  emailOnComment        Boolean @default(true)
+  emailOnNewChat        Boolean @default(true)
+  emailOnMention        Boolean @default(true)
+  emailOnFriendRequest  Boolean @default(true)
 
   // Push notification preferences
   pushEnabled Boolean @default(false)
@@ -151,10 +152,11 @@ model Post {
 }
 
 model Tag {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  createdAt DateTime  @default(now())
+  id        String      @id @default(cuid())
+  name      String      @unique
+  createdAt DateTime    @default(now())
   posts     PostTag[]
+  reposts   RepostTag[]
 }
 
 model PostTag {
@@ -212,16 +214,31 @@ model Bookmark {
 }
 
 model Repost {
-  id        String   @id @default(cuid())
-  postId    String
-  userId    String
-  content   String?  @db.Text
-  createdAt DateTime @default(now())
+  id              String   @id @default(cuid())
+  postId          String
+  userId          String
+  content         String?  @db.Text
+  isSensitive     Boolean  @default(false)
+  isNsfw          Boolean  @default(false)
+  isGraphicNudity Boolean  @default(false)
+  createdAt       DateTime @default(now())
 
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tags RepostTag[]
 
   @@unique([postId, userId])
+}
+
+model RepostTag {
+  id       String @id @default(cuid())
+  repostId String
+  tagId    String
+  repost   Repost @relation(fields: [repostId], references: [id], onDelete: Cascade)
+  tag      Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([repostId, tagId])
+  @@index([tagId])
 }
 
 model BioRevision {

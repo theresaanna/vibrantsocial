@@ -73,6 +73,7 @@ function renderForm(options: RenderFormOptions = {}) {
       emailOnComment={true}
       emailOnNewChat={true}
       emailOnMention={true}
+      emailOnFriendRequest={true}
       pushEnabled={false}
       isProfilePublic={isProfilePublic}
       phoneVerified={false}
