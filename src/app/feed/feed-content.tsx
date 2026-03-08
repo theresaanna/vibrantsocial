@@ -54,6 +54,7 @@ export async function FeedContent({ userId }: { userId: string }) {
       where: {
         authorId: { in: [...followingIds, userId] },
         ...(!showNsfwContent ? { isNsfw: false } : {}),
+        ...(!biometricVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
       },
       orderBy: { createdAt: "desc" },
       take: fetchCount,
