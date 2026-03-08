@@ -42,7 +42,7 @@ export default async function TagPage({ params }: TagPageProps) {
     showNsfwContent = currentUser?.showNsfwContent ?? false;
   }
 
-  const initialData = await getPostsByTag(decodedName, currentUserId);
+  const initialData = await getPostsByTag(decodedName, currentUserId, undefined, showNsfwContent);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">

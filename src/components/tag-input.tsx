@@ -14,9 +14,10 @@ interface TagInputProps {
   tags: string[];
   onChange: (tags: string[]) => void;
   disabled?: boolean;
+  includeNsfw?: boolean;
 }
 
-export function TagInput({ tags, onChange, disabled }: TagInputProps) {
+export function TagInput({ tags, onChange, disabled, includeNsfw }: TagInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [suggestions, setSuggestions] = useState<TagSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -31,13 +32,13 @@ export function TagInput({ tags, onChange, disabled }: TagInputProps) {
       setShowSuggestions(false);
       return;
     }
-    const results = await searchTags(query);
+    const results = await searchTags(query, includeNsfw);
     // Filter out already selected tags
     const filtered = results.filter((s) => !tags.includes(s.name));
     setSuggestions(filtered);
     setShowSuggestions(filtered.length > 0);
     setSelectedIndex(0);
-  }, [tags]);
+  }, [tags, includeNsfw]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);

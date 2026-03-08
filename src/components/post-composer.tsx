@@ -155,7 +155,8 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
         <TagInput
           tags={tags}
           onChange={setTags}
-          disabled={isSensitive || isNsfw || isGraphicNudity}
+          disabled={isSensitive || isGraphicNudity}
+          includeNsfw={isNsfw}
         />
         <input type="hidden" name="isGraphicNudity" value={isGraphicNudity ? "true" : "false"} />
         <div className="border-t border-zinc-200 px-4 py-2 dark:border-zinc-700">

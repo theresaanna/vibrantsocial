@@ -67,9 +67,9 @@ export async function createPost(
     data: { content, authorId: session.user.id, isSensitive, isNsfw, isGraphicNudity },
   });
 
-  // Attach tags (skip for flagged posts)
+  // Attach tags (skip for sensitive/graphic posts; NSFW posts can have tags)
   const rawTags = formData.get("tags") as string;
-  if (rawTags && !isSensitive && !isNsfw && !isGraphicNudity) {
+  if (rawTags && !isSensitive && !isGraphicNudity) {
     const tagNames = extractTagsFromNames(rawTags.split(","));
     for (const name of tagNames) {
       const tag = await prisma.tag.upsert({
@@ -82,7 +82,11 @@ export async function createPost(
       });
     }
     // Invalidate tag caches
-    await invalidate(cacheKeys.tagCloud());
+    if (isNsfw) {
+      await invalidate(cacheKeys.nsfwTagCloud());
+    } else {
+      await invalidate(cacheKeys.tagCloud());
+    }
     await Promise.all(
       tagNames.map((name) => invalidate(cacheKeys.tagPostCount(name)))
     );
@@ -158,8 +162,8 @@ export async function editPost(
   const rawTags = formData.get("tags") as string;
   // Delete existing tags first
   await prisma.postTag.deleteMany({ where: { postId } });
-  // Re-create if not flagged
-  if (rawTags && !isSensitive && !isNsfw && !isGraphicNudity) {
+  // Re-create if not sensitive/graphic (NSFW posts can have tags)
+  if (rawTags && !isSensitive && !isGraphicNudity) {
     const tagNames = extractTagsFromNames(rawTags.split(","));
     for (const name of tagNames) {
       const tag = await prisma.tag.upsert({
@@ -172,13 +176,18 @@ export async function editPost(
       });
     }
     // Invalidate tag caches
-    await invalidate(cacheKeys.tagCloud());
+    if (isNsfw) {
+      await invalidate(cacheKeys.nsfwTagCloud());
+    } else {
+      await invalidate(cacheKeys.tagCloud());
+    }
     await Promise.all(
       tagNames.map((name) => invalidate(cacheKeys.tagPostCount(name)))
     );
   } else {
-    // Tags were removed — invalidate cloud
+    // Tags were removed — invalidate both clouds
     await invalidate(cacheKeys.tagCloud());
+    await invalidate(cacheKeys.nsfwTagCloud());
   }
 
   // Notify users who were newly mentioned in the edit

@@ -377,7 +377,8 @@ export function PostCard({
                   <TagInput
                     tags={editTags}
                     onChange={setEditTags}
-                    disabled={editIsSensitive || editIsNsfw || editIsGraphicNudity}
+                    disabled={editIsSensitive || editIsGraphicNudity}
+                    includeNsfw={editIsNsfw}
                   />
                 </div>
                 <div className="mt-2 flex items-center gap-4">

@@ -34,6 +34,7 @@ vi.mock("@/lib/prisma", () => ({
     postTag: {
       create: vi.fn(),
       deleteMany: vi.fn(),
+      findMany: vi.fn().mockResolvedValue([]),
     },
     user: {
       findUnique: vi.fn(),
@@ -47,6 +48,28 @@ vi.mock("@/lib/phone-gate", () => ({
 
 vi.mock("@/lib/age-gate", () => ({
   requireMinimumAge: vi.fn(),
+}));
+
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+}));
+
+vi.mock("@/lib/mentions", () => ({
+  extractMentionsFromLexicalJson: vi.fn().mockReturnValue([]),
+  createMentionNotifications: vi.fn(),
+}));
+
+vi.mock("@/lib/tags", () => ({
+  extractTagsFromNames: vi.fn((names: string[]) => names),
+}));
+
+vi.mock("@/lib/cache", () => ({
+  invalidate: vi.fn(),
+  cacheKeys: {
+    tagCloud: () => "tagCloud",
+    nsfwTagCloud: () => "nsfwTagCloud",
+    tagPostCount: (name: string) => `tagPostCount:${name}`,
+  },
 }));
 
 import { auth } from "@/auth";
@@ -247,6 +270,66 @@ describe("createPost", () => {
       })
     );
   });
+
+  it("creates tags for a normal post", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
+    mockAgeGate.mockResolvedValueOnce(true);
+    mockPrisma.post.create.mockResolvedValueOnce({ id: "post1" } as never);
+
+    await createPost(
+      prevState,
+      makeFormData({ content: validLexicalContent, tags: "react,typescript" })
+    );
+
+    expect(mockPrisma.tag.upsert).toHaveBeenCalledTimes(2);
+    expect(mockPrisma.postTag.create).toHaveBeenCalledTimes(2);
+  });
+
+  it("creates tags for NSFW posts (NSFW does not skip tags)", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
+    mockAgeGate.mockResolvedValueOnce(true);
+    mockPrisma.post.create.mockResolvedValueOnce({ id: "post1" } as never);
+
+    await createPost(
+      prevState,
+      makeFormData({ content: validLexicalContent, isNsfw: "true", tags: "react" })
+    );
+
+    expect(mockPrisma.tag.upsert).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.postTag.create).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips tags for sensitive posts", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
+    mockAgeGate.mockResolvedValueOnce(true);
+    mockPrisma.post.create.mockResolvedValueOnce({ id: "post1" } as never);
+
+    await createPost(
+      prevState,
+      makeFormData({ content: validLexicalContent, isSensitive: "true", tags: "react" })
+    );
+
+    expect(mockPrisma.tag.upsert).not.toHaveBeenCalled();
+    expect(mockPrisma.postTag.create).not.toHaveBeenCalled();
+  });
+
+  it("skips tags for graphic/nudity posts", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValueOnce(true);
+    mockAgeGate.mockResolvedValueOnce(true);
+    mockPrisma.post.create.mockResolvedValueOnce({ id: "post1" } as never);
+
+    await createPost(
+      prevState,
+      makeFormData({ content: validLexicalContent, isGraphicNudity: "true", tags: "react" })
+    );
+
+    expect(mockPrisma.tag.upsert).not.toHaveBeenCalled();
+    expect(mockPrisma.postTag.create).not.toHaveBeenCalled();
+  });
 });
 
 describe("deletePost", () => {
@@ -361,7 +444,7 @@ describe("editPost", () => {
     });
     expect(mockPrisma.post.update).toHaveBeenCalledWith({
       where: { id: "p1" },
-      data: { content: "new content", editedAt: expect.any(Date) },
+      data: { content: "new content", editedAt: expect.any(Date), isSensitive: false, isNsfw: false, isGraphicNudity: false },
     });
   });
 });

@@ -48,5 +48,6 @@ export const cacheKeys = {
   userProfile: (username: string) => `profile:${username}`,
   postCounts: (postId: string) => `post:${postId}:counts`,
   tagCloud: () => `tags:cloud`,
+  nsfwTagCloud: () => `tags:nsfw-cloud`,
   tagPostCount: (tagName: string) => `tag:${tagName}:count`,
 } as const;
