@@ -15,6 +15,12 @@ vi.mock("@/lib/notifications", () => ({
   createNotification: vi.fn(),
 }));
 
+vi.mock("@/lib/mentions", () => ({
+  extractMentionsFromLexicalJson: vi.fn().mockReturnValue([]),
+  extractMentionsFromPlainText: vi.fn().mockReturnValue([]),
+  createMentionNotifications: vi.fn(),
+}));
+
 const mockRevalidatePath = vi.fn();
 vi.mock("next/cache", () => ({
   revalidatePath: (...args: unknown[]) => mockRevalidatePath(...args),
@@ -23,11 +29,14 @@ vi.mock("next/cache", () => ({
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notifications";
+import { extractMentionsFromLexicalJson, createMentionNotifications } from "@/lib/mentions";
 import { createQuoteRepost } from "@/app/feed/post-actions";
 
 const mockAuth = vi.mocked(auth);
 const mockPrisma = vi.mocked(prisma);
 const mockCreateNotification = vi.mocked(createNotification);
+const mockExtractMentions = vi.mocked(extractMentionsFromLexicalJson);
+const mockCreateMentionNotifications = vi.mocked(createMentionNotifications);
 
 function makeFormData(data: Record<string, string>): FormData {
   const fd = new FormData();
@@ -70,11 +79,23 @@ describe("createQuoteRepost", () => {
     expect(result.message).toBe("Quote text cannot be empty");
   });
 
-  it("returns error if content exceeds 500 characters", async () => {
-    const fd = makeFormData({ postId: "p1", content: "a".repeat(501) });
+  it("accepts content longer than 500 characters", async () => {
+    mockPrisma.repost.findUnique.mockResolvedValue(null);
+    mockPrisma.repost.create.mockResolvedValue({
+      id: "r1",
+      postId: "p1",
+      userId: "u1",
+      content: "a".repeat(1000),
+      createdAt: new Date(),
+    });
+    mockPrisma.post.findUnique.mockResolvedValue({
+      id: "p1",
+      authorId: "u2",
+    } as never);
+
+    const fd = makeFormData({ postId: "p1", content: "a".repeat(1000) });
     const result = await createQuoteRepost(initial, fd);
-    expect(result.success).toBe(false);
-    expect(result.message).toBe("Quote text too long (max 500 characters)");
+    expect(result.success).toBe(true);
   });
 
   it("returns error if already reposted", async () => {
@@ -160,5 +181,31 @@ describe("createQuoteRepost", () => {
     expect(mockRevalidatePath).toHaveBeenCalledWith("/feed");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/post/p1");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/alice");
+  });
+
+  it("extracts mentions from Lexical JSON and creates notifications", async () => {
+    mockPrisma.repost.findUnique.mockResolvedValue(null);
+    mockPrisma.repost.create.mockResolvedValue({
+      id: "r1",
+      postId: "p1",
+      userId: "u1",
+      content: "some lexical json",
+      createdAt: new Date(),
+    });
+    mockPrisma.post.findUnique.mockResolvedValue({
+      id: "p1",
+      authorId: "u2",
+    } as never);
+    mockExtractMentions.mockReturnValueOnce(["bob", "carol"]);
+
+    const fd = makeFormData({ postId: "p1", content: "some lexical json" });
+    await createQuoteRepost(initial, fd);
+
+    expect(mockExtractMentions).toHaveBeenCalledWith("some lexical json");
+    expect(mockCreateMentionNotifications).toHaveBeenCalledWith({
+      usernames: ["bob", "carol"],
+      actorId: "u1",
+      postId: "p1",
+    });
   });
 });

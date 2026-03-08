@@ -9,6 +9,7 @@ import { createNotification } from "@/lib/notifications";
 import { inngest } from "@/lib/inngest";
 import {
   extractMentionsFromPlainText,
+  extractMentionsFromLexicalJson,
   createMentionNotifications,
 } from "@/lib/mentions";
 
@@ -194,10 +195,6 @@ export async function createQuoteRepost(
     return { success: false, message: "Quote text cannot be empty" };
   }
 
-  if (content.length > 500) {
-    return { success: false, message: "Quote text too long (max 500 characters)" };
-  }
-
   const existing = await prisma.repost.findUnique({
     where: { postId_userId: { postId, userId: session.user.id } },
   });
@@ -219,6 +216,16 @@ export async function createQuoteRepost(
       type: "REPOST",
       actorId: session.user.id,
       targetUserId: post.authorId,
+      postId,
+    });
+  }
+
+  // Send mention notifications for @mentions in quote content
+  const mentionedUsernames = extractMentionsFromLexicalJson(content);
+  if (mentionedUsernames.length > 0) {
+    await createMentionNotifications({
+      usernames: mentionedUsernames,
+      actorId: session.user.id,
       postId,
     });
   }

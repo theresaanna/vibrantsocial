@@ -1,7 +1,25 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { LexicalComposer } from "@lexical/react/LexicalComposer";
+import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
+import { ContentEditable } from "@lexical/react/LexicalContentEditable";
+import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
+import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
+import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { CheckListPlugin } from "@lexical/react/LexicalCheckListPlugin";
+import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
+import { HorizontalRulePlugin } from "@lexical/react/LexicalHorizontalRulePlugin";
+import { TablePlugin } from "@lexical/react/LexicalTablePlugin";
+import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin";
+import type { EditorState } from "lexical";
 import { createQuoteRepost } from "@/app/feed/post-actions";
+
+import { editorTheme } from "@/components/editor/theme";
+import { editorNodes } from "@/components/editor/nodes";
+import { Toolbar } from "@/components/editor/toolbar/Toolbar";
+import { AutoLinkPlugin } from "@/components/editor/plugins/AutoLinkPlugin";
+import { MentionsPlugin } from "@/components/editor/plugins/MentionsPlugin";
 
 interface QuotePostModalProps {
   postId: string;
@@ -18,16 +36,23 @@ export function QuotePostModal({
   onClose,
   onSuccess,
 }: QuotePostModalProps) {
-  const [content, setContent] = useState("");
+  const [editorJson, setEditorJson] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  function handleChange(editorState: EditorState) {
+    setEditorJson(JSON.stringify(editorState.toJSON()));
+    setError(null);
+  }
+
+  const hasContent = editorJson.length >= 50;
+
   const handleSubmit = () => {
-    if (!content.trim() || pending) return;
+    if (!hasContent || pending) return;
 
     const formData = new FormData();
     formData.set("postId", postId);
-    formData.set("content", content.trim());
+    formData.set("content", editorJson);
 
     startTransition(async () => {
       const result = await createQuoteRepost({ success: false, message: "" }, formData);
@@ -56,6 +81,13 @@ export function QuotePostModal({
     // Plain text content
   }
 
+  const editorConfig = {
+    namespace: "QuoteComposer",
+    theme: editorTheme,
+    nodes: editorNodes,
+    onError: (error: Error) => console.error(error),
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
       <div
@@ -66,21 +98,38 @@ export function QuotePostModal({
           Quote Post
         </h2>
 
-        <textarea
-          value={content}
-          onChange={(e) => { setContent(e.target.value); setError(null); }}
-          placeholder="Add your commentary..."
-          rows={3}
-          maxLength={500}
-          className="w-full resize-none rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-green-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-          autoFocus
-          data-testid="quote-textarea"
-        />
-
-        <div className="mt-1 flex justify-between text-xs text-zinc-400">
-          {error && <span className="text-red-500">{error}</span>}
-          <span className="ml-auto">{content.length}/500</span>
+        <div data-testid="quote-editor" className="rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800">
+          <LexicalComposer initialConfig={editorConfig}>
+            <Toolbar />
+            <div className="relative px-3 py-2">
+              <RichTextPlugin
+                contentEditable={
+                  <ContentEditable className="min-h-[80px] text-sm text-zinc-900 outline-none dark:text-zinc-100" />
+                }
+                placeholder={
+                  <div className="pointer-events-none absolute left-3 top-2 text-sm text-zinc-400">
+                    Add your commentary...
+                  </div>
+                }
+                ErrorBoundary={({ children }) => <>{children}</>}
+              />
+              <OnChangePlugin onChange={handleChange} />
+              <HistoryPlugin />
+              <ListPlugin />
+              <CheckListPlugin />
+              <LinkPlugin />
+              <AutoLinkPlugin />
+              <HorizontalRulePlugin />
+              <TablePlugin />
+              <TabIndentationPlugin />
+              <MentionsPlugin />
+            </div>
+          </LexicalComposer>
         </div>
+
+        {error && (
+          <div className="mt-1 text-xs text-red-500">{error}</div>
+        )}
 
         {/* Original post preview */}
         <div className="mt-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-800/50">
@@ -104,7 +153,7 @@ export function QuotePostModal({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!content.trim() || pending}
+            disabled={!hasContent || pending}
             className="rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-600 disabled:opacity-50"
             data-testid="quote-submit"
           >
