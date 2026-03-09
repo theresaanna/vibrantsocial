@@ -12,7 +12,7 @@ export default async function LoginPage() {
       <div className="w-full max-w-sm space-y-6 rounded-2xl bg-white p-8 shadow-lg dark:bg-zinc-900">
         <div className="text-center">
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Sign in to VibrantSocial
+            Sign in to <span className="text-fuchsia-600 dark:text-fuchsia-400">Vibrant</span><span className="text-blue-600 dark:text-blue-400">Social</span>
           </h1>
         </div>
 
@@ -38,7 +38,7 @@ export default async function LoginPage() {
           >
             <button
               type="submit"
-              className="flex w-full items-center justify-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+              className="flex w-full items-center justify-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-900 transition-colors hover:border-fuchsia-200 hover:bg-fuchsia-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-fuchsia-800 dark:hover:bg-fuchsia-900/20"
             >
               Continue with Google
             </button>
@@ -52,7 +52,7 @@ export default async function LoginPage() {
           >
             <button
               type="submit"
-              className="flex w-full items-center justify-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+              className="flex w-full items-center justify-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-900 transition-colors hover:border-fuchsia-200 hover:bg-fuchsia-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-fuchsia-800 dark:hover:bg-fuchsia-900/20"
             >
               Continue with Discord
             </button>
@@ -63,7 +63,7 @@ export default async function LoginPage() {
           Don&apos;t have an account?{" "}
           <Link
             href="/signup"
-            className="font-medium text-zinc-900 hover:underline dark:text-zinc-100"
+            className="font-medium text-fuchsia-600 hover:underline dark:text-fuchsia-400"
           >
             Sign up
           </Link>

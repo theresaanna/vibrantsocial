@@ -48,7 +48,7 @@ export function LoginForm() {
       <div className="flex justify-end">
         <Link
           href="/forgot-password"
-          className="text-sm text-zinc-600 hover:underline dark:text-zinc-400"
+          className="text-sm text-fuchsia-600 hover:underline dark:text-fuchsia-400"
         >
           Forgot password?
         </Link>
@@ -57,7 +57,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isPending}
-        className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+        className="w-full rounded-lg bg-gradient-to-r from-fuchsia-600 to-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:from-fuchsia-500 hover:to-blue-500 disabled:opacity-50"
       >
         {isPending ? "Signing in..." : "Sign In"}
       </button>
