@@ -6,6 +6,7 @@ import {
   initiateAgeVerification,
   checkVerificationStatus,
 } from "./actions";
+import type { AgeCheckerStatus } from "@/lib/agechecker";
 
 declare global {
   interface Window {
@@ -43,7 +44,7 @@ interface ActionState {
   success: boolean;
   message: string;
   uuid?: string;
-  status?: string;
+  status?: AgeCheckerStatus;
 }
 
 const initialState: ActionState = {
