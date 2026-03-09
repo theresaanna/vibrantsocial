@@ -26,6 +26,13 @@ export function useComments(postId: string, initialComments: CommentData[]) {
   const [comments, setComments] = useState<CommentData[]>(initialComments);
   const ablyReady = useAblyReady();
 
+  // Sync when initialComments changes (e.g. after lazy-load fetch completes)
+  useEffect(() => {
+    if (initialComments.length > 0) {
+      setComments(initialComments);
+    }
+  }, [initialComments]);
+
   const handleMessage = useCallback((event: InboundMessage) => {
     if (event.name !== "new") return;
 
