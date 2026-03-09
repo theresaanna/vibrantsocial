@@ -3,7 +3,7 @@
 import { useActionState, useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { updateProfile, removeAvatar } from "./actions";
+import { updateProfile, removeAvatar, requestEmailChange, cancelEmailChange } from "./actions";
 import { BioEditor } from "@/components/bio-editor";
 import { BioRevisionHistory } from "@/components/bio-revision-history";
 import { ThemeEditor } from "@/components/theme-editor";
@@ -21,6 +21,8 @@ interface ProfileFormProps {
     profileSecondaryColor: string | null;
     profileContainerColor: string | null;
   };
+  email: string | null;
+  pendingEmail: string | null;
   currentAvatar: string | null;
   oauthImage: string | null;
   biometricVerified: boolean;
@@ -44,7 +46,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, pushEnabled: initialPushEnabled, isProfilePublic, phoneVerified, phoneNumber, isCredentialsUser }: ProfileFormProps) {
+export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, biometricVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, pushEnabled: initialPushEnabled, isProfilePublic, phoneVerified, phoneNumber, isCredentialsUser }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>("idle");
@@ -62,6 +64,7 @@ export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified
   const [showRevisions, setShowRevisions] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [pushEnabled, setPushEnabled] = useState(initialPushEnabled);
+  const [isCancellingEmail, setIsCancellingEmail] = useState(false);
 
   const displayedAvatar = avatarPreview || oauthImage;
   const displayName = user.displayName ?? "?";
@@ -87,6 +90,11 @@ export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified
       }
       return result;
     },
+    { success: false, message: "" }
+  );
+
+  const [emailState, emailFormAction, isEmailPending] = useActionState(
+    requestEmailChange,
     { success: false, message: "" }
   );
 
@@ -275,6 +283,67 @@ export function ProfileForm({ user, currentAvatar, oauthImage, biometricVerified
           )}
           <p className="text-xs text-zinc-400">JPEG, PNG, GIF, or WebP. Max 5MB.</p>
         </div>
+      </div>
+
+      {/* Email address */}
+      <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+          Email Address
+        </p>
+        {email && !pendingEmail && (
+          <p className="mt-1 text-sm text-green-600 dark:text-green-400">
+            Verified: {email}
+          </p>
+        )}
+        {pendingEmail && (
+          <div className="mt-1 flex items-center justify-between">
+            <p className="text-sm text-yellow-600 dark:text-yellow-400">
+              Verification sent to {pendingEmail}
+            </p>
+            <button
+              type="button"
+              disabled={isCancellingEmail}
+              onClick={async () => {
+                setIsCancellingEmail(true);
+                try {
+                  await cancelEmailChange();
+                } finally {
+                  setIsCancellingEmail(false);
+                }
+              }}
+              className="ml-2 shrink-0 text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-700 disabled:opacity-50 dark:hover:text-zinc-300"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+        <form action={emailFormAction} className="mt-3 flex gap-2">
+          <input
+            name="email"
+            type="email"
+            defaultValue={email ?? ""}
+            placeholder="you@example.com"
+            className="block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+          />
+          <button
+            type="submit"
+            disabled={isEmailPending}
+            className="shrink-0 rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          >
+            {isEmailPending ? "Sending..." : email ? "Update" : "Add"}
+          </button>
+        </form>
+        {emailState.message && (
+          <p
+            className={`mt-2 text-xs ${
+              emailState.success
+                ? "text-green-600 dark:text-green-400"
+                : "text-red-600 dark:text-red-400"
+            }`}
+          >
+            {emailState.message}
+          </p>
+        )}
       </div>
 
       {/* Phone verification & profile link */}

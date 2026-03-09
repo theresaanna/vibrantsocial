@@ -15,6 +15,7 @@ export async function FeedContent({ userId }: { userId: string }) {
     prisma.user.findUnique({
       where: { id: userId },
       select: {
+        email: true,
         phoneVerified: true,
         dateOfBirth: true,
         biometricVerified: true,
@@ -106,6 +107,7 @@ export async function FeedContent({ userId }: { userId: string }) {
       biometricVerified={biometricVerified}
       showGraphicByDefault={showGraphicByDefault}
       showNsfwContent={showNsfwContent}
+      hasEmail={!!currentUser.email}
     />
   );
 }

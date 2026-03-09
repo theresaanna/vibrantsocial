@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { AddToHomeBanner } from "@/components/add-to-home-banner";
+import { AddEmailBanner } from "@/components/add-email-banner";
 import { UpdateBanner } from "@/components/update-banner";
 import { PostComposer } from "@/components/post-composer";
 import { FeedList } from "@/components/feed-list";
@@ -19,6 +20,7 @@ interface FeedClientProps {
   biometricVerified: boolean;
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
+  hasEmail: boolean;
 }
 
 export function FeedClient({
@@ -30,6 +32,7 @@ export function FeedClient({
   biometricVerified,
   showGraphicByDefault,
   showNsfwContent,
+  hasEmail,
 }: FeedClientProps) {
   const [newItems, setNewItems] = useState<FeedItem[]>([]);
 
@@ -44,6 +47,7 @@ export function FeedClient({
     <>
       <UpdateBanner />
       <AddToHomeBanner />
+      <AddEmailBanner hasEmail={hasEmail} />
       <PostComposer
         phoneVerified={phoneVerified}
         isOldEnough={isOldEnough}
