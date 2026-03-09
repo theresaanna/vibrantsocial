@@ -12,12 +12,14 @@ export default async function AgeVerifyPage() {
     select: {
       dateOfBirth: true,
       ageVerified: true,
+      ageVerificationPaid: true,
       email: true,
     },
   });
 
   if (!user?.dateOfBirth) redirect("/complete-profile");
   if (user.ageVerified) redirect("/profile");
+  if (!user.ageVerificationPaid) redirect("/payment");
 
   return (
     <div className="flex min-h-[calc(100vh-57px)] items-center justify-center px-4">
