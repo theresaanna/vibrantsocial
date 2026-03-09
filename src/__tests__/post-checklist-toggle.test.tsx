@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
+}));
+
 const { mockUpdatePostChecklist } = vi.hoisted(() => ({
   mockUpdatePostChecklist: vi.fn(),
 }));
@@ -50,9 +54,6 @@ vi.mock("@/components/post-revision-history", () => ({
   PostRevisionHistory: () => <div data-testid="post-revision-history" />,
 }));
 
-vi.mock("@/components/quote-post-modal", () => ({
-  QuotePostModal: () => <div data-testid="quote-modal" />,
-}));
 
 vi.mock("@/app/feed/actions", () => ({
   editPost: vi.fn().mockResolvedValue({ success: true, message: "" }),

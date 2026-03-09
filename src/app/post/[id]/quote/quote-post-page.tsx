@@ -22,6 +22,8 @@ import { editorNodes } from "@/components/editor/nodes";
 import { Toolbar } from "@/components/editor/toolbar/Toolbar";
 import { AutoLinkPlugin } from "@/components/editor/plugins/AutoLinkPlugin";
 import { MentionsPlugin } from "@/components/editor/plugins/MentionsPlugin";
+import { TagInput } from "@/components/tag-input";
+import { ContentFlagsInfoModal } from "@/components/content-flags-info-modal";
 import { PostContent } from "@/components/post-content";
 import { timeAgo } from "@/lib/time";
 
@@ -46,6 +48,12 @@ export function QuotePostPage({
   const [editorJson, setEditorJson] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [tags, setTags] = useState<string[]>([]);
+  const [isSensitive, setIsSensitive] = useState(false);
+  const [isNsfw, setIsNsfw] = useState(false);
+  const [isGraphicNudity, setIsGraphicNudity] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [showContentWarnings, setShowContentWarnings] = useState(false);
 
   function handleChange(editorState: EditorState) {
     setEditorJson(JSON.stringify(editorState.toJSON()));
@@ -60,6 +68,12 @@ export function QuotePostPage({
     const formData = new FormData();
     formData.set("postId", postId);
     formData.set("content", editorJson);
+    formData.set("isSensitive", isSensitive ? "true" : "false");
+    formData.set("isNsfw", isNsfw ? "true" : "false");
+    formData.set("isGraphicNudity", isGraphicNudity ? "true" : "false");
+    if (tags.length > 0) {
+      formData.set("tags", tags.join(","));
+    }
 
     startTransition(async () => {
       const result = await createQuoteRepost(
@@ -141,7 +155,69 @@ export function QuotePostPage({
                 <MentionsPlugin />
               </div>
             </LexicalComposer>
+            <TagInput
+              tags={tags}
+              onChange={setTags}
+              disabled={isSensitive || isGraphicNudity}
+              includeNsfw={isNsfw}
+            />
+            <div className="border-t border-zinc-200 px-4 py-2 dark:border-zinc-700">
+              <button
+                type="button"
+                onClick={() => setShowContentWarnings(!showContentWarnings)}
+                className="flex w-full items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300"
+              >
+                <svg className={`h-3.5 w-3.5 transition-transform ${showContentWarnings ? "rotate-90" : ""}`} fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                </svg>
+                Content Warnings
+              </button>
+              {showContentWarnings && (
+                <div className="mt-2 flex items-center gap-4">
+                  <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+                    <input
+                      type="checkbox"
+                      className="rounded"
+                      checked={isSensitive}
+                      onChange={(e) => setIsSensitive(e.target.checked)}
+                    />
+                    Sensitive
+                  </label>
+                  <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+                    <input
+                      type="checkbox"
+                      className="rounded"
+                      checked={isNsfw}
+                      onChange={(e) => setIsNsfw(e.target.checked)}
+                    />
+                    NSFW
+                  </label>
+                  <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+                    <input
+                      type="checkbox"
+                      className="rounded"
+                      checked={isGraphicNudity}
+                      onChange={(e) => setIsGraphicNudity(e.target.checked)}
+                    />
+                    Graphic/Explicit
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowInfoModal(true)}
+                    className="ml-auto rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+                    title="Content flag guidelines"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" />
+                      <path strokeLinecap="round" d="M12 16v-4M12 8h.01" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
+
+          {showInfoModal && <ContentFlagsInfoModal onClose={() => setShowInfoModal(false)} />}
 
           {error && (
             <div className="mt-2 text-sm text-red-500">{error}</div>
