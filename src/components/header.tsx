@@ -26,6 +26,29 @@ export async function Header() {
           <span className="text-blue-600 dark:text-blue-400">Social</span>
         </Link>
 
+        {/* Mobile-only profile link next to logo */}
+        {session?.user && (
+          <Link
+            href={session.user.username ? `/${session.user.username}` : "/profile"}
+            className="order-2 rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-orange-50 hover:text-orange-500 dark:text-zinc-400 dark:hover:bg-orange-900/20 dark:hover:text-orange-500 sm:hidden"
+            aria-label="Profile"
+          >
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+              />
+            </svg>
+          </Link>
+        )}
+
         <div className="order-3 flex w-full items-center justify-between border-t border-zinc-100 pt-2 sm:order-2 sm:w-auto sm:justify-start sm:gap-4 sm:border-0 sm:pt-0 dark:border-zinc-800">
           <ThemeToggle />
           {session?.user ? (
@@ -136,7 +159,7 @@ export async function Header() {
               <ChatNav initialConversations={conversations} />
               <Link
                 href={session.user.username ? `/${session.user.username}` : "/profile"}
-                className="rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-orange-50 hover:text-orange-500 dark:text-zinc-400 dark:hover:bg-orange-900/20 dark:hover:text-orange-500"
+                className="hidden rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-orange-50 hover:text-orange-500 sm:inline-flex dark:text-zinc-400 dark:hover:bg-orange-900/20 dark:hover:text-orange-500"
                 aria-label="Profile"
               >
                 <svg
