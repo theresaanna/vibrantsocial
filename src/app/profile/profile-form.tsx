@@ -26,7 +26,7 @@ interface ProfileFormProps {
   pendingEmail: string | null;
   currentAvatar: string | null;
   oauthImage: string | null;
-  biometricVerified: boolean;
+  ageVerified: boolean;
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
   emailOnComment: boolean;
@@ -47,7 +47,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, biometricVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, pushEnabled: initialPushEnabled, isProfilePublic, phoneVerified, phoneNumber, isCredentialsUser }: ProfileFormProps) {
+export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, pushEnabled: initialPushEnabled, isProfilePublic, phoneVerified, phoneNumber, isCredentialsUser }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [displayNameValue, setDisplayNameValue] = useState(user.displayName ?? "");
@@ -532,6 +532,40 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
             Content Visibility
           </p>
           <div className="space-y-3">
+            {/* Age verification status */}
+            <div className="flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-800">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Age verification
+                </span>
+                {ageVerified ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                    <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Verified
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400">
+                    Not verified
+                  </span>
+                )}
+              </div>
+              {!ageVerified && (
+                <Link
+                  href="/age-verify"
+                  className="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+                >
+                  Verify now
+                </Link>
+              )}
+            </div>
+            {!ageVerified && (
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                Age verification is required to view sensitive and graphic content.
+              </p>
+            )}
+
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -547,7 +581,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
             <p className="ml-6 text-xs text-zinc-500 dark:text-zinc-400">
               When enabled, NSFW posts will appear in your feed and on profile Posts tabs without an overlay.
             </p>
-            {biometricVerified && (
+            {ageVerified && (
               <>
                 <label className="flex items-center gap-2">
                   <input

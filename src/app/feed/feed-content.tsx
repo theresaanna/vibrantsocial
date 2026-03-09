@@ -18,7 +18,7 @@ export async function FeedContent({ userId }: { userId: string }) {
         email: true,
         phoneVerified: true,
         dateOfBirth: true,
-        biometricVerified: true,
+        ageVerified: true,
         showGraphicByDefault: true,
         showNsfwContent: true,
       },
@@ -39,7 +39,7 @@ export async function FeedContent({ userId }: { userId: string }) {
   if (!currentUser?.dateOfBirth) redirect("/complete-profile");
 
   const phoneVerified = !!currentUser.phoneVerified;
-  const biometricVerified = !!currentUser.biometricVerified;
+  const ageVerified = !!currentUser.ageVerified;
   const showGraphicByDefault = currentUser.showGraphicByDefault ?? false;
   const showNsfwContent = currentUser.showNsfwContent ?? false;
   const isOldEnough = currentUser.dateOfBirth
@@ -55,7 +55,7 @@ export async function FeedContent({ userId }: { userId: string }) {
       where: {
         authorId: { in: [...followingIds, userId] },
         ...(!showNsfwContent ? { isNsfw: false } : {}),
-        ...(!biometricVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
+        ...(!ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
       },
       orderBy: { createdAt: "desc" },
       take: fetchCount,
@@ -104,7 +104,7 @@ export async function FeedContent({ userId }: { userId: string }) {
       initialItems={initialItems}
       initialHasMore={hasMore}
       currentUserId={userId}
-      biometricVerified={biometricVerified}
+      ageVerified={ageVerified}
       showGraphicByDefault={showGraphicByDefault}
       showNsfwContent={showNsfwContent}
       hasEmail={!!currentUser.email}

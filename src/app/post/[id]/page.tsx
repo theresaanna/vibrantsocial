@@ -15,7 +15,7 @@ export default async function PostPage({ params, searchParams }: Props) {
   const userId = session?.user?.id;
 
   let phoneVerified = false;
-  let biometricVerified = false;
+  let ageVerified = false;
   let showGraphicByDefault = false;
   let showNsfwContent = false;
 
@@ -25,7 +25,7 @@ export default async function PostPage({ params, searchParams }: Props) {
       select: {
         phoneVerified: true,
         dateOfBirth: true,
-        biometricVerified: true,
+        ageVerified: true,
         showGraphicByDefault: true,
         showNsfwContent: true,
       },
@@ -34,7 +34,7 @@ export default async function PostPage({ params, searchParams }: Props) {
     if (!currentUser?.dateOfBirth) redirect("/complete-profile");
 
     phoneVerified = !!currentUser?.phoneVerified;
-    biometricVerified = !!currentUser?.biometricVerified;
+    ageVerified = !!currentUser?.ageVerified;
     showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
     showNsfwContent = currentUser?.showNsfwContent ?? false;
   }
@@ -126,7 +126,7 @@ export default async function PostPage({ params, searchParams }: Props) {
         post={post}
         currentUserId={userId}
         phoneVerified={phoneVerified}
-        biometricVerified={biometricVerified}
+        ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
         showNsfwContent={showNsfwContent}
         highlightCommentId={commentId ?? null}

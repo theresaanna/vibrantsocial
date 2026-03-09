@@ -94,7 +94,7 @@ describe("PostCard - timestamp permalink", () => {
       <PostCard
         post={basePost}
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -109,7 +109,7 @@ describe("PostCard - edited indicator", () => {
       <PostCard
         post={{ ...basePost, editedAt: new Date() }}
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -121,7 +121,7 @@ describe("PostCard - edited indicator", () => {
       <PostCard
         post={basePost}
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -136,7 +136,7 @@ describe("PostCard - author menu", () => {
         post={basePost}
         currentUserId="other-user"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -148,7 +148,7 @@ describe("PostCard - author menu", () => {
       <PostCard
         post={basePost}
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -161,7 +161,7 @@ describe("PostCard - author menu", () => {
         post={basePost}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -174,7 +174,7 @@ describe("PostCard - author menu", () => {
         post={basePost}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -194,7 +194,7 @@ describe("PostCard - edit mode", () => {
         post={basePost}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -212,7 +212,7 @@ describe("PostCard - edit mode", () => {
         post={basePost}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -230,7 +230,7 @@ describe("PostCard - edit mode", () => {
         post={basePost}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -249,7 +249,7 @@ describe("PostCard - revision history", () => {
         post={basePost}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -265,7 +265,7 @@ describe("PostCard - revision history", () => {
         post={basePost}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );

@@ -17,7 +17,7 @@ interface FeedClientProps {
   initialItems: FeedItem[];
   initialHasMore: boolean;
   currentUserId: string;
-  biometricVerified: boolean;
+  ageVerified: boolean;
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
   hasEmail: boolean;
@@ -29,7 +29,7 @@ export function FeedClient({
   initialItems,
   initialHasMore,
   currentUserId,
-  biometricVerified,
+  ageVerified,
   showGraphicByDefault,
   showNsfwContent,
   hasEmail,
@@ -58,7 +58,7 @@ export function FeedClient({
         initialHasMore={initialHasMore}
         currentUserId={currentUserId}
         phoneVerified={phoneVerified}
-        biometricVerified={biometricVerified}
+        ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
         showNsfwContent={showNsfwContent}
         newItems={newItems}

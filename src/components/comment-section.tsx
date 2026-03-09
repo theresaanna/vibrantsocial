@@ -13,6 +13,7 @@ interface CommentSectionProps {
   phoneVerified: boolean;
   isAuthenticated?: boolean;
   highlightCommentId?: string | null;
+  onCommentCountChange?: (count: number) => void;
 }
 
 export function CommentSection({
@@ -21,6 +22,7 @@ export function CommentSection({
   phoneVerified,
   isAuthenticated = true,
   highlightCommentId,
+  onCommentCountChange,
 }: CommentSectionProps) {
   const [loadedComments, setLoadedComments] = useState<CommentData[] | null>(
     initialComments ?? null
@@ -41,6 +43,17 @@ export function CommentSection({
   }, [postId, initialComments]);
 
   const { comments } = useComments(postId, loadedComments ?? []);
+
+  // Report comment count changes to parent (PostCard)
+  useEffect(() => {
+    if (!onCommentCountChange) return;
+    const total = comments.reduce(
+      (sum, c) => sum + 1 + (c.replies?.length ?? 0),
+      0
+    );
+    onCommentCountChange(total);
+  }, [comments, onCommentCountChange]);
+
   const [replyingTo, setReplyingTo] = useState<{
     id: string;
     name: string;

@@ -13,7 +13,7 @@ export function FeedList({
   initialHasMore,
   currentUserId,
   phoneVerified,
-  biometricVerified,
+  ageVerified,
   showGraphicByDefault,
   showNsfwContent,
   newItems = [],
@@ -22,7 +22,7 @@ export function FeedList({
   initialHasMore: boolean;
   currentUserId: string;
   phoneVerified: boolean;
-  biometricVerified: boolean;
+  ageVerified: boolean;
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
   newItems?: FeedItem[];
@@ -119,7 +119,7 @@ export function FeedList({
             post={item.data}
             currentUserId={currentUserId}
             phoneVerified={phoneVerified}
-            biometricVerified={biometricVerified}
+            ageVerified={ageVerified}
             showGraphicByDefault={showGraphicByDefault}
             showNsfwContent={showNsfwContent}
           />
@@ -129,7 +129,7 @@ export function FeedList({
             repost={item.data}
             currentUserId={currentUserId}
             phoneVerified={phoneVerified}
-            biometricVerified={biometricVerified}
+            ageVerified={ageVerified}
             showGraphicByDefault={showGraphicByDefault}
             showNsfwContent={showNsfwContent}
           />

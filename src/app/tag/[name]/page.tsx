@@ -22,7 +22,7 @@ export default async function TagPage({ params }: TagPageProps) {
   const currentUserId = session?.user?.id;
 
   let phoneVerified = false;
-  let biometricVerified = false;
+  let ageVerified = false;
   let showGraphicByDefault = false;
   let showNsfwContent = false;
 
@@ -31,13 +31,13 @@ export default async function TagPage({ params }: TagPageProps) {
       where: { id: currentUserId },
       select: {
         phoneVerified: true,
-        biometricVerified: true,
+        ageVerified: true,
         showGraphicByDefault: true,
         showNsfwContent: true,
       },
     });
     phoneVerified = !!currentUser?.phoneVerified;
-    biometricVerified = !!currentUser?.biometricVerified;
+    ageVerified = !!currentUser?.ageVerified;
     showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
     showNsfwContent = currentUser?.showNsfwContent ?? false;
   }
@@ -62,7 +62,7 @@ export default async function TagPage({ params }: TagPageProps) {
         initialHasMore={initialData.hasMore}
         currentUserId={currentUserId}
         phoneVerified={phoneVerified}
-        biometricVerified={biometricVerified}
+        ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
         showNsfwContent={showNsfwContent}
       />

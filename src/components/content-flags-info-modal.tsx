@@ -73,7 +73,7 @@ export function ContentFlagsInfoModal({ onClose }: ContentFlagsInfoModalProps) {
 
           <div className="text-xs text-zinc-500 dark:text-zinc-400">
             <p>
-              Only users who biometrically age verify can see posts marked
+              Only users who age verify can see posts marked
               Sensitive and Graphic/Explicit. All users can opt into NSFW content,
               but it will not be shown publicly to users who are not logged into
               the platform. This is for the safety of everyone, including minors

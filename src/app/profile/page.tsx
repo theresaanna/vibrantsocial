@@ -23,7 +23,7 @@ export default async function ProfilePage() {
       profileLinkColor: true,
       profileSecondaryColor: true,
       profileContainerColor: true,
-      biometricVerified: true,
+      ageVerified: true,
       showGraphicByDefault: true,
       showNsfwContent: true,
       emailOnComment: true,
@@ -58,7 +58,7 @@ export default async function ProfilePage() {
           }}
           currentAvatar={user?.avatar ?? null}
           oauthImage={oauthImage}
-          biometricVerified={!!user?.biometricVerified}
+          ageVerified={!!user?.ageVerified}
           showGraphicByDefault={user?.showGraphicByDefault ?? false}
           showNsfwContent={user?.showNsfwContent ?? false}
           emailOnComment={user?.emailOnComment ?? true}

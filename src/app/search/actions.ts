@@ -49,7 +49,7 @@ export async function searchPosts(query: string, cursor?: string) {
 
   const currentUser = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { biometricVerified: true, showNsfwContent: true },
+    select: { ageVerified: true, showNsfwContent: true },
   });
 
   const trimmed = query.trim();
@@ -57,7 +57,7 @@ export async function searchPosts(query: string, cursor?: string) {
 
   // Build content flag filters based on user verification/preferences
   const contentFilters: Record<string, boolean>[] = [];
-  if (!currentUser?.biometricVerified) {
+  if (!currentUser?.ageVerified) {
     contentFilters.push({ isGraphicNudity: false });
     contentFilters.push({ isSensitive: false });
   }

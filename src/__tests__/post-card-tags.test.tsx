@@ -81,7 +81,7 @@ describe("PostCard - tag display", () => {
         post={postWithTags}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -102,7 +102,7 @@ describe("PostCard - tag display", () => {
         post={postWithTags}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -117,7 +117,7 @@ describe("PostCard - tag display", () => {
         post={basePost}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -134,7 +134,7 @@ describe("PostCard - tag display", () => {
         post={postWithoutTags}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );

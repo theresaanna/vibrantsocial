@@ -35,8 +35,9 @@ model User {
   passwordHash String?
   dateOfBirth  DateTime?
 
-  // Biometric age verification
-  biometricVerified    DateTime?
+  // Age verification (AgeChecker.net)
+  ageVerified          DateTime?
+  ageVerificationUuid  String?
   showGraphicByDefault Boolean   @default(false)
   showNsfwContent      Boolean   @default(false)
 

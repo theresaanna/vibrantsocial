@@ -11,7 +11,7 @@ interface TagPostListProps {
   initialHasMore: boolean;
   currentUserId?: string;
   phoneVerified: boolean;
-  biometricVerified: boolean;
+  ageVerified: boolean;
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
 }
@@ -23,7 +23,7 @@ export function TagPostList({
   initialHasMore,
   currentUserId,
   phoneVerified,
-  biometricVerified,
+  ageVerified,
   showGraphicByDefault,
   showNsfwContent,
 }: TagPostListProps) {
@@ -89,7 +89,7 @@ export function TagPostList({
           post={post}
           currentUserId={currentUserId}
           phoneVerified={phoneVerified}
-          biometricVerified={biometricVerified}
+          ageVerified={ageVerified}
           showGraphicByDefault={showGraphicByDefault}
           showNsfwContent={showNsfwContent}
         />

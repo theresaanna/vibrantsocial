@@ -441,7 +441,7 @@ describe("PostCard - public access (no currentUserId)", () => {
       <PostCard
         post={makePost()}
         phoneVerified={false}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -453,7 +453,7 @@ describe("PostCard - public access (no currentUserId)", () => {
       <PostCard
         post={makePost()}
         phoneVerified={false}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -465,7 +465,7 @@ describe("PostCard - public access (no currentUserId)", () => {
       <PostCard
         post={makePost()}
         phoneVerified={false}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -480,7 +480,7 @@ describe("PostCard - public access (no currentUserId)", () => {
         post={makePost()}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={true}
+        ageVerified={true}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -495,7 +495,7 @@ describe("PostCard - public access (no currentUserId)", () => {
       <PostCard
         post={makePost()}
         phoneVerified={false}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
         defaultShowComments
       />
@@ -509,7 +509,7 @@ describe("PostCard - public access (no currentUserId)", () => {
       <PostCard
         post={makePost({ author: { ...baseAuthor, id: "author1" } })}
         phoneVerified={false}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -521,7 +521,7 @@ describe("PostCard - public access (no currentUserId)", () => {
       <PostCard
         post={makePost()}
         phoneVerified={false}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -534,7 +534,7 @@ describe("PostCard - public access (no currentUserId)", () => {
       <PostCard
         post={makePost({ tags: [{ tag: { name: "react" } }, { tag: { name: "nextjs" } }] })}
         phoneVerified={false}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -548,7 +548,7 @@ describe("PostCard - public access (no currentUserId)", () => {
       <PostCard
         post={makePost({ _count: { comments: 3, likes: 42, bookmarks: 7, reposts: 11 } })}
         phoneVerified={false}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -566,7 +566,7 @@ describe("PostPageClient - public access", () => {
       <PostPageClient
         post={makePost()}
         phoneVerified={false}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
         highlightCommentId={null}
       />
@@ -579,7 +579,7 @@ describe("PostPageClient - public access", () => {
       <PostPageClient
         post={makePost()}
         phoneVerified={false}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
         highlightCommentId={null}
       />
@@ -596,7 +596,7 @@ describe("PostPageClient - public access", () => {
         post={makePost()}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={true}
+        ageVerified={true}
         showGraphicByDefault={false} showNsfwContent={false}
         highlightCommentId={null}
       />
@@ -611,7 +611,7 @@ describe("PostPageClient - public access", () => {
       <PostPageClient
         post={makePost()}
         phoneVerified={false}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
         highlightCommentId={null}
       />
@@ -625,7 +625,7 @@ describe("PostPageClient - public access", () => {
         post={makePost()}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={true}
+        ageVerified={true}
         showGraphicByDefault={false} showNsfwContent={false}
         highlightCommentId={null}
       />
