@@ -55,10 +55,23 @@ export const sendFriendRequestEmailFn = inngest.createFunction(
   }
 );
 
+export const deleteUserMediaFn = inngest.createFunction(
+  { id: "delete-user-media", retries: 3 },
+  { event: "user/delete-media" },
+  async ({ event }) => {
+    const { blobUrls } = event.data as { blobUrls: string[] };
+    if (blobUrls.length > 0) {
+      const { del } = await import("@vercel/blob");
+      await del(blobUrls);
+    }
+  }
+);
+
 export const allFunctions = [
   sendCommentEmailFn,
   sendChatEmailFn,
   sendMentionEmailFn,
   sendWelcomeEmailFn,
   sendFriendRequestEmailFn,
+  deleteUserMediaFn,
 ];

@@ -115,7 +115,7 @@ export default async function PostPage({ params, searchParams }: Props) {
   if (!post) notFound();
 
   // Redirect unauthenticated visitors if author's profile is private
-  if (!post.author.isProfilePublic && !userId) redirect("/login");
+  if (post.author && !post.author.isProfilePublic && !userId) redirect("/login");
 
   // Redirect unauthenticated visitors away from flagged content
   if (!userId && (post.isSensitive || post.isNsfw || post.isGraphicNudity)) redirect("/login");

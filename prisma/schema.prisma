@@ -128,18 +128,19 @@ model VerificationToken {
 }
 
 model Post {
-  id          String    @id @default(cuid())
-  content     String    @db.Text
-  authorId    String
+  id              String    @id @default(cuid())
+  content         String    @db.Text
+  authorId        String?
+  isAuthorDeleted Boolean   @default(false)
   isSensitive     Boolean   @default(false)
   isNsfw          Boolean   @default(false)
   isGraphicNudity Boolean   @default(false)
   isPinned        Boolean   @default(false)
-  editedAt    DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  editedAt        DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  author        User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author        User?          @relation(fields: [authorId], references: [id], onDelete: SetNull)
   comments      Comment[]
   likes         Like[]
   bookmarks     Bookmark[]
@@ -466,4 +467,15 @@ model PushSubscription {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// Deleted user archive (for audit/compliance)
+
+model DeletedUser {
+  id          String   @id @default(cuid())
+  originalId  String   @unique
+  email       String?
+  username    String?
+  displayName String?
+  deletedAt   DateTime @default(now())
 }

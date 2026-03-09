@@ -36,11 +36,12 @@ interface RepostCardProps {
       content: string;
       createdAt: Date;
       editedAt?: Date | null;
+      isAuthorDeleted?: boolean;
       isSensitive: boolean;
       isNsfw: boolean;
       isGraphicNudity: boolean;
       isPinned: boolean;
-      author: RepostUser;
+      author: RepostUser | null;
       tags?: Array<{ tag: { name: string } }>;
       _count: {
         comments: number;
