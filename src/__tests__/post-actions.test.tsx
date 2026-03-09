@@ -170,7 +170,7 @@ describe("PostActions", () => {
     expect(within(unrepostBtn).getByText("1")).toBeInTheDocument();
   });
 
-  it("directly unrepost when already reposted (no dropdown)", async () => {
+  it("shows confirmation before unreposting", async () => {
     const user = userEvent.setup();
     render(<PostActions {...defaultProps} repostCount={2} isReposted={true} />);
 
@@ -178,8 +178,12 @@ describe("PostActions", () => {
     const unrepostBtn = screen.getByLabelText("Unrepost");
     expect(within(unrepostBtn).getByText("2")).toBeInTheDocument();
 
-    // Click directly unrepost (no dropdown)
+    // Click shows confirmation instead of immediate unrepost
     await user.click(unrepostBtn);
+    expect(screen.getByText("Remove your repost?")).toBeInTheDocument();
+
+    // Click Remove to confirm
+    await user.click(screen.getByText("Remove"));
 
     const repostBtn = screen.getByLabelText("Repost");
     expect(within(repostBtn).getByText("1")).toBeInTheDocument();

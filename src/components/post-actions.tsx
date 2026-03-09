@@ -289,22 +289,24 @@ function RepostButton({
   readOnly?: boolean;
 }) {
   const [showMenu, setShowMenu] = useState(false);
+  const [showConfirmUnrepost, setShowConfirmUnrepost] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!showMenu) return;
+    if (!showMenu && !showConfirmUnrepost) return;
     const handleClick = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setShowMenu(false);
+        setShowConfirmUnrepost(false);
       }
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [showMenu]);
+  }, [showMenu, showConfirmUnrepost]);
 
   const handleClick = () => {
     if (reposted) {
-      onRepost();
+      setShowConfirmUnrepost(true);
     } else {
       setShowMenu((v) => !v);
     }
@@ -348,6 +350,28 @@ function RepostButton({
         </svg>
         {reposts > 0 && <span>{reposts}</span>}
       </button>
+
+      {showConfirmUnrepost && (
+        <div className="absolute bottom-full left-0 z-10 mb-1 w-44 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+          <p className="px-3 py-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+            Remove your repost?
+          </p>
+          <button
+            type="button"
+            onClick={() => { setShowConfirmUnrepost(false); onRepost(); }}
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-red-600 hover:bg-zinc-100 dark:text-red-400 dark:hover:bg-zinc-700"
+          >
+            Remove
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowConfirmUnrepost(false)}
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
 
       {showMenu && (
         <div className="absolute bottom-full left-0 z-10 mb-1 w-36 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">

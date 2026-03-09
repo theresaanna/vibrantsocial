@@ -221,6 +221,8 @@ model Repost {
   isSensitive     Boolean  @default(false)
   isNsfw          Boolean  @default(false)
   isGraphicNudity Boolean  @default(false)
+  isPinned        Boolean  @default(false)
+  editedAt        DateTime?
   createdAt       DateTime @default(now())
 
   post Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
