@@ -17,6 +17,7 @@ interface FormatButton {
   ariaLabel: string;
   icon: React.ReactNode;
   shortcut: string;
+  hideOnMobile?: boolean;
 }
 
 const formats: FormatButton[] = [
@@ -53,6 +54,7 @@ const formats: FormatButton[] = [
     label: "x₂",
     ariaLabel: "Subscript",
     shortcut: "",
+    hideOnMobile: true,
     icon: (
       <span>
         x<sub className="text-[0.6em]">2</sub>
@@ -64,6 +66,7 @@ const formats: FormatButton[] = [
     label: "x²",
     ariaLabel: "Superscript",
     shortcut: "",
+    hideOnMobile: true,
     icon: (
       <span>
         x<sup className="text-[0.6em]">2</sup>
@@ -75,6 +78,7 @@ const formats: FormatButton[] = [
     label: "<>",
     ariaLabel: "Inline Code",
     shortcut: "",
+    hideOnMobile: true,
     icon: (
       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
@@ -117,7 +121,7 @@ export function TextFormatButtons() {
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, f.format)}
-          className={`rounded px-1.5 py-1 text-sm transition-colors ${
+          className={`rounded px-1.5 py-1 text-sm transition-colors ${f.hideOnMobile ? "hidden sm:inline-flex" : ""} ${
             activeFormats.has(f.format)
               ? "bg-zinc-200 text-zinc-900 dark:bg-zinc-600 dark:text-zinc-100"
               : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-700"

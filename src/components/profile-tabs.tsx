@@ -31,7 +31,7 @@ export function ProfileTabs({ username, activeTab, hasCustomTheme, showSensitive
 
   return (
     <div className={`mt-6 flex border-b ${hasCustomTheme ? "" : "border-zinc-200 dark:border-zinc-700"}`} style={hasCustomTheme ? { borderColor: "color-mix(in srgb, var(--profile-secondary) 20%, transparent)" } : undefined}>
-      <div className="flex" style={hasCustomTheme ? { position: "relative", top: "1px" } : undefined}>
+      <div className="-ml-[5px] sm:ml-0 flex" style={hasCustomTheme ? { position: "relative", top: "1px" } : undefined}>
         <Link
           href={`/${username}`}
           className={`${baseClass} ${activeTab === "posts" ? activeClass : inactiveClass}`}

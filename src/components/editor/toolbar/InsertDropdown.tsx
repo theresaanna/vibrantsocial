@@ -15,12 +15,9 @@ import { $createVideoNode } from "../nodes/VideoNode";
 import { $createFileNode } from "../nodes/FileNode";
 import { $createYouTubeNode } from "../nodes/YouTubeNode";
 import { $createEquationNode } from "../nodes/EquationNode";
-import { $createPageBreakNode } from "../nodes/PageBreakNode";
 import { $createCollapsibleWithDefaults } from "../nodes/CollapsibleNodes";
 import { $createStickyNoteNode } from "../nodes/StickyNoteNode";
 import { $createPollNode, type PollOption } from "../nodes/PollNode";
-import { $createDateNode } from "../nodes/DateNode";
-import { $createExcalidrawNode } from "../nodes/ExcalidrawNode";
 import { extractYouTubeVideoID } from "../utils/url";
 import { upload } from "@vercel/blob/client";
 
@@ -42,13 +39,6 @@ export function InsertDropdown() {
     editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined);
   }
 
-  function insertPageBreak() {
-    editor.update(() => {
-      const node = $createPageBreakNode();
-      $insertNodes([node, $createParagraphNode()]);
-    });
-  }
-
   function insertCollapsible() {
     editor.update(() => {
       const container = $createCollapsibleWithDefaults();
@@ -59,20 +49,6 @@ export function InsertDropdown() {
   function insertStickyNote() {
     editor.update(() => {
       const node = $createStickyNoteNode();
-      $insertNodes([node, $createParagraphNode()]);
-    });
-  }
-
-  function insertDate() {
-    editor.update(() => {
-      const node = $createDateNode();
-      $insertNodes([node]);
-    });
-  }
-
-  function insertExcalidraw() {
-    editor.update(() => {
-      const node = $createExcalidrawNode();
       $insertNodes([node, $createParagraphNode()]);
     });
   }
@@ -90,13 +66,11 @@ export function InsertDropdown() {
         }
       >
         <DropdownItem label="Horizontal Rule" onClick={insertHorizontalRule} />
-        <DropdownItem label="Page Break" onClick={insertPageBreak} />
         <div className="my-1 border-t border-zinc-200 dark:border-zinc-700" />
         <DropdownItem label="Image" onClick={() => setModal("image")} />
         <DropdownItem label="Video" onClick={() => setModal("video")} />
         <DropdownItem label="File / PDF" onClick={() => setModal("file")} />
         <DropdownItem label="YouTube Video" onClick={() => setModal("youtube")} />
-        <DropdownItem label="Excalidraw" onClick={insertExcalidraw} />
         <div className="my-1 border-t border-zinc-200 dark:border-zinc-700" />
         <DropdownItem label="Table" onClick={() => setModal("table")} />
         <DropdownItem label="Poll" onClick={() => setModal("poll")} />
@@ -104,7 +78,6 @@ export function InsertDropdown() {
         <DropdownItem label="Equation" onClick={() => setModal("equation")} />
         <DropdownItem label="Collapsible" onClick={insertCollapsible} />
         <DropdownItem label="Sticky Note" onClick={insertStickyNote} />
-        <DropdownItem label="Date" onClick={insertDate} />
       </DropdownMenu>
 
       {modal === "image" && (
