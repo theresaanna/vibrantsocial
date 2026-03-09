@@ -35,6 +35,10 @@ model User {
   passwordHash String?
   dateOfBirth  DateTime?
 
+  // Age verification payment (Stripe)
+  ageVerificationPaid     DateTime?
+  stripeCheckoutSessionId String?
+
   // Age verification (AgeChecker.net)
   ageVerified          DateTime?
   ageVerificationUuid  String?
