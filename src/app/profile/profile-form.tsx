@@ -422,7 +422,14 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
       <form
         ref={formRef}
         action={formAction}
-        onChange={scheduleAutosave}
+        onChange={(e) => {
+          // Only autosave for non-text inputs (checkboxes, selects, etc.)
+          // Text inputs use onBlur to avoid resetting mid-edit
+          const target = e.target as HTMLElement;
+          if (target instanceof HTMLInputElement && (target.type === "text" || target.type === "email")) return;
+          if (target instanceof HTMLTextAreaElement) return;
+          scheduleAutosave();
+        }}
         className="space-y-4"
       >
         <div>
@@ -469,6 +476,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
             name="displayName"
             type="text"
             defaultValue={user.displayName ?? ""}
+            onBlur={scheduleAutosave}
             className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
           />
         </div>
