@@ -142,9 +142,9 @@ export function PostCard({
 
   // Subscribe to real-time comment count updates via Ably
   const handleCountMessage = useCallback(
-    (event: { data: { count: number } }) => {
-      if (typeof event.data?.count === "number") {
-        setCommentCount(event.data.count);
+    (message: { data?: { count: number } }) => {
+      if (typeof message.data?.count === "number") {
+        setCommentCount(message.data.count);
       }
     },
     []
