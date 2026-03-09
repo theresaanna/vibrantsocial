@@ -306,7 +306,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                   </p>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {isOwnProfile && (
                     <Link
                       href="/profile"
