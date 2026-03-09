@@ -147,6 +147,38 @@ export async function sendWelcomeEmail(toEmail: string) {
   }
 }
 
+export async function sendEmailVerificationEmail(params: {
+  toEmail: string;
+  token: string;
+}) {
+  const { toEmail, token } = params;
+  const verifyUrl = `${getBaseUrl()}/verify-email?token=${encodeURIComponent(token)}&email=${encodeURIComponent(toEmail)}`;
+
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: toEmail,
+      subject: "Verify your email address",
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #18181b; margin-bottom: 16px;">Verify your email address</h2>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            Click the button below to verify this email address for your VibrantSocial account.
+          </p>
+          <a href="${verifyUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
+            Verify Email
+          </a>
+          <p style="color: #a1a1aa; font-size: 12px; margin-top: 32px;">
+            This link will expire in 1 hour. If you didn&apos;t request this, you can safely ignore this email.
+          </p>
+        </div>
+      `,
+    });
+  } catch {
+    // Non-critical — don't break the email change flow
+  }
+}
+
 export async function sendMentionEmail(params: {
   toEmail: string;
   mentionerName: string;

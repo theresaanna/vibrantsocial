@@ -29,6 +29,8 @@ vi.mock("next/link", () => ({
 vi.mock("@/app/profile/actions", () => ({
   updateProfile: vi.fn(),
   removeAvatar: vi.fn(),
+  requestEmailChange: vi.fn(),
+  cancelEmailChange: vi.fn(),
 }));
 
 // Mock the BioEditor (Lexical is too heavy for jsdom unit tests)
@@ -59,6 +61,8 @@ const defaultUser = {
 
 interface RenderFormOptions {
   userOverrides?: Partial<typeof defaultUser>;
+  email?: string | null;
+  pendingEmail?: string | null;
   emailOnComment?: boolean;
   emailOnNewChat?: boolean;
   emailOnMention?: boolean;
@@ -76,6 +80,8 @@ interface RenderFormOptions {
 function renderForm(options: RenderFormOptions = {}) {
   const {
     userOverrides = {},
+    email = null,
+    pendingEmail = null,
     emailOnComment = true,
     emailOnNewChat = true,
     emailOnMention = true,
@@ -92,6 +98,8 @@ function renderForm(options: RenderFormOptions = {}) {
   return render(
     <ProfileForm
       user={{ ...defaultUser, ...userOverrides }}
+      email={email}
+      pendingEmail={pendingEmail}
       currentAvatar={null}
       oauthImage={null}
       biometricVerified={biometricVerified}
@@ -273,6 +281,84 @@ describe("ProfileForm", () => {
           screen.getByRole("button", { name: "Share Profile" })
         ).toBeInTheDocument();
       });
+    });
+  });
+
+  describe("email address section", () => {
+    it("shows the Email Address heading", () => {
+      renderForm();
+      expect(screen.getByText("Email Address")).toBeInTheDocument();
+    });
+
+    it("shows verified email when user has email and no pending", () => {
+      renderForm({ email: "user@example.com" });
+      expect(
+        screen.getByText("Verified: user@example.com")
+      ).toBeInTheDocument();
+    });
+
+    it("does not show verified text when no email", () => {
+      renderForm({ email: null });
+      expect(screen.queryByText(/Verified:/)).not.toBeInTheDocument();
+    });
+
+    it("shows pending email status when pendingEmail exists", () => {
+      renderForm({
+        email: "old@example.com",
+        pendingEmail: "new@example.com",
+      });
+      expect(
+        screen.getByText("Verification sent to new@example.com")
+      ).toBeInTheDocument();
+    });
+
+    it("hides verified text when pendingEmail exists", () => {
+      renderForm({
+        email: "old@example.com",
+        pendingEmail: "new@example.com",
+      });
+      expect(screen.queryByText(/Verified:/)).not.toBeInTheDocument();
+    });
+
+    it("shows cancel button when pendingEmail exists", () => {
+      renderForm({ pendingEmail: "new@example.com" });
+      expect(
+        screen.getByRole("button", { name: "Cancel" })
+      ).toBeInTheDocument();
+    });
+
+    it("does not show cancel button when no pendingEmail", () => {
+      renderForm({ pendingEmail: null });
+      expect(
+        screen.queryByRole("button", { name: "Cancel" })
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows email input field", () => {
+      renderForm();
+      expect(
+        screen.getByPlaceholderText("you@example.com")
+      ).toBeInTheDocument();
+    });
+
+    it("pre-fills email input with current email", () => {
+      renderForm({ email: "user@example.com" });
+      const input = screen.getByPlaceholderText("you@example.com");
+      expect(input).toHaveValue("user@example.com");
+    });
+
+    it("shows Add button when no email", () => {
+      renderForm({ email: null });
+      expect(
+        screen.getByRole("button", { name: "Add" })
+      ).toBeInTheDocument();
+    });
+
+    it("shows Update button when email exists", () => {
+      renderForm({ email: "user@example.com" });
+      expect(
+        screen.getByRole("button", { name: "Update" })
+      ).toBeInTheDocument();
     });
   });
 

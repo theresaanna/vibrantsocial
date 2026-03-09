@@ -1,11 +1,13 @@
 "use server";
 
+import crypto from "crypto";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { del } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { isValidHexColor, THEME_COLOR_FIELDS } from "@/lib/profile-themes";
 import { invalidate, cacheKeys } from "@/lib/cache";
+import { sendEmailVerificationEmail } from "@/lib/email";
 
 const MAX_BIO_REVISIONS = 20;
 
@@ -233,4 +235,108 @@ export async function restoreBioRevision(
     message: "Bio restored",
     restoredContent: revision.content,
   };
+}
+
+interface EmailChangeState {
+  success: boolean;
+  message: string;
+}
+
+export async function requestEmailChange(
+  _prevState: EmailChangeState,
+  formData: FormData
+): Promise<EmailChangeState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const email = (formData.get("email") as string)?.trim().toLowerCase();
+
+  if (!email) {
+    return { success: false, message: "Email is required" };
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { success: false, message: "Invalid email address" };
+  }
+
+  // Check if email is same as current
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { email: true },
+  });
+
+  if (currentUser?.email === email) {
+    return { success: false, message: "This is already your email address" };
+  }
+
+  // Check if email is already used by another user
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (existingUser && existingUser.id !== session.user.id) {
+    return {
+      success: false,
+      message: "This email is already associated with another account",
+    };
+  }
+
+  // Clean up any existing email verification tokens for this email
+  await prisma.verificationToken.deleteMany({
+    where: { identifier: `email-verify:${email}` },
+  });
+
+  const token = crypto.randomUUID();
+  const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+  await prisma.verificationToken.create({
+    data: {
+      identifier: `email-verify:${email}`,
+      token,
+      expires,
+    },
+  });
+
+  // Set pending email on user
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { pendingEmail: email },
+  });
+
+  // Fire-and-forget
+  sendEmailVerificationEmail({ toEmail: email, token });
+
+  revalidatePath("/profile");
+  return {
+    success: true,
+    message: "Verification email sent! Check your inbox.",
+  };
+}
+
+export async function cancelEmailChange(): Promise<EmailChangeState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { pendingEmail: true },
+  });
+
+  if (user?.pendingEmail) {
+    await prisma.verificationToken.deleteMany({
+      where: { identifier: `email-verify:${user.pendingEmail}` },
+    });
+  }
+
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { pendingEmail: null },
+  });
+
+  revalidatePath("/profile");
+  return { success: true, message: "Email change cancelled" };
 }

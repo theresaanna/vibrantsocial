@@ -10,7 +10,7 @@ vi.mock("resend", () => ({
   })),
 }));
 
-import { sendCommentEmail, sendNewChatEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMentionEmail } from "@/lib/email";
+import { sendCommentEmail, sendNewChatEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMentionEmail, sendEmailVerificationEmail } from "@/lib/email";
 
 describe("sendCommentEmail", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -164,6 +164,63 @@ describe("sendPasswordResetEmail", () => {
       sendPasswordResetEmail({
         toEmail: "user@example.com",
         token: "test-token-uuid",
+      })
+    ).resolves.toBeUndefined();
+  });
+});
+
+describe("sendEmailVerificationEmail", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("sends a verification email with the correct fields", async () => {
+    mockSend.mockResolvedValueOnce({ id: "email-10" });
+
+    await sendEmailVerificationEmail({
+      toEmail: "user@example.com",
+      token: "test-verify-token",
+    });
+
+    expect(mockSend).toHaveBeenCalledOnce();
+    const call = mockSend.mock.calls[0][0];
+    expect(call.from).toBe("VibrantSocial <hello@vibrantsocial.app>");
+    expect(call.to).toBe("user@example.com");
+    expect(call.subject).toBe("Verify your email address");
+    expect(call.html).toContain("Verify your email address");
+    expect(call.html).toContain("Verify Email");
+  });
+
+  it("contains verification URL with token and email", async () => {
+    mockSend.mockResolvedValueOnce({ id: "email-11" });
+
+    await sendEmailVerificationEmail({
+      toEmail: "user@example.com",
+      token: "test-verify-token",
+    });
+
+    const call = mockSend.mock.calls[0][0];
+    expect(call.html).toContain("/verify-email?token=test-verify-token");
+    expect(call.html).toContain("email=user%40example.com");
+  });
+
+  it("contains 1 hour expiry note", async () => {
+    mockSend.mockResolvedValueOnce({ id: "email-12" });
+
+    await sendEmailVerificationEmail({
+      toEmail: "user@example.com",
+      token: "test-verify-token",
+    });
+
+    const call = mockSend.mock.calls[0][0];
+    expect(call.html).toContain("1 hour");
+  });
+
+  it("does not throw on Resend failure", async () => {
+    mockSend.mockRejectedValueOnce(new Error("Resend down"));
+
+    await expect(
+      sendEmailVerificationEmail({
+        toEmail: "user@example.com",
+        token: "test-verify-token",
       })
     ).resolves.toBeUndefined();
   });

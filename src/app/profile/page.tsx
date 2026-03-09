@@ -10,6 +10,8 @@ export default async function ProfilePage() {
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
+      email: true,
+      pendingEmail: true,
       dateOfBirth: true,
       phoneNumber: true,
       phoneVerified: true,
@@ -65,6 +67,8 @@ export default async function ProfilePage() {
           emailOnFriendRequest={user?.emailOnFriendRequest ?? true}
           pushEnabled={user?.pushEnabled ?? false}
           isProfilePublic={user?.isProfilePublic ?? true}
+          email={user?.email ?? null}
+          pendingEmail={user?.pendingEmail ?? null}
           phoneVerified={!!user?.phoneVerified}
           phoneNumber={user?.phoneNumber ?? null}
           isCredentialsUser={isCredentialsUser}
