@@ -4,7 +4,7 @@ import { UndoRedoButtons } from "./UndoRedoButtons";
 import { BlockFormatDropdown } from "./BlockFormatDropdown";
 import { FontDropdown } from "./FontDropdown";
 import { FontSizeControls } from "./FontSizeControls";
-import { TextFormatButtons } from "./TextFormatButtons";
+import { TextFormatButtons, CodeFormatButtons } from "./TextFormatButtons";
 import { LinkButton } from "./LinkButton";
 import { ColorPicker } from "./ColorPicker";
 import { AlignmentDropdown } from "./AlignmentDropdown";
@@ -19,7 +19,7 @@ import {
   StickyNoteButton,
 } from "./InsertButtons";
 import { SpeechToTextButton } from "./SpeechToTextButton";
-import { ImportFileButton } from "./ImportFileButton";
+
 import { MarkdownToggleButton } from "./MarkdownToggleButton";
 import { Divider } from "./Divider";
 
@@ -47,11 +47,11 @@ export function Toolbar() {
       <TableButton />
       <PollButton />
       <EquationButton />
+      <CodeFormatButtons />
       <CollapsibleButton />
       <StickyNoteButton />
       <Divider />
       <SpeechToTextButton />
-      <ImportFileButton />
       <MarkdownToggleButton />
     </div>
   );
