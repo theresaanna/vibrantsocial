@@ -10,13 +10,6 @@ vi.mock("@/app/age-verify/actions", () => ({
   checkVerificationStatus: (...args: unknown[]) => mockCheckStatus(...args),
 }));
 
-vi.mock("next/script", () => ({
-  default: ({ onLoad }: { onLoad?: () => void }) => {
-    if (onLoad) setTimeout(onLoad, 0);
-    return null;
-  },
-}));
-
 // Capture the formAction so tests can call it directly, bypassing jsdom
 // form submission quirks with React 19's action prop.
 let capturedFormAction: ((formData: FormData) => Promise<void>) | null = null;
@@ -56,6 +49,7 @@ async function submitForm(fields: Record<string, string> = {}) {
   const formData = new FormData();
   formData.set("firstName", fields.firstName ?? "Jane");
   formData.set("lastName", fields.lastName ?? "Doe");
+  if (fields.email) formData.set("email", fields.email);
   if (fields.address) formData.set("address", fields.address);
   if (fields.city) formData.set("city", fields.city);
   if (fields.state) formData.set("state", fields.state);
@@ -79,16 +73,46 @@ describe("AgeVerifyForm", () => {
 
   // ─── Form rendering ───────────────────────────────────────────
 
-  it("renders the form with all fields", () => {
+  it("renders the form with all fields including email when no existingEmail", () => {
     render(<AgeVerifyForm />);
 
     expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/last name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/street address/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/city/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/state/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/zip/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/country/i)).toBeInTheDocument();
+  });
+
+  it("hides email field when existingEmail is provided", () => {
+    render(<AgeVerifyForm existingEmail="user@example.com" />);
+
+    expect(screen.queryByLabelText(/email address/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
+  });
+
+  it("shows email privacy notice when email field is visible", () => {
+    render(<AgeVerifyForm />);
+
+    expect(
+      screen.getByText(/your email will only be used for age verification/i)
+    ).toBeInTheDocument();
+  });
+
+  it("does not show email privacy notice when existingEmail is provided", () => {
+    render(<AgeVerifyForm existingEmail="user@example.com" />);
+
+    expect(
+      screen.queryByText(/your email will only be used for age verification/i)
+    ).not.toBeInTheDocument();
+  });
+
+  it("marks email as required when shown", () => {
+    render(<AgeVerifyForm />);
+
+    expect(screen.getByLabelText(/email address/i) as HTMLInputElement).toBeRequired();
   });
 
   it("renders the submit button", () => {
@@ -271,7 +295,19 @@ describe("AgeVerifyForm", () => {
     expect(screen.getByText(/date of birth is required/i)).toBeInTheDocument();
   });
 
-  // ─── Popup / waiting flow ─────────────────────────────────────
+  it("shows email required error", async () => {
+    mockInitiate.mockResolvedValueOnce({
+      success: false,
+      message: "Email address is required",
+    });
+
+    render(<AgeVerifyForm />);
+    await submitForm();
+
+    expect(screen.getByText(/email address is required/i)).toBeInTheDocument();
+  });
+
+  // ─── Waiting / contact flow ─────────────────────────────────────
 
   it("shows waiting UI on photo_id status", async () => {
     mockInitiate.mockResolvedValueOnce({
@@ -335,7 +371,7 @@ describe("AgeVerifyForm", () => {
     expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
   });
 
-  it("shows processing message during polling", async () => {
+  it("shows check email/phone message during polling", async () => {
     mockInitiate.mockResolvedValueOnce({
       success: true,
       message: "Additional verification required",
@@ -346,7 +382,7 @@ describe("AgeVerifyForm", () => {
     render(<AgeVerifyForm />);
     await submitForm();
 
-    expect(screen.getByText(/your verification is being processed/i)).toBeInTheDocument();
+    expect(screen.getByText(/check your email or phone/i)).toBeInTheDocument();
   });
 
   // ─── Form data submission ─────────────────────────────────────
@@ -362,6 +398,7 @@ describe("AgeVerifyForm", () => {
     await submitForm({
       firstName: "Jane",
       lastName: "Doe",
+      email: "jane@example.com",
       address: "123 Main St",
       city: "New York",
       state: "NY",

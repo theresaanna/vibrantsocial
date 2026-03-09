@@ -12,6 +12,7 @@ export default async function AgeVerifyPage() {
     select: {
       dateOfBirth: true,
       ageVerified: true,
+      email: true,
     },
   });
 
@@ -31,7 +32,7 @@ export default async function AgeVerifyPage() {
           </p>
         </div>
 
-        <AgeVerifyForm />
+        <AgeVerifyForm existingEmail={user.email ?? undefined} />
       </div>
     </div>
   );

@@ -56,9 +56,25 @@ export async function initiateAgeVerification(
   const state = (formData.get("state") as string)?.trim();
   const zip = (formData.get("zip") as string)?.trim();
   const country = (formData.get("country") as string)?.trim() || "US";
+  const formEmail = (formData.get("email") as string)?.trim();
 
   if (!firstName || !lastName) {
     return { success: false, message: "First and last name are required" };
+  }
+
+  // Use the email from the form if provided, otherwise fall back to the user's existing email
+  const email = formEmail || user.email;
+
+  if (!email) {
+    return { success: false, message: "Email address is required" };
+  }
+
+  // Save the email to the user's record if they don't already have one
+  if (formEmail && !user.email) {
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { email: formEmail },
+    });
   }
 
   if (!user.dateOfBirth) {
@@ -83,10 +99,11 @@ export async function initiateAgeVerification(
         dob_day: dob.getDate(),
         dob_month: dob.getMonth() + 1,
         dob_year: dob.getFullYear(),
-        email: user.email || undefined,
+        email,
       },
       {
         min_age: 18,
+        contact_customer: true,
         customer_ip:
           (formData.get("customerIp") as string) || undefined,
         callback_url: callbackUrl,
