@@ -50,6 +50,57 @@ export const PROFILE_THEME_PRESETS: Record<string, ProfileThemeColors> = {
     profileSecondaryColor: "#c4b5fd",
     profileContainerColor: "#1a0e35",
   },
+  // Light themes
+  rose: {
+    profileBgColor: "#fdf2f8",
+    profileTextColor: "#1c1917",
+    profileLinkColor: "#e11d48",
+    profileSecondaryColor: "#a3a3a3",
+    profileContainerColor: "#fce7f3",
+  },
+  lavender: {
+    profileBgColor: "#faf5ff",
+    profileTextColor: "#1c1917",
+    profileLinkColor: "#7c3aed",
+    profileSecondaryColor: "#a3a3a3",
+    profileContainerColor: "#f3e8ff",
+  },
+  sky: {
+    profileBgColor: "#f0f9ff",
+    profileTextColor: "#1c1917",
+    profileLinkColor: "#0284c7",
+    profileSecondaryColor: "#a3a3a3",
+    profileContainerColor: "#e0f2fe",
+  },
+  mint: {
+    profileBgColor: "#f0fdfa",
+    profileTextColor: "#1c1917",
+    profileLinkColor: "#0d9488",
+    profileSecondaryColor: "#a3a3a3",
+    profileContainerColor: "#ccfbf1",
+  },
+  // Neutral themes
+  stone: {
+    profileBgColor: "#f5f5f4",
+    profileTextColor: "#1c1917",
+    profileLinkColor: "#78716c",
+    profileSecondaryColor: "#a8a29e",
+    profileContainerColor: "#e7e5e4",
+  },
+  slate: {
+    profileBgColor: "#f8fafc",
+    profileTextColor: "#0f172a",
+    profileLinkColor: "#475569",
+    profileSecondaryColor: "#94a3b8",
+    profileContainerColor: "#f1f5f9",
+  },
+  sand: {
+    profileBgColor: "#fefce8",
+    profileTextColor: "#1c1917",
+    profileLinkColor: "#a16207",
+    profileSecondaryColor: "#a3a3a3",
+    profileContainerColor: "#fef9c3",
+  },
 };
 
 const HEX_COLOR_REGEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;

@@ -49,13 +49,19 @@ export function clearDraft(draftKey: string) {
   }
 }
 
+export type DraftSaveStatus = "idle" | "saving" | "saved";
+
 interface DraftPluginProps {
   draftKey: string;
+  onSaveStatusChange?: (status: DraftSaveStatus) => void;
 }
 
-export function DraftPlugin({ draftKey }: DraftPluginProps) {
+const SAVED_DISPLAY_MS = 2000;
+
+export function DraftPlugin({ draftKey, onSaveStatusChange }: DraftPluginProps) {
   const [editor] = useLexicalComposerContext();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasMountedRef = useRef(false);
 
   // Restore draft on mount
@@ -88,17 +94,26 @@ export function DraftPlugin({ draftKey }: DraftPluginProps) {
       }
 
       if (timerRef.current) clearTimeout(timerRef.current);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      onSaveStatusChange?.("saving");
+
       timerRef.current = setTimeout(() => {
         const json = JSON.stringify(editorState.toJSON());
         writeDraft(draftKey, json);
+        onSaveStatusChange?.("saved");
+
+        savedTimerRef.current = setTimeout(() => {
+          onSaveStatusChange?.("idle");
+        }, SAVED_DISPLAY_MS);
       }, SAVE_DEBOUNCE_MS);
     });
 
     return () => {
       unregister();
       if (timerRef.current) clearTimeout(timerRef.current);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
     };
-  }, [editor, draftKey]);
+  }, [editor, draftKey, onSaveStatusChange]);
 
   // Flush pending save on page hide/unload
   useEffect(() => {
