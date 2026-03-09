@@ -201,6 +201,7 @@ describe("updateProfile", () => {
       { label: "null bytes", value: "hello\x00world" },
       { label: "SQL-like injection", value: "'; DROP TABLE users; --" },
       { label: "curly braces and brackets", value: "{name: [test]}" },
+      { label: "decorative Unicode symbols", value: "✶⋆.˚ ☾𖤓 ⋆˚࿔" },
     ];
 
     for (const { label, value } of specialNameCases) {

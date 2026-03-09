@@ -62,6 +62,7 @@ const SPECIAL_NAMES = {
   unicodeSymbols: "\u2605\u2764\u266B\u2603",
   mathSymbols: "\u00B1 \u221E \u2260 \u2248",
   currencySymbols: "\u00A3\u00A5\u20AC\u20BF",
+  decorativeUnicode: "✶⋆.˚ ☾𖤓 ⋆˚࿔",
 } as const;
 
 function makeUser(displayName: string, id = "user1") {
