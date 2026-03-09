@@ -267,6 +267,177 @@ export async function createQuoteRepost(
   return { success: true, message: "Quote posted" };
 }
 
+export async function editRepost(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const repostId = formData.get("repostId") as string;
+  const content = formData.get("content") as string;
+  if (!repostId || !content) {
+    return { success: false, message: "Repost ID and content required" };
+  }
+
+  const repost = await prisma.repost.findUnique({ where: { id: repostId } });
+  if (!repost || repost.userId !== session.user.id) {
+    return { success: false, message: "Not authorized" };
+  }
+
+  const isSensitive = formData.get("isSensitive") === "true";
+  const isNsfw = formData.get("isNsfw") === "true";
+  const isGraphicNudity = formData.get("isGraphicNudity") === "true";
+
+  await prisma.repost.update({
+    where: { id: repostId },
+    data: { content, editedAt: new Date(), isSensitive, isNsfw, isGraphicNudity },
+  });
+
+  // Update tags
+  const rawTags = formData.get("tags") as string;
+  await prisma.repostTag.deleteMany({ where: { repostId } });
+  if (rawTags && !isSensitive && !isGraphicNudity) {
+    const tagNames = extractTagsFromNames(rawTags.split(","));
+    for (const name of tagNames) {
+      const tag = await prisma.tag.upsert({
+        where: { name },
+        create: { name },
+        update: {},
+      });
+      await prisma.repostTag.create({
+        data: { repostId, tagId: tag.id },
+      });
+    }
+    if (isNsfw) {
+      await invalidate(cacheKeys.nsfwTagCloud());
+    } else {
+      await invalidate(cacheKeys.tagCloud());
+    }
+    await Promise.all(
+      tagNames.map((name) => invalidate(cacheKeys.tagPostCount(name)))
+    );
+  } else {
+    await invalidate(cacheKeys.tagCloud());
+    await invalidate(cacheKeys.nsfwTagCloud());
+  }
+
+  // Notify users who were newly mentioned in the edit
+  if (repost.content) {
+    const oldMentions = new Set(extractMentionsFromLexicalJson(repost.content));
+    const newMentions = extractMentionsFromLexicalJson(content).filter(
+      (u) => !oldMentions.has(u)
+    );
+    if (newMentions.length > 0) {
+      await createMentionNotifications({
+        usernames: newMentions,
+        actorId: session.user.id,
+        postId: repost.postId,
+      });
+    }
+  }
+
+  revalidatePath("/feed");
+  revalidatePath(`/post/${repost.postId}`);
+  if (session.user.username) {
+    revalidatePath(`/${session.user.username}`);
+  }
+  return { success: true, message: "Quote updated" };
+}
+
+export async function togglePinRepost(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const repostId = formData.get("repostId") as string;
+  if (!repostId) {
+    return { success: false, message: "Repost ID required" };
+  }
+
+  const repost = await prisma.repost.findUnique({ where: { id: repostId } });
+  if (!repost || repost.userId !== session.user.id) {
+    return { success: false, message: "Not authorized" };
+  }
+
+  if (repost.isPinned) {
+    await prisma.repost.update({
+      where: { id: repostId },
+      data: { isPinned: false },
+    });
+  } else {
+    // Unpin any currently pinned post or repost by this user, then pin this one
+    await prisma.post.updateMany({
+      where: { authorId: session.user.id, isPinned: true },
+      data: { isPinned: false },
+    });
+    await prisma.repost.updateMany({
+      where: { userId: session.user.id, isPinned: true },
+      data: { isPinned: false },
+    });
+    await prisma.repost.update({
+      where: { id: repostId },
+      data: { isPinned: true },
+    });
+  }
+
+  revalidatePath("/feed");
+  revalidatePath(`/post/${repost.postId}`);
+  if (session.user.username) {
+    revalidatePath(`/${session.user.username}`);
+  }
+
+  return {
+    success: true,
+    message: repost.isPinned ? "Quote unpinned" : "Quote pinned",
+  };
+}
+
+export async function deleteRepost(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const repostId = formData.get("repostId") as string;
+  if (!repostId) {
+    return { success: false, message: "Repost ID required" };
+  }
+
+  const repost = await prisma.repost.findUnique({
+    where: { id: repostId },
+    include: { tags: { include: { tag: { select: { name: true } } } } },
+  });
+  if (!repost || repost.userId !== session.user.id) {
+    return { success: false, message: "Not authorized" };
+  }
+
+  await prisma.repost.delete({ where: { id: repostId } });
+
+  if (repost.tags.length > 0) {
+    await invalidate(cacheKeys.tagCloud());
+    await Promise.all(
+      repost.tags.map((rt) => invalidate(cacheKeys.tagPostCount(rt.tag.name)))
+    );
+  }
+
+  revalidatePath("/feed");
+  revalidatePath(`/post/${repost.postId}`);
+  if (session.user.username) {
+    revalidatePath(`/${session.user.username}`);
+  }
+  return { success: true, message: "Quote deleted" };
+}
+
 export async function createComment(
   _prevState: ActionState,
   formData: FormData

@@ -77,6 +77,7 @@ export async function fetchFeedPage(cursor?: string) {
       include: {
         user: { select: repostUserSelect },
         post: { include: postInclude },
+        tags: { include: { tag: { select: { name: true } } } },
       },
     }),
   ]);

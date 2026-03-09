@@ -355,9 +355,13 @@ export async function togglePinPost(
       data: { isPinned: false },
     });
   } else {
-    // Unpin any currently pinned post by this user, then pin this one
+    // Unpin any currently pinned post or repost by this user, then pin this one
     await prisma.post.updateMany({
       where: { authorId: session.user.id, isPinned: true },
+      data: { isPinned: false },
+    });
+    await prisma.repost.updateMany({
+      where: { userId: session.user.id, isPinned: true },
       data: { isPinned: false },
     });
     await prisma.post.update({
