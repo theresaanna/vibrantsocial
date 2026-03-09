@@ -12,7 +12,7 @@ interface ProfileTabsProps {
 }
 
 export function ProfileTabs({ username, activeTab, hasCustomTheme, showSensitiveTab, showNsfwTab, showGraphicTab }: ProfileTabsProps) {
-  const baseClass = "px-4 py-2 text-sm font-medium border-b-2 transition-colors";
+  const baseClass = "px-2 sm:px-4 py-2 text-sm font-medium border-b-2 transition-colors";
 
   const activeClass = hasCustomTheme
     ? "border-current"
