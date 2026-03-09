@@ -7,6 +7,10 @@ import { PostCard } from "@/components/post-card";
 import { PostPageClient } from "@/app/post/[id]/post-page-client";
 import type { CommentData } from "@/hooks/use-comments";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
+}));
+
 // ── Mocks ──────────────────────────────────────────────────────────
 
 let mockToggleLike: ReturnType<typeof vi.fn>;
@@ -68,9 +72,6 @@ vi.mock("@/components/post-revision-history", () => ({
   PostRevisionHistory: () => null,
 }));
 
-vi.mock("@/components/quote-post-modal", () => ({
-  QuotePostModal: () => <div data-testid="quote-modal" />,
-}));
 
 vi.mock("@/components/tag-input", () => ({
   TagInput: () => null,
@@ -220,10 +221,10 @@ describe("PostActions - readOnly mode", () => {
     render(
       <PostActions {...defaultPostActionsProps} readOnly onToggleComments={onToggle} />
     );
-    // Comment button should still be a button (not a span)
+    // Comment and share buttons should still be buttons in read-only mode
     const commentBtns = screen.getAllByRole("button");
-    expect(commentBtns.length).toBe(1); // only comment button
-    await user.click(commentBtns[0]);
+    expect(commentBtns.length).toBe(2); // comment + share
+    await user.click(commentBtns[0]); // comment button is first
     expect(onToggle).toHaveBeenCalledOnce();
   });
 
