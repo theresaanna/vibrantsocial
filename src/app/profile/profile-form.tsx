@@ -382,7 +382,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
             <div className="mt-1 flex items-center justify-between">
               <p className="text-sm text-zinc-500">
                 {isCredentialsUser
-                  ? "Verify your phone to secure your account"
+                  ? "Verify your phone for community safety"
                   : "Add a phone number for extra security"}
               </p>
               <Link

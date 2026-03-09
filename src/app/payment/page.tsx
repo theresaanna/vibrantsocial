@@ -65,7 +65,12 @@ export default async function PaymentPage({
           </h1>
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
             A one-time fee of $2.99 is required before age verification. This
-            covers the cost of identity verification processing.
+            covers the cost of identity verification processing through
+            AgeChecker.net.
+          </p>
+          <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+            This fee is non-refundable regardless of the outcome of age
+            verification.
           </p>
         </div>
 
