@@ -50,6 +50,7 @@ type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, biometricVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, pushEnabled: initialPushEnabled, isProfilePublic, phoneVerified, phoneNumber, isCredentialsUser }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
+  const [displayNameValue, setDisplayNameValue] = useState(user.displayName ?? "");
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>("idle");
   const [savedUsername, setSavedUsername] = useState(user.username);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -124,6 +125,13 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
       }
     }
   }, [isPending, state]);
+
+  const cancelAutosave = useCallback(() => {
+    if (autosaveRef.current) {
+      clearTimeout(autosaveRef.current);
+      autosaveRef.current = null;
+    }
+  }, []);
 
   const scheduleAutosave = useCallback(() => {
     // Skip autosave on initial mount
@@ -445,6 +453,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
             type="text"
             value={usernameValue}
             onChange={(e) => setUsernameValue(e.target.value)}
+            onFocus={cancelAutosave}
             className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
             placeholder="your_username"
           />
@@ -475,8 +484,10 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
             id="displayName"
             name="displayName"
             type="text"
-            defaultValue={user.displayName ?? ""}
+            value={displayNameValue}
+            onChange={(e) => setDisplayNameValue(e.target.value)}
             onBlur={scheduleAutosave}
+            onFocus={cancelAutosave}
             className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
           />
         </div>
