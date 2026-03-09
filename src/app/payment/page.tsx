@@ -33,6 +33,7 @@ export default async function PaymentPage({
   // Handle Stripe redirect back after successful payment.
   // The webhook may not have fired yet, so verify the session server-side.
   if (params.success === "true" && params.session_id) {
+    let paid = false;
     const { getCheckoutSession } = await import("@/lib/stripe");
     try {
       const checkoutSession = await getCheckoutSession(params.session_id);
@@ -47,11 +48,12 @@ export default async function PaymentPage({
             stripeCheckoutSessionId: checkoutSession.id,
           },
         });
-        redirect("/age-verify");
+        paid = true;
       }
     } catch {
       // If session retrieval fails, fall through to show payment page
     }
+    if (paid) redirect("/age-verify");
   }
 
   return (
