@@ -114,3 +114,8 @@ h6 {
 .chat-themed .chat-btn-themed:hover {
   filter: brightness(0.9);
 }
+
+/* Collapsible section delete button — show on hover */
+details:hover > .collapsible-delete-btn {
+  opacity: 1;
+}

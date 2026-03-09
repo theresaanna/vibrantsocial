@@ -49,6 +49,9 @@ const formats: FormatButton[] = [
     shortcut: "Ctrl+Shift+X",
     icon: <span className="line-through">S</span>,
   },
+];
+
+const codeFormats: FormatButton[] = [
   {
     format: "subscript",
     label: "x₂",
@@ -87,16 +90,18 @@ const formats: FormatButton[] = [
   },
 ];
 
-export function TextFormatButtons() {
+function FormatButtonGroup({ buttons }: { buttons: FormatButton[] }) {
   const [editor] = useLexicalComposerContext();
   const [activeFormats, setActiveFormats] = useState<Set<TextFormatType>>(new Set());
+
+  const allFormats = [...formats, ...codeFormats];
 
   const updateFormats = useCallback(() => {
     const selection = $getSelection();
     if (!$isRangeSelection(selection)) return;
 
     const active = new Set<TextFormatType>();
-    for (const f of formats) {
+    for (const f of allFormats) {
       if (selection.hasFormat(f.format)) active.add(f.format);
     }
     setActiveFormats(active);
@@ -115,7 +120,7 @@ export function TextFormatButtons() {
 
   return (
     <>
-      {formats.map((f) => (
+      {buttons.map((f) => (
         <button
           key={f.format}
           type="button"
@@ -134,4 +139,12 @@ export function TextFormatButtons() {
       ))}
     </>
   );
+}
+
+export function TextFormatButtons() {
+  return <FormatButtonGroup buttons={formats} />;
+}
+
+export function CodeFormatButtons() {
+  return <FormatButtonGroup buttons={codeFormats} />;
 }

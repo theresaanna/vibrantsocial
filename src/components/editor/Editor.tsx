@@ -21,6 +21,7 @@ import { editorNodes } from "./nodes";
 import { Toolbar } from "./toolbar/Toolbar";
 import { AutoLinkPlugin } from "./plugins/AutoLinkPlugin";
 import { MentionsPlugin } from "./plugins/MentionsPlugin";
+import { CollapsiblePlugin } from "./plugins/CollapsiblePlugin";
 
 interface EditorProps {
   /** Initial content as Lexical JSON string */
@@ -126,6 +127,7 @@ export function Editor({
           <TablePlugin />
           <TabIndentationPlugin />
           <MentionsPlugin />
+          <CollapsiblePlugin />
         </div>
       </LexicalComposer>
     </div>
