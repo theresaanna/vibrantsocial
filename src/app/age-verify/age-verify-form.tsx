@@ -1,20 +1,11 @@
 "use client";
 
 import { useActionState, useState, useEffect, useRef, useCallback } from "react";
-import Script from "next/script";
 import {
   initiateAgeVerification,
   checkVerificationStatus,
 } from "./actions";
 import type { AgeCheckerStatus } from "@/lib/agechecker";
-
-declare global {
-  interface Window {
-    AgeCheckerAPI?: {
-      show: (uuid: string) => void;
-    };
-  }
-}
 
 const COUNTRIES = [
   { code: "US", label: "United States" },
@@ -38,7 +29,7 @@ const COUNTRIES = [
   { code: "MX", label: "Mexico" },
 ] as const;
 
-type Step = "form" | "popup" | "polling" | "success" | "denied" | "error";
+type Step = "form" | "polling" | "success" | "denied" | "error";
 
 interface ActionState {
   success: boolean;
@@ -52,12 +43,14 @@ const initialState: ActionState = {
   message: "",
 };
 
-export function AgeVerifyForm() {
+interface AgeVerifyFormProps {
+  existingEmail?: string;
+}
+
+export function AgeVerifyForm({ existingEmail }: AgeVerifyFormProps) {
   const [step, setStep] = useState<Step>("form");
   const [errorMessage, setErrorMessage] = useState("");
-  const [sdkLoaded, setSdkLoaded] = useState(false);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const popupUuidRef = useRef<string | null>(null);
 
   const [state, formAction, isPending] = useActionState(
     async (prevState: ActionState, formData: FormData): Promise<ActionState> => {
@@ -89,30 +82,11 @@ export function AgeVerifyForm() {
       return;
     }
 
-    // Status requires popup (photo_id, signature) or polling (pending)
+    // Additional verification needed — AgeChecker will contact the user
     if (state.uuid) {
-      popupUuidRef.current = state.uuid;
-
-      if (state.status === "photo_id" || state.status === "signature") {
-        setStep("popup");
-      } else {
-        // pending or other — go straight to polling
-        setStep("polling");
-      }
-    }
-  }, [state]);
-
-  // Show AgeChecker popup when step becomes "popup" and SDK is loaded
-  useEffect(() => {
-    if (step !== "popup") return;
-    if (!popupUuidRef.current) return;
-
-    if (sdkLoaded && window.AgeCheckerAPI) {
-      window.AgeCheckerAPI.show(popupUuidRef.current);
-      // Start polling after showing popup
       setStep("polling");
     }
-  }, [step, sdkLoaded]);
+  }, [state]);
 
   // Poll for verification status
   const pollStatus = useCallback(async () => {
@@ -235,7 +209,7 @@ export function AgeVerifyForm() {
   }
 
   // Polling / waiting state
-  if (step === "polling" || step === "popup") {
+  if (step === "polling") {
     return (
       <div className="py-6 text-center">
         <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-zinc-200 border-t-zinc-900 dark:border-zinc-700 dark:border-t-zinc-100" />
@@ -243,9 +217,8 @@ export function AgeVerifyForm() {
           Waiting for verification...
         </p>
         <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-          {step === "popup"
-            ? "Complete the verification in the popup window."
-            : "Your verification is being processed. This page will update automatically."}
+          Check your email or phone for instructions from AgeChecker.net. This
+          page will update automatically once verification is complete.
         </p>
         <button
           type="button"
@@ -257,13 +230,6 @@ export function AgeVerifyForm() {
         >
           Cancel
         </button>
-
-        {/* Load AgeChecker SDK for popup flows */}
-        <Script
-          src="https://cdn.agechecker.net/static/agechecker.js"
-          strategy="lazyOnload"
-          onLoad={() => setSdkLoaded(true)}
-        />
       </div>
     );
   }
@@ -307,6 +273,30 @@ export function AgeVerifyForm() {
           />
         </div>
       </div>
+
+      {!existingEmail && (
+        <div>
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+          >
+            Email address <span className="text-red-500">*</span>
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            autoComplete="email"
+            className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+            placeholder="you@example.com"
+          />
+          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+            Your email will only be used for age verification and to associate
+            with your profile. It will not be shared or used for marketing.
+          </p>
+        </div>
+      )}
 
       <div>
         <label
