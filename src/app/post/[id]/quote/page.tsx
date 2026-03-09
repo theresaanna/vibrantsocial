@@ -40,7 +40,7 @@ export default async function QuotePage({ params }: Props) {
     },
   });
 
-  if (!post) notFound();
+  if (!post || !post.author) notFound();
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">

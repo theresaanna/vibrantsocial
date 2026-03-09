@@ -79,12 +79,14 @@ export async function toggleLike(
     });
     if (post) {
       authorUsername = post.author?.username ?? null;
-      await createNotification({
-        type: "LIKE",
-        actorId: session.user.id,
-        targetUserId: post.authorId,
-        postId,
-      });
+      if (post.authorId) {
+        await createNotification({
+          type: "LIKE",
+          actorId: session.user.id,
+          targetUserId: post.authorId,
+          postId,
+        });
+      }
     }
   }
 
@@ -122,7 +124,7 @@ export async function toggleBookmark(
       where: { id: postId },
       select: { authorId: true },
     });
-    if (post) {
+    if (post?.authorId) {
       await createNotification({
         type: "BOOKMARK",
         actorId: session.user.id,
@@ -163,7 +165,7 @@ export async function toggleRepost(
       where: { id: postId },
       select: { authorId: true },
     });
-    if (post) {
+    if (post?.authorId) {
       await createNotification({
         type: "REPOST",
         actorId: session.user.id,
@@ -240,7 +242,7 @@ export async function createQuoteRepost(
     where: { id: postId },
     select: { authorId: true },
   });
-  if (post) {
+  if (post?.authorId) {
     await createNotification({
       type: "REPOST",
       actorId: session.user.id,
@@ -493,7 +495,7 @@ export async function createComment(
       },
     },
   });
-  if (post) {
+  if (post && post.authorId && post.author) {
     await createNotification({
       type: "COMMENT",
       actorId: session.user.id,

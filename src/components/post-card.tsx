@@ -35,11 +35,12 @@ interface PostCardProps {
     content: string;
     createdAt: Date;
     editedAt?: Date | null;
+    isAuthorDeleted?: boolean;
     isSensitive: boolean;
     isNsfw: boolean;
     isGraphicNudity: boolean;
     isPinned: boolean;
-    author: PostAuthor;
+    author: PostAuthor | null;
     tags?: Array<{ tag: { name: string } }>;
     _count: {
       comments: number;
@@ -95,7 +96,7 @@ export function PostCard({
   );
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const isAuthor = currentUserId === post.author.id;
+  const isAuthor = currentUserId === post.author?.id;
   const isAuthenticated = !!currentUserId;
 
   const [, editAction, editPending] = useActionState(editPost, {
@@ -137,10 +138,22 @@ export function PostCard({
 
   if (deleted) return null;
 
+  if (post.isAuthorDeleted) {
+    return (
+      <div className="rounded-2xl bg-white shadow-lg dark:bg-zinc-900" data-testid="deleted-user-post">
+        <div className="flex items-center justify-center px-4 py-8">
+          <p className="text-sm text-zinc-400 dark:text-zinc-500">
+            This post is from a user who deleted their account
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const authorName =
-    post.author.displayName || post.author.name || "Anonymous";
+    post.author?.displayName || post.author?.name || "Anonymous";
   const authorInitial = authorName[0].toUpperCase();
-  const avatarSrc = post.author.avatar || post.author.image;
+  const avatarSrc = post.author?.avatar || post.author?.image;
 
   const isRestricted = post.isSensitive || post.isNsfw || post.isGraphicNudity;
 
@@ -237,7 +250,7 @@ export function PostCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-1.5">
             <span className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-              {post.author.username ? (
+              {post.author?.username ? (
                 <Link
                   href={`/${post.author.username}`}
                   className="hover:underline"
@@ -248,7 +261,7 @@ export function PostCard({
                 authorName
               )}
             </span>
-            {post.author.username && (
+            {post.author?.username && (
               <Link
                 href={`/${post.author.username}`}
                 className="truncate text-sm text-zinc-500 hover:underline"

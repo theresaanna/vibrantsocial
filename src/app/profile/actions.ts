@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { isValidHexColor, THEME_COLOR_FIELDS } from "@/lib/profile-themes";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { sendEmailVerificationEmail } from "@/lib/email";
+import { inngest } from "@/lib/inngest";
 
 const MAX_BIO_REVISIONS = 20;
 
@@ -339,4 +340,161 @@ export async function cancelEmailChange(): Promise<EmailChangeState> {
 
   revalidatePath("/profile");
   return { success: true, message: "Email change cancelled" };
+}
+
+const EMPTY_LEXICAL_CONTENT = '{"root":{"children":[],"direction":null,"format":"","indent":0,"type":"root","version":1}}';
+const BLOB_URL_REGEX = /https:\/\/[^"'\s]+\.blob\.vercel-storage\.com[^"'\s]*/g;
+
+export async function deleteAccount(
+  _prevState: ProfileState,
+  formData: FormData
+): Promise<ProfileState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const confirmation = (formData.get("confirmation") as string)?.trim();
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, email: true, username: true, displayName: true, avatar: true },
+  });
+
+  if (!user || !user.username) {
+    return { success: false, message: "User not found or username not set" };
+  }
+
+  const expected = `delete ${user.username}`;
+  if (confirmation?.toLowerCase() !== expected.toLowerCase()) {
+    return { success: false, message: "Confirmation text does not match" };
+  }
+
+  // Step 1: Collect all media blob URLs before deletion
+  const blobUrls: string[] = [];
+
+  if (user.avatar?.includes("blob.vercel-storage.com")) {
+    blobUrls.push(user.avatar);
+  }
+
+  const userPosts = await prisma.post.findMany({
+    where: { authorId: user.id },
+    select: { id: true, content: true },
+  });
+
+  for (const post of userPosts) {
+    const matches = post.content.match(BLOB_URL_REGEX);
+    if (matches) blobUrls.push(...matches);
+  }
+
+  const userMessages = await prisma.message.findMany({
+    where: { senderId: user.id },
+    select: { mediaUrl: true },
+  });
+
+  for (const msg of userMessages) {
+    if (msg.mediaUrl?.includes("blob.vercel-storage.com")) {
+      blobUrls.push(msg.mediaUrl);
+    }
+  }
+
+  // Also collect blob URLs from user's quote reposts
+  const userReposts = await prisma.repost.findMany({
+    where: { userId: user.id, content: { not: null } },
+    select: { content: true },
+  });
+
+  for (const repost of userReposts) {
+    if (repost.content) {
+      const matches = repost.content.match(BLOB_URL_REGEX);
+      if (matches) blobUrls.push(...matches);
+    }
+  }
+
+  // Step 2: Find posts quoted by other users (must be preserved as tombstones)
+  const quotedPostIds = (
+    await prisma.repost.findMany({
+      where: {
+        post: { authorId: user.id },
+        content: { not: null },
+        userId: { not: user.id },
+      },
+      select: { postId: true },
+      distinct: ["postId"],
+    })
+  ).map((r) => r.postId);
+
+  const quotedPostIdSet = new Set(quotedPostIds);
+
+  // Step 3: Tombstone quoted posts
+  if (quotedPostIdSet.size > 0) {
+    const ids = Array.from(quotedPostIdSet);
+
+    await prisma.post.updateMany({
+      where: { id: { in: ids } },
+      data: {
+        content: EMPTY_LEXICAL_CONTENT,
+        isAuthorDeleted: true,
+        authorId: null,
+        isSensitive: false,
+        isNsfw: false,
+        isGraphicNudity: false,
+        isPinned: false,
+      },
+    });
+
+    // Clean up associated data on tombstoned posts
+    await Promise.all([
+      prisma.like.deleteMany({ where: { postId: { in: ids } } }),
+      prisma.bookmark.deleteMany({ where: { postId: { in: ids } } }),
+      prisma.comment.deleteMany({ where: { postId: { in: ids } } }),
+      prisma.postTag.deleteMany({ where: { postId: { in: ids } } }),
+      prisma.postRevision.deleteMany({ where: { postId: { in: ids } } }),
+      prisma.notification.deleteMany({ where: { postId: { in: ids } } }),
+    ]);
+
+    // Delete non-quote reposts and user's own reposts on these posts,
+    // but keep quotes by other users
+    await prisma.repost.deleteMany({
+      where: {
+        postId: { in: ids },
+        OR: [{ content: null }, { userId: user.id }],
+      },
+    });
+  }
+
+  // Step 4: Delete all non-quoted posts (cascade handles their likes/comments/etc)
+  const nonQuotedPostIds = userPosts
+    .filter((p) => !quotedPostIdSet.has(p.id))
+    .map((p) => p.id);
+
+  if (nonQuotedPostIds.length > 0) {
+    await prisma.post.deleteMany({
+      where: { id: { in: nonQuotedPostIds } },
+    });
+  }
+
+  // Step 5: Archive user data
+  await prisma.deletedUser.create({
+    data: {
+      originalId: user.id,
+      email: user.email,
+      username: user.username,
+      displayName: user.displayName,
+    },
+  });
+
+  // Step 6: Delete the user (cascades remaining relations)
+  await prisma.user.delete({ where: { id: user.id } });
+
+  // Step 7: Queue media cleanup job
+  const uniqueUrls = [...new Set(blobUrls)];
+  if (uniqueUrls.length > 0) {
+    await inngest.send({
+      name: "user/delete-media",
+      data: { blobUrls: uniqueUrls, originalUserId: user.id },
+    });
+  }
+
+  return { success: true, message: "Account deleted" };
 }
