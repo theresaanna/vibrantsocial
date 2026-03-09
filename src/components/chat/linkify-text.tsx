@@ -1,9 +1,11 @@
-import {
-  URL_REGEX,
-  WWW_REGEX,
-  EMAIL_REGEX,
-} from "@/components/editor/plugins/AutoLinkPlugin";
 import { normalizeTag } from "@/lib/tags";
+
+const URL_REGEX =
+  /(https?:\/\/(?:www\.)?[-\w@:%.+~#=]{1,256}\.[a-zA-Z]{2,}(?:[-\w()@:%+.~#?&/=]*))/;
+const WWW_REGEX =
+  /(www\.[-\w@:%.+~#=]{1,256}\.[a-zA-Z]{2,}(?:[-\w()@:%+.~#?&/=]*))/;
+const EMAIL_REGEX =
+  /((?:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}))/;
 
 const HASHTAG_REGEX = /(?<![a-zA-Z0-9])#([a-zA-Z0-9][a-zA-Z0-9-]{0,49})/;
 const MENTION_REGEX = /(?<![a-zA-Z0-9])@([a-zA-Z0-9_]{3,30})/;
