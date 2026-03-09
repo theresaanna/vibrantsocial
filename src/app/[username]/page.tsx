@@ -22,7 +22,11 @@ interface ProfilePageProps {
 export default async function PublicProfilePage({ params, searchParams }: ProfilePageProps) {
   const { username } = await params;
   const { tab } = await searchParams;
-  const activeTab = tab === "reposts" ? "reposts" as const : tab === "nsfw" ? "nsfw" as const : "posts" as const;
+  const activeTab = tab === "reposts" ? "reposts" as const
+    : tab === "sensitive" ? "sensitive" as const
+    : tab === "nsfw" ? "nsfw" as const
+    : tab === "graphic" ? "graphic" as const
+    : "posts" as const;
 
   const user = await cached(
     cacheKeys.userProfile(username),
@@ -55,6 +59,13 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   );
 
   if (!user) notFound();
+
+  // Check if profile owner has content of each sensitivity type (for tab visibility)
+  const [hasSensitivePosts, hasNsfwPosts, hasGraphicPosts] = await Promise.all([
+    prisma.post.count({ where: { authorId: user.id, isSensitive: true }, take: 1 }).then(c => c > 0),
+    prisma.post.count({ where: { authorId: user.id, isNsfw: true }, take: 1 }).then(c => c > 0),
+    prisma.post.count({ where: { authorId: user.id, isGraphicNudity: true }, take: 1 }).then(c => c > 0),
+  ]);
 
   const session = await auth();
   const currentUserId = session?.user?.id;
@@ -183,8 +194,8 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
         where: {
           authorId: user.id,
           ...loggedOutFilter,
-          // Hide NSFW posts from Posts tab unless viewer opted in
-          ...(currentUserId && !showNsfwContent ? { isNsfw: false } : {}),
+          // Flagged posts go to their own tabs
+          ...(currentUserId ? { isSensitive: false, isNsfw: false, isGraphicNudity: false } : {}),
         },
         orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
         take: 20,
@@ -211,10 +222,30 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       })
     : [];
 
+  // Sensitive tab: only isSensitive posts, only for logged-in users
+  const sensitivePosts = activeTab === "sensitive" && currentUserId
+    ? await prisma.post.findMany({
+        where: { authorId: user.id, isSensitive: true },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        include: postInclude,
+      })
+    : [];
+
   // NSFW tab: only isNsfw posts, only for logged-in users
   const nsfwPosts = activeTab === "nsfw" && currentUserId
     ? await prisma.post.findMany({
         where: { authorId: user.id, isNsfw: true },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        include: postInclude,
+      })
+    : [];
+
+  // Graphic/Explicit tab: only isGraphicNudity posts, only for logged-in users
+  const graphicPosts = activeTab === "graphic" && currentUserId
+    ? await prisma.post.findMany({
+        where: { authorId: user.id, isGraphicNudity: true },
         orderBy: { createdAt: "desc" },
         take: 20,
         include: postInclude,
@@ -385,7 +416,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           </div>
         </div>
 
-        <ProfileTabs username={user.username!} activeTab={activeTab} hasCustomTheme={hasCustomTheme} showNsfwTab={showNsfwContent} />
+        <ProfileTabs username={user.username!} activeTab={activeTab} hasCustomTheme={hasCustomTheme} showSensitiveTab={hasSensitivePosts} showNsfwTab={hasNsfwPosts} showGraphicTab={hasGraphicPosts} />
 
         {/* Tab content */}
         {activeTab === "posts" ? (
@@ -406,6 +437,26 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
               )}
             </div>
           )
+        ) : activeTab === "sensitive" ? (
+          !currentUserId ? (
+            <div className="mt-8 text-center">
+              <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                Log in to view sensitive content.
+              </p>
+            </div>
+          ) : sensitivePosts.length === 0 ? (
+            <div className="mt-8 text-center">
+              <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                No sensitive posts.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-6 space-y-4">
+              {sensitivePosts.map((post) => (
+                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} />
+              ))}
+            </div>
+          )
         ) : activeTab === "nsfw" ? (
           !currentUserId ? (
             <div className="mt-8 text-center">
@@ -422,6 +473,26 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           ) : (
             <div className="mt-6 space-y-4">
               {nsfwPosts.map((post) => (
+                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} />
+              ))}
+            </div>
+          )
+        ) : activeTab === "graphic" ? (
+          !currentUserId ? (
+            <div className="mt-8 text-center">
+              <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                Log in to view graphic/explicit content.
+              </p>
+            </div>
+          ) : graphicPosts.length === 0 ? (
+            <div className="mt-8 text-center">
+              <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                No graphic/explicit posts.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-6 space-y-4">
+              {graphicPosts.map((post) => (
                 <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} />
               ))}
             </div>
