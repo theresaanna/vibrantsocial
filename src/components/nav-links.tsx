@@ -1,0 +1,153 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+interface NavLink {
+  href: string;
+  label: string;
+  color: string;
+  activeColor: string;
+  icon: React.ReactNode;
+  matchPrefix?: boolean;
+}
+
+export function NavLinks({ username }: { username?: string | null }) {
+  const pathname = usePathname();
+
+  const profileHref = username ? `/${username}` : "/profile";
+
+  const links: NavLink[] = [
+    {
+      href: "/feed",
+      label: "Feed",
+      color: "hover:bg-purple-50 hover:text-purple-500 dark:hover:bg-purple-900/20 dark:hover:text-purple-500",
+      activeColor: "bg-purple-50 text-purple-500 dark:bg-purple-900/20 dark:text-purple-500",
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+        </svg>
+      ),
+    },
+    {
+      href: "/compose",
+      label: "Compose",
+      color: "hover:bg-cyan-50 hover:text-cyan-500 dark:hover:bg-cyan-900/20 dark:hover:text-cyan-500",
+      activeColor: "bg-cyan-50 text-cyan-500 dark:bg-cyan-900/20 dark:text-cyan-500",
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+        </svg>
+      ),
+    },
+    {
+      href: "/likes",
+      label: "Likes",
+      color: "hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-500",
+      activeColor: "bg-red-50 text-red-500 dark:bg-red-900/20 dark:text-red-500",
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+        </svg>
+      ),
+    },
+    {
+      href: "/bookmarks",
+      label: "Bookmarks",
+      color: "hover:bg-yellow-50 hover:text-yellow-500 dark:hover:bg-yellow-900/20 dark:hover:text-yellow-500",
+      activeColor: "bg-yellow-50 text-yellow-500 dark:bg-yellow-900/20 dark:text-yellow-500",
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+        </svg>
+      ),
+    },
+    {
+      href: "/communities",
+      label: "Communities",
+      matchPrefix: true,
+      color: "hover:bg-fuchsia-50 hover:text-fuchsia-500 dark:hover:bg-fuchsia-900/20 dark:hover:text-fuchsia-500",
+      activeColor: "bg-fuchsia-50 text-fuchsia-500 dark:bg-fuchsia-900/20 dark:text-fuchsia-500",
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 8.25h15m-16.5 7.5h15m-1.8-13.5l-3.9 19.5m-2.1-19.5l-3.9 19.5" />
+        </svg>
+      ),
+    },
+  ];
+
+  const profileLink: NavLink = {
+    href: profileHref,
+    label: "Profile",
+    color: "hover:bg-orange-50 hover:text-orange-500 dark:hover:bg-orange-900/20 dark:hover:text-orange-500",
+    activeColor: "bg-orange-50 text-orange-500 dark:bg-orange-900/20 dark:text-orange-500",
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+      </svg>
+    ),
+  };
+
+  function isActive(link: NavLink) {
+    if (link.matchPrefix) return pathname.startsWith(link.href);
+    return pathname === link.href;
+  }
+
+  const baseClass = "rounded-lg p-1.5 transition-colors";
+  const inactiveText = "text-zinc-600 dark:text-zinc-400";
+
+  return (
+    <>
+      {links.map((link) => (
+        <Link
+          key={link.href}
+          href={link.href}
+          className={`${baseClass} ${isActive(link) ? link.activeColor : `${inactiveText} ${link.color}`}`}
+          aria-label={link.label}
+        >
+          {link.icon}
+        </Link>
+      ))}
+      {/* Desktop-only profile link */}
+      <ProfileLink link={profileLink} isActive={isActive(profileLink)} className="hidden sm:inline-flex" />
+      {/* Mobile-only profile link (rendered in header row) is separate */}
+    </>
+  );
+}
+
+function ProfileLink({ link, isActive, className }: { link: NavLink; isActive: boolean; className?: string }) {
+  const baseClass = "rounded-lg p-1.5 transition-colors";
+  const inactiveText = "text-zinc-600 dark:text-zinc-400";
+
+  return (
+    <Link
+      href={link.href}
+      className={`${baseClass} ${isActive ? link.activeColor : `${inactiveText} ${link.color}`} ${className ?? ""}`}
+      aria-label={link.label}
+    >
+      {link.icon}
+    </Link>
+  );
+}
+
+export function MobileProfileLink({ username }: { username?: string | null }) {
+  const pathname = usePathname();
+  const profileHref = username ? `/${username}` : "/profile";
+  const isActive = pathname === profileHref;
+
+  const baseClass = "order-2 rounded-lg p-1.5 transition-colors sm:hidden";
+  const activeColor = "bg-orange-50 text-orange-500 dark:bg-orange-900/20 dark:text-orange-500";
+  const inactiveColor = "text-zinc-600 hover:bg-orange-50 hover:text-orange-500 dark:text-zinc-400 dark:hover:bg-orange-900/20 dark:hover:text-orange-500";
+
+  return (
+    <Link
+      href={profileHref}
+      className={`${baseClass} ${isActive ? activeColor : inactiveColor}`}
+      aria-label="Profile"
+    >
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+      </svg>
+    </Link>
+  );
+}

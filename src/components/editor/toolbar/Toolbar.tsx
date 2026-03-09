@@ -32,9 +32,9 @@ export function Toolbar() {
         <BlockFormatDropdown />
         <Divider />
         <FontDropdown />
+        <FontSizeControls />
+        <Divider />
       </span>
-      <FontSizeControls />
-      <Divider />
       <TextFormatButtons />
       <Divider />
       <LinkButton />
