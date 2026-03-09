@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+
 
 interface VerifyEmailState {
   success: boolean;
@@ -110,7 +110,6 @@ export async function verifyEmail(
     },
   });
 
-  revalidatePath("/profile");
   return {
     success: true,
     message: "Your email address has been verified!",
