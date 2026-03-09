@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useActionState } from "react";
+import { useState, useRef, useEffect, useCallback, useActionState } from "react";
 import { PostContent } from "./post-content";
 import { PostActions } from "./post-actions";
 import { CommentSection } from "./comment-section";
@@ -11,6 +11,8 @@ import { useRouter } from "next/navigation";
 import { TagInput } from "./tag-input";
 import { ContentFlagsInfoModal } from "./content-flags-info-modal";
 import { timeAgo } from "@/lib/time";
+import { useAblyReady } from "@/app/providers";
+import { getAblyRealtimeClient } from "@/lib/ably";
 import Link from "next/link";
 
 interface PostAuthor {
@@ -55,7 +57,7 @@ interface PostCardProps {
   };
   currentUserId?: string;
   phoneVerified: boolean;
-  biometricVerified: boolean;
+  ageVerified: boolean;
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
   defaultShowComments?: boolean;
@@ -67,7 +69,7 @@ export function PostCard({
   post,
   currentUserId,
   phoneVerified,
-  biometricVerified,
+  ageVerified,
   showGraphicByDefault,
   showNsfwContent,
   defaultShowComments = false,
@@ -75,6 +77,8 @@ export function PostCard({
   highlightCommentId,
 }: PostCardProps) {
   const [showComments, setShowComments] = useState(defaultShowComments);
+  const [commentCount, setCommentCount] = useState(post._count.comments);
+  const ablyReady = useAblyReady();
   const [revealed, setRevealed] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -136,6 +140,31 @@ export function PostCard({
     }
   }, [showMenu]);
 
+  // Subscribe to real-time comment count updates via Ably
+  const handleCountMessage = useCallback(
+    (event: { data: { count: number } }) => {
+      if (typeof event.data?.count === "number") {
+        setCommentCount(event.data.count);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!ablyReady) return;
+    const client = getAblyRealtimeClient();
+    const channel = client.channels.get(`comments:${post.id}`);
+    channel.subscribe("count", handleCountMessage);
+    return () => {
+      channel.unsubscribe("count", handleCountMessage);
+    };
+  }, [ablyReady, post.id, handleCountMessage]);
+
+  // Sync comment count when server props change (e.g. after revalidation)
+  useEffect(() => {
+    setCommentCount(post._count.comments);
+  }, [post._count.comments]);
+
   if (deleted) return null;
 
   if (post.isAuthorDeleted) {
@@ -166,9 +195,9 @@ export function PostCard({
   if (isRestricted && !isAuthenticated) return null;
 
   if (isRestricted && !revealed) {
-    // Sensitive: requires biometric verification
+    // Sensitive: requires age verification
     if (post.isSensitive) {
-      if (!biometricVerified) {
+      if (!ageVerified) {
         showOverlay = true;
         overlayMessage = "Verify your age to view this content.";
         canReveal = false;
@@ -179,9 +208,9 @@ export function PostCard({
       }
     }
 
-    // Graphic/Explicit: requires biometric verification
+    // Graphic/Explicit: requires age verification
     if (post.isGraphicNudity) {
-      if (!biometricVerified) {
+      if (!ageVerified) {
         showOverlay = true;
         overlayMessage = "Verify your age to view this content.";
         canReveal = false;
@@ -360,7 +389,7 @@ export function PostCard({
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
               {overlayMessage}
             </p>
-            {canReveal && (
+            {canReveal ? (
               <button
                 type="button"
                 onClick={() => setRevealed(true)}
@@ -368,6 +397,13 @@ export function PostCard({
               >
                 Show content
               </button>
+            ) : (
+              <Link
+                href="/age-verify"
+                className="mt-3 inline-block rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              >
+                Verify your age
+              </Link>
             )}
           </div>
         </div>
@@ -503,7 +539,7 @@ export function PostCard({
             <PostActions
               postId={post.id}
               likeCount={post._count.likes}
-              commentCount={post._count.comments}
+              commentCount={commentCount}
               repostCount={post._count.reposts}
               bookmarkCount={post._count.bookmarks}
               isLiked={post.likes.length > 0}
@@ -523,6 +559,7 @@ export function PostCard({
               phoneVerified={phoneVerified}
               isAuthenticated={isAuthenticated}
               highlightCommentId={highlightCommentId}
+              onCommentCountChange={setCommentCount}
             />
           )}
         </>

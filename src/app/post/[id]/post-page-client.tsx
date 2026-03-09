@@ -7,7 +7,7 @@ interface PostPageClientProps {
   post: React.ComponentProps<typeof PostCard>["post"];
   currentUserId?: string;
   phoneVerified: boolean;
-  biometricVerified: boolean;
+  ageVerified: boolean;
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
   highlightCommentId: string | null;
@@ -17,7 +17,7 @@ export function PostPageClient({
   post,
   currentUserId,
   phoneVerified,
-  biometricVerified,
+  ageVerified,
   showGraphicByDefault,
   showNsfwContent,
   highlightCommentId,
@@ -47,7 +47,7 @@ export function PostPageClient({
         post={post}
         currentUserId={currentUserId}
         phoneVerified={phoneVerified}
-        biometricVerified={biometricVerified}
+        ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
         showNsfwContent={showNsfwContent}
         defaultShowComments

@@ -15,7 +15,7 @@ export default async function LikesPage() {
     select: {
       phoneVerified: true,
       dateOfBirth: true,
-      biometricVerified: true,
+      ageVerified: true,
       showGraphicByDefault: true,
       showNsfwContent: true,
     },
@@ -24,7 +24,7 @@ export default async function LikesPage() {
   if (!currentUser?.dateOfBirth) redirect("/complete-profile");
 
   const phoneVerified = !!currentUser?.phoneVerified;
-  const biometricVerified = !!currentUser?.biometricVerified;
+  const ageVerified = !!currentUser?.ageVerified;
   const showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
   const showNsfwContent = currentUser?.showNsfwContent ?? false;
 
@@ -130,7 +130,7 @@ export default async function LikesPage() {
               post={post}
               currentUserId={userId}
               phoneVerified={phoneVerified}
-              biometricVerified={biometricVerified}
+              ageVerified={ageVerified}
               showGraphicByDefault={showGraphicByDefault}
               showNsfwContent={showNsfwContent}
             />

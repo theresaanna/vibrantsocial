@@ -62,7 +62,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
         post={basePost}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={false}
       />
@@ -73,13 +73,13 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
 
   // ── Sensitive content (isSensitive) ───────────────────────────────
 
-  it("shows locked overlay for sensitive post when not biometric verified", () => {
+  it("shows locked overlay for sensitive post when not age verified", () => {
     render(
       <PostCard
         post={{ ...basePost, isSensitive: true }}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={false}
       />
@@ -89,13 +89,13 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
     expect(screen.queryByText("Show content")).not.toBeInTheDocument();
   });
 
-  it("shows click-to-reveal for sensitive post when biometric verified", () => {
+  it("shows click-to-reveal for sensitive post when age verified", () => {
     render(
       <PostCard
         post={{ ...basePost, isSensitive: true }}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={true}
+        ageVerified={true}
         showGraphicByDefault={false}
         showNsfwContent={false}
       />
@@ -111,7 +111,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
         post={{ ...basePost, isSensitive: true }}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={true}
+        ageVerified={true}
         showGraphicByDefault={false}
         showNsfwContent={false}
       />
@@ -127,7 +127,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
         post={{ ...basePost, isSensitive: true }}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={true}
+        ageVerified={true}
         showGraphicByDefault={false}
         showNsfwContent={false}
       />
@@ -138,13 +138,13 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
 
   // ── Graphic/Explicit content (isGraphicNudity) ─────────────────────
 
-  it("shows locked overlay for Graphic/Explicit post when not biometric verified", () => {
+  it("shows locked overlay for Graphic/Explicit post when not age verified", () => {
     render(
       <PostCard
         post={{ ...basePost, isGraphicNudity: true }}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={false}
       />
@@ -154,13 +154,13 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
     expect(screen.queryByText("Show content")).not.toBeInTheDocument();
   });
 
-  it("shows click-to-reveal for Graphic/Explicit post when biometric verified and showGraphicByDefault is false", () => {
+  it("shows click-to-reveal for Graphic/Explicit post when age verified and showGraphicByDefault is false", () => {
     render(
       <PostCard
         post={{ ...basePost, isGraphicNudity: true }}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={true}
+        ageVerified={true}
         showGraphicByDefault={false}
         showNsfwContent={false}
       />
@@ -170,13 +170,13 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
     expect(screen.queryByTestId("post-content")).not.toBeInTheDocument();
   });
 
-  it("shows Graphic/Explicit content by default when biometric verified and showGraphicByDefault is true", () => {
+  it("shows Graphic/Explicit content by default when age verified and showGraphicByDefault is true", () => {
     render(
       <PostCard
         post={{ ...basePost, isGraphicNudity: true }}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={true}
+        ageVerified={true}
         showGraphicByDefault={true}
         showNsfwContent={false}
       />
@@ -191,7 +191,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
         post={{ ...basePost, isGraphicNudity: true }}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={true}
+        ageVerified={true}
         showGraphicByDefault={true}
         showNsfwContent={false}
       />
@@ -207,7 +207,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
         post={{ ...basePost, isNsfw: true }}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={false}
       />
@@ -223,7 +223,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
         post={{ ...basePost, isNsfw: true }}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={true}
       />
@@ -238,7 +238,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
         post={{ ...basePost, isNsfw: true }}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={true}
       />
@@ -254,12 +254,12 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
         post={{ ...basePost, isSensitive: true, isNsfw: true }}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={true}
+        ageVerified={true}
         showGraphicByDefault={false}
         showNsfwContent={true}
       />
     );
-    // Sensitive requires click-to-reveal even when biometric verified, so click to reveal first
+    // Sensitive requires click-to-reveal even when age verified, so click to reveal first
     fireEvent.click(screen.getByText("Show content"));
     expect(screen.getByText("Sensitive / NSFW")).toBeInTheDocument();
   });
@@ -270,12 +270,12 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
         post={{ ...basePost, isSensitive: true, isGraphicNudity: true }}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={true}
+        ageVerified={true}
         showGraphicByDefault={true}
         showNsfwContent={false}
       />
     );
-    // Sensitive requires click-to-reveal even when biometric verified
+    // Sensitive requires click-to-reveal even when age verified
     fireEvent.click(screen.getByText("Show content"));
     expect(screen.getByText("Sensitive / Graphic/Explicit")).toBeInTheDocument();
   });
@@ -287,7 +287,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
       <PostCard
         post={{ ...basePost, isSensitive: true }}
         phoneVerified={false}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={false}
       />
@@ -300,7 +300,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
       <PostCard
         post={{ ...basePost, isNsfw: true }}
         phoneVerified={false}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={false}
       />
@@ -313,7 +313,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
       <PostCard
         post={{ ...basePost, isGraphicNudity: true }}
         phoneVerified={false}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={false}
       />
@@ -329,7 +329,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
         post={{ ...basePost, isSensitive: true }}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={false}
       />

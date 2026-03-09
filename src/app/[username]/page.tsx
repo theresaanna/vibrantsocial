@@ -67,7 +67,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   // Check if current user follows this profile
   let isFollowing = false;
   let phoneVerified = false;
-  let biometricVerified = false;
+  let ageVerified = false;
   let showGraphicByDefault = false;
   let showNsfwContent = false;
   let friendshipStatus: FriendshipStatus = "none";
@@ -93,10 +93,10 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   if (currentUserId) {
     const currentUser = await prisma.user.findUnique({
       where: { id: currentUserId },
-      select: { phoneVerified: true, biometricVerified: true, showGraphicByDefault: true, showNsfwContent: true },
+      select: { phoneVerified: true, ageVerified: true, showGraphicByDefault: true, showNsfwContent: true },
     });
     phoneVerified = !!currentUser?.phoneVerified;
-    biometricVerified = !!currentUser?.biometricVerified;
+    ageVerified = !!currentUser?.ageVerified;
     showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
     showNsfwContent = currentUser?.showNsfwContent ?? false;
   }
@@ -399,9 +399,9 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             <div className="mt-6 space-y-4">
               {feedItems.map((item) =>
                 item.type === "post" ? (
-                  <PostCard key={item.data.id} post={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} />
+                  <PostCard key={item.data.id} post={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} />
                 ) : (
-                  <RepostCard key={item.data.id} repost={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} />
+                  <RepostCard key={item.data.id} repost={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} />
                 )
               )}
             </div>
@@ -422,7 +422,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           ) : (
             <div className="mt-6 space-y-4">
               {nsfwPosts.map((post) => (
-                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} />
+                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} />
               ))}
             </div>
           )
@@ -436,7 +436,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           ) : (
             <div className="mt-6 space-y-4">
               {userReposts.map((repost) => (
-                <RepostCard key={repost.id} repost={repost} currentUserId={currentUserId} phoneVerified={phoneVerified} biometricVerified={biometricVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} />
+                <RepostCard key={repost.id} repost={repost} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} />
               ))}
             </div>
           )

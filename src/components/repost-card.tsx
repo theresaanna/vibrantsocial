@@ -62,7 +62,7 @@ interface RepostCardProps {
   };
   currentUserId?: string;
   phoneVerified: boolean;
-  biometricVerified: boolean;
+  ageVerified: boolean;
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
 }
@@ -71,7 +71,7 @@ export function RepostCard({
   repost,
   currentUserId,
   phoneVerified,
-  biometricVerified,
+  ageVerified,
   showGraphicByDefault,
   showNsfwContent,
 }: RepostCardProps) {
@@ -365,7 +365,7 @@ export function RepostCard({
             post={repost.post}
             currentUserId={currentUserId}
             phoneVerified={phoneVerified}
-            biometricVerified={biometricVerified}
+            ageVerified={ageVerified}
             showGraphicByDefault={showGraphicByDefault}
             showNsfwContent={showNsfwContent}
           />
@@ -375,7 +375,7 @@ export function RepostCard({
           post={repost.post}
           currentUserId={currentUserId}
           phoneVerified={phoneVerified}
-          biometricVerified={biometricVerified}
+          ageVerified={ageVerified}
           showGraphicByDefault={showGraphicByDefault}
           showNsfwContent={showNsfwContent}
         />

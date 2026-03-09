@@ -100,7 +100,7 @@ describe("PostCard - checklist toggle", () => {
         post={basePost}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -114,7 +114,7 @@ describe("PostCard - checklist toggle", () => {
         post={basePost}
         currentUserId="other-user"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -127,7 +127,7 @@ describe("PostCard - checklist toggle", () => {
       <PostCard
         post={basePost}
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -141,7 +141,7 @@ describe("PostCard - checklist toggle", () => {
         post={basePost}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -156,7 +156,7 @@ describe("PostCard - checklist toggle", () => {
         post={basePost}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );

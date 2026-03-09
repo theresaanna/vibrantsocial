@@ -558,6 +558,10 @@ export async function createComment(
       author: JSON.stringify(comment.author),
       createdAt: comment.createdAt.toISOString(),
     });
+
+    // Also publish updated comment count so PostCard can update immediately
+    const count = await prisma.comment.count({ where: { postId } });
+    await channel.publish("count", { count });
   } catch {
     // Non-critical — DB write succeeded
   }

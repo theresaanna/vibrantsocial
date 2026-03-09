@@ -55,11 +55,11 @@ describe("fetchFeedPage content filtering", () => {
     expect(result).toEqual({ items: [], hasMore: false });
   });
 
-  it("excludes sensitive and graphic/nudity posts when user is not biometric verified", async () => {
+  it("excludes sensitive and graphic/nudity posts when user is not age verified", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPrisma.user.findUnique.mockResolvedValueOnce({
       showNsfwContent: false,
-      biometricVerified: null,
+      ageVerified: null,
     } as never);
 
     await fetchFeedPage();
@@ -75,11 +75,11 @@ describe("fetchFeedPage content filtering", () => {
     );
   });
 
-  it("does not filter sensitive/graphic posts when user is biometric verified", async () => {
+  it("does not filter sensitive/graphic posts when user is age verified", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPrisma.user.findUnique.mockResolvedValueOnce({
       showNsfwContent: false,
-      biometricVerified: new Date(),
+      ageVerified: new Date(),
     } as never);
 
     await fetchFeedPage();
@@ -95,7 +95,7 @@ describe("fetchFeedPage content filtering", () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPrisma.user.findUnique.mockResolvedValueOnce({
       showNsfwContent: false,
-      biometricVerified: new Date(),
+      ageVerified: new Date(),
     } as never);
 
     await fetchFeedPage();
@@ -113,7 +113,7 @@ describe("fetchFeedPage content filtering", () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPrisma.user.findUnique.mockResolvedValueOnce({
       showNsfwContent: true,
-      biometricVerified: new Date(),
+      ageVerified: new Date(),
     } as never);
 
     await fetchFeedPage();
@@ -122,11 +122,11 @@ describe("fetchFeedPage content filtering", () => {
     expect(callArgs.where).not.toHaveProperty("isNsfw");
   });
 
-  it("applies both NSFW and biometric filters for non-verified non-opted-in user", async () => {
+  it("applies both NSFW and age verification filters for non-verified non-opted-in user", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPrisma.user.findUnique.mockResolvedValueOnce({
       showNsfwContent: false,
-      biometricVerified: null,
+      ageVerified: null,
     } as never);
 
     await fetchFeedPage();
@@ -142,11 +142,11 @@ describe("fetchFeedPage content filtering", () => {
     );
   });
 
-  it("biometric verified + NSFW opted in sees all content types", async () => {
+  it("age verified + NSFW opted in sees all content types", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPrisma.user.findUnique.mockResolvedValueOnce({
       showNsfwContent: true,
-      biometricVerified: new Date(),
+      ageVerified: new Date(),
     } as never);
 
     await fetchFeedPage();

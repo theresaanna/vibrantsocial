@@ -72,7 +72,7 @@ export default function TermsOfServicePage() {
         </li>
       </ul>
       <p className="mt-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-        Only users who biometrically age verify can see posts marked Sensitive
+        Only users who age verify can see posts marked Sensitive
         and Graphic/Explicit. All users can opt into NSFW content, but it will
         not be shown publicly to users who are not logged into the platform.
         This is for the safety of everyone, including minors who must not see

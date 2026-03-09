@@ -68,7 +68,7 @@ const basePost = {
 const defaultProps = {
   currentUserId: "viewer1",
   phoneVerified: true,
-  biometricVerified: false,
+  ageVerified: false,
   showGraphicByDefault: false,
   showNsfwContent: false,
 };

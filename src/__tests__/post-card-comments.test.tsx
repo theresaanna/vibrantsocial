@@ -75,7 +75,7 @@ describe("PostCard - comment display", () => {
       <PostCard
         post={basePost}
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -87,7 +87,7 @@ describe("PostCard - comment display", () => {
       <PostCard
         post={basePost}
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
         defaultShowComments
       />
@@ -100,7 +100,7 @@ describe("PostCard - comment display", () => {
       <PostCard
         post={basePost}
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
         defaultShowComments
         highlightCommentId="comment123"
@@ -115,7 +115,7 @@ describe("PostCard - comment display", () => {
       <PostCard
         post={basePost}
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -133,7 +133,7 @@ describe("PostCard - comment display", () => {
       <PostCard
         post={basePost}
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
         defaultShowComments
       />

@@ -73,7 +73,7 @@ describe("PostCard - pin indicator", () => {
         post={{ ...basePost, isPinned: true }}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -87,7 +87,7 @@ describe("PostCard - pin indicator", () => {
         post={basePost}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -100,7 +100,7 @@ describe("PostCard - pin indicator", () => {
         post={{ ...basePost, isPinned: true }}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -114,7 +114,7 @@ describe("PostCard - pin indicator", () => {
         post={basePost}
         currentUserId="user1"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
@@ -128,7 +128,7 @@ describe("PostCard - pin indicator", () => {
         post={basePost}
         currentUserId="other-user"
         phoneVerified={true}
-        biometricVerified={false}
+        ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
       />
     );
