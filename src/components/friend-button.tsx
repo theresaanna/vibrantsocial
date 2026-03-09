@@ -44,7 +44,7 @@ export function FriendButton({
   // After successful send, show Pending
   if (sendState.success || friendshipStatus === "pending_sent") {
     return (
-      <span className="rounded-lg border border-zinc-200 px-4 py-1.5 text-sm font-medium text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+      <span className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-medium text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
         Pending
       </span>
     );
@@ -58,7 +58,7 @@ export function FriendButton({
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-lg bg-fuchsia-500 px-4 py-1.5 text-sm font-medium whitespace-nowrap text-white transition-colors hover:bg-fuchsia-600 disabled:opacity-50"
+          className="rounded-lg bg-fuchsia-500 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-white transition-colors hover:bg-fuchsia-600 disabled:opacity-50"
         >
           {sendPending ? "..." : "Add Friend"}
         </button>
@@ -74,7 +74,7 @@ export function FriendButton({
           <button
             type="submit"
             disabled={isPending}
-            className="rounded-lg bg-fuchsia-500 px-4 py-1.5 text-sm font-medium whitespace-nowrap text-white transition-colors hover:bg-fuchsia-600 disabled:opacity-50"
+            className="rounded-lg bg-fuchsia-500 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-white transition-colors hover:bg-fuchsia-600 disabled:opacity-50"
           >
             {acceptPending ? "..." : "Accept"}
           </button>
@@ -84,7 +84,7 @@ export function FriendButton({
           <button
             type="submit"
             disabled={isPending}
-            className="rounded-lg border border-zinc-200 px-4 py-1.5 text-sm font-medium whitespace-nowrap text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
           >
             {declinePending ? "..." : "Decline"}
           </button>
@@ -100,7 +100,7 @@ export function FriendButton({
       <button
         type="submit"
         disabled={isPending}
-        className="rounded-lg border border-zinc-200 px-4 py-1.5 text-sm font-medium whitespace-nowrap text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
       >
         {removePending ? "..." : "Friends"}
       </button>
