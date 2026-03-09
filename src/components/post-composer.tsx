@@ -24,7 +24,7 @@ import { AutoLinkPlugin } from "@/components/editor/plugins/AutoLinkPlugin";
 import { MentionsPlugin } from "@/components/editor/plugins/MentionsPlugin";
 import { TagInput } from "@/components/tag-input";
 import { ContentFlagsInfoModal } from "@/components/content-flags-info-modal";
-import { DraftPlugin, clearDraft } from "@/components/editor/plugins/DraftPlugin";
+import { DraftPlugin, clearDraft, type DraftSaveStatus } from "@/components/editor/plugins/DraftPlugin";
 
 function ClearOnSuccess({
   shouldClear,
@@ -62,6 +62,7 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
   const [isGraphicNudity, setIsGraphicNudity] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [showContentWarnings, setShowContentWarnings] = useState(false);
+  const [draftStatus, setDraftStatus] = useState<DraftSaveStatus>("idle");
 
   const [state, formAction, isPending] = useActionState(
     async (
@@ -149,7 +150,7 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
             <TablePlugin />
             <TabIndentationPlugin />
             <MentionsPlugin />
-            <DraftPlugin draftKey="compose" />
+            <DraftPlugin draftKey="compose" onSaveStatusChange={setDraftStatus} />
           </div>
           <ClearOnSuccess
             shouldClear={shouldClear}
@@ -225,20 +226,29 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
         </div>
         {showInfoModal && <ContentFlagsInfoModal onClose={() => setShowInfoModal(false)} />}
         <div className="flex items-center justify-between border-t border-zinc-200 px-4 py-3 dark:border-zinc-700">
-          {state.message && !state.success && (
-            <p className="text-sm text-red-600">{state.message}</p>
-          )}
-          {state.message && state.success && (
-            <p className="text-sm text-green-600">{state.message}</p>
-          )}
-          {!state.message && <span />}
-          <button
-            type="submit"
-            disabled={isPending}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-          >
-            {isPending ? "Posting..." : "Post"}
-          </button>
+          <div className="flex items-center gap-2">
+            {state.message && !state.success && (
+              <p className="text-sm text-red-600">{state.message}</p>
+            )}
+            {state.message && state.success && (
+              <p className="text-sm text-green-600">{state.message}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            {draftStatus === "saving" && (
+              <span className="text-xs text-zinc-400 dark:text-zinc-500">Saving…</span>
+            )}
+            {draftStatus === "saved" && (
+              <span className="text-xs text-zinc-400 dark:text-zinc-500">Saved</span>
+            )}
+            <button
+              type="submit"
+              disabled={isPending}
+              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            >
+              {isPending ? "Posting..." : "Post"}
+            </button>
+          </div>
         </div>
       </form>
     </div>
