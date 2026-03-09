@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, act, within } from "@testing-library/react";
+import { render, screen, act, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PostActions } from "@/components/post-actions";
 
@@ -209,5 +209,36 @@ describe("PostActions", () => {
     await user.click(commentBtn!);
 
     expect(onToggleComments).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders a share button", () => {
+    render(<PostActions {...defaultProps} />);
+    expect(screen.getByLabelText("Share")).toBeInTheDocument();
+  });
+
+  it("shows Copied! feedback after share click", async () => {
+    // Ensure navigator.share is not available so clipboard fallback is used
+    const origShare = navigator.share;
+    Object.defineProperty(navigator, "share", {
+      value: undefined,
+      writable: true,
+      configurable: true,
+    });
+
+    const user = userEvent.setup();
+    render(<PostActions {...defaultProps} />);
+
+    await user.click(screen.getByLabelText("Share"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Copied!")).toBeInTheDocument();
+    });
+
+    // Restore
+    Object.defineProperty(navigator, "share", {
+      value: origShare,
+      writable: true,
+      configurable: true,
+    });
   });
 });
