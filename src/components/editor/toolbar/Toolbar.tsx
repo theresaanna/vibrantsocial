@@ -8,10 +8,18 @@ import { TextFormatButtons } from "./TextFormatButtons";
 import { LinkButton } from "./LinkButton";
 import { ColorPicker } from "./ColorPicker";
 import { AlignmentDropdown } from "./AlignmentDropdown";
-import { InsertDropdown } from "./InsertDropdown";
+import {
+  FileUploadButton,
+  HorizontalRuleButton,
+  YouTubeButton,
+  TableButton,
+  PollButton,
+  EquationButton,
+  CollapsibleButton,
+  StickyNoteButton,
+} from "./InsertButtons";
 import { SpeechToTextButton } from "./SpeechToTextButton";
 import { ImportFileButton } from "./ImportFileButton";
-import { LockButton } from "./LockButton";
 import { MarkdownToggleButton } from "./MarkdownToggleButton";
 import { Divider } from "./Divider";
 
@@ -33,11 +41,17 @@ export function Toolbar() {
       <Divider />
       <AlignmentDropdown />
       <Divider />
-      <InsertDropdown />
+      <FileUploadButton />
+      <HorizontalRuleButton />
+      <YouTubeButton />
+      <TableButton />
+      <PollButton />
+      <EquationButton />
+      <CollapsibleButton />
+      <StickyNoteButton />
       <Divider />
       <SpeechToTextButton />
       <ImportFileButton />
-      <LockButton />
       <MarkdownToggleButton />
     </div>
   );
