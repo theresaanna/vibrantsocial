@@ -6,6 +6,7 @@ import { PostActions } from "./post-actions";
 import { CommentSection } from "./comment-section";
 import { PostRevisionHistory } from "./post-revision-history";
 import { Editor } from "./editor/Editor";
+import { clearDraft } from "./editor/plugins/DraftPlugin";
 import { editPost, deletePost, updatePostChecklist, togglePinPost } from "@/app/feed/actions";
 import { useRouter } from "next/navigation";
 import { TagInput } from "./tag-input";
@@ -216,6 +217,7 @@ export function PostCard({
       setCurrentTags(editTags.map((name) => ({ tag: { name } })));
       setWasEdited(true);
       setIsEditing(false);
+      clearDraft(`edit-post-${post.id}`);
     }
   }
 
@@ -387,6 +389,7 @@ export function PostCard({
                     inputName="content"
                     placeholder="Edit your post..."
                     minHeight="80px"
+                    draftKey={`edit-post-${post.id}`}
                   />
                 </div>
                 <div className="mt-2">
