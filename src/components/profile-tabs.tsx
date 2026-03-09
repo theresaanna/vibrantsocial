@@ -4,12 +4,14 @@ import Link from "next/link";
 
 interface ProfileTabsProps {
   username: string;
-  activeTab: "posts" | "reposts" | "nsfw";
+  activeTab: "posts" | "reposts" | "sensitive" | "nsfw" | "graphic";
   hasCustomTheme: boolean;
+  showSensitiveTab: boolean;
   showNsfwTab: boolean;
+  showGraphicTab: boolean;
 }
 
-export function ProfileTabs({ username, activeTab, hasCustomTheme, showNsfwTab }: ProfileTabsProps) {
+export function ProfileTabs({ username, activeTab, hasCustomTheme, showSensitiveTab, showNsfwTab, showGraphicTab }: ProfileTabsProps) {
   const baseClass = "px-4 py-2 text-sm font-medium border-b-2 transition-colors";
 
   const activeClass = hasCustomTheme
@@ -44,6 +46,15 @@ export function ProfileTabs({ username, activeTab, hasCustomTheme, showNsfwTab }
         >
           Reposts
         </Link>
+        {showSensitiveTab && (
+          <Link
+            href={`/${username}?tab=sensitive`}
+            className={`${baseClass} ${activeTab === "sensitive" ? activeClass : inactiveClass}`}
+            style={tabStyle(activeTab === "sensitive")}
+          >
+            Sensitive
+          </Link>
+        )}
         {showNsfwTab && (
           <Link
             href={`/${username}?tab=nsfw`}
@@ -51,6 +62,15 @@ export function ProfileTabs({ username, activeTab, hasCustomTheme, showNsfwTab }
             style={tabStyle(activeTab === "nsfw")}
           >
             NSFW
+          </Link>
+        )}
+        {showGraphicTab && (
+          <Link
+            href={`/${username}?tab=graphic`}
+            className={`${baseClass} ${activeTab === "graphic" ? activeClass : inactiveClass}`}
+            style={tabStyle(activeTab === "graphic")}
+          >
+            Graphic/Explicit
           </Link>
         )}
       </div>
