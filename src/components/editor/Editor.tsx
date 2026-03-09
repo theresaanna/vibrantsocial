@@ -22,6 +22,7 @@ import { Toolbar } from "./toolbar/Toolbar";
 import { AutoLinkPlugin } from "./plugins/AutoLinkPlugin";
 import { MentionsPlugin } from "./plugins/MentionsPlugin";
 import { CollapsiblePlugin } from "./plugins/CollapsiblePlugin";
+import { DraftPlugin } from "./plugins/DraftPlugin";
 
 interface EditorProps {
   /** Initial content as Lexical JSON string */
@@ -34,6 +35,8 @@ interface EditorProps {
   placeholder?: string;
   /** Minimum height of content area */
   minHeight?: string;
+  /** Key for localStorage draft saving. Omit to disable drafts. */
+  draftKey?: string;
 }
 
 /** Helper plugin that clears the editor programmatically */
@@ -62,6 +65,7 @@ export function Editor({
   inputName,
   placeholder = "Start writing...",
   minHeight = "120px",
+  draftKey,
 }: EditorProps) {
   const [editorJson, setEditorJson] = useState(initialContent ?? "");
 
@@ -128,6 +132,7 @@ export function Editor({
           <TabIndentationPlugin />
           <MentionsPlugin />
           <CollapsiblePlugin />
+          {draftKey && <DraftPlugin draftKey={draftKey} />}
         </div>
       </LexicalComposer>
     </div>

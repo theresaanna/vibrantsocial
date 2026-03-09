@@ -24,6 +24,7 @@ import { AutoLinkPlugin } from "@/components/editor/plugins/AutoLinkPlugin";
 import { MentionsPlugin } from "@/components/editor/plugins/MentionsPlugin";
 import { TagInput } from "@/components/tag-input";
 import { ContentFlagsInfoModal } from "@/components/content-flags-info-modal";
+import { DraftPlugin, clearDraft } from "@/components/editor/plugins/DraftPlugin";
 
 function ClearOnSuccess({
   shouldClear,
@@ -75,6 +76,7 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
         setIsSensitive(false);
         setIsNsfw(false);
         setIsGraphicNudity(false);
+        clearDraft("compose");
         if (result.postId) onPostCreated?.(result.postId);
       }
       return result;
@@ -147,6 +149,7 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
             <TablePlugin />
             <TabIndentationPlugin />
             <MentionsPlugin />
+            <DraftPlugin draftKey="compose" />
           </div>
           <ClearOnSuccess
             shouldClear={shouldClear}
