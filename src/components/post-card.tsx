@@ -195,9 +195,9 @@ export function PostCard({
   if (isRestricted && !isAuthenticated) return null;
 
   if (isRestricted && !revealed) {
-    // Sensitive: requires age verification
+    // Sensitive: requires age verification (authors can always reveal their own posts)
     if (post.isSensitive) {
-      if (!ageVerified) {
+      if (!ageVerified && !isAuthor) {
         showOverlay = true;
         overlayMessage = "Verify your age to view this content.";
         canReveal = false;
@@ -208,9 +208,9 @@ export function PostCard({
       }
     }
 
-    // Graphic/Explicit: requires age verification
+    // Graphic/Explicit: requires age verification (authors can always reveal their own posts)
     if (post.isGraphicNudity) {
-      if (!ageVerified) {
+      if (!ageVerified && !isAuthor) {
         showOverlay = true;
         overlayMessage = "Verify your age to view this content.";
         canReveal = false;

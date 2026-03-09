@@ -286,4 +286,54 @@ describe("PostCard - age verify CTA", () => {
       screen.getByText("Click to view NSFW content")
     ).toBeInTheDocument();
   });
+
+  // ─── Author bypass ─────────────────────────────────────────────
+
+  it("does NOT show 'Verify your age' for author of sensitive post even when not age verified", () => {
+    render(
+      <PostCard
+        post={makePost({ isSensitive: true })}
+        currentUserId="user1"
+        phoneVerified={true}
+        ageVerified={false}
+        showGraphicByDefault={false}
+        showNsfwContent={false}
+      />
+    );
+
+    expect(screen.queryByText(/verify your age/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/show content/i)).toBeInTheDocument();
+  });
+
+  it("does NOT show 'Verify your age' for author of graphic post even when not age verified", () => {
+    render(
+      <PostCard
+        post={makePost({ isGraphicNudity: true })}
+        currentUserId="user1"
+        phoneVerified={true}
+        ageVerified={false}
+        showGraphicByDefault={false}
+        showNsfwContent={false}
+      />
+    );
+
+    expect(screen.queryByText(/verify your age/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/show content/i)).toBeInTheDocument();
+  });
+
+  it("does NOT show 'Verify your age' for author of sensitive+graphic post even when not age verified", () => {
+    render(
+      <PostCard
+        post={makePost({ isSensitive: true, isGraphicNudity: true })}
+        currentUserId="user1"
+        phoneVerified={true}
+        ageVerified={false}
+        showGraphicByDefault={false}
+        showNsfwContent={false}
+      />
+    );
+
+    expect(screen.queryByText(/verify your age/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/show content/i)).toBeInTheDocument();
+  });
 });
