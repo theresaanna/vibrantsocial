@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useActionState } from "react";
 import { PostCard } from "./post-card";
 import { EditorContent } from "@/components/editor/EditorContent";
 import { Editor } from "./editor/Editor";
+import { clearDraft } from "./editor/plugins/DraftPlugin";
 import { TagInput } from "./tag-input";
 import { ContentFlagsInfoModal } from "./content-flags-info-modal";
 import { editRepost, deleteRepost, togglePinRepost } from "@/app/feed/post-actions";
@@ -140,6 +141,7 @@ export function RepostCard({
       setCurrentTags(editTags.map((name) => ({ tag: { name } })));
       setWasEdited(true);
       setIsEditing(false);
+      clearDraft(`edit-repost-${repost.id}`);
     }
   }
 
@@ -257,6 +259,7 @@ export function RepostCard({
                     inputName="content"
                     placeholder="Edit your quote..."
                     minHeight="60px"
+                    draftKey={`edit-repost-${repost.id}`}
                   />
                 </div>
                 <div className="mt-2">
