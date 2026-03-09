@@ -27,32 +27,40 @@ export function Toolbar() {
   return (
     <div className="flex flex-wrap items-center gap-0.5 border-b border-zinc-200 px-2 py-1 dark:border-zinc-700">
       <UndoRedoButtons />
-      <Divider />
-      <BlockFormatDropdown />
-      <Divider />
-      <FontDropdown />
+      <span className="hidden sm:contents">
+        <Divider />
+        <BlockFormatDropdown />
+        <Divider />
+        <FontDropdown />
+      </span>
       <FontSizeControls />
       <Divider />
       <TextFormatButtons />
       <Divider />
       <LinkButton />
       <ColorPicker type="text" />
-      <ColorPicker type="background" />
-      <Divider />
-      <AlignmentDropdown />
+      <span className="hidden sm:contents">
+        <ColorPicker type="background" />
+        <Divider />
+        <AlignmentDropdown />
+      </span>
       <Divider />
       <FileUploadButton />
-      <HorizontalRuleButton />
-      <YouTubeButton />
-      <TableButton />
-      <PollButton />
-      <EquationButton />
-      <CodeFormatButtons />
-      <CollapsibleButton />
-      <StickyNoteButton />
-      <Divider />
+      <span className="hidden sm:contents">
+        <HorizontalRuleButton />
+        <YouTubeButton />
+        <TableButton />
+        <PollButton />
+        <EquationButton />
+        <CodeFormatButtons />
+        <CollapsibleButton />
+        <StickyNoteButton />
+      </span>
       <SpeechToTextButton />
-      <MarkdownToggleButton />
+      <span className="hidden sm:contents">
+        <Divider />
+        <MarkdownToggleButton />
+      </span>
     </div>
   );
 }

@@ -47,6 +47,7 @@ const formats: FormatButton[] = [
     label: "S",
     ariaLabel: "Strikethrough",
     shortcut: "Ctrl+Shift+X",
+    hideOnMobile: true,
     icon: <span className="line-through">S</span>,
   },
 ];
