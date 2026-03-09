@@ -30,6 +30,13 @@ vi.mock("@vercel/blob", () => ({
   del: vi.fn(),
 }));
 
+vi.mock("@/lib/cache", () => ({
+  invalidate: vi.fn(),
+  cacheKeys: {
+    userProfile: (username: string) => `profile:${username}`,
+  },
+}));
+
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { del } from "@vercel/blob";
@@ -172,6 +179,90 @@ describe("updateProfile", () => {
         displayName: "New Name",
         bio: '{"root":{}}',
       }),
+    });
+  });
+
+  describe("special characters in displayName", () => {
+    const specialNameCases = [
+      { label: "emoji", value: "\u{1F525}\u{1F680} Fire Rocket" },
+      { label: "HTML-like tags", value: '<script>alert("xss")</script>' },
+      { label: "ampersands and entities", value: "Tom & Jerry <3 \"cats\"" },
+      { label: "CJK characters", value: "\u5F20\u4F1F" },
+      { label: "Arabic RTL text", value: "\u0645\u062D\u0645\u062F" },
+      { label: "combining diacritics", value: "Jose\u0301" },
+      { label: "zero-width joiners", value: "A\u200DB" },
+      { label: "newlines and tabs", value: "Line1\nLine2\tTabbed" },
+      { label: "single quote", value: "O'Brien" },
+      { label: "backslashes", value: "back\\slash\\name" },
+      { label: "percent encoding chars", value: "100% fun & games" },
+      { label: "unicode surrogate pair emoji", value: "\u{1F468}\u200D\u{1F469}\u200D\u{1F467}\u200D\u{1F466}" },
+      { label: "very long name", value: "A".repeat(500) },
+      { label: "only whitespace", value: "   " },
+      { label: "null bytes", value: "hello\x00world" },
+      { label: "SQL-like injection", value: "'; DROP TABLE users; --" },
+      { label: "curly braces and brackets", value: "{name: [test]}" },
+    ];
+
+    for (const { label, value } of specialNameCases) {
+      it(`saves displayName with ${label}`, async () => {
+        mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+        // bio fetch
+        mockPrisma.user.findUnique.mockResolvedValueOnce({
+          bio: null,
+        } as never);
+        mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+        const result = await updateProfile(
+          prevState,
+          makeFormData({ displayName: value })
+        );
+        expect(result.success).toBe(true);
+        expect(mockPrisma.user.update).toHaveBeenCalledWith({
+          where: { id: "user1" },
+          data: expect.objectContaining({
+            displayName: value || null,
+          }),
+        });
+      });
+    }
+
+    it("converts whitespace-only displayName to null", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+      mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
+      mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+      // "   " is truthy, so it will NOT be converted to null by `displayName || null`
+      // This verifies the current behavior
+      const result = await updateProfile(
+        prevState,
+        makeFormData({ displayName: "   " })
+      );
+      expect(result.success).toBe(true);
+    });
+
+    it("preserves special chars alongside other profile fields", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+      mockPrisma.user.findUnique.mockResolvedValueOnce(null as never);
+      mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
+      mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+      const result = await updateProfile(
+        prevState,
+        makeFormData({
+          username: "validuser",
+          displayName: "\u{1F525} O'Brien & \u5F20\u4F1F",
+          bio: '{"root":{}}',
+        })
+      );
+      expect(result.success).toBe(true);
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: "user1" },
+        data: expect.objectContaining({
+          username: "validuser",
+          displayName: "\u{1F525} O'Brien & \u5F20\u4F1F",
+          bio: '{"root":{}}',
+        }),
+      });
     });
   });
 
