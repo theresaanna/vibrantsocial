@@ -259,12 +259,18 @@ export function MessageBubble({
             {isEditing ? (
               <div className="flex flex-col gap-1">
                 <textarea
+                  ref={(el) => {
+                    if (el) {
+                      el.focus();
+                      el.selectionStart = el.value.length;
+                      el.selectionEnd = el.value.length;
+                    }
+                  }}
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
                   onKeyDown={handleEditKeyDown}
                   className="min-w-[200px] rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
                   rows={2}
-                  autoFocus
                 />
                 <div className="flex gap-1 text-xs">
                   <button

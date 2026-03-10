@@ -158,7 +158,7 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
             onCleared={() => setShouldClear(false)}
           />
         </LexicalComposer>
-        <div className="flex items-center">
+        <div className="flex min-h-[48px] items-center">
           <div className="flex-1">
             <TagInput
               tags={tags}
@@ -258,7 +258,7 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
             <button
               type="submit"
               disabled={isPending}
-              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              className="rounded-lg bg-gradient-to-r from-fuchsia-600 to-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:from-fuchsia-500 hover:to-blue-500 disabled:opacity-50"
             >
               {isPending ? "Posting..." : "Post"}
             </button>
