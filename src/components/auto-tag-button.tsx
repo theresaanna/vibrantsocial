@@ -66,7 +66,7 @@ export function AutoTagButton({
       {showHint && (
         <div className="absolute bottom-full right-0 z-20 mb-2 w-52 rounded-lg border border-zinc-200 bg-white p-3 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
           <p className="text-xs text-zinc-600 dark:text-zinc-300">
-            Use AI to auto-suggest tags for your post!
+            Click this button after you've drafted your post to auto-suggest tags!
           </p>
           <button
             type="button"
