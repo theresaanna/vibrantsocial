@@ -331,6 +331,7 @@ model ConversationParticipant {
   userId         String
   joinedAt       DateTime  @default(now())
   lastReadAt     DateTime?
+  chatEmailSentAt DateTime?
   isAdmin        Boolean   @default(false)
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)

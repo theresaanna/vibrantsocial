@@ -8,9 +8,9 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     comment: { create: vi.fn(), findUnique: vi.fn() },
     post: { findUnique: vi.fn() },
-    conversation: { findUnique: vi.fn(), update: vi.fn() },
-    conversationParticipant: { findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
-    message: { create: vi.fn(), count: vi.fn() },
+    conversation: { update: vi.fn() },
+    conversationParticipant: { findUnique: vi.fn(), update: vi.fn() },
+    message: { create: vi.fn() },
   },
 }));
 
@@ -23,10 +23,9 @@ vi.mock("@/lib/notifications", () => ({
 }));
 
 const mockSendCommentEmail = vi.fn();
-const mockSendNewChatEmail = vi.fn();
 vi.mock("@/lib/email", () => ({
   sendCommentEmail: (...args: unknown[]) => mockSendCommentEmail(...args),
-  sendNewChatEmail: (...args: unknown[]) => mockSendNewChatEmail(...args),
+  sendNewChatEmail: vi.fn(),
 }));
 
 vi.mock("@/lib/ably", () => ({
@@ -37,16 +36,14 @@ vi.mock("@/lib/ably", () => ({
   }),
 }));
 
-const mockInngestSend = vi.fn();
 vi.mock("@/lib/inngest", () => ({
-  inngest: { send: (...args: unknown[]) => mockInngestSend(...args) },
+  inngest: { send: vi.fn() },
 }));
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { requirePhoneVerification } from "@/lib/phone-gate";
 import { createComment } from "@/app/feed/post-actions";
-import { sendMessage } from "@/app/chat/actions";
 
 const mockAuth = vi.mocked(auth);
 const mockPrisma = vi.mocked(prisma);
@@ -172,222 +169,3 @@ describe("comment email notifications", () => {
   });
 });
 
-describe("chat email notifications", () => {
-  beforeEach(() => vi.clearAllMocks());
-
-  function setupSendMessageMocks(conversationId: string) {
-    mockAuth.mockResolvedValueOnce({ user: { id: "u1" } } as never);
-    mockPhoneGate.mockResolvedValueOnce(true);
-
-    mockPrisma.conversationParticipant.findUnique.mockResolvedValueOnce({
-      id: "cp1",
-      conversationId,
-      userId: "u1",
-    } as never);
-
-    mockPrisma.message.create.mockResolvedValueOnce({
-      id: "m1",
-      conversationId,
-      senderId: "u1",
-      content: "Hello!",
-      mediaUrl: null,
-      mediaType: null,
-      mediaFileName: null,
-      mediaFileSize: null,
-      editedAt: null,
-      deletedAt: null,
-      createdAt: new Date(),
-      sender: { id: "u1", username: "alice", displayName: "Alice", name: null, avatar: null, image: null },
-    } as never);
-
-    mockPrisma.conversation.update.mockResolvedValueOnce({} as never);
-    mockPrisma.conversationParticipant.update.mockResolvedValueOnce({} as never);
-  }
-
-  it("sends email on first unread message in a 1:1 conversation", async () => {
-    setupSendMessageMocks("conv1");
-
-    mockPrisma.conversation.findUnique.mockResolvedValueOnce({
-      id: "conv1",
-      isGroup: false,
-    } as never);
-
-    // Recipient has read all previous messages
-    mockPrisma.conversationParticipant.findFirst.mockResolvedValueOnce({
-      userId: "u2",
-      lastReadAt: new Date("2024-01-01T12:00:00Z"),
-      user: { email: "bob@example.com", emailOnNewChat: true },
-    } as never);
-
-    // This is the only unread message
-    mockPrisma.message.count.mockResolvedValueOnce(1 as never);
-
-    await sendMessage({ conversationId: "conv1", content: "Hello!" });
-
-    expect(mockInngestSend).toHaveBeenCalledWith({
-      name: "email/chat",
-      data: {
-        toEmail: "bob@example.com",
-        senderName: "Alice",
-        conversationId: "conv1",
-      },
-    });
-  });
-
-  it("sends email when recipient has never read the conversation and this is the first message", async () => {
-    setupSendMessageMocks("conv1");
-
-    mockPrisma.conversation.findUnique.mockResolvedValueOnce({
-      id: "conv1",
-      isGroup: false,
-    } as never);
-
-    // lastReadAt is null (never read)
-    mockPrisma.conversationParticipant.findFirst.mockResolvedValueOnce({
-      userId: "u2",
-      lastReadAt: null,
-      user: { email: "bob@example.com", emailOnNewChat: true },
-    } as never);
-
-    // Only 1 message from other users (the one just sent)
-    mockPrisma.message.count.mockResolvedValueOnce(1 as never);
-
-    await sendMessage({ conversationId: "conv1", content: "Hello!" });
-
-    expect(mockInngestSend).toHaveBeenCalledWith({
-      name: "email/chat",
-      data: {
-        toEmail: "bob@example.com",
-        senderName: "Alice",
-        conversationId: "conv1",
-      },
-    });
-  });
-
-  it("does not send email when recipient already has unread messages", async () => {
-    setupSendMessageMocks("conv1");
-
-    mockPrisma.conversation.findUnique.mockResolvedValueOnce({
-      id: "conv1",
-      isGroup: false,
-    } as never);
-
-    // Recipient hasn't read since yesterday
-    mockPrisma.conversationParticipant.findFirst.mockResolvedValueOnce({
-      userId: "u2",
-      lastReadAt: new Date("2024-01-01T12:00:00Z"),
-      user: { email: "bob@example.com", emailOnNewChat: true },
-    } as never);
-
-    // Multiple unread messages already exist
-    mockPrisma.message.count.mockResolvedValueOnce(3 as never);
-
-    await sendMessage({ conversationId: "conv1", content: "Hello!" });
-
-    expect(mockInngestSend).not.toHaveBeenCalled();
-  });
-
-  it("does not send email for group conversations", async () => {
-    setupSendMessageMocks("group1");
-
-    mockPrisma.conversation.findUnique.mockResolvedValueOnce({
-      id: "group1",
-      isGroup: true,
-    } as never);
-
-    await sendMessage({ conversationId: "group1", content: "Hello!" });
-
-    expect(mockInngestSend).not.toHaveBeenCalled();
-  });
-
-  it("does not send email when recipient has emailOnNewChat disabled", async () => {
-    setupSendMessageMocks("conv1");
-
-    mockPrisma.conversation.findUnique.mockResolvedValueOnce({
-      id: "conv1",
-      isGroup: false,
-    } as never);
-
-    mockPrisma.conversationParticipant.findFirst.mockResolvedValueOnce({
-      userId: "u2",
-      lastReadAt: new Date("2024-01-01T12:00:00Z"),
-      user: { email: "bob@example.com", emailOnNewChat: false },
-    } as never);
-
-    await sendMessage({ conversationId: "conv1", content: "Hello!" });
-
-    expect(mockInngestSend).not.toHaveBeenCalled();
-  });
-
-  it("does not send email when recipient has no email", async () => {
-    setupSendMessageMocks("conv1");
-
-    mockPrisma.conversation.findUnique.mockResolvedValueOnce({
-      id: "conv1",
-      isGroup: false,
-    } as never);
-
-    mockPrisma.conversationParticipant.findFirst.mockResolvedValueOnce({
-      userId: "u2",
-      lastReadAt: new Date("2024-01-01T12:00:00Z"),
-      user: { email: null, emailOnNewChat: true },
-    } as never);
-
-    await sendMessage({ conversationId: "conv1", content: "Hello!" });
-
-    expect(mockInngestSend).not.toHaveBeenCalled();
-  });
-
-  it("uses username as fallback when sender has no displayName", async () => {
-    mockAuth.mockResolvedValueOnce({ user: { id: "u1" } } as never);
-    mockPhoneGate.mockResolvedValueOnce(true);
-
-    mockPrisma.conversationParticipant.findUnique.mockResolvedValueOnce({
-      id: "cp1",
-      conversationId: "conv1",
-      userId: "u1",
-    } as never);
-
-    mockPrisma.message.create.mockResolvedValueOnce({
-      id: "m1",
-      conversationId: "conv1",
-      senderId: "u1",
-      content: "Hello!",
-      mediaUrl: null,
-      mediaType: null,
-      mediaFileName: null,
-      mediaFileSize: null,
-      editedAt: null,
-      deletedAt: null,
-      createdAt: new Date(),
-      sender: { id: "u1", username: "alice", displayName: null, name: null, avatar: null, image: null },
-    } as never);
-
-    mockPrisma.conversation.update.mockResolvedValueOnce({} as never);
-    mockPrisma.conversationParticipant.update.mockResolvedValueOnce({} as never);
-
-    mockPrisma.conversation.findUnique.mockResolvedValueOnce({
-      id: "conv1",
-      isGroup: false,
-    } as never);
-
-    mockPrisma.conversationParticipant.findFirst.mockResolvedValueOnce({
-      userId: "u2",
-      lastReadAt: new Date("2024-01-01T12:00:00Z"),
-      user: { email: "bob@example.com", emailOnNewChat: true },
-    } as never);
-
-    mockPrisma.message.count.mockResolvedValueOnce(1 as never);
-
-    await sendMessage({ conversationId: "conv1", content: "Hello!" });
-
-    expect(mockInngestSend).toHaveBeenCalledWith({
-      name: "email/chat",
-      data: {
-        toEmail: "bob@example.com",
-        senderName: "alice",
-        conversationId: "conv1",
-      },
-    });
-  });
-});

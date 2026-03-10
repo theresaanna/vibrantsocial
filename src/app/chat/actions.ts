@@ -6,7 +6,6 @@ import { revalidatePath } from "next/cache";
 import { requirePhoneVerification } from "@/lib/phone-gate";
 import { getAblyRestClient } from "@/lib/ably";
 import { createNotification } from "@/lib/notifications";
-import { inngest } from "@/lib/inngest";
 import type {
   ActionState,
   ConversationListItem,
@@ -445,54 +444,6 @@ export async function sendMessage(data: {
     },
     data: { lastReadAt: new Date() },
   });
-
-  // Send email on first unread message in a 1:1 conversation
-  try {
-    const conversation = await prisma.conversation.findUnique({
-      where: { id: conversationId },
-      select: { isGroup: true },
-    });
-
-    if (conversation && !conversation.isGroup) {
-      const otherParticipant = await prisma.conversationParticipant.findFirst({
-        where: { conversationId, userId: { not: session.user.id } },
-        include: {
-          user: {
-            select: { email: true, emailOnNewChat: true },
-          },
-        },
-      });
-
-      if (otherParticipant?.user.email && otherParticipant.user.emailOnNewChat) {
-        // Count messages the recipient hasn't read yet (sent by others)
-        const unreadCount = await prisma.message.count({
-          where: {
-            conversationId,
-            senderId: { not: otherParticipant.userId },
-            ...(otherParticipant.lastReadAt
-              ? { createdAt: { gt: otherParticipant.lastReadAt } }
-              : {}),
-          },
-        });
-
-        // Only email on the first unread message; skip if they already have unread
-        if (unreadCount === 1) {
-          const senderName =
-            message.sender.displayName ?? message.sender.username ?? "Someone";
-          await inngest.send({
-            name: "email/chat",
-            data: {
-              toEmail: otherParticipant.user.email,
-              senderName,
-              conversationId,
-            },
-          });
-        }
-      }
-    }
-  } catch {
-    // Non-critical — don't break the chat flow
-  }
 
   // Publish to Ably for real-time delivery
   try {
