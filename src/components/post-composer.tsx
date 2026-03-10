@@ -23,6 +23,7 @@ import { Toolbar } from "@/components/editor/toolbar/Toolbar";
 import { AutoLinkPlugin } from "@/components/editor/plugins/AutoLinkPlugin";
 import { MentionsPlugin } from "@/components/editor/plugins/MentionsPlugin";
 import { TagInput } from "@/components/tag-input";
+import { AutoTagButton } from "@/components/auto-tag-button";
 import { ContentFlagsInfoModal } from "@/components/content-flags-info-modal";
 import { DraftPlugin, clearDraft, type DraftSaveStatus } from "@/components/editor/plugins/DraftPlugin";
 
@@ -157,12 +158,25 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
             onCleared={() => setShouldClear(false)}
           />
         </LexicalComposer>
-        <TagInput
-          tags={tags}
-          onChange={setTags}
-          disabled={isSensitive || isGraphicNudity}
-          includeNsfw={isNsfw}
-        />
+        <div className="flex items-center">
+          <div className="flex-1">
+            <TagInput
+              tags={tags}
+              onChange={setTags}
+              disabled={isSensitive || isGraphicNudity}
+              includeNsfw={isNsfw}
+            />
+          </div>
+          {!(isSensitive || isGraphicNudity) && (
+            <div className="pr-2">
+              <AutoTagButton
+                editorJson={editorJson}
+                existingTags={tags}
+                onTagsSuggested={setTags}
+              />
+            </div>
+          )}
+        </div>
         <input type="hidden" name="isGraphicNudity" value={isGraphicNudity ? "true" : "false"} />
         <div className="border-t border-zinc-200 px-4 py-2 dark:border-zinc-700">
           <button
