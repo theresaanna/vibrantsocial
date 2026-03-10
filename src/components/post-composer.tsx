@@ -237,6 +237,12 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
               </button>
             </div>
           )}
+          {showContentWarnings && isGraphicNudity && (
+            <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+              If the explicit media you post includes other people, you must be
+              prepared to provide model release forms upon request.
+            </p>
+          )}
         </div>
         {showInfoModal && <ContentFlagsInfoModal onClose={() => setShowInfoModal(false)} />}
         <div className="flex items-center justify-between border-t border-zinc-200 px-4 py-3 dark:border-zinc-700">
