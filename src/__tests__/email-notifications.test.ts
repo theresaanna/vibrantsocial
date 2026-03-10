@@ -22,9 +22,8 @@ vi.mock("@/lib/notifications", () => ({
   createNotification: vi.fn(),
 }));
 
-const mockSendCommentEmail = vi.fn();
 vi.mock("@/lib/email", () => ({
-  sendCommentEmail: (...args: unknown[]) => mockSendCommentEmail(...args),
+  sendCommentEmail: vi.fn(),
   sendNewChatEmail: vi.fn(),
 }));
 
@@ -36,8 +35,11 @@ vi.mock("@/lib/ably", () => ({
   }),
 }));
 
+const { mockInngestSend } = vi.hoisted(() => ({
+  mockInngestSend: vi.fn(),
+}));
 vi.mock("@/lib/inngest", () => ({
-  inngest: { send: vi.fn() },
+  inngest: { send: mockInngestSend },
 }));
 
 import { auth } from "@/auth";
@@ -77,10 +79,13 @@ describe("comment email notifications", () => {
 
     await createComment(prevState, makeFormData({ postId: "p1", content: "Great post!" }));
 
-    expect(mockSendCommentEmail).toHaveBeenCalledWith({
-      toEmail: "author@example.com",
-      commenterName: "Alice",
-      postId: "p1",
+    expect(mockInngestSend).toHaveBeenCalledWith({
+      name: "email/comment",
+      data: {
+        toEmail: "author@example.com",
+        commenterName: "Alice",
+        postId: "p1",
+      },
     });
   });
 
@@ -101,7 +106,9 @@ describe("comment email notifications", () => {
 
     await createComment(prevState, makeFormData({ postId: "p1", content: "Nice!" }));
 
-    expect(mockSendCommentEmail).not.toHaveBeenCalled();
+    expect(mockInngestSend).not.toHaveBeenCalledWith(
+      expect.objectContaining({ name: "email/comment" })
+    );
   });
 
   it("does not send email when commenter is the post author", async () => {
@@ -121,7 +128,9 @@ describe("comment email notifications", () => {
 
     await createComment(prevState, makeFormData({ postId: "p1", content: "My own comment" }));
 
-    expect(mockSendCommentEmail).not.toHaveBeenCalled();
+    expect(mockInngestSend).not.toHaveBeenCalledWith(
+      expect.objectContaining({ name: "email/comment" })
+    );
   });
 
   it("does not send email when post author has no email", async () => {
@@ -141,7 +150,9 @@ describe("comment email notifications", () => {
 
     await createComment(prevState, makeFormData({ postId: "p1", content: "Hello!" }));
 
-    expect(mockSendCommentEmail).not.toHaveBeenCalled();
+    expect(mockInngestSend).not.toHaveBeenCalledWith(
+      expect.objectContaining({ name: "email/comment" })
+    );
   });
 
   it("uses username as fallback when displayName is null", async () => {
@@ -161,10 +172,13 @@ describe("comment email notifications", () => {
 
     await createComment(prevState, makeFormData({ postId: "p1", content: "Hey!" }));
 
-    expect(mockSendCommentEmail).toHaveBeenCalledWith({
-      toEmail: "author@example.com",
-      commenterName: "alice",
-      postId: "p1",
+    expect(mockInngestSend).toHaveBeenCalledWith({
+      name: "email/comment",
+      data: {
+        toEmail: "author@example.com",
+        commenterName: "alice",
+        postId: "p1",
+      },
     });
   });
 });
