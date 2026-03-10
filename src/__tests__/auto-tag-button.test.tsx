@@ -179,7 +179,7 @@ describe("AutoTagButton", () => {
   describe("first-visit hint popup", () => {
     it("shows hint on first visit when localStorage is empty", () => {
       render(<AutoTagButton {...defaultProps} />);
-      expect(screen.getByText("Use AI to auto-suggest tags for your post!")).toBeInTheDocument();
+      expect(screen.getByText("Click this button after you've drafted your post to auto-suggest tags!")).toBeInTheDocument();
       expect(screen.getByText("Got it")).toBeInTheDocument();
     });
 
@@ -188,7 +188,7 @@ describe("AutoTagButton", () => {
       localStorageMock.getItem.mockReturnValueOnce("1");
 
       render(<AutoTagButton {...defaultProps} />);
-      expect(screen.queryByText("Use AI to auto-suggest tags for your post!")).not.toBeInTheDocument();
+      expect(screen.queryByText("Click this button after you've drafted your post to auto-suggest tags!")).not.toBeInTheDocument();
     });
 
     it("dismisses hint and persists to localStorage when 'Got it' is clicked", () => {
@@ -197,7 +197,7 @@ describe("AutoTagButton", () => {
 
       fireEvent.click(screen.getByText("Got it"));
 
-      expect(screen.queryByText("Use AI to auto-suggest tags for your post!")).not.toBeInTheDocument();
+      expect(screen.queryByText("Click this button after you've drafted your post to auto-suggest tags!")).not.toBeInTheDocument();
       expect(localStorageMock.setItem).toHaveBeenCalledWith("autotag-hint-dismissed", "1");
     });
 
@@ -205,11 +205,11 @@ describe("AutoTagButton", () => {
       mockSuggestTags.mockResolvedValue({ success: true, tags: ["tag1"] });
 
       render(<AutoTagButton {...defaultProps} />);
-      expect(screen.getByText("Use AI to auto-suggest tags for your post!")).toBeInTheDocument();
+      expect(screen.getByText("Click this button after you've drafted your post to auto-suggest tags!")).toBeInTheDocument();
 
       fireEvent.click(screen.getByTestId("auto-tag-button"));
 
-      expect(screen.queryByText("Use AI to auto-suggest tags for your post!")).not.toBeInTheDocument();
+      expect(screen.queryByText("Click this button after you've drafted your post to auto-suggest tags!")).not.toBeInTheDocument();
       expect(localStorageMock.setItem).toHaveBeenCalledWith("autotag-hint-dismissed", "1");
     });
   });
