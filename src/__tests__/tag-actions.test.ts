@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockFindMany = vi.fn();
 const mockCount = vi.fn();
-const mockFindUnique = vi.fn();
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -36,7 +35,14 @@ vi.mock("@/lib/cache", () => ({
   },
 }));
 
-import { searchTags, getTagCloudData, getPostsByTag } from "@/app/tags/actions";
+import {
+  searchTags,
+  getTagCloudData,
+  getNsfwTagCloudData,
+  getPostsByTag,
+} from "@/app/tags/actions";
+
+const PUBLIC_AUTHOR = { author: { isProfilePublic: true } };
 
 describe("searchTags", () => {
   beforeEach(() => {
@@ -96,7 +102,7 @@ describe("searchTags", () => {
     expect(result.length).toBeLessThanOrEqual(10);
   });
 
-  it("excludes NSFW posts by default", async () => {
+  it("excludes NSFW posts by default and filters by public profile", async () => {
     mockFindMany.mockResolvedValue([]);
 
     await searchTags("test");
@@ -106,7 +112,12 @@ describe("searchTags", () => {
         where: expect.objectContaining({
           posts: {
             some: {
-              post: { isSensitive: false, isNsfw: false, isGraphicNudity: false },
+              post: {
+                isSensitive: false,
+                isNsfw: false,
+                isGraphicNudity: false,
+                ...PUBLIC_AUTHOR,
+              },
             },
           },
         }),
@@ -114,7 +125,7 @@ describe("searchTags", () => {
     );
   });
 
-  it("includes NSFW posts when includeNsfw is true", async () => {
+  it("includes NSFW posts when includeNsfw is true but still filters by public profile", async () => {
     mockFindMany.mockResolvedValue([]);
 
     await searchTags("test", true);
@@ -124,7 +135,11 @@ describe("searchTags", () => {
         where: expect.objectContaining({
           posts: {
             some: {
-              post: { isSensitive: false, isGraphicNudity: false },
+              post: {
+                isSensitive: false,
+                isGraphicNudity: false,
+                ...PUBLIC_AUTHOR,
+              },
             },
           },
         }),
@@ -160,6 +175,63 @@ describe("getTagCloudData", () => {
     const result = await getTagCloudData();
     expect(result).toEqual([]);
   });
+
+  it("filters by public profile in post count query", async () => {
+    mockFindMany.mockResolvedValue([]);
+
+    await getTagCloudData();
+
+    const call = mockFindMany.mock.calls[0][0];
+    const postFilter = call.select._count.select.posts.where.post;
+    expect(postFilter).toMatchObject({
+      isSensitive: false,
+      isNsfw: false,
+      isGraphicNudity: false,
+      ...PUBLIC_AUTHOR,
+    });
+  });
+});
+
+describe("getNsfwTagCloudData", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("filters by isNsfw: true and public profile", async () => {
+    mockFindMany.mockResolvedValue([]);
+
+    await getNsfwTagCloudData();
+
+    const call = mockFindMany.mock.calls[0][0];
+    const postFilter = call.select._count.select.posts.where.post;
+    expect(postFilter).toMatchObject({
+      isNsfw: true,
+      isSensitive: false,
+      isGraphicNudity: false,
+      ...PUBLIC_AUTHOR,
+    });
+  });
+
+  it("excludes tags with 0 NSFW posts", async () => {
+    mockFindMany.mockResolvedValue([
+      { name: "has-nsfw", _count: { posts: 3 } },
+      { name: "no-nsfw", _count: { posts: 0 } },
+    ]);
+
+    const result = await getNsfwTagCloudData();
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe("has-nsfw");
+  });
+
+  it("sorts results by count descending", async () => {
+    mockFindMany.mockResolvedValue([
+      { name: "small", _count: { posts: 1 } },
+      { name: "big", _count: { posts: 10 } },
+    ]);
+
+    const result = await getNsfwTagCloudData();
+    expect(result.map((t) => t.name)).toEqual(["big", "small"]);
+  });
 });
 
 describe("getPostsByTag", () => {
@@ -172,7 +244,7 @@ describe("getPostsByTag", () => {
     expect(result).toEqual({ posts: [], hasMore: false, totalCount: 0 });
   });
 
-  it("excludes NSFW posts by default", async () => {
+  it("filters count query by public profile (SFW)", async () => {
     mockCount.mockResolvedValue(0);
     mockFindMany.mockResolvedValue([]);
 
@@ -181,20 +253,38 @@ describe("getPostsByTag", () => {
     expect(mockCount).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          post: { isSensitive: false, isNsfw: false, isGraphicNudity: false },
-        }),
-      })
-    );
-    expect(mockFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          post: { isSensitive: false, isNsfw: false, isGraphicNudity: false },
+          post: {
+            isSensitive: false,
+            isNsfw: false,
+            isGraphicNudity: false,
+            ...PUBLIC_AUTHOR,
+          },
         }),
       })
     );
   });
 
-  it("includes NSFW posts when includeNsfw is true", async () => {
+  it("filters findMany query by public profile (SFW)", async () => {
+    mockCount.mockResolvedValue(0);
+    mockFindMany.mockResolvedValue([]);
+
+    await getPostsByTag("react");
+
+    expect(mockFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          post: {
+            isSensitive: false,
+            isNsfw: false,
+            isGraphicNudity: false,
+            ...PUBLIC_AUTHOR,
+          },
+        }),
+      })
+    );
+  });
+
+  it("includes NSFW posts when includeNsfw is true but still filters by public profile", async () => {
     mockCount.mockResolvedValue(0);
     mockFindMany.mockResolvedValue([]);
 
@@ -203,15 +293,66 @@ describe("getPostsByTag", () => {
     expect(mockCount).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          post: { isSensitive: false, isGraphicNudity: false },
+          post: {
+            isSensitive: false,
+            isGraphicNudity: false,
+            ...PUBLIC_AUTHOR,
+          },
         }),
       })
     );
     expect(mockFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          post: { isSensitive: false, isGraphicNudity: false },
+          post: {
+            isSensitive: false,
+            isGraphicNudity: false,
+            ...PUBLIC_AUTHOR,
+          },
         }),
+      })
+    );
+  });
+
+  it("returns hasMore: true when results exceed PAGE_SIZE", async () => {
+    const posts = Array.from({ length: 11 }, (_, i) => ({
+      id: `pt${i}`,
+      post: { id: `p${i}`, content: "test" },
+    }));
+    mockCount.mockResolvedValue(15);
+    mockFindMany.mockResolvedValue(posts);
+
+    const result = await getPostsByTag("react");
+
+    expect(result.hasMore).toBe(true);
+    expect(result.posts).toHaveLength(10);
+    expect(result.totalCount).toBe(15);
+  });
+
+  it("returns hasMore: false when results fit within PAGE_SIZE", async () => {
+    const posts = Array.from({ length: 3 }, (_, i) => ({
+      id: `pt${i}`,
+      post: { id: `p${i}`, content: "test" },
+    }));
+    mockCount.mockResolvedValue(3);
+    mockFindMany.mockResolvedValue(posts);
+
+    const result = await getPostsByTag("react");
+
+    expect(result.hasMore).toBe(false);
+    expect(result.posts).toHaveLength(3);
+  });
+
+  it("passes cursor for pagination", async () => {
+    mockCount.mockResolvedValue(0);
+    mockFindMany.mockResolvedValue([]);
+
+    await getPostsByTag("react", "user1", "cursor-id");
+
+    expect(mockFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cursor: { id: "cursor-id" },
+        skip: 1,
       })
     );
   });
