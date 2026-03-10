@@ -44,13 +44,16 @@ export function AutoTagButton({
         type="button"
         onClick={handleClick}
         disabled={disabled || isLoading || !editorJson}
-        className="rounded-md p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 disabled:opacity-50 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+        className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:bg-yellow-50 hover:text-yellow-500 disabled:opacity-50 dark:hover:bg-yellow-900/20 dark:hover:text-yellow-500"
         title="Auto-suggest tags with AI"
         data-testid="auto-tag-button"
       >
+        <span data-testid="auto-tag-label">
+          {isLoading ? "Generating..." : "Generate tags"}
+        </span>
         {isLoading ? (
           <svg
-            className="h-4 w-4 animate-spin"
+            className="h-5 w-5 animate-spin"
             fill="none"
             viewBox="0 0 24 24"
           >
@@ -70,7 +73,7 @@ export function AutoTagButton({
           </svg>
         ) : (
           <svg
-            className="h-4 w-4"
+            className="h-5 w-5"
             fill="none"
             stroke="currentColor"
             strokeWidth={2}
