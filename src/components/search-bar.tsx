@@ -1,14 +1,16 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export function SearchBar() {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const router = useRouter();
+  const pathname = usePathname();
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const isSearchActive = isOpen || pathname.startsWith("/search");
 
   useEffect(() => {
     if (isOpen) {
@@ -52,7 +54,11 @@ export function SearchBar() {
     <div className="relative" ref={containerRef}>
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        className="rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-teal-50 hover:text-teal-500 dark:text-zinc-400 dark:hover:bg-teal-900/20 dark:hover:text-teal-500"
+        className={`rounded-lg p-1.5 transition-colors ${
+          isSearchActive
+            ? "bg-teal-50 text-teal-500 dark:bg-teal-900/20 dark:text-teal-500"
+            : "text-zinc-600 hover:bg-teal-50 hover:text-teal-500 dark:text-zinc-400 dark:hover:bg-teal-900/20 dark:hover:text-teal-500"
+        }`}
         aria-label="Open search"
       >
         <svg
