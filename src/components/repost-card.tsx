@@ -8,8 +8,11 @@ import { clearDraft } from "./editor/plugins/DraftPlugin";
 import { TagInput } from "./tag-input";
 import { ContentFlagsInfoModal } from "./content-flags-info-modal";
 import { editRepost, deleteRepost, togglePinRepost } from "@/app/feed/post-actions";
+import { QuotePostActions } from "./quote-post-actions";
+import { RepostCommentSection } from "./repost-comment-section";
 import { timeAgo } from "@/lib/time";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface RepostUser {
   id: string;
@@ -32,6 +35,13 @@ interface RepostCardProps {
     isGraphicNudity?: boolean;
     tags?: Array<{ tag: { name: string } }>;
     user: RepostUser;
+    _count?: {
+      likes: number;
+      bookmarks: number;
+      comments: number;
+    };
+    likes?: Array<{ id: string }>;
+    bookmarks?: Array<{ id: string }>;
     post: {
       id: string;
       content: string;
@@ -76,10 +86,13 @@ export function RepostCard({
   showGraphicByDefault,
   showNsfwContent,
 }: RepostCardProps) {
+  const router = useRouter();
   const reposterName = repost.user.displayName || repost.user.name || repost.user.username;
   const isAuthor = currentUserId === repost.user.id;
   const isQuote = !!repost.content;
 
+  const [showComments, setShowComments] = useState(false);
+  const [commentCount, setCommentCount] = useState(repost._count?.comments ?? 0);
   const [showMenu, setShowMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [deleted, setDeleted] = useState(false);
@@ -178,7 +191,13 @@ export function RepostCard({
           {reposterName}
         </Link>
         <span>{isQuote ? "quoted" : "reposted"}</span>
-        <span className="text-zinc-400 dark:text-zinc-500">{timeAgo(repost.createdAt)}</span>
+        {isQuote ? (
+          <Link href={`/quote/${repost.id}`} className="text-zinc-400 hover:underline dark:text-zinc-500">
+            {timeAgo(repost.createdAt)}
+          </Link>
+        ) : (
+          <span className="text-zinc-400 dark:text-zinc-500">{timeAgo(repost.createdAt)}</span>
+        )}
         {wasEdited && (
           <span className="text-zinc-400 dark:text-zinc-500">(edited)</span>
         )}
@@ -360,6 +379,36 @@ export function RepostCard({
                   #{rt.tag.name}
                 </Link>
               ))}
+            </div>
+          )}
+
+          {/* Quote interaction bar */}
+          {!isEditing && (
+            <div className="border-t border-zinc-200 bg-zinc-50 px-4 py-1.5 dark:border-zinc-700 dark:bg-zinc-800/50">
+              <QuotePostActions
+                repostId={repost.id}
+                postId={repost.post.id}
+                likeCount={repost._count?.likes ?? 0}
+                commentCount={commentCount}
+                bookmarkCount={repost._count?.bookmarks ?? 0}
+                isLiked={(repost.likes?.length ?? 0) > 0}
+                isBookmarked={(repost.bookmarks?.length ?? 0) > 0}
+                onToggleComments={() => setShowComments((v) => !v)}
+                onQuotePost={currentUserId ? () => router.push(`/post/${repost.post.id}/quote`) : undefined}
+                readOnly={!currentUserId}
+              />
+            </div>
+          )}
+
+          {/* Quote comments */}
+          {showComments && isQuote && (
+            <div className="bg-zinc-50 dark:bg-zinc-800/50">
+              <RepostCommentSection
+                repostId={repost.id}
+                phoneVerified={phoneVerified}
+                isAuthenticated={!!currentUserId}
+                onCommentCountChange={setCommentCount}
+              />
             </div>
           )}
 

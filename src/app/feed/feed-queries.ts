@@ -51,3 +51,26 @@ export const repostUserSelect = {
   image: true,
   avatar: true,
 } as const;
+
+export function getRepostInclude(userId: string) {
+  return {
+    user: { select: repostUserSelect },
+    post: { include: getPostInclude(userId) },
+    tags: { include: { tag: { select: { name: true } } } },
+    _count: {
+      select: {
+        likes: true,
+        bookmarks: true,
+        comments: true,
+      },
+    },
+    likes: {
+      where: { userId },
+      select: { id: true },
+    },
+    bookmarks: {
+      where: { userId },
+      select: { id: true },
+    },
+  } as const;
+}

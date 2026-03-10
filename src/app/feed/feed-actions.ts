@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { getPostInclude, repostUserSelect, PAGE_SIZE } from "./feed-queries";
+import { getPostInclude, getRepostInclude, PAGE_SIZE } from "./feed-queries";
 import { cached, cacheKeys } from "@/lib/cache";
 
 export async function fetchSinglePost(postId: string) {
@@ -74,11 +74,7 @@ export async function fetchFeedPage(cursor?: string) {
       },
       orderBy: { createdAt: "desc" },
       take: fetchCount,
-      include: {
-        user: { select: repostUserSelect },
-        post: { include: postInclude },
-        tags: { include: { tag: { select: { name: true } } } },
-      },
+      include: getRepostInclude(userId),
     }),
   ]);
 

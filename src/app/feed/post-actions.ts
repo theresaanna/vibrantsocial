@@ -570,3 +570,201 @@ export async function createComment(
   revalidatePath(`/post/${postId}`);
   return { success: true, message: "Comment added" };
 }
+
+// ── Quote post interactions ───────────────────────────────────────
+
+export async function fetchRepostComments(repostId: string) {
+  const comments = await prisma.repostComment.findMany({
+    where: { repostId, parentId: null },
+    orderBy: { createdAt: "asc" },
+    include: {
+      author: { select: commentAuthorSelect },
+      replies: {
+        orderBy: { createdAt: "asc" },
+        include: { author: { select: commentAuthorSelect } },
+      },
+    },
+  });
+
+  return JSON.parse(JSON.stringify(comments));
+}
+
+export async function toggleRepostLike(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const repostId = formData.get("repostId") as string;
+  const existing = await prisma.repostLike.findUnique({
+    where: { repostId_userId: { repostId, userId: session.user.id } },
+  });
+
+  if (existing) {
+    await prisma.repostLike.delete({ where: { id: existing.id } });
+  } else {
+    await prisma.repostLike.create({
+      data: { repostId, userId: session.user.id },
+    });
+
+    const repost = await prisma.repost.findUnique({
+      where: { id: repostId },
+      select: { userId: true },
+    });
+    if (repost && repost.userId !== session.user.id) {
+      await createNotification({
+        type: "LIKE",
+        actorId: session.user.id,
+        targetUserId: repost.userId,
+        repostId,
+      });
+    }
+  }
+
+  revalidatePath("/feed");
+  revalidatePath(`/quote/${repostId}`);
+  return { success: true, message: existing ? "Unliked" : "Liked" };
+}
+
+export async function toggleRepostBookmark(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const repostId = formData.get("repostId") as string;
+  const existing = await prisma.repostBookmark.findUnique({
+    where: { repostId_userId: { repostId, userId: session.user.id } },
+  });
+
+  if (existing) {
+    await prisma.repostBookmark.delete({ where: { id: existing.id } });
+  } else {
+    await prisma.repostBookmark.create({
+      data: { repostId, userId: session.user.id },
+    });
+
+    const repost = await prisma.repost.findUnique({
+      where: { id: repostId },
+      select: { userId: true },
+    });
+    if (repost && repost.userId !== session.user.id) {
+      await createNotification({
+        type: "BOOKMARK",
+        actorId: session.user.id,
+        targetUserId: repost.userId,
+        repostId,
+      });
+    }
+  }
+
+  revalidatePath("/feed");
+  revalidatePath(`/quote/${repostId}`);
+  revalidatePath("/bookmarks");
+  return { success: true, message: existing ? "Unbookmarked" : "Bookmarked" };
+}
+
+export async function createRepostComment(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const isVerified = await requirePhoneVerification(session.user.id);
+  if (!isVerified) {
+    return {
+      success: false,
+      message: "Phone verification required to comment",
+    };
+  }
+
+  const repostId = formData.get("repostId") as string;
+  const content = (formData.get("content") as string)?.trim();
+  const parentId = (formData.get("parentId") as string) || null;
+
+  if (!content) {
+    return { success: false, message: "Comment cannot be empty" };
+  }
+
+  if (content.length > 1000) {
+    return { success: false, message: "Comment too long (max 1000 characters)" };
+  }
+
+  const comment = await prisma.repostComment.create({
+    data: { content, repostId, authorId: session.user.id, parentId },
+    include: {
+      author: { select: commentAuthorSelect },
+    },
+  });
+
+  // Notify quote post author
+  const repost = await prisma.repost.findUnique({
+    where: { id: repostId },
+    select: { userId: true },
+  });
+  if (repost && repost.userId !== session.user.id) {
+    await createNotification({
+      type: "COMMENT",
+      actorId: session.user.id,
+      targetUserId: repost.userId,
+      repostId,
+    });
+  }
+
+  // If replying, also notify parent comment author
+  if (parentId) {
+    const parentComment = await prisma.repostComment.findUnique({
+      where: { id: parentId },
+      select: { authorId: true },
+    });
+    if (parentComment && parentComment.authorId !== repost?.userId) {
+      await createNotification({
+        type: "REPLY",
+        actorId: session.user.id,
+        targetUserId: parentComment.authorId,
+        repostId,
+      });
+    }
+  }
+
+  // Send mention notifications
+  const mentionedUsernames = extractMentionsFromPlainText(content);
+  if (mentionedUsernames.length > 0) {
+    await createMentionNotifications({
+      usernames: mentionedUsernames,
+      actorId: session.user.id,
+      repostId,
+    });
+  }
+
+  // Publish to Ably for real-time delivery
+  try {
+    const ably = getAblyRestClient();
+    const channel = ably.channels.get(`repost-comments:${repostId}`);
+    await channel.publish("new", {
+      id: comment.id,
+      content: comment.content,
+      parentId: comment.parentId,
+      author: JSON.stringify(comment.author),
+      createdAt: comment.createdAt.toISOString(),
+    });
+
+    const count = await prisma.repostComment.count({ where: { repostId } });
+    await channel.publish("count", { count });
+  } catch {
+    // Non-critical — DB write succeeded
+  }
+
+  revalidatePath("/feed");
+  revalidatePath(`/quote/${repostId}`);
+  return { success: true, message: "Comment added" };
+}
