@@ -1,4 +1,5 @@
 import { inngest } from "./inngest";
+import { prisma } from "./prisma";
 import {
   sendCommentEmail,
   sendNewChatEmail,
@@ -14,22 +15,6 @@ export const sendCommentEmailFn = inngest.createFunction(
     await sendCommentEmail(event.data);
   }
 );
-
-export const sendChatEmailFn = inngest.createFunction(
-  { id: "send-chat-email", retries: 3 },
-  { event: "email/chat" },
-  async ({ event }) => {
-    await sendChatEmail(event.data);
-  }
-);
-
-async function sendChatEmail(data: {
-  toEmail: string;
-  senderName: string;
-  conversationId: string;
-}) {
-  await sendNewChatEmail(data);
-}
 
 export const sendMentionEmailFn = inngest.createFunction(
   { id: "send-mention-email", retries: 3 },
@@ -67,11 +52,107 @@ export const deleteUserMediaFn = inngest.createFunction(
   }
 );
 
+export async function pollChatEmailNotifications(): Promise<{ emailsSent: number }> {
+  // Find all 1:1 conversation participants who have emailOnNewChat enabled
+  const participants = await prisma.conversationParticipant.findMany({
+    where: {
+      conversation: { isGroup: false },
+      user: {
+        emailOnNewChat: true,
+        email: { not: null },
+      },
+    },
+    select: {
+      id: true,
+      userId: true,
+      conversationId: true,
+      lastReadAt: true,
+      chatEmailSentAt: true,
+      user: {
+        select: { email: true },
+      },
+    },
+  });
+
+  let emailsSent = 0;
+
+  for (const participant of participants) {
+    // Skip if we already emailed for this unread batch.
+    // chatEmailSentAt > lastReadAt means they haven't read since we last emailed.
+    if (
+      participant.chatEmailSentAt &&
+      (!participant.lastReadAt ||
+        participant.chatEmailSentAt > participant.lastReadAt)
+    ) {
+      continue;
+    }
+
+    // Count unread messages from other users
+    const unreadCount = await prisma.message.count({
+      where: {
+        conversationId: participant.conversationId,
+        senderId: { not: participant.userId },
+        ...(participant.lastReadAt
+          ? { createdAt: { gt: participant.lastReadAt } }
+          : {}),
+      },
+    });
+
+    if (unreadCount === 0) continue;
+
+    // Find who sent the most recent unread message for the email
+    const latestUnread = await prisma.message.findFirst({
+      where: {
+        conversationId: participant.conversationId,
+        senderId: { not: participant.userId },
+        ...(participant.lastReadAt
+          ? { createdAt: { gt: participant.lastReadAt } }
+          : {}),
+      },
+      orderBy: { createdAt: "desc" },
+      include: {
+        sender: {
+          select: { displayName: true, username: true, name: true },
+        },
+      },
+    });
+
+    if (!latestUnread) continue;
+
+    const senderName =
+      latestUnread.sender.displayName ??
+      latestUnread.sender.username ??
+      latestUnread.sender.name ??
+      "Someone";
+
+    await sendNewChatEmail({
+      toEmail: participant.user.email!,
+      senderName,
+      conversationId: participant.conversationId,
+    });
+
+    await prisma.conversationParticipant.update({
+      where: { id: participant.id },
+      data: { chatEmailSentAt: new Date() },
+    });
+
+    emailsSent++;
+  }
+
+  return { emailsSent };
+}
+
+export const pollChatEmailNotificationsFn = inngest.createFunction(
+  { id: "poll-chat-email-notifications" },
+  { cron: "*/15 * * * *" },
+  async () => pollChatEmailNotifications()
+);
+
 export const allFunctions = [
   sendCommentEmailFn,
-  sendChatEmailFn,
   sendMentionEmailFn,
   sendWelcomeEmailFn,
   sendFriendRequestEmailFn,
   deleteUserMediaFn,
+  pollChatEmailNotificationsFn,
 ];
