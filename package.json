@@ -12,6 +12,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
     "@auth/prisma-adapter": "^2.11.1",
     "@excalidraw/excalidraw": "^0.18.0",
     "@lexical/clipboard": "^0.41.0",
