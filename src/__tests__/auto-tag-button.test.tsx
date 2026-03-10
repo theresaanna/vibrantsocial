@@ -9,6 +9,17 @@ vi.mock("@/app/feed/auto-tag-action", () => ({
 
 import { AutoTagButton } from "@/components/auto-tag-button";
 
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: vi.fn((key: string) => store[key] ?? null),
+    setItem: vi.fn((key: string, value: string) => { store[key] = value; }),
+    clear: () => { store = {}; },
+  };
+})();
+
+Object.defineProperty(window, "localStorage", { value: localStorageMock });
+
 describe("AutoTagButton", () => {
   const defaultProps = {
     editorJson: '{"root":{"children":[{"type":"paragraph","children":[{"type":"text","text":"Hello"}]}]}}',
@@ -18,6 +29,7 @@ describe("AutoTagButton", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorageMock.clear();
   });
 
   it("renders the button", () => {
@@ -161,6 +173,44 @@ describe("AutoTagButton", () => {
 
     await waitFor(() => {
       expect(screen.queryByTestId("auto-tag-error")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("first-visit hint popup", () => {
+    it("shows hint on first visit when localStorage is empty", () => {
+      render(<AutoTagButton {...defaultProps} />);
+      expect(screen.getByText("Use AI to auto-suggest tags for your post!")).toBeInTheDocument();
+      expect(screen.getByText("Got it")).toBeInTheDocument();
+    });
+
+    it("does not show hint when previously dismissed", () => {
+      localStorageMock.setItem("autotag-hint-dismissed", "1");
+      localStorageMock.getItem.mockReturnValueOnce("1");
+
+      render(<AutoTagButton {...defaultProps} />);
+      expect(screen.queryByText("Use AI to auto-suggest tags for your post!")).not.toBeInTheDocument();
+    });
+
+    it("dismisses hint and persists to localStorage when 'Got it' is clicked", () => {
+      render(<AutoTagButton {...defaultProps} />);
+      expect(screen.getByText("Got it")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Got it"));
+
+      expect(screen.queryByText("Use AI to auto-suggest tags for your post!")).not.toBeInTheDocument();
+      expect(localStorageMock.setItem).toHaveBeenCalledWith("autotag-hint-dismissed", "1");
+    });
+
+    it("dismisses hint when generate tags button is clicked", async () => {
+      mockSuggestTags.mockResolvedValue({ success: true, tags: ["tag1"] });
+
+      render(<AutoTagButton {...defaultProps} />);
+      expect(screen.getByText("Use AI to auto-suggest tags for your post!")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId("auto-tag-button"));
+
+      expect(screen.queryByText("Use AI to auto-suggest tags for your post!")).not.toBeInTheDocument();
+      expect(localStorageMock.setItem).toHaveBeenCalledWith("autotag-hint-dismissed", "1");
     });
   });
 });

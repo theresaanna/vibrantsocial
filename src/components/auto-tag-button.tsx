@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { suggestTags } from "@/app/feed/auto-tag-action";
+
+const HINT_DISMISSED_KEY = "autotag-hint-dismissed";
 
 interface AutoTagButtonProps {
   editorJson: string;
@@ -18,8 +20,29 @@ export function AutoTagButton({
 }: AutoTagButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showHint, setShowHint] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem(HINT_DISMISSED_KEY)) {
+        setShowHint(true);
+      }
+    } catch {
+      // localStorage unavailable
+    }
+  }, []);
+
+  function dismissHint() {
+    setShowHint(false);
+    try {
+      localStorage.setItem(HINT_DISMISSED_KEY, "1");
+    } catch {
+      // localStorage unavailable
+    }
+  }
 
   async function handleClick() {
+    dismissHint();
     setIsLoading(true);
     setError(null);
 
@@ -39,7 +62,22 @@ export function AutoTagButton({
   }
 
   return (
-    <div className="inline-flex items-center">
+    <div className="relative inline-flex items-center">
+      {showHint && (
+        <div className="absolute bottom-full right-0 z-20 mb-2 w-52 rounded-lg border border-zinc-200 bg-white p-3 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+          <p className="text-xs text-zinc-600 dark:text-zinc-300">
+            Use AI to auto-suggest tags for your post!
+          </p>
+          <button
+            type="button"
+            onClick={dismissHint}
+            className="mt-2 text-xs font-medium text-yellow-500 hover:text-yellow-600 dark:hover:text-yellow-400"
+          >
+            Got it
+          </button>
+          <div className="absolute -bottom-1.5 right-6 h-3 w-3 rotate-45 border-b border-r border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800" />
+        </div>
+      )}
       <button
         type="button"
         onClick={handleClick}
