@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { FeedClient } from "@/components/feed-client";
 import { calculateAge } from "@/lib/age-gate";
-import { getPostInclude, repostUserSelect, PAGE_SIZE } from "./feed-queries";
+import { getPostInclude, getRepostInclude, PAGE_SIZE } from "./feed-queries";
 import { cached, cacheKeys } from "@/lib/cache";
 
 /**
@@ -67,10 +67,7 @@ export async function FeedContent({ userId }: { userId: string }) {
       },
       orderBy: { createdAt: "desc" },
       take: fetchCount,
-      include: {
-        user: { select: repostUserSelect },
-        post: { include: postInclude },
-      },
+      include: getRepostInclude(userId),
     }),
   ]);
 

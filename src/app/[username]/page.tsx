@@ -181,6 +181,21 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
     },
     post: { include: postInclude },
     tags: { include: { tag: { select: { name: true } } } },
+    _count: {
+      select: {
+        likes: true,
+        bookmarks: true,
+        comments: true,
+      },
+    },
+    likes: {
+      where: { userId: currentUserId ?? "" },
+      select: { id: true },
+    },
+    bookmarks: {
+      where: { userId: currentUserId ?? "" },
+      select: { id: true },
+    },
   };
 
   // Build content flag filter for logged-out users

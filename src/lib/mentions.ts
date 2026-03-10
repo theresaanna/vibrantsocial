@@ -49,6 +49,7 @@ export async function createMentionNotifications(params: {
   actorId: string;
   postId?: string;
   commentId?: string;
+  repostId?: string;
 }): Promise<void> {
   if (params.usernames.length === 0) return;
 

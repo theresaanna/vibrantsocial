@@ -12,16 +12,17 @@ interface CreateNotificationParams {
   postId?: string;
   commentId?: string;
   messageId?: string;
+  repostId?: string;
 }
 
 export async function createNotification(params: CreateNotificationParams) {
-  const { type, actorId, targetUserId, postId, commentId, messageId } = params;
+  const { type, actorId, targetUserId, postId, commentId, messageId, repostId } = params;
 
   // Don't notify yourself
   if (actorId === targetUserId) return;
 
   const notification = await prisma.notification.create({
-    data: { type, actorId, targetUserId, postId, commentId, messageId },
+    data: { type, actorId, targetUserId, postId, commentId, messageId, repostId },
     include: {
       actor: {
         select: {
@@ -66,6 +67,7 @@ export async function createNotification(params: CreateNotificationParams) {
       postId: notification.postId,
       commentId: notification.commentId,
       messageId: notification.messageId,
+      repostId: notification.repostId,
       createdAt: notification.createdAt.toISOString(),
     });
   } catch {
