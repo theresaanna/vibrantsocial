@@ -83,7 +83,7 @@ describe("POST /api/avatar", () => {
 
   it("rejects files exceeding size limit", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "u1" } } as never);
-    const file = createMockFile("big.png", "image/png", 6 * 1024 * 1024);
+    const file = createMockFile("big.png", "image/png", 11 * 1024 * 1024);
     const res = await POST(createRequest(file));
     expect(res.status).toBe(400);
   });

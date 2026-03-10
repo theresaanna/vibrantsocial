@@ -208,8 +208,8 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      setAvatarError("File must be under 5MB");
+    if (file.size > 10 * 1024 * 1024) {
+      setAvatarError("File must be under 10MB");
       return;
     }
 
@@ -303,7 +303,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
           {avatarError && (
             <p className="text-xs text-red-600">{avatarError}</p>
           )}
-          <p className="text-xs text-zinc-400">JPEG, PNG, GIF, or WebP. Max 5MB.</p>
+          <p className="text-xs text-zinc-400">JPEG, PNG, GIF, or WebP. Max 10MB.</p>
         </div>
       </div>
 

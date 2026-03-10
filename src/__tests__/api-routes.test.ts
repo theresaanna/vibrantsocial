@@ -94,14 +94,14 @@ describe("Avatar Upload API (/api/avatar)", () => {
     expect(body.error).toContain("JPEG, PNG, GIF, or WebP");
   });
 
-  it("rejects files over 5MB", async () => {
+  it("rejects files over 10MB", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
 
     const { POST } = await import("@/app/api/avatar/route");
-    const res = await POST(createPostRequest("http://localhost/api/avatar", createMockFile("big.jpg", "image/jpeg", 6 * 1024 * 1024)));
+    const res = await POST(createPostRequest("http://localhost/api/avatar", createMockFile("big.jpg", "image/jpeg", 11 * 1024 * 1024)));
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toContain("5MB");
+    expect(body.error).toContain("10MB");
   });
 
   it("uploads successfully and cleans up old blob avatar", async () => {
