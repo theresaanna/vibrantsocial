@@ -4,13 +4,21 @@ const { mockSend } = vi.hoisted(() => ({
   mockSend: vi.fn(),
 }));
 
+const { mockCaptureException } = vi.hoisted(() => ({
+  mockCaptureException: vi.fn(),
+}));
+
 vi.mock("resend", () => ({
   Resend: vi.fn().mockImplementation(() => ({
     emails: { send: mockSend },
   })),
 }));
 
-import { sendCommentEmail, sendNewChatEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMentionEmail, sendEmailVerificationEmail } from "@/lib/email";
+vi.mock("@sentry/nextjs", () => ({
+  captureException: mockCaptureException,
+}));
+
+import { sendCommentEmail, sendNewChatEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMentionEmail, sendEmailVerificationEmail, sendFriendRequestEmail } from "@/lib/email";
 
 describe("sendCommentEmail", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -48,7 +56,7 @@ describe("sendCommentEmail", () => {
     expect(call.html).toContain("&lt;script&gt;");
   });
 
-  it("does not throw on Resend failure", async () => {
+  it("throws on Resend failure", async () => {
     mockSend.mockRejectedValueOnce(new Error("Resend down"));
 
     await expect(
@@ -57,7 +65,7 @@ describe("sendCommentEmail", () => {
         commenterName: "Alice",
         postId: "post-123",
       })
-    ).resolves.toBeUndefined();
+    ).rejects.toThrow("Resend down");
   });
 });
 
@@ -97,7 +105,7 @@ describe("sendNewChatEmail", () => {
     expect(call.html).toContain("&lt;b&gt;");
   });
 
-  it("does not throw on Resend failure", async () => {
+  it("throws on Resend failure", async () => {
     mockSend.mockRejectedValueOnce(new Error("Resend down"));
 
     await expect(
@@ -106,7 +114,7 @@ describe("sendNewChatEmail", () => {
         senderName: "Carol",
         conversationId: "conv-456",
       })
-    ).resolves.toBeUndefined();
+    ).rejects.toThrow("Resend down");
   });
 });
 
@@ -129,10 +137,10 @@ describe("sendWelcomeEmail", () => {
     expect(call.html).toContain("Theresa Anna");
   });
 
-  it("does not throw on Resend failure", async () => {
+  it("throws on Resend failure", async () => {
     mockSend.mockRejectedValueOnce(new Error("Resend down"));
 
-    await expect(sendWelcomeEmail("newuser@example.com")).resolves.toBeUndefined();
+    await expect(sendWelcomeEmail("newuser@example.com")).rejects.toThrow("Resend down");
   });
 });
 
@@ -157,7 +165,7 @@ describe("sendPasswordResetEmail", () => {
     expect(call.html).toContain("1 hour");
   });
 
-  it("does not throw on Resend failure", async () => {
+  it("does not throw on Resend failure but reports to Sentry", async () => {
     mockSend.mockRejectedValueOnce(new Error("Resend down"));
 
     await expect(
@@ -166,6 +174,12 @@ describe("sendPasswordResetEmail", () => {
         token: "test-token-uuid",
       })
     ).resolves.toBeUndefined();
+
+    expect(mockCaptureException).toHaveBeenCalledOnce();
+    expect(mockCaptureException.mock.calls[0][0]).toBeInstanceOf(Error);
+    expect(mockCaptureException.mock.calls[0][1]).toMatchObject({
+      extra: { emailType: "password-reset", toEmail: "user@example.com" },
+    });
   });
 });
 
@@ -214,7 +228,7 @@ describe("sendEmailVerificationEmail", () => {
     expect(call.html).toContain("1 hour");
   });
 
-  it("does not throw on Resend failure", async () => {
+  it("does not throw on Resend failure but reports to Sentry", async () => {
     mockSend.mockRejectedValueOnce(new Error("Resend down"));
 
     await expect(
@@ -223,6 +237,11 @@ describe("sendEmailVerificationEmail", () => {
         token: "test-verify-token",
       })
     ).resolves.toBeUndefined();
+
+    expect(mockCaptureException).toHaveBeenCalledOnce();
+    expect(mockCaptureException.mock.calls[0][1]).toMatchObject({
+      extra: { emailType: "email-verification", toEmail: "user@example.com" },
+    });
   });
 });
 
@@ -283,7 +302,7 @@ describe("sendMentionEmail", () => {
     expect(call.html).toContain("&lt;img");
   });
 
-  it("does not throw on Resend failure", async () => {
+  it("throws on Resend failure", async () => {
     mockSend.mockRejectedValueOnce(new Error("Resend down"));
 
     await expect(
@@ -292,6 +311,21 @@ describe("sendMentionEmail", () => {
         mentionerName: "Alice",
         postId: "post-456",
       })
-    ).resolves.toBeUndefined();
+    ).rejects.toThrow("Resend down");
+  });
+});
+
+describe("sendFriendRequestEmail", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("throws on Resend failure", async () => {
+    mockSend.mockRejectedValueOnce(new Error("Resend down"));
+
+    await expect(
+      sendFriendRequestEmail({
+        toEmail: "friend@example.com",
+        senderName: "Alice",
+      })
+    ).rejects.toThrow("Resend down");
   });
 });

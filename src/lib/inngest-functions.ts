@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { inngest } from "./inngest";
 import { prisma } from "./prisma";
 import {
@@ -8,8 +9,24 @@ import {
   sendFriendRequestEmail,
 } from "./email";
 
+function onFunctionFailure(functionId: string) {
+  return async ({ error, event }: { error: Error; event: { data: unknown } }) => {
+    Sentry.captureException(error, {
+      extra: {
+        inngestFunctionId: functionId,
+        eventData: event.data,
+        permanent: true,
+      },
+    });
+  };
+}
+
 export const sendCommentEmailFn = inngest.createFunction(
-  { id: "send-comment-email", retries: 3 },
+  {
+    id: "send-comment-email",
+    retries: 3,
+    onFailure: onFunctionFailure("send-comment-email"),
+  },
   { event: "email/comment" },
   async ({ event }) => {
     await sendCommentEmail(event.data);
@@ -17,7 +34,11 @@ export const sendCommentEmailFn = inngest.createFunction(
 );
 
 export const sendMentionEmailFn = inngest.createFunction(
-  { id: "send-mention-email", retries: 3 },
+  {
+    id: "send-mention-email",
+    retries: 3,
+    onFailure: onFunctionFailure("send-mention-email"),
+  },
   { event: "email/mention" },
   async ({ event }) => {
     await sendMentionEmail(event.data);
@@ -25,7 +46,11 @@ export const sendMentionEmailFn = inngest.createFunction(
 );
 
 export const sendWelcomeEmailFn = inngest.createFunction(
-  { id: "send-welcome-email", retries: 3 },
+  {
+    id: "send-welcome-email",
+    retries: 3,
+    onFailure: onFunctionFailure("send-welcome-email"),
+  },
   { event: "email/welcome" },
   async ({ event }) => {
     await sendWelcomeEmail(event.data.toEmail);
@@ -33,7 +58,11 @@ export const sendWelcomeEmailFn = inngest.createFunction(
 );
 
 export const sendFriendRequestEmailFn = inngest.createFunction(
-  { id: "send-friend-request-email", retries: 3 },
+  {
+    id: "send-friend-request-email",
+    retries: 3,
+    onFailure: onFunctionFailure("send-friend-request-email"),
+  },
   { event: "email/friend-request" },
   async ({ event }) => {
     await sendFriendRequestEmail(event.data);
@@ -41,7 +70,11 @@ export const sendFriendRequestEmailFn = inngest.createFunction(
 );
 
 export const deleteUserMediaFn = inngest.createFunction(
-  { id: "delete-user-media", retries: 3 },
+  {
+    id: "delete-user-media",
+    retries: 3,
+    onFailure: onFunctionFailure("delete-user-media"),
+  },
   { event: "user/delete-media" },
   async ({ event }) => {
     const { blobUrls } = event.data as { blobUrls: string[] };
@@ -125,11 +158,22 @@ export async function pollChatEmailNotifications(): Promise<{ emailsSent: number
       latestUnread.sender.name ??
       "Someone";
 
-    await sendNewChatEmail({
-      toEmail: participant.user.email!,
-      senderName,
-      conversationId: participant.conversationId,
-    });
+    try {
+      await sendNewChatEmail({
+        toEmail: participant.user.email!,
+        senderName,
+        conversationId: participant.conversationId,
+      });
+    } catch (error) {
+      Sentry.captureException(error, {
+        extra: {
+          inngestFunctionId: "poll-chat-email-notifications",
+          toEmail: participant.user.email,
+          conversationId: participant.conversationId,
+        },
+      });
+      continue;
+    }
 
     await prisma.conversationParticipant.update({
       where: { id: participant.id },
