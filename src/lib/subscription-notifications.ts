@@ -13,7 +13,8 @@ interface NotifyPostSubscribersParams {
 
 /**
  * Notify all users subscribed to the author's posts.
- * Skips notifications for sensitive/NSFW/graphic content.
+ * Skips notifications for sensitive/graphic content.
+ * NSFW posts only notify subscribers who have opted into NSFW content.
  * For close-friends-only posts, only notifies subscribers who are on the author's close friends list.
  */
 export async function notifyPostSubscribers(params: NotifyPostSubscribersParams) {
@@ -26,8 +27,8 @@ export async function notifyPostSubscribers(params: NotifyPostSubscribersParams)
     isCloseFriendsOnly = false,
   } = params;
 
-  // Don't notify for sensitive/flagged content
-  if (isSensitive || isNsfw || isGraphicNudity) return;
+  // Don't notify for sensitive/graphic content
+  if (isSensitive || isGraphicNudity) return;
 
   // Find all subscribers
   const subscriptions = await prisma.postSubscription.findMany({
@@ -38,6 +39,18 @@ export async function notifyPostSubscribers(params: NotifyPostSubscribersParams)
   if (subscriptions.length === 0) return;
 
   let subscriberIds = subscriptions.map((s) => s.subscriberId);
+
+  // For NSFW posts, only notify subscribers who opted into NSFW content
+  if (isNsfw) {
+    const nsfwOptedIn = await prisma.user.findMany({
+      where: {
+        id: { in: subscriberIds },
+        showNsfwContent: true,
+      },
+      select: { id: true },
+    });
+    subscriberIds = nsfwOptedIn.map((u) => u.id);
+  }
 
   // For close-friends-only posts, filter to only subscribers on the author's close friends list
   if (isCloseFriendsOnly) {
