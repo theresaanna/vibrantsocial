@@ -39,7 +39,14 @@ vi.mock("@/lib/prisma", () => ({
     user: {
       findUnique: vi.fn(),
     },
+    postSubscription: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
   },
+}));
+
+vi.mock("@/lib/subscription-notifications", () => ({
+  notifyPostSubscribers: vi.fn(),
 }));
 
 vi.mock("@/lib/phone-gate", () => ({

@@ -15,6 +15,10 @@ vi.mock("@/lib/notifications", () => ({
   createNotification: vi.fn(),
 }));
 
+vi.mock("@/lib/subscription-notifications", () => ({
+  notifyPostSubscribers: vi.fn(),
+}));
+
 vi.mock("@/lib/mentions", () => ({
   extractMentionsFromLexicalJson: vi.fn().mockReturnValue([]),
   extractMentionsFromPlainText: vi.fn().mockReturnValue([]),
@@ -132,7 +136,7 @@ describe("createQuoteRepost", () => {
     expect(result.success).toBe(true);
     expect(result.message).toBe("Quote posted");
     expect(mockPrisma.repost.create).toHaveBeenCalledWith({
-      data: { postId: "p1", userId: "u1", content: "my thoughts" },
+      data: { postId: "p1", userId: "u1", content: "my thoughts", isSensitive: false, isNsfw: false, isGraphicNudity: false, isCloseFriendsOnly: false },
     });
   });
 

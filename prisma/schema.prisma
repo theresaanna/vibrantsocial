@@ -54,6 +54,7 @@ model User {
   emailOnNewChat        Boolean @default(true)
   emailOnMention        Boolean @default(true)
   emailOnFriendRequest  Boolean @default(true)
+  emailOnSubscribedPost Boolean @default(true)
 
   // Push notification preferences
   pushEnabled Boolean @default(false)
@@ -102,6 +103,10 @@ model User {
   // Close friends
   closeFriends  CloseFriend[] @relation("closeFriendOwner")
   closeFriendOf CloseFriend[] @relation("closeFriendTarget")
+
+  // Post subscriptions
+  postSubscriptions PostSubscription[] @relation("postSubscriber")
+  postSubscribers   PostSubscription[] @relation("postSubscribedTo")
 }
 
 model Account {
@@ -381,6 +386,22 @@ model CloseFriend {
   @@index([userId])
 }
 
+// Post subscriptions (subscribe to a user's new posts)
+
+model PostSubscription {
+  id             String   @id @default(cuid())
+  subscriberId   String
+  subscribedToId String
+  createdAt      DateTime @default(now())
+
+  subscriber   User @relation("postSubscriber", fields: [subscriberId], references: [id], onDelete: Cascade)
+  subscribedTo User @relation("postSubscribedTo", fields: [subscribedToId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriberId, subscribedToId])
+  @@index([subscriberId])
+  @@index([subscribedToId])
+}
+
 // Chat models
 
 model Conversation {
@@ -488,6 +509,7 @@ enum NotificationType {
   REACTION
   MENTION
   FRIEND_REQUEST
+  NEW_POST
 }
 
 model Notification {

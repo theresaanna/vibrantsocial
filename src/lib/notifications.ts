@@ -91,6 +91,7 @@ export async function createNotification(params: CreateNotificationParams) {
       REACTION: "reacted to your message",
       MENTION: "mentioned you",
       FRIEND_REQUEST: "sent you a friend request",
+      NEW_POST: "published a new post",
     };
     const body = `${actorName} ${typeText[type] || "sent you a notification"}`;
     const url = postId ? `/notifications` : "/notifications";

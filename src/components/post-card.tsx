@@ -498,7 +498,7 @@ export function PostCard({
                     </div>
                   )}
                 </div>
-                <div className="mt-2 flex gap-2">
+                <div className="mt-2 flex justify-end gap-2">
                   <button
                     type="submit"
                     disabled={editPending}
@@ -530,8 +530,8 @@ export function PostCard({
             )}
           </div>
 
-          {/* Tags */}
-          {currentTags.length > 0 && (
+          {/* Tags (hidden while editing) */}
+          {!isEditing && currentTags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 px-4 pb-2" data-testid="post-tags">
               {currentTags.map((pt) => (
                 <Link

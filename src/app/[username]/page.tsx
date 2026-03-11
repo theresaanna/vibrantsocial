@@ -6,8 +6,10 @@ import Link from "next/link";
 import { PostCard } from "@/components/post-card";
 import { FollowButton } from "@/components/follow-button";
 import { FriendButton } from "@/components/friend-button";
+import { SubscribeButton } from "@/components/subscribe-button";
 import { getFriendshipStatus } from "@/app/feed/friend-actions";
 import type { FriendshipStatus } from "@/app/feed/friend-actions";
+import { isSubscribedToUser } from "@/app/feed/subscription-actions";
 import { ProfileShareButton } from "@/components/profile-share-button";
 import { BioContent } from "@/components/bio-content";
 import { ProfileTabs } from "@/components/profile-tabs";
@@ -83,9 +85,10 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   let showNsfwContent = false;
   let friendshipStatus: FriendshipStatus = "none";
   let friendRequestId: string | undefined;
+  let isSubscribed = false;
 
   if (currentUserId && !isOwnProfile) {
-    const [follow, friendship] = await Promise.all([
+    const [follow, friendship, subscribed] = await Promise.all([
       prisma.follow.findUnique({
         where: {
           followerId_followingId: {
@@ -95,10 +98,12 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
         },
       }),
       getFriendshipStatus(user.id),
+      isSubscribedToUser(user.id),
     ]);
     isFollowing = !!follow;
     friendshipStatus = friendship.status;
     friendRequestId = friendship.requestId;
+    isSubscribed = subscribed;
   }
 
   if (currentUserId) {
@@ -388,6 +393,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                     <>
                       <FollowButton userId={user.id} isFollowing={isFollowing} />
                       <FriendButton userId={user.id} friendshipStatus={friendshipStatus} requestId={friendRequestId} />
+                      <SubscribeButton userId={user.id} isSubscribed={isSubscribed} />
                     </>
                   )}
                   <ProfileShareButton username={user.username!} hasCustomTheme={hasCustomTheme} />

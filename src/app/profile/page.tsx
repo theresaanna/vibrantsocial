@@ -30,6 +30,7 @@ export default async function ProfilePage() {
       emailOnNewChat: true,
       emailOnMention: true,
       emailOnFriendRequest: true,
+      emailOnSubscribedPost: true,
       pushEnabled: true,
       isProfilePublic: true,
     },
@@ -77,6 +78,7 @@ export default async function ProfilePage() {
           emailOnNewChat={user?.emailOnNewChat ?? true}
           emailOnMention={user?.emailOnMention ?? true}
           emailOnFriendRequest={user?.emailOnFriendRequest ?? true}
+          emailOnSubscribedPost={user?.emailOnSubscribedPost ?? true}
           pushEnabled={user?.pushEnabled ?? false}
           isProfilePublic={user?.isProfilePublic ?? true}
           email={user?.email ?? null}

@@ -11,6 +11,7 @@ import {
 } from "@/lib/mentions";
 import { extractTagsFromNames } from "@/lib/tags";
 import { invalidate, cacheKeys } from "@/lib/cache";
+import { notifyPostSubscribers } from "@/lib/subscription-notifications";
 
 interface PostState {
   success: boolean;
@@ -102,6 +103,16 @@ export async function createPost(
       postId: post.id,
     });
   }
+
+  // Notify post subscribers
+  await notifyPostSubscribers({
+    authorId: session.user.id,
+    postId: post.id,
+    isSensitive,
+    isNsfw,
+    isGraphicNudity,
+    isCloseFriendsOnly,
+  });
 
   revalidatePath("/feed");
   return { success: true, message: "Post created", postId: post.id };

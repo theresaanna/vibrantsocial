@@ -101,6 +101,7 @@ export async function updateProfile(
   const emailOnNewChat = formData.get("emailOnNewChat") === "true";
   const emailOnMention = formData.get("emailOnMention") === "true";
   const emailOnFriendRequest = formData.get("emailOnFriendRequest") === "true";
+  const emailOnSubscribedPost = formData.get("emailOnSubscribedPost") === "true";
   const pushEnabled = formData.get("pushEnabled") === "true";
   const isProfilePublic = formData.get("isProfilePublic") === "true";
 
@@ -116,6 +117,7 @@ export async function updateProfile(
       emailOnNewChat,
       emailOnMention,
       emailOnFriendRequest,
+      emailOnSubscribedPost,
       pushEnabled,
       isProfilePublic,
       ...themeColors,
