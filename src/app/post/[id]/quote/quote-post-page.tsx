@@ -53,6 +53,7 @@ export function QuotePostPage({
   const [isNsfw, setIsNsfw] = useState(false);
   const [isGraphicNudity, setIsGraphicNudity] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [isCloseFriendsOnly, setIsCloseFriendsOnly] = useState(false);
   const [showContentWarnings, setShowContentWarnings] = useState(false);
 
   function handleChange(editorState: EditorState) {
@@ -71,6 +72,7 @@ export function QuotePostPage({
     formData.set("isSensitive", isSensitive ? "true" : "false");
     formData.set("isNsfw", isNsfw ? "true" : "false");
     formData.set("isGraphicNudity", isGraphicNudity ? "true" : "false");
+    formData.set("isCloseFriendsOnly", isCloseFriendsOnly ? "true" : "false");
     if (tags.length > 0) {
       formData.set("tags", tags.join(","));
     }
@@ -224,7 +226,24 @@ export function QuotePostPage({
           )}
 
           {/* Actions */}
-          <div className="mt-4 flex justify-end gap-2">
+          <div className="mt-4 flex items-center justify-end gap-2">
+            <label
+              className="flex cursor-pointer items-center gap-1.5 mr-auto"
+              title="Only visible to your close friends"
+            >
+              <input
+                type="checkbox"
+                checked={isCloseFriendsOnly}
+                onChange={(e) => setIsCloseFriendsOnly(e.target.checked)}
+                className="sr-only peer"
+              />
+              <span className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${isCloseFriendsOnly ? "border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-900/30 dark:text-green-400" : "border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-500 dark:border-zinc-700 dark:text-zinc-500 dark:hover:border-zinc-600 dark:hover:text-zinc-400"}`}>
+                <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
+                </svg>
+                Close Friends
+              </span>
+            </label>
             <Link
               href={`/post/${postId}`}
               className="rounded-lg px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"

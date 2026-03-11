@@ -42,13 +42,20 @@ export async function fetchFeedPage(cursor?: string) {
     60 // cache for 60 seconds
   );
 
-  // Fetch user preferences for content filtering
-  const currentUser = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { showNsfwContent: true, ageVerified: true },
-  });
+  // Fetch user preferences and close-friend-of data in parallel
+  const [currentUser, closeFriendOfRows] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { showNsfwContent: true, ageVerified: true },
+    }),
+    prisma.closeFriend.findMany({
+      where: { friendId: userId },
+      select: { userId: true },
+    }),
+  ]);
   const showNsfwContent = currentUser?.showNsfwContent ?? false;
   const ageVerified = !!currentUser?.ageVerified;
+  const closeFriendAuthors = [...closeFriendOfRows.map((r) => r.userId), userId];
 
   const postInclude = getPostInclude(userId);
   const dateFilter = cursor ? { lt: new Date(cursor) } : undefined;
@@ -62,6 +69,10 @@ export async function fetchFeedPage(cursor?: string) {
         ...(dateFilter ? { createdAt: dateFilter } : {}),
         ...(!showNsfwContent ? { isNsfw: false } : {}),
         ...(!ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
+        OR: [
+          { isCloseFriendsOnly: false },
+          { isCloseFriendsOnly: true, authorId: { in: closeFriendAuthors } },
+        ],
       },
       orderBy: { createdAt: "desc" },
       take: fetchCount,
@@ -71,6 +82,10 @@ export async function fetchFeedPage(cursor?: string) {
       where: {
         userId: { in: followingIds },
         ...(dateFilter ? { createdAt: dateFilter } : {}),
+        OR: [
+          { isCloseFriendsOnly: false },
+          { isCloseFriendsOnly: true, userId: { in: closeFriendAuthors } },
+        ],
       },
       orderBy: { createdAt: "desc" },
       take: fetchCount,

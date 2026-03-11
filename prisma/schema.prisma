@@ -98,6 +98,10 @@ model User {
 
   // Content moderation
   quarantinedUploads QuarantinedUpload[]
+
+  // Close friends
+  closeFriends  CloseFriend[] @relation("closeFriendOwner")
+  closeFriendOf CloseFriend[] @relation("closeFriendTarget")
 }
 
 model Account {
@@ -136,17 +140,18 @@ model VerificationToken {
 }
 
 model Post {
-  id              String    @id @default(cuid())
-  content         String    @db.Text
-  authorId        String?
-  isAuthorDeleted Boolean   @default(false)
-  isSensitive     Boolean   @default(false)
-  isNsfw          Boolean   @default(false)
-  isGraphicNudity Boolean   @default(false)
-  isPinned        Boolean   @default(false)
-  editedAt        DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                 String    @id @default(cuid())
+  content            String    @db.Text
+  authorId           String?
+  isAuthorDeleted    Boolean   @default(false)
+  isSensitive        Boolean   @default(false)
+  isNsfw             Boolean   @default(false)
+  isGraphicNudity    Boolean   @default(false)
+  isCloseFriendsOnly Boolean   @default(false)
+  isPinned           Boolean   @default(false)
+  editedAt           DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   author        User?          @relation(fields: [authorId], references: [id], onDelete: SetNull)
   comments      Comment[]
@@ -224,16 +229,17 @@ model Bookmark {
 }
 
 model Repost {
-  id              String   @id @default(cuid())
-  postId          String
-  userId          String
-  content         String?  @db.Text
-  isSensitive     Boolean  @default(false)
-  isNsfw          Boolean  @default(false)
-  isGraphicNudity Boolean  @default(false)
-  isPinned        Boolean  @default(false)
-  editedAt        DateTime?
-  createdAt       DateTime @default(now())
+  id                 String   @id @default(cuid())
+  postId             String
+  userId             String
+  content            String?  @db.Text
+  isSensitive        Boolean  @default(false)
+  isNsfw             Boolean  @default(false)
+  isGraphicNudity    Boolean  @default(false)
+  isCloseFriendsOnly Boolean  @default(false)
+  isPinned           Boolean  @default(false)
+  editedAt           DateTime?
+  createdAt          DateTime @default(now())
 
   post Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
   user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -358,6 +364,21 @@ model FriendRequest {
   @@unique([senderId, receiverId])
   @@index([receiverId, status])
   @@index([senderId])
+}
+
+// Close friends (private list, only visible to the owner)
+
+model CloseFriend {
+  id        String   @id @default(cuid())
+  userId    String
+  friendId  String
+  createdAt DateTime @default(now())
+
+  user   User @relation("closeFriendOwner", fields: [userId], references: [id], onDelete: Cascade)
+  friend User @relation("closeFriendTarget", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, friendId])
+  @@index([userId])
 }
 
 // Chat models

@@ -4,14 +4,15 @@ import { FeedClient } from "@/components/feed-client";
 import { calculateAge } from "@/lib/age-gate";
 import { getPostInclude, getRepostInclude, PAGE_SIZE } from "./feed-queries";
 import { cached, cacheKeys } from "@/lib/cache";
+import { getCloseFriendIds } from "@/app/feed/close-friends-actions";
 
 /**
  * Async server component that fetches all feed data.
  * Designed to be wrapped in <Suspense> so the page shell streams immediately.
  */
 export async function FeedContent({ userId }: { userId: string }) {
-  // Phase 1: currentUser + cached followingIds in parallel
-  const [currentUser, followingIds] = await Promise.all([
+  // Phase 1: currentUser + cached followingIds + closeFriendOf in parallel
+  const [currentUser, followingIds, closeFriendOfIds] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -34,6 +35,11 @@ export async function FeedContent({ userId }: { userId: string }) {
       },
       60 // cache for 60 seconds
     ),
+    // Fetch IDs of users who have added the current user as a close friend
+    prisma.closeFriend.findMany({
+      where: { friendId: userId },
+      select: { userId: true },
+    }).then((rows) => rows.map((r) => r.userId)),
   ]);
 
   if (!currentUser?.dateOfBirth) redirect("/complete-profile");
@@ -49,6 +55,9 @@ export async function FeedContent({ userId }: { userId: string }) {
   const postInclude = getPostInclude(userId);
   const fetchCount = PAGE_SIZE + 1;
 
+  // Authors whose close-friends-only posts the current user can see
+  const closeFriendAuthors = [...closeFriendOfIds, userId];
+
   // Phase 2: posts + reposts in parallel
   const [posts, reposts] = await Promise.all([
     prisma.post.findMany({
@@ -56,6 +65,10 @@ export async function FeedContent({ userId }: { userId: string }) {
         authorId: { in: [...followingIds, userId] },
         ...(!showNsfwContent ? { isNsfw: false } : {}),
         ...(!ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
+        OR: [
+          { isCloseFriendsOnly: false },
+          { isCloseFriendsOnly: true, authorId: { in: closeFriendAuthors } },
+        ],
       },
       orderBy: { createdAt: "desc" },
       take: fetchCount,
@@ -64,6 +77,10 @@ export async function FeedContent({ userId }: { userId: string }) {
     prisma.repost.findMany({
       where: {
         userId: { in: followingIds },
+        OR: [
+          { isCloseFriendsOnly: false },
+          { isCloseFriendsOnly: true, userId: { in: closeFriendAuthors } },
+        ],
       },
       orderBy: { createdAt: "desc" },
       take: fetchCount,
