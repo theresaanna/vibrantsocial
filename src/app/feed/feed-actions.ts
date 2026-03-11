@@ -93,8 +93,13 @@ export async function fetchFeedPage(cursor?: string) {
     }),
   ]);
 
+  // Deduplicate: skip simple reposts when the original post is already in the feed.
+  // Quote reposts (those with content) are always kept since they have unique content.
   const directPostIds = new Set(posts.map((p: { id: string }) => p.id));
-  const filteredReposts = reposts.filter((r: { post: { id: string } }) => !directPostIds.has(r.post.id));
+  const filteredReposts = reposts.filter(
+    (r: { content?: string | null; post: { id: string } }) =>
+      r.content != null || !directPostIds.has(r.post.id)
+  );
 
   const allItems = [
     ...posts.map((p: { createdAt: Date }) => ({

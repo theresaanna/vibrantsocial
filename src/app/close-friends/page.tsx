@@ -66,8 +66,10 @@ export default async function CloseFriendsPage() {
       ])
     : [[], []];
 
+  // Deduplicate: skip simple reposts when the original post is already in the feed.
+  // Quote reposts (those with content) are always kept since they have unique content.
   const directPostIds = new Set(posts.map((p) => p.id));
-  const filteredReposts = reposts.filter((r) => !directPostIds.has(r.post.id));
+  const filteredReposts = reposts.filter((r) => r.content != null || !directPostIds.has(r.post.id));
 
   const allItems = [
     ...posts.map((p) => ({

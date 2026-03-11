@@ -88,10 +88,12 @@ export async function FeedContent({ userId }: { userId: string }) {
     }),
   ]);
 
-  // Deduplicate: if a post appears both directly and via repost, keep the direct post
+  // Deduplicate: if a post appears both directly and via simple repost, keep the direct post.
+  // Quote reposts (those with content) are always kept since they have unique content.
   const directPostIds = new Set(posts.map((p: { id: string }) => p.id));
   const filteredReposts = reposts.filter(
-    (r: { post: { id: string } }) => !directPostIds.has(r.post.id)
+    (r: { content?: string | null; post: { id: string } }) =>
+      r.content != null || !directPostIds.has(r.post.id)
   );
 
   // Merge and sort chronologically, serialize for client component
