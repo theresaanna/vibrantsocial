@@ -7,6 +7,7 @@ import {
   sendMentionEmail,
   sendWelcomeEmail,
   sendFriendRequestEmail,
+  sendNewPostEmail,
 } from "./email";
 
 function onFunctionFailure(functionId: string) {
@@ -66,6 +67,18 @@ export const sendFriendRequestEmailFn = inngest.createFunction(
   { event: "email/friend-request" },
   async ({ event }) => {
     await sendFriendRequestEmail(event.data);
+  }
+);
+
+export const sendNewPostEmailFn = inngest.createFunction(
+  {
+    id: "send-new-post-email",
+    retries: 3,
+    onFailure: onFunctionFailure("send-new-post-email"),
+  },
+  { event: "email/new-post" },
+  async ({ event }) => {
+    await sendNewPostEmail(event.data);
   }
 );
 
@@ -197,6 +210,7 @@ export const allFunctions = [
   sendMentionEmailFn,
   sendWelcomeEmailFn,
   sendFriendRequestEmailFn,
+  sendNewPostEmailFn,
   deleteUserMediaFn,
   pollChatEmailNotificationsFn,
 ];

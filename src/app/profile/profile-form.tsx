@@ -33,6 +33,7 @@ interface ProfileFormProps {
   emailOnNewChat: boolean;
   emailOnMention: boolean;
   emailOnFriendRequest: boolean;
+  emailOnSubscribedPost: boolean;
   pushEnabled: boolean;
   isProfilePublic: boolean;
   phoneVerified: boolean;
@@ -47,7 +48,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, pushEnabled: initialPushEnabled, isProfilePublic, phoneVerified, phoneNumber, isCredentialsUser }: ProfileFormProps) {
+export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, pushEnabled: initialPushEnabled, isProfilePublic, phoneVerified, phoneNumber, isCredentialsUser }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [displayNameValue, setDisplayNameValue] = useState(user.displayName ?? "");
@@ -655,6 +656,18 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
               />
               <span className="text-sm text-zinc-700 dark:text-zinc-300">
                 Friend requests
+              </span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="emailOnSubscribedPost"
+                value="true"
+                defaultChecked={emailOnSubscribedPost}
+                className="rounded"
+              />
+              <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                New posts from subscribed users
               </span>
             </label>
           </div>

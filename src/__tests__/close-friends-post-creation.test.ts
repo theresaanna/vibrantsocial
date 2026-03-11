@@ -39,6 +39,10 @@ vi.mock("@/lib/mentions", () => ({
   createMentionNotifications: vi.fn(),
 }));
 
+vi.mock("@/lib/subscription-notifications", () => ({
+  notifyPostSubscribers: vi.fn(),
+}));
+
 vi.mock("@/lib/tags", () => ({
   extractTagsFromNames: vi.fn((names: string[]) => names),
 }));

@@ -14,6 +14,7 @@ import {
 } from "@/lib/mentions";
 import { extractTagsFromNames } from "@/lib/tags";
 import { invalidate, cacheKeys } from "@/lib/cache";
+import { notifyPostSubscribers } from "@/lib/subscription-notifications";
 
 interface ActionState {
   success: boolean;
@@ -261,6 +262,16 @@ export async function createQuoteRepost(
       postId,
     });
   }
+
+  // Notify post subscribers (quote reposts count as new content from the user)
+  await notifyPostSubscribers({
+    authorId: session.user.id,
+    postId: repost.id,
+    isSensitive,
+    isNsfw,
+    isGraphicNudity,
+    isCloseFriendsOnly,
+  });
 
   revalidatePath("/feed");
   revalidatePath(`/post/${postId}`);
