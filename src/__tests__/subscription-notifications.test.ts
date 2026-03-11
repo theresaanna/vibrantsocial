@@ -47,14 +47,53 @@ describe("notifyPostSubscribers", () => {
     expect(mockPrisma.postSubscription.findMany).not.toHaveBeenCalled();
   });
 
-  it("does nothing for NSFW posts", async () => {
+  it("only notifies NSFW-opted-in subscribers for NSFW posts", async () => {
+    mockPrisma.postSubscription.findMany.mockResolvedValueOnce([
+      { subscriberId: "sub1" },
+      { subscriberId: "sub2" },
+    ] as never);
+
+    // Only sub1 has opted into NSFW
+    mockPrisma.user.findMany
+      .mockResolvedValueOnce([{ id: "sub1" }] as never) // NSFW opt-in filter
+      .mockResolvedValueOnce([] as never); // email query
+
+    mockPrisma.user.findUnique.mockResolvedValueOnce({
+      displayName: "Author",
+      username: "author1",
+      name: null,
+    } as never);
+
+    mockCreateNotification.mockResolvedValue({} as never);
+
     await notifyPostSubscribers({
       authorId: "author1",
       postId: "post1",
       isNsfw: true,
     });
 
-    expect(mockPrisma.postSubscription.findMany).not.toHaveBeenCalled();
+    // Only sub1 should get notified
+    expect(mockCreateNotification).toHaveBeenCalledTimes(1);
+    expect(mockCreateNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ targetUserId: "sub1" })
+    );
+  });
+
+  it("skips NSFW posts when no subscribers opted in", async () => {
+    mockPrisma.postSubscription.findMany.mockResolvedValueOnce([
+      { subscriberId: "sub1" },
+    ] as never);
+
+    // No one opted into NSFW
+    mockPrisma.user.findMany.mockResolvedValueOnce([] as never);
+
+    await notifyPostSubscribers({
+      authorId: "author1",
+      postId: "post1",
+      isNsfw: true,
+    });
+
+    expect(mockCreateNotification).not.toHaveBeenCalled();
   });
 
   it("does nothing for graphic nudity posts", async () => {
