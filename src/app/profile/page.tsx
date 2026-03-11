@@ -43,9 +43,21 @@ export default async function ProfilePage() {
   return (
     <div className="flex min-h-[calc(100vh-57px)] items-center justify-center">
       <div className="w-full max-w-2xl space-y-6 rounded-2xl bg-white p-8 shadow-lg dark:bg-zinc-900">
-        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Your Profile
-        </h1>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-amber-600">
+            <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+              Your Profile
+            </h1>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              Manage your account details
+            </p>
+          </div>
+        </div>
 
         <ProfileForm
           user={{
