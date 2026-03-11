@@ -27,13 +27,16 @@ export async function Header() {
           <span className="text-blue-600 dark:text-blue-400">Social</span>
         </Link>
 
-        {/* Mobile-only profile link next to logo */}
+        {/* Mobile-only profile link + theme toggle next to logo */}
         {session?.user && (
-          <MobileProfileLink username={session.user.username} />
+          <div className="order-2 flex items-center gap-1 sm:hidden">
+            <ThemeToggle />
+            <MobileProfileLink username={session.user.username} />
+          </div>
         )}
 
         <div className="order-3 flex w-full items-center justify-between border-t border-zinc-100 pt-2 sm:order-2 sm:w-auto sm:justify-start sm:gap-4 sm:border-0 sm:pt-0 dark:border-zinc-800">
-          <ThemeToggle />
+          <div className="hidden sm:block"><ThemeToggle /></div>
           {session?.user ? (
             <>
               <DynamicFavicon

@@ -120,6 +120,19 @@ export default async function PostPage({ params, searchParams }: Props) {
   // Redirect unauthenticated visitors away from flagged content
   if (!userId && (post.isSensitive || post.isNsfw || post.isGraphicNudity)) redirect("/login");
 
+  // Close-friends-only posts: only the author and their close friends can view
+  if (post.isCloseFriendsOnly && post.author) {
+    if (!userId) redirect("/login");
+    if (userId !== post.author.id) {
+      const isOnCloseFriendsList = await prisma.closeFriend.findUnique({
+        where: {
+          userId_friendId: { userId: post.author.id, friendId: userId },
+        },
+      });
+      if (!isOnCloseFriendsList) notFound();
+    }
+  }
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
       <PostPageClient

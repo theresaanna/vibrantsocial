@@ -62,9 +62,10 @@ export async function createPost(
   const isSensitive = formData.get("isSensitive") === "true";
   const isNsfw = formData.get("isNsfw") === "true";
   const isGraphicNudity = formData.get("isGraphicNudity") === "true";
+  const isCloseFriendsOnly = formData.get("isCloseFriendsOnly") === "true";
 
   const post = await prisma.post.create({
-    data: { content, authorId: session.user.id, isSensitive, isNsfw, isGraphicNudity },
+    data: { content, authorId: session.user.id, isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly },
   });
 
   // Attach tags (skip for sensitive/graphic posts; NSFW posts can have tags)
@@ -152,10 +153,11 @@ export async function editPost(
   const isSensitive = formData.get("isSensitive") === "true";
   const isNsfw = formData.get("isNsfw") === "true";
   const isGraphicNudity = formData.get("isGraphicNudity") === "true";
+  const isCloseFriendsOnly = formData.get("isCloseFriendsOnly") === "true";
 
   await prisma.post.update({
     where: { id: postId },
-    data: { content, editedAt: new Date(), isSensitive, isNsfw, isGraphicNudity },
+    data: { content, editedAt: new Date(), isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly },
   });
 
   // Update tags

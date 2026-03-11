@@ -1,0 +1,197 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createPost } from "@/app/feed/actions";
+
+vi.mock("@/auth", () => ({
+  auth: vi.fn(),
+}));
+
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    post: {
+      create: vi.fn(),
+    },
+    tag: {
+      upsert: vi.fn(),
+    },
+    postTag: {
+      create: vi.fn(),
+    },
+    user: {
+      findUnique: vi.fn(),
+    },
+  },
+}));
+
+vi.mock("@/lib/phone-gate", () => ({
+  requirePhoneVerification: vi.fn(),
+}));
+
+vi.mock("@/lib/age-gate", () => ({
+  requireMinimumAge: vi.fn(),
+}));
+
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+}));
+
+vi.mock("@/lib/mentions", () => ({
+  extractMentionsFromLexicalJson: vi.fn().mockReturnValue([]),
+  createMentionNotifications: vi.fn(),
+}));
+
+vi.mock("@/lib/tags", () => ({
+  extractTagsFromNames: vi.fn((names: string[]) => names),
+}));
+
+vi.mock("@/lib/cache", () => ({
+  invalidate: vi.fn(),
+  cacheKeys: {
+    tagCloud: () => "tags:cloud",
+    nsfwTagCloud: () => "tags:nsfw-cloud",
+    tagPostCount: (name: string) => `tag:${name}:count`,
+  },
+}));
+
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import { requirePhoneVerification } from "@/lib/phone-gate";
+import { requireMinimumAge } from "@/lib/age-gate";
+
+const mockAuth = vi.mocked(auth);
+const mockPrisma = vi.mocked(prisma);
+const mockPhoneGate = vi.mocked(requirePhoneVerification);
+const mockAgeGate = vi.mocked(requireMinimumAge);
+
+const prevState = { success: false, message: "" };
+
+// Minimal valid Lexical JSON (must be > 50 chars when stringified)
+const validContent = JSON.stringify({
+  root: {
+    children: [
+      {
+        children: [{ text: "Hello world, this is a test post with enough content to pass validation!", type: "text" }],
+        type: "paragraph",
+      },
+    ],
+    type: "root",
+  },
+});
+
+function makeFormData(data: Record<string, string>): FormData {
+  const fd = new FormData();
+  for (const [key, value] of Object.entries(data)) {
+    fd.set(key, value);
+  }
+  return fd;
+}
+
+describe("createPost with isCloseFriendsOnly", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAuth.mockResolvedValue({ user: { id: "user1" } } as never);
+    mockPhoneGate.mockResolvedValue(true);
+    mockAgeGate.mockResolvedValue(true);
+  });
+
+  it("creates a post with isCloseFriendsOnly=true", async () => {
+    mockPrisma.post.create.mockResolvedValueOnce({
+      id: "post1",
+      content: validContent,
+      authorId: "user1",
+      isCloseFriendsOnly: true,
+      isSensitive: false,
+      isNsfw: false,
+      isGraphicNudity: false,
+    } as never);
+
+    const result = await createPost(
+      prevState,
+      makeFormData({
+        content: validContent,
+        isSensitive: "false",
+        isNsfw: "false",
+        isGraphicNudity: "false",
+        isCloseFriendsOnly: "true",
+      })
+    );
+
+    expect(result.success).toBe(true);
+    expect(mockPrisma.post.create).toHaveBeenCalledWith({
+      data: {
+        content: validContent,
+        authorId: "user1",
+        isSensitive: false,
+        isNsfw: false,
+        isGraphicNudity: false,
+        isCloseFriendsOnly: true,
+      },
+    });
+  });
+
+  it("creates a post with isCloseFriendsOnly=false by default", async () => {
+    mockPrisma.post.create.mockResolvedValueOnce({
+      id: "post2",
+      content: validContent,
+      authorId: "user1",
+      isCloseFriendsOnly: false,
+      isSensitive: false,
+      isNsfw: false,
+      isGraphicNudity: false,
+    } as never);
+
+    const result = await createPost(
+      prevState,
+      makeFormData({
+        content: validContent,
+        isSensitive: "false",
+        isNsfw: "false",
+        isGraphicNudity: "false",
+        isCloseFriendsOnly: "false",
+      })
+    );
+
+    expect(result.success).toBe(true);
+    expect(mockPrisma.post.create).toHaveBeenCalledWith({
+      data: {
+        content: validContent,
+        authorId: "user1",
+        isSensitive: false,
+        isNsfw: false,
+        isGraphicNudity: false,
+        isCloseFriendsOnly: false,
+      },
+    });
+  });
+
+  it("treats missing isCloseFriendsOnly as false", async () => {
+    mockPrisma.post.create.mockResolvedValueOnce({
+      id: "post3",
+      content: validContent,
+      authorId: "user1",
+      isCloseFriendsOnly: false,
+      isSensitive: false,
+      isNsfw: false,
+      isGraphicNudity: false,
+    } as never);
+
+    const result = await createPost(
+      prevState,
+      makeFormData({
+        content: validContent,
+        isSensitive: "false",
+        isNsfw: "false",
+        isGraphicNudity: "false",
+        // isCloseFriendsOnly not set
+      })
+    );
+
+    expect(result.success).toBe(true);
+    expect(mockPrisma.post.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          isCloseFriendsOnly: false,
+        }),
+      })
+    );
+  });
+});

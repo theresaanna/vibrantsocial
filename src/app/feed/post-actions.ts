@@ -197,6 +197,7 @@ export async function createQuoteRepost(
   const isSensitive = formData.get("isSensitive") === "true";
   const isNsfw = formData.get("isNsfw") === "true";
   const isGraphicNudity = formData.get("isGraphicNudity") === "true";
+  const isCloseFriendsOnly = formData.get("isCloseFriendsOnly") === "true";
 
   if (!content) {
     return { success: false, message: "Quote text cannot be empty" };
@@ -211,7 +212,7 @@ export async function createQuoteRepost(
   }
 
   const repost = await prisma.repost.create({
-    data: { postId, userId: session.user.id, content, isSensitive, isNsfw, isGraphicNudity },
+    data: { postId, userId: session.user.id, content, isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly },
   });
 
   // Attach tags (skip for sensitive/graphic; NSFW can have tags)
@@ -292,10 +293,11 @@ export async function editRepost(
   const isSensitive = formData.get("isSensitive") === "true";
   const isNsfw = formData.get("isNsfw") === "true";
   const isGraphicNudity = formData.get("isGraphicNudity") === "true";
+  const isCloseFriendsOnly = formData.get("isCloseFriendsOnly") === "true";
 
   await prisma.repost.update({
     where: { id: repostId },
-    data: { content, editedAt: new Date(), isSensitive, isNsfw, isGraphicNudity },
+    data: { content, editedAt: new Date(), isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly },
   });
 
   // Update tags

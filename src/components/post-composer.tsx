@@ -62,6 +62,7 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
   const [isNsfw, setIsNsfw] = useState(false);
   const [isGraphicNudity, setIsGraphicNudity] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [isCloseFriendsOnly, setIsCloseFriendsOnly] = useState(false);
   const [showContentWarnings, setShowContentWarnings] = useState(false);
   const [draftStatus, setDraftStatus] = useState<DraftSaveStatus>("idle");
 
@@ -78,6 +79,7 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
         setIsSensitive(false);
         setIsNsfw(false);
         setIsGraphicNudity(false);
+        setIsCloseFriendsOnly(false);
         clearDraft("compose");
         if (result.postId) onPostCreated?.(result.postId);
       }
@@ -178,6 +180,7 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
           )}
         </div>
         <input type="hidden" name="isGraphicNudity" value={isGraphicNudity ? "true" : "false"} />
+        <input type="hidden" name="isCloseFriendsOnly" value={isCloseFriendsOnly ? "true" : "false"} />
         <div className="border-t border-zinc-200 px-4 py-2 dark:border-zinc-700">
           <button
             type="button"
@@ -261,6 +264,23 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
             {draftStatus === "saved" && (
               <span className="text-xs text-zinc-400 dark:text-zinc-500">Saved</span>
             )}
+            <label
+              className="flex cursor-pointer items-center gap-1.5"
+              title="Only visible to your close friends"
+            >
+              <input
+                type="checkbox"
+                checked={isCloseFriendsOnly}
+                onChange={(e) => setIsCloseFriendsOnly(e.target.checked)}
+                className="sr-only peer"
+              />
+              <span className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${isCloseFriendsOnly ? "border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-900/30 dark:text-green-400" : "border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-500 dark:border-zinc-700 dark:text-zinc-500 dark:hover:border-zinc-600 dark:hover:text-zinc-400"}`}>
+                <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
+                </svg>
+                Close Friends
+              </span>
+            </label>
             <button
               type="submit"
               disabled={isPending}
