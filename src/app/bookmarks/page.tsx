@@ -114,9 +114,21 @@ export default async function BookmarksPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
-      <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-        Bookmarks
-      </h1>
+      <div className="mb-6 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-amber-600">
+          <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+          </svg>
+        </div>
+        <div>
+          <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+            Bookmarks
+          </h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            Posts you&apos;ve saved for later
+          </p>
+        </div>
+      </div>
 
       {posts.length === 0 ? (
         <div className="mt-8 text-center">
