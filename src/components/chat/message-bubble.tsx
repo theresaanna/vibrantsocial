@@ -12,6 +12,13 @@ import { LinkifyText } from "./linkify-text";
 
 const LazyEmojiPicker = lazy(() => import("emoji-picker-react"));
 
+// Matches 1-3 emoji with optional whitespace, no other text
+const EMOJI_ONLY_RE = /^\s*(\p{Extended_Pictographic}[\u{FE00}-\u{FE0F}\u{200D}\p{Extended_Pictographic}]*){1,3}\s*$/u;
+
+function isEmojiOnly(text: string): boolean {
+  return EMOJI_ONLY_RE.test(text);
+}
+
 interface MessageBubbleProps {
   message: MessageData;
   isOwn: boolean;
@@ -169,7 +176,7 @@ export function MessageBubble({
   };
 
   const handleEditKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       handleEditSubmit();
     }
@@ -304,6 +311,8 @@ export function MessageBubble({
                   </button>
                 </div>
               </div>
+            ) : message.content && !message.mediaUrl && isEmojiOnly(message.content) ? (
+              <p className="text-5xl leading-tight">{message.content}</p>
             ) : (
               <div
                 className={`rounded-2xl px-3.5 py-2 text-sm ${
@@ -333,7 +342,7 @@ export function MessageBubble({
             {/* Action buttons: context menu + emoji reaction trigger */}
             {!isEditing && (
               <div
-                className={`absolute top-1/2 -translate-y-1/2 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 ${
+                className={`absolute top-1/2 -translate-y-1/2 transition-opacity sm:pointer-events-none sm:opacity-0 sm:group-hover:pointer-events-auto sm:group-hover:opacity-100 ${
                   isOwn ? "-left-16 flex flex-row" : "-right-16 flex flex-row-reverse"
                 }`}
               >
