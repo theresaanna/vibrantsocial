@@ -111,7 +111,7 @@ export function GroupChatSettings({
                 value={nameValue}
                 onChange={(e) => setNameValue(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSaveName();
+                  if (e.key === "Enter" && !e.nativeEvent.isComposing) handleSaveName();
                   if (e.key === "Escape") {
                     setNameValue(conversation.name ?? "");
                     setEditingName(false);

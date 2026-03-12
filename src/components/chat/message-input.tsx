@@ -346,13 +346,15 @@ export function MessageInput({
         )}
       </form>
 
-      {/* File limits hint */}
-      <p
-        className="px-4 pb-2 text-center text-[11px] text-zinc-400 dark:text-zinc-500"
-        data-testid="chat-file-limits"
-      >
-        {getChatFileLimitsHint()}
-      </p>
+      {/* File limits hint - only shown when interacting with attachments */}
+      {(hasMedia || isRecording || uploadError) && (
+        <p
+          className="px-4 pb-2 text-center text-[11px] text-zinc-400 dark:text-zinc-500"
+          data-testid="chat-file-limits"
+        >
+          {getChatFileLimitsHint()}
+        </p>
+      )}
     </div>
   );
 }
