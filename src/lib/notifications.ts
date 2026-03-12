@@ -13,16 +13,17 @@ interface CreateNotificationParams {
   commentId?: string;
   messageId?: string;
   repostId?: string;
+  tagId?: string;
 }
 
 export async function createNotification(params: CreateNotificationParams) {
-  const { type, actorId, targetUserId, postId, commentId, messageId, repostId } = params;
+  const { type, actorId, targetUserId, postId, commentId, messageId, repostId, tagId } = params;
 
   // Don't notify yourself
   if (actorId === targetUserId) return;
 
   const notification = await prisma.notification.create({
-    data: { type, actorId, targetUserId, postId, commentId, messageId, repostId },
+    data: { type, actorId, targetUserId, postId, commentId, messageId, repostId, tagId },
     include: {
       actor: {
         select: {
@@ -68,6 +69,7 @@ export async function createNotification(params: CreateNotificationParams) {
       commentId: notification.commentId,
       messageId: notification.messageId,
       repostId: notification.repostId,
+      tagId: notification.tagId,
       createdAt: notification.createdAt.toISOString(),
     });
   } catch {
@@ -92,6 +94,7 @@ export async function createNotification(params: CreateNotificationParams) {
       MENTION: "mentioned you",
       FRIEND_REQUEST: "sent you a friend request",
       NEW_POST: "published a new post",
+      TAG_POST: "posted in a tag you follow",
     };
     const body = `${actorName} ${typeText[type] || "sent you a notification"}`;
     const url = postId ? `/notifications` : "/notifications";

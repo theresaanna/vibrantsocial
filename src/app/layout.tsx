@@ -6,6 +6,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import { VersionCheck } from "@/components/version-check";
 
 const lexend = Lexend({
   variable: "--font-lexend",
@@ -41,6 +42,7 @@ export default function RootLayout({
         className={`${lexend.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
+          <VersionCheck />
           <Header />
           {children}
           <Footer />

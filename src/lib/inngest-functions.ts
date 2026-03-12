@@ -8,6 +8,8 @@ import {
   sendWelcomeEmail,
   sendFriendRequestEmail,
   sendNewPostEmail,
+  sendTagPostEmail,
+  sendTagDigestEmail,
 } from "./email";
 
 function onFunctionFailure(functionId: string) {
@@ -199,6 +201,163 @@ export async function pollChatEmailNotifications(): Promise<{ emailsSent: number
   return { emailsSent };
 }
 
+export const sendTagPostEmailFn = inngest.createFunction(
+  {
+    id: "send-tag-post-email",
+    retries: 3,
+    onFailure: onFunctionFailure("send-tag-post-email"),
+  },
+  { event: "email/tag-post" },
+  async ({ event }) => {
+    await sendTagPostEmail(event.data as Parameters<typeof sendTagPostEmail>[0]);
+  }
+);
+
+export async function sendTagDigestEmails(): Promise<{ emailsSent: number }> {
+  // Find all users with digest tag subscriptions who have email enabled
+  const subscriptions = await prisma.tagSubscription.findMany({
+    where: {
+      frequency: "digest",
+      user: {
+        emailOnTagPost: true,
+        email: { not: null },
+      },
+    },
+    select: {
+      id: true,
+      userId: true,
+      tagId: true,
+      lastDigestSentAt: true,
+      tag: { select: { id: true, name: true } },
+      user: { select: { email: true, showNsfwContent: true } },
+    },
+  });
+
+  if (subscriptions.length === 0) return { emailsSent: 0 };
+
+  // Group subscriptions by user
+  const userSubs = new Map<
+    string,
+    {
+      email: string;
+      showNsfwContent: boolean;
+      tags: Array<{ id: string; subId: string; name: string; since: Date }>;
+    }
+  >();
+
+  const now = new Date();
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  for (const sub of subscriptions) {
+    if (!userSubs.has(sub.userId)) {
+      userSubs.set(sub.userId, {
+        email: sub.user.email!,
+        showNsfwContent: sub.user.showNsfwContent,
+        tags: [],
+      });
+    }
+    userSubs.get(sub.userId)!.tags.push({
+      id: sub.tagId,
+      subId: sub.id,
+      name: sub.tag.name,
+      since: sub.lastDigestSentAt ?? oneDayAgo,
+    });
+  }
+
+  let emailsSent = 0;
+
+  for (const [userId, userData] of userSubs) {
+    const tagIds = userData.tags.map((t) => t.id);
+    const earliestSince = userData.tags.reduce(
+      (min, t) => (t.since < min ? t.since : min),
+      userData.tags[0].since
+    );
+
+    // Find posts from subscribed tags since last digest
+    const postTags = await prisma.postTag.findMany({
+      where: {
+        tagId: { in: tagIds },
+        post: {
+          createdAt: { gt: earliestSince },
+          isSensitive: false,
+          isGraphicNudity: false,
+          isCloseFriendsOnly: false,
+          authorId: { not: userId },
+          ...(userData.showNsfwContent ? {} : { isNsfw: false }),
+        },
+      },
+      select: {
+        post: {
+          select: {
+            id: true,
+            author: {
+              select: { displayName: true, username: true, name: true },
+            },
+          },
+        },
+        tag: { select: { name: true } },
+      },
+      orderBy: { post: { createdAt: "desc" } },
+    });
+
+    if (postTags.length === 0) continue;
+
+    // Group by post and collect tag names
+    const postMap = new Map<
+      string,
+      { authorName: string; tagNames: Set<string> }
+    >();
+    for (const pt of postTags) {
+      if (!pt.post) continue;
+      if (!postMap.has(pt.post.id)) {
+        const authorName =
+          pt.post.author?.displayName ??
+          pt.post.author?.username ??
+          pt.post.author?.name ??
+          "Someone";
+        postMap.set(pt.post.id, { authorName, tagNames: new Set() });
+      }
+      postMap.get(pt.post.id)!.tagNames.add(pt.tag.name);
+    }
+
+    const posts = Array.from(postMap.entries()).map(
+      ([postId, { authorName, tagNames }]) => ({
+        postId,
+        authorName,
+        tagNames: Array.from(tagNames),
+      })
+    );
+
+    try {
+      await sendTagDigestEmail({ toEmail: userData.email, posts });
+    } catch (error) {
+      Sentry.captureException(error, {
+        extra: {
+          inngestFunctionId: "send-tag-digest-emails",
+          toEmail: userData.email,
+        },
+      });
+      continue;
+    }
+
+    // Update lastDigestSentAt for all this user's digest subscriptions
+    await prisma.tagSubscription.updateMany({
+      where: { id: { in: userData.tags.map((t) => t.subId) } },
+      data: { lastDigestSentAt: now },
+    });
+
+    emailsSent++;
+  }
+
+  return { emailsSent };
+}
+
+export const sendTagDigestFn = inngest.createFunction(
+  { id: "send-tag-digest-emails" },
+  { cron: "0 8 * * *" },
+  async () => sendTagDigestEmails()
+);
+
 export const pollChatEmailNotificationsFn = inngest.createFunction(
   { id: "poll-chat-email-notifications" },
   { cron: "*/15 * * * *" },
@@ -211,6 +370,8 @@ export const allFunctions = [
   sendWelcomeEmailFn,
   sendFriendRequestEmailFn,
   sendNewPostEmailFn,
+  sendTagPostEmailFn,
   deleteUserMediaFn,
   pollChatEmailNotificationsFn,
+  sendTagDigestFn,
 ];

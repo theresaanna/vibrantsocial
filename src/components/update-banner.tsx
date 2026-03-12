@@ -1,34 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export function UpdateBanner() {
-  const [visible, setVisible] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
-  useEffect(() => {
-    if (!("serviceWorker" in navigator)) return;
-
-    function handleMessage(event: MessageEvent) {
-      if (event.data?.type === "SW_UPDATED") {
-        setVisible(true);
-      }
-    }
-
-    navigator.serviceWorker.addEventListener("message", handleMessage);
-
-    // Also check for waiting worker on mount
-    navigator.serviceWorker.getRegistration("/sw.js").then((reg) => {
-      if (reg?.waiting) {
-        setVisible(true);
-      }
-    });
-
-    return () => {
-      navigator.serviceWorker.removeEventListener("message", handleMessage);
-    };
-  }, []);
-
-  if (!visible) return null;
+  if (dismissed) return null;
 
   return (
     <div className="mb-4 flex items-start gap-3 rounded-2xl bg-gradient-to-r from-fuchsia-50 to-blue-50 p-4 shadow-sm dark:from-fuchsia-950/30 dark:to-blue-950/30">
@@ -45,7 +22,7 @@ export function UpdateBanner() {
         Refresh
       </button>
       <button
-        onClick={() => setVisible(false)}
+        onClick={() => setDismissed(true)}
         className="shrink-0 rounded-lg p-1 text-zinc-400 transition-colors hover:bg-zinc-200/50 hover:text-zinc-600 dark:text-zinc-500 dark:hover:bg-zinc-700/50 dark:hover:text-zinc-300"
         aria-label="Dismiss"
       >

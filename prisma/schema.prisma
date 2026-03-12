@@ -58,6 +58,7 @@ model User {
   emailOnMention        Boolean @default(true)
   emailOnFriendRequest  Boolean @default(true)
   emailOnSubscribedPost Boolean @default(true)
+  emailOnTagPost        Boolean @default(true)
 
   // Push notification preferences
   pushEnabled Boolean @default(false)
@@ -110,6 +111,9 @@ model User {
   // Post subscriptions
   postSubscriptions PostSubscription[] @relation("postSubscriber")
   postSubscribers   PostSubscription[] @relation("postSubscribedTo")
+
+  // Tag subscriptions
+  tagSubscriptions TagSubscription[]
 }
 
 model Account {
@@ -175,11 +179,13 @@ model Post {
 }
 
 model Tag {
-  id        String      @id @default(cuid())
-  name      String      @unique
-  createdAt DateTime    @default(now())
-  posts     PostTag[]
-  reposts   RepostTag[]
+  id            String            @id @default(cuid())
+  name          String            @unique
+  createdAt     DateTime          @default(now())
+  posts         PostTag[]
+  reposts       RepostTag[]
+  subscriptions TagSubscription[]
+  notifications Notification[]
 }
 
 model PostTag {
@@ -405,6 +411,24 @@ model PostSubscription {
   @@index([subscribedToId])
 }
 
+// Tag subscriptions (subscribe to new posts in a tag)
+
+model TagSubscription {
+  id              String    @id @default(cuid())
+  userId          String
+  tagId           String
+  frequency       String    @default("immediate") // "immediate" | "digest"
+  lastDigestSentAt DateTime?
+  createdAt       DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tagId])
+  @@index([userId])
+  @@index([tagId])
+}
+
 // Chat models
 
 model Conversation {
@@ -513,6 +537,7 @@ enum NotificationType {
   MENTION
   FRIEND_REQUEST
   NEW_POST
+  TAG_POST
 }
 
 model Notification {
@@ -524,6 +549,7 @@ model Notification {
   commentId    String?
   messageId    String?
   repostId     String?
+  tagId        String?
   readAt       DateTime?
   createdAt    DateTime         @default(now())
 
@@ -533,6 +559,7 @@ model Notification {
   comment    Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
   message    Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
   repost     Repost?  @relation(fields: [repostId], references: [id], onDelete: Cascade)
+  tag        Tag?     @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@index([targetUserId, readAt, createdAt])
   @@index([actorId])

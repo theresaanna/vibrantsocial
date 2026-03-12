@@ -30,6 +30,7 @@ interface NotificationItem {
   actor: NotificationActor;
   post: { id: string; content: string } | null;
   message: { id: string; conversationId: string } | null;
+  tag: { id: string; name: string } | null;
 }
 
 function getNotificationText(type: NotificationType): string {
@@ -54,6 +55,8 @@ function getNotificationText(type: NotificationType): string {
       return "sent you a friend request";
     case "NEW_POST":
       return "published a new post";
+    case "TAG_POST":
+      return "posted in a tag you follow";
   }
 }
 

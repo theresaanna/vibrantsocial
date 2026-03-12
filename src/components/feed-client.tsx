@@ -3,7 +3,6 @@
 import { useState, useCallback } from "react";
 import { AddToHomeBanner } from "@/components/add-to-home-banner";
 import { AddEmailBanner } from "@/components/add-email-banner";
-import { UpdateBanner } from "@/components/update-banner";
 import { PostComposer } from "@/components/post-composer";
 import { FeedList } from "@/components/feed-list";
 import { fetchSinglePost } from "@/app/feed/feed-actions";
@@ -45,7 +44,6 @@ export function FeedClient({
 
   return (
     <>
-      <UpdateBanner />
       <AddToHomeBanner />
       <AddEmailBanner hasEmail={hasEmail} />
       <PostComposer

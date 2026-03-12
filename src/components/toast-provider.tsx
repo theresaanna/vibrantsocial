@@ -32,6 +32,8 @@ function getToastText(type: NotificationType): string {
       return "sent you a friend request";
     case "NEW_POST":
       return "published a new post";
+    case "TAG_POST":
+      return "posted in a tag you follow";
   }
 }
 

@@ -12,6 +12,7 @@ import {
 import { extractTagsFromNames } from "@/lib/tags";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { notifyPostSubscribers } from "@/lib/subscription-notifications";
+import { notifyTagSubscribers } from "@/lib/tag-subscription-notifications";
 
 interface PostState {
   success: boolean;
@@ -71,6 +72,8 @@ export async function createPost(
 
   // Attach tags (skip for sensitive/graphic posts; NSFW posts can have tags)
   const rawTags = formData.get("tags") as string;
+  const createdTagIds: string[] = [];
+  const createdTagNames: string[] = [];
   if (rawTags && !isSensitive && !isGraphicNudity) {
     const tagNames = extractTagsFromNames(rawTags.split(","));
     for (const name of tagNames) {
@@ -82,6 +85,8 @@ export async function createPost(
       await prisma.postTag.create({
         data: { postId: post.id, tagId: tag.id },
       });
+      createdTagIds.push(tag.id);
+      createdTagNames.push(name);
     }
     // Invalidate tag caches
     if (isNsfw) {
@@ -113,6 +118,20 @@ export async function createPost(
     isGraphicNudity,
     isCloseFriendsOnly,
   });
+
+  // Notify tag subscribers
+  if (createdTagIds.length > 0) {
+    await notifyTagSubscribers({
+      authorId: session.user.id,
+      postId: post.id,
+      tagIds: createdTagIds,
+      tagNames: createdTagNames,
+      isSensitive,
+      isNsfw,
+      isGraphicNudity,
+      isCloseFriendsOnly,
+    });
+  }
 
   revalidatePath("/feed");
   return { success: true, message: "Post created", postId: post.id };
