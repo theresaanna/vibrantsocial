@@ -65,6 +65,7 @@ interface PostCardProps {
   defaultShowComments?: boolean;
   defaultExpanded?: boolean;
   highlightCommentId?: string | null;
+  showPinnedIndicator?: boolean;
 }
 
 export function PostCard({
@@ -77,6 +78,7 @@ export function PostCard({
   defaultShowComments = false,
   defaultExpanded = false,
   highlightCommentId,
+  showPinnedIndicator = false,
 }: PostCardProps) {
   const [showComments, setShowComments] = useState(defaultShowComments);
   const [commentCount, setCommentCount] = useState(post._count.comments);
@@ -254,7 +256,7 @@ export function PostCard({
   return (
     <div className="rounded-2xl bg-white shadow-lg dark:bg-zinc-900">
       {/* Pinned indicator */}
-      {isPinned && (
+      {isPinned && showPinnedIndicator && (
         <div
           className="flex items-center gap-1.5 px-4 pt-3 pb-0 text-xs font-medium text-zinc-400"
           data-testid="post-pinned-indicator"

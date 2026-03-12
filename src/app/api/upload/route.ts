@@ -4,6 +4,7 @@ import { put } from "@vercel/blob";
 import { scanImageBuffer, quarantineUpload } from "@/lib/arachnid-shield";
 import { isConvertibleImage, convertToWebP } from "@/lib/image-convert";
 import { uploadLimiter, checkRateLimit } from "@/lib/rate-limit";
+import { getLimitsForTier, formatSizeLimit, type TierLimits, type UserTier } from "@/lib/limits";
 
 const IMAGE_TYPES = [
   "image/jpeg",
@@ -31,11 +32,6 @@ const AUDIO_TYPES = [
 
 const DOCUMENT_TYPES = ["application/pdf"];
 
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
-const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
-const MAX_AUDIO_SIZE = 10 * 1024 * 1024; // 10MB
-const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024; // 10MB
-
 type FileCategory = "image" | "convertible-image" | "video" | "audio" | "document";
 
 function getFileCategory(mimeType: string): FileCategory | null {
@@ -47,32 +43,22 @@ function getFileCategory(mimeType: string): FileCategory | null {
   return null;
 }
 
-function getMaxSize(category: FileCategory): number {
+function getMaxSize(category: FileCategory, limits: TierLimits): number {
   switch (category) {
     case "image":
     case "convertible-image":
-      return MAX_IMAGE_SIZE;
+      return limits.maxImageSize;
     case "video":
-      return MAX_VIDEO_SIZE;
+      return limits.maxVideoSize;
     case "audio":
-      return MAX_AUDIO_SIZE;
+      return limits.maxAudioSize;
     case "document":
-      return MAX_DOCUMENT_SIZE;
+      return limits.maxDocumentSize;
   }
 }
 
-function getSizeLimitLabel(category: FileCategory): string {
-  switch (category) {
-    case "image":
-    case "convertible-image":
-      return "5MB";
-    case "video":
-      return "50MB";
-    case "audio":
-      return "10MB";
-    case "document":
-      return "10MB";
-  }
+function getSizeLimitLabel(category: FileCategory, limits: TierLimits): string {
+  return formatSizeLimit(getMaxSize(category, limits));
 }
 
 export async function POST(req: Request) {
@@ -83,6 +69,9 @@ export async function POST(req: Request) {
 
   const rateLimited = await checkRateLimit(uploadLimiter, session.user.id);
   if (rateLimited) return rateLimited;
+
+  const tier = ((session.user as Record<string, unknown>).tier as UserTier) ?? "free";
+  const limits = getLimitsForTier(tier);
 
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
@@ -104,10 +93,10 @@ export async function POST(req: Request) {
     );
   }
 
-  const maxSize = getMaxSize(category);
+  const maxSize = getMaxSize(category, limits);
   if (file.size > maxSize) {
     return NextResponse.json(
-      { error: `File too large. Maximum size is ${getSizeLimitLabel(category)}` },
+      { error: `File too large. Maximum size is ${getSizeLimitLabel(category, limits)}` },
       { status: 400 }
     );
   }

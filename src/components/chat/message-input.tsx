@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { VoiceRecorder } from "./voice-recorder";
+import { getChatFileLimitsHint } from "@/lib/limits";
 import type { MessageData } from "@/types/chat";
 
 export interface MediaAttachment {
@@ -344,6 +345,14 @@ export function MessageInput({
           </button>
         )}
       </form>
+
+      {/* File limits hint */}
+      <p
+        className="px-4 pb-2 text-center text-[11px] text-zinc-400 dark:text-zinc-500"
+        data-testid="chat-file-limits"
+      >
+        {getChatFileLimitsHint()}
+      </p>
     </div>
   );
 }

@@ -8,6 +8,7 @@ declare module "next-auth" {
       displayName: string | null;
       bio: string | null;
       avatar: string | null;
+      tier: string;
     } & DefaultSession["user"];
   }
 
@@ -16,6 +17,7 @@ declare module "next-auth" {
     displayName: string | null;
     bio: string | null;
     avatar: string | null;
+    tier: string;
   }
 }
 
@@ -26,6 +28,7 @@ declare module "next-auth/jwt" {
     displayName: string | null;
     bio: string | null;
     avatar: string | null;
+    tier: string;
   }
 }
 
@@ -35,5 +38,6 @@ declare module "@auth/core/adapters" {
     displayName: string | null;
     bio: string | null;
     avatar: string | null;
+    tier: string;
   }
 }
