@@ -20,6 +20,11 @@ vi.mock("@/lib/image-convert", () => ({
   convertToWebP: vi.fn(),
 }));
 
+vi.mock("@/lib/rate-limit", () => ({
+  uploadLimiter: {},
+  checkRateLimit: vi.fn().mockResolvedValue(null),
+}));
+
 import { auth } from "@/auth";
 import { put } from "@vercel/blob";
 import { scanImageBuffer, quarantineUpload } from "@/lib/arachnid-shield";

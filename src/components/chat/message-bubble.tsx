@@ -60,6 +60,7 @@ export function MessageBubble({
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
   const [pickerPos, setPickerPos] = useState<{ top: number; left: number } | null>(null);
+  const [pickerSize, setPickerSize] = useState({ width: 350, height: 400 });
   const dragRef = useRef({ isDragging: false, offsetX: 0, offsetY: 0, didDrag: false });
 
   const handlePickerMouseDown = useCallback((e: React.MouseEvent) => {
@@ -97,12 +98,25 @@ export function MessageBubble({
       setShowEmojiPicker(false);
       return;
     }
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const width = Math.min(350, vw - 16);
+    const height = Math.min(400, vh - 100);
+    setPickerSize({ width, height });
+
     if (emojiButtonRef.current) {
       const rect = emojiButtonRef.current.getBoundingClientRect();
-      setPickerPos({
-        top: rect.bottom + 4,
-        left: isOwn ? rect.right - 350 : rect.left,
-      });
+      let top = rect.bottom + 4;
+      let left = isOwn ? rect.right - width : rect.left;
+
+      // Constrain to viewport
+      left = Math.max(8, Math.min(left, vw - width - 8));
+      if (top + height > vh - 8) {
+        top = rect.top - height - 4;
+      }
+      top = Math.max(8, top);
+
+      setPickerPos({ top, left });
     }
     setShowEmojiPicker(true);
   }, [showEmojiPicker, isOwn]);
@@ -319,7 +333,7 @@ export function MessageBubble({
             {/* Action buttons: context menu + emoji reaction trigger */}
             {!isEditing && (
               <div
-                className={`absolute top-1/2 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100 ${
+                className={`absolute top-1/2 -translate-y-1/2 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 ${
                   isOwn ? "-left-16 flex flex-row" : "-right-16 flex flex-row-reverse"
                 }`}
               >
@@ -357,7 +371,10 @@ export function MessageBubble({
                     >
                       <Suspense
                         fallback={
-                          <div className="flex h-[350px] w-[350px] items-center justify-center rounded-lg border border-zinc-200 bg-white text-sm text-zinc-400 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+                          <div
+                            className="flex items-center justify-center rounded-lg border border-zinc-200 bg-white text-sm text-zinc-400 shadow-lg dark:border-zinc-700 dark:bg-zinc-800"
+                            style={{ width: pickerSize.width, height: pickerSize.height }}
+                          >
                             Loading...
                           </div>
                         }
@@ -367,8 +384,8 @@ export function MessageBubble({
                             onReaction?.(message.id, emojiData.emoji);
                             setShowEmojiPicker(false);
                           }}
-                          width={350}
-                          height={400}
+                          width={pickerSize.width}
+                          height={pickerSize.height}
                           searchPlaceholder="Search emoji..."
                           previewConfig={{ showPreview: false }}
                         />

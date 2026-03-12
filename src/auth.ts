@@ -42,6 +42,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           displayName: user.displayName,
           bio: user.bio,
           avatar: user.avatar,
+          tier: user.tier ?? "free",
         };
       },
     }),
@@ -71,6 +72,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.displayName = user.displayName;
         token.bio = user.bio;
         token.avatar = user.avatar;
+        token.tier = user.tier ?? "free";
       }
 
       if (trigger === "update" && session) {
@@ -78,6 +80,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.displayName = session.user.displayName;
         token.bio = session.user.bio;
         token.avatar = session.user.avatar;
+        if (session.user.tier) token.tier = session.user.tier;
       }
 
       return token;
@@ -88,6 +91,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       session.user.displayName = (token.displayName as string) ?? null;
       session.user.bio = (token.bio as string) ?? null;
       session.user.avatar = (token.avatar as string) ?? null;
+      session.user.tier = (token.tier as string) ?? "free";
       return session;
     },
   },

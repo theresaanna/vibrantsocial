@@ -159,7 +159,7 @@ describe("RepostCard", () => {
       isPinned: true,
     };
     render(
-      <RepostCard repost={pinnedRepost} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} />
+      <RepostCard repost={pinnedRepost} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} showPinnedIndicator />
     );
     expect(screen.getByTestId("repost-pinned-indicator")).toBeInTheDocument();
     expect(screen.getByText("Pinned")).toBeInTheDocument();

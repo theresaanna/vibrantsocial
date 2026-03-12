@@ -1,13 +1,19 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { DEFAULT_LIMITS } from "@/lib/limits";
 
 interface VoiceRecorderProps {
   onRecordingComplete: (blob: Blob, duration: number) => void;
   onCancel: () => void;
+  maxDuration?: number;
 }
 
-export function VoiceRecorder({ onRecordingComplete, onCancel }: VoiceRecorderProps) {
+export function VoiceRecorder({
+  onRecordingComplete,
+  onCancel,
+  maxDuration = DEFAULT_LIMITS.maxVoiceNoteDuration,
+}: VoiceRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -15,6 +21,8 @@ export function VoiceRecorder({ onRecordingComplete, onCancel }: VoiceRecorderPr
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  const remaining = Math.max(0, maxDuration - duration);
 
   const stopTimer = useCallback(() => {
     if (timerRef.current) {
@@ -102,6 +110,13 @@ export function VoiceRecorder({ onRecordingComplete, onCancel }: VoiceRecorderPr
     setIsRecording(false);
   }, [duration, cleanup, onRecordingComplete]);
 
+  // Auto-stop when max duration is reached
+  useEffect(() => {
+    if (isRecording && duration >= maxDuration) {
+      handleStop();
+    }
+  }, [duration, maxDuration, isRecording, handleStop]);
+
   const handleCancel = useCallback(() => {
     const recorder = mediaRecorderRef.current;
     if (recorder && recorder.state === "recording") {
@@ -142,8 +157,27 @@ export function VoiceRecorder({ onRecordingComplete, onCancel }: VoiceRecorderPr
       <div className="h-3 w-3 animate-pulse rounded-full bg-red-500" data-testid="recording-indicator" />
 
       {/* Duration */}
-      <span className="font-mono text-sm text-zinc-700 dark:text-zinc-300" data-testid="recording-duration">
+      <span
+        className={`font-mono text-sm ${
+          remaining <= 5
+            ? "text-red-500 dark:text-red-400"
+            : "text-zinc-700 dark:text-zinc-300"
+        }`}
+        data-testid="recording-duration"
+      >
         {formatTime(duration)}
+      </span>
+
+      {/* Remaining time */}
+      <span
+        className={`font-mono text-xs ${
+          remaining <= 5
+            ? "text-red-400 dark:text-red-300"
+            : "text-zinc-400 dark:text-zinc-500"
+        }`}
+        data-testid="recording-remaining"
+      >
+        {remaining}s left
       </span>
 
       <div className="flex-1" />

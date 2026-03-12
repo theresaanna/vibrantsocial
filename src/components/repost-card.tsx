@@ -77,6 +77,7 @@ interface RepostCardProps {
   ageVerified: boolean;
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
+  showPinnedIndicator?: boolean;
 }
 
 export function RepostCard({
@@ -86,6 +87,7 @@ export function RepostCard({
   ageVerified,
   showGraphicByDefault,
   showNsfwContent,
+  showPinnedIndicator = false,
 }: RepostCardProps) {
   const router = useRouter();
   const reposterName = repost.user.displayName || repost.user.name || repost.user.username;
@@ -171,7 +173,7 @@ export function RepostCard({
   return (
     <div>
       {/* Pinned indicator */}
-      {isPinned && (
+      {isPinned && showPinnedIndicator && (
         <div
           className="flex items-center gap-1.5 pl-2 pb-1 text-xs font-medium text-zinc-400"
           data-testid="repost-pinned-indicator"

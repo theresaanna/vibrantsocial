@@ -400,4 +400,33 @@ describe("MessageInput", () => {
     const textarea = screen.getByPlaceholderText("Type a message...");
     expect(document.activeElement).toBe(textarea);
   });
+
+  // File limits hint
+  it("displays file size limits hint", () => {
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+      />
+    );
+    const hint = screen.getByTestId("chat-file-limits");
+    expect(hint).toBeInTheDocument();
+    expect(hint.textContent).toContain("Images");
+    expect(hint.textContent).toContain("Videos");
+    expect(hint.textContent).toContain("Audio");
+    expect(hint.textContent).toContain("PDF");
+  });
+
+  it("does not show file limits hint when phone not verified", () => {
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+        phoneVerified={false}
+      />
+    );
+    expect(screen.queryByTestId("chat-file-limits")).not.toBeInTheDocument();
+  });
 });
