@@ -55,8 +55,8 @@ export function ChatPageClient({
 
   return (
     <main
-      className={`mx-auto flex max-w-5xl px-2 py-2 md:px-4 md:py-6 ${hasCustomTheme ? "chat-themed" : ""}`}
-      style={{ height: "calc(100vh - 57px)", ...themeStyle }}
+      className={`mx-auto flex h-[calc(100dvh-120px)] max-w-5xl px-2 py-2 md:h-[calc(100dvh-57px)] md:px-4 md:py-6 ${hasCustomTheme ? "chat-themed" : ""}`}
+      style={themeStyle}
     >
       {/* Sidebar */}
       <div className="flex w-full flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white md:w-80 md:flex-shrink-0 md:rounded-l-2xl md:rounded-r-none dark:border-zinc-800 dark:bg-zinc-900">

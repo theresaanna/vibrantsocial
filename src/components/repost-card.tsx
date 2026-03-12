@@ -6,6 +6,7 @@ import { EditorContent } from "@/components/editor/EditorContent";
 import { Editor } from "./editor/Editor";
 import { clearDraft } from "./editor/plugins/DraftPlugin";
 import { TagInput } from "./tag-input";
+import { AutoTagButton } from "./auto-tag-button";
 import { ContentFlagsInfoModal } from "./content-flags-info-modal";
 import { editRepost, deleteRepost, togglePinRepost } from "@/app/feed/post-actions";
 import { QuotePostActions } from "./quote-post-actions";
@@ -105,6 +106,7 @@ export function RepostCard({
   const [editTags, setEditTags] = useState<string[]>(
     repost.tags?.map((rt) => rt.tag.name) ?? []
   );
+  const [editEditorJson, setEditEditorJson] = useState(repost.content ?? "");
   const [editIsSensitive, setEditIsSensitive] = useState(repost.isSensitive ?? false);
   const [editIsNsfw, setEditIsNsfw] = useState(repost.isNsfw ?? false);
   const [editIsGraphicNudity, setEditIsGraphicNudity] = useState(repost.isGraphicNudity ?? false);
@@ -286,18 +288,30 @@ export function RepostCard({
                   <Editor
                     initialContent={currentContent || undefined}
                     inputName="content"
+                    onChange={setEditEditorJson}
                     placeholder="Edit your quote..."
                     minHeight="60px"
                     draftKey={`edit-repost-${repost.id}`}
                   />
                 </div>
-                <div className="mt-2">
-                  <TagInput
-                    tags={editTags}
-                    onChange={setEditTags}
-                    disabled={editIsSensitive || editIsGraphicNudity}
-                    includeNsfw={editIsNsfw}
-                  />
+                <div className="mt-2 flex items-center">
+                  <div className="flex-1">
+                    <TagInput
+                      tags={editTags}
+                      onChange={setEditTags}
+                      disabled={editIsSensitive || editIsGraphicNudity}
+                      includeNsfw={editIsNsfw}
+                    />
+                  </div>
+                  {!(editIsSensitive || editIsGraphicNudity) && (
+                    <div className="pr-2">
+                      <AutoTagButton
+                        editorJson={editEditorJson}
+                        existingTags={editTags}
+                        onTagsSuggested={setEditTags}
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="mt-2">
                   <button

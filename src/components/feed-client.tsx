@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { AddToHomeBanner } from "@/components/add-to-home-banner";
 import { AddEmailBanner } from "@/components/add-email-banner";
 import { PostComposer } from "@/components/post-composer";
 import { FeedList } from "@/components/feed-list";
-import { fetchSinglePost } from "@/app/feed/feed-actions";
+import { fetchSinglePost, fetchNewFeedItems } from "@/app/feed/feed-actions";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FeedItem = { type: "post" | "repost"; data: any; date: string };
+
+const POLL_INTERVAL_MS = 30_000; // 30 seconds
 
 interface FeedClientProps {
   phoneVerified: boolean;
@@ -34,12 +36,56 @@ export function FeedClient({
   hasEmail,
 }: FeedClientProps) {
   const [newItems, setNewItems] = useState<FeedItem[]>([]);
+  const newestDateRef = useRef<string>(
+    initialItems[0]?.date ?? new Date().toISOString()
+  );
+
+  // Keep newestDateRef in sync when new items arrive
+  useEffect(() => {
+    if (newItems.length > 0 && newItems[0].date > newestDateRef.current) {
+      newestDateRef.current = newItems[0].date;
+    }
+  }, [newItems]);
 
   const handlePostCreated = useCallback(async (postId: string) => {
     const item = await fetchSinglePost(postId);
     if (item) {
       setNewItems((prev) => [item, ...prev]);
     }
+  }, []);
+
+  // Poll for new posts from followed users
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      // Only poll when tab is visible
+      if (document.hidden) return;
+
+      try {
+        const items = await fetchNewFeedItems(newestDateRef.current);
+        if (items.length > 0) {
+          setNewItems((prev) => {
+            const existingIds = new Set(
+              prev.map((item) =>
+                item.type === "post" ? item.data.id : `repost-${item.data.id}`
+              )
+            );
+            const toAdd = items.filter((item: FeedItem) => {
+              const key =
+                item.type === "post"
+                  ? item.data.id
+                  : `repost-${item.data.id}`;
+              return !existingIds.has(key);
+            });
+            if (toAdd.length === 0) return prev;
+            return [...toAdd, ...prev];
+          });
+        }
+      } catch {
+        // Non-critical — will retry next interval
+      }
+    }, POLL_INTERVAL_MS);
+
+    return () => clearInterval(interval);
   }, []);
 
   return (
