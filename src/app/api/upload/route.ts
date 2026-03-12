@@ -70,7 +70,7 @@ export async function POST(req: Request) {
   const rateLimited = await checkRateLimit(uploadLimiter, session.user.id);
   if (rateLimited) return rateLimited;
 
-  const tier = ((session.user as Record<string, unknown>).tier as UserTier) ?? "free";
+  const tier = (session.user.tier as UserTier) ?? "free";
   const limits = getLimitsForTier(tier);
 
   const formData = await req.formData();
