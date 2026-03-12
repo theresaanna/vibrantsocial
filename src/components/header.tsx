@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import Link from "next/link";
 import { getConversations } from "@/app/chat/actions";
-import { getUnreadNotificationCount } from "@/app/notifications/actions";
+import { getUnreadNotificationCount, getRecentNotifications } from "@/app/notifications/actions";
 import { ChatNav } from "@/components/chat-nav";
 import { DynamicFavicon } from "@/components/dynamic-favicon";
 import { NotificationBell } from "@/components/notification-bell";
@@ -11,9 +11,10 @@ import { NavLinks, MobileProfileLink } from "@/components/nav-links";
 
 export async function Header() {
   const session = await auth();
-  const [conversations, unreadNotifications] = await Promise.all([
+  const [conversations, unreadNotifications, recentNotifications] = await Promise.all([
     session?.user ? getConversations() : Promise.resolve([]),
     session?.user ? getUnreadNotificationCount() : Promise.resolve(0),
+    session?.user ? getRecentNotifications() : Promise.resolve([]),
   ]);
 
   return (
@@ -47,7 +48,7 @@ export async function Header() {
               />
               <SearchBar />
               <NavLinks username={session.user.username} />
-              <NotificationBell initialUnreadCount={unreadNotifications} />
+              <NotificationBell initialUnreadCount={unreadNotifications} initialNotifications={recentNotifications} />
               <ChatNav initialConversations={conversations} />
             </>
           ) : (
