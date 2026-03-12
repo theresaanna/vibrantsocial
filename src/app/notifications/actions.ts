@@ -24,6 +24,7 @@ export async function getNotifications() {
       },
       post: { select: { id: true, content: true } },
       message: { select: { id: true, conversationId: true } },
+      tag: { select: { id: true, name: true } },
     },
   });
 }

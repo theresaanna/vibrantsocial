@@ -28,6 +28,9 @@ vi.mock("next/link", () => ({
 vi.mock("@/app/profile/actions", () => ({
   updateProfile: vi.fn(),
   removeAvatar: vi.fn(),
+  requestEmailChange: vi.fn(),
+  cancelEmailChange: vi.fn(),
+  deleteAccount: vi.fn(),
 }));
 
 vi.mock("@/components/bio-editor", () => ({
@@ -65,6 +68,8 @@ function renderForm(options: RenderFormOptions = {}) {
   return render(
     <ProfileForm
       user={defaultUser}
+      email="test@example.com"
+      pendingEmail={null}
       currentAvatar={null}
       oauthImage={null}
       ageVerified={false}
@@ -74,6 +79,8 @@ function renderForm(options: RenderFormOptions = {}) {
       emailOnNewChat={true}
       emailOnMention={true}
       emailOnFriendRequest={true}
+      emailOnSubscribedPost={true}
+      emailOnTagPost={true}
       pushEnabled={false}
       isProfilePublic={isProfilePublic}
       phoneVerified={false}

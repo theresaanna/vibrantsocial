@@ -261,6 +261,82 @@ export async function sendNewPostEmail(params: {
   });
 }
 
+export async function sendTagPostEmail(params: {
+  toEmail: string;
+  authorName: string;
+  postId: string;
+  tagNames: string[];
+}) {
+  const { toEmail, authorName, postId, tagNames } = params;
+  const postUrl = `${getBaseUrl()}/post/${postId}`;
+  const tagList = tagNames.map((t) => `#${escapeHtml(t)}`).join(", ");
+
+  await getResend().emails.send({
+    from: FROM_EMAIL,
+    to: toEmail,
+    subject: `New post in ${tagNames.map((t) => "#" + t).join(", ")}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+        <h2 style="color: #18181b; margin-bottom: 16px;">Hey, friend!</h2>
+        <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+          <strong>${escapeHtml(authorName)}</strong> posted in ${tagList}. You might wanna check that out!
+        </p>
+        <a href="${postUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
+          View Post
+        </a>
+        <p style="color: #a1a1aa; font-size: 12px; margin-top: 32px;">
+          You can turn off email notifications in your <a href="${getBaseUrl()}/profile" style="color: #a1a1aa;">profile settings</a>.
+        </p>
+      </div>
+    `,
+  });
+}
+
+export async function sendTagDigestEmail(params: {
+  toEmail: string;
+  posts: Array<{ postId: string; authorName: string; tagNames: string[] }>;
+}) {
+  const { toEmail, posts } = params;
+  const baseUrl = getBaseUrl();
+
+  const postItems = posts
+    .map((p) => {
+      const postUrl = `${baseUrl}/post/${p.postId}`;
+      const tagList = p.tagNames.map((t) => `#${escapeHtml(t)}`).join(", ");
+      return `
+        <tr>
+          <td style="padding: 12px 0; border-bottom: 1px solid #e4e4e7;">
+            <p style="color: #3f3f46; font-size: 14px; margin: 0;">
+              <strong>${escapeHtml(p.authorName)}</strong> posted in ${tagList}
+            </p>
+            <a href="${postUrl}" style="color: #18181b; font-size: 13px; margin-top: 4px; display: inline-block;">View Post &rarr;</a>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  await getResend().emails.send({
+    from: FROM_EMAIL,
+    to: toEmail,
+    subject: `Your daily tag digest — ${posts.length} new ${posts.length === 1 ? "post" : "posts"}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+        <h2 style="color: #18181b; margin-bottom: 16px;">Your daily tag digest</h2>
+        <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+          Here's what happened in the tags you follow:
+        </p>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
+          ${postItems}
+        </table>
+        <p style="color: #a1a1aa; font-size: 12px; margin-top: 32px;">
+          You can turn off email notifications in your <a href="${baseUrl}/profile" style="color: #a1a1aa;">profile settings</a>.
+        </p>
+      </div>
+    `,
+  });
+}
+
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, "&amp;")
