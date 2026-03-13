@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import type { InboundMessage } from "ably";
 import { useAblyReady } from "@/app/providers";
@@ -106,6 +106,7 @@ export function NotificationBell({
   const { data: session } = useSession();
   const ablyReady = useAblyReady();
   const pathname = usePathname();
+  const router = useRouter();
   const wasOnNotificationsRef = useRef(false);
   const pathnameRef = useRef(pathname);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -272,7 +273,17 @@ export function NotificationBell({
                     isUnread ? "bg-blue-50/50 dark:bg-blue-950/20" : ""
                   }`}
                 >
-                  <div className="flex-shrink-0">
+                  <span
+                    className={`flex-shrink-0${notification.actor.username ? " cursor-pointer" : ""}`}
+                    onClick={(e) => {
+                      if (notification.actor.username) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsOpen(false);
+                        router.push(`/${notification.actor.username}`);
+                      }
+                    }}
+                  >
                     {avatar ? (
                       <img
                         src={avatar}
@@ -284,7 +295,7 @@ export function NotificationBell({
                         {name[0]?.toUpperCase()}
                       </div>
                     )}
-                  </div>
+                  </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs text-zinc-700 dark:text-zinc-300">
                       <span className="font-semibold text-zinc-900 dark:text-zinc-100">

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useActionState } from "react";
 import { PostCard } from "./post-card";
-import { EditorContent } from "@/components/editor/EditorContent";
+import { PostContent } from "./post-content";
 import { Editor } from "./editor/Editor";
 import { clearDraft } from "./editor/plugins/DraftPlugin";
 import { TagInput } from "./tag-input";
@@ -387,7 +387,7 @@ export function RepostCard({
                 </div>
               </form>
             ) : (
-              <EditorContent content={currentContent!} />
+              <PostContent content={currentContent!} />
             )}
           </div>
 
