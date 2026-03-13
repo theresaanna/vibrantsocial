@@ -13,6 +13,7 @@ import {
 import { useState, useEffect, type ReactNode } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $getNodeByKey } from "lexical";
+import { useIsPostAuthor } from "../PostAuthorContext";
 
 export interface PollOption {
   id: string;
@@ -37,6 +38,7 @@ function PollComponent({
   nodeKey: NodeKey;
 }) {
   const [editor] = useLexicalComposerContext();
+  const isPostAuthor = useIsPostAuthor();
   const [options, setOptions] = useState(initialOptions);
   const [votedId, setVotedId] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -79,7 +81,7 @@ function PollComponent({
     });
   }
 
-  const showResults = !!votedId || isExpired;
+  const showResults = !!votedId || isExpired || isPostAuthor;
 
   return (
     <div className="my-2 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">

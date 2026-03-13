@@ -16,6 +16,8 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { $isImageNode } from "./ImageNode";
 
+type ResizeDirection = "se" | "sw" | "ne" | "nw";
+
 interface ImageComponentProps {
   src: string;
   altText: string;
@@ -72,7 +74,7 @@ export default function ImageComponent({
   }, [clearSelection, editor, isSelected, nodeKey, onDelete, setSelected]);
 
   const handleResizeStart = useCallback(
-    (e: React.MouseEvent) => {
+    (direction: ResizeDirection) => (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
       setIsResizing(true);
@@ -80,8 +82,11 @@ export default function ImageComponent({
       const startWidth =
         typeof imgSize.width === "number" ? imgSize.width : imgRef.current?.naturalWidth ?? 300;
 
+      // Left-side handles invert the drag direction
+      const xMultiplier = direction === "sw" || direction === "nw" ? -1 : 1;
+
       function onMouseMove(moveEvent: MouseEvent) {
-        const newWidth = Math.max(100, startWidth + (moveEvent.clientX - startX));
+        const newWidth = Math.max(100, startWidth + xMultiplier * (moveEvent.clientX - startX));
         setImgSize({ width: newWidth, height: "inherit" });
       }
 
@@ -121,11 +126,29 @@ export default function ImageComponent({
         className="max-w-full rounded"
         draggable={false}
       />
-      {isSelected && !editor.isEditable() === false && (
-        <span
-          className="absolute -right-1 -bottom-1 h-3 w-3 cursor-se-resize rounded-full bg-blue-500"
-          onMouseDown={handleResizeStart}
-        />
+      {isSelected && editor.isEditable() && (
+        <>
+          <span
+            className="absolute -right-1 -bottom-1 h-3 w-3 cursor-se-resize rounded-full bg-blue-500"
+            onMouseDown={handleResizeStart("se")}
+            data-testid="resize-handle-se"
+          />
+          <span
+            className="absolute -left-1 -bottom-1 h-3 w-3 cursor-sw-resize rounded-full bg-blue-500"
+            onMouseDown={handleResizeStart("sw")}
+            data-testid="resize-handle-sw"
+          />
+          <span
+            className="absolute -right-1 -top-1 h-3 w-3 cursor-ne-resize rounded-full bg-blue-500"
+            onMouseDown={handleResizeStart("ne")}
+            data-testid="resize-handle-ne"
+          />
+          <span
+            className="absolute -left-1 -top-1 h-3 w-3 cursor-nw-resize rounded-full bg-blue-500"
+            onMouseDown={handleResizeStart("nw")}
+            data-testid="resize-handle-nw"
+          />
+        </>
       )}
     </span>
   );

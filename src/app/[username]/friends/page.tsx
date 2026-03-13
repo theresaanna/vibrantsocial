@@ -2,30 +2,30 @@ import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getFollowing } from "@/app/feed/follow-actions";
+import { getFriends } from "@/app/feed/friend-actions";
 import { UserList } from "@/components/user-list";
 import Link from "next/link";
 
-interface FollowingPageProps {
+interface FriendsPageProps {
   params: Promise<{ username: string }>;
 }
 
-export async function generateMetadata({ params }: FollowingPageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: FriendsPageProps): Promise<Metadata> {
   const { username } = await params;
   return {
-    title: `People @${username} follows`,
-    description: `See who @${username} follows on VibrantSocial.`,
+    title: `Friends of @${username}`,
+    description: `See @${username}'s friends on VibrantSocial.`,
     robots: { index: false, follow: false },
   };
 }
 
-export default async function FollowingPage({ params }: FollowingPageProps) {
+export default async function FriendsPage({ params }: FriendsPageProps) {
   const { username } = await params;
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   const currentUserId = session.user.id;
 
-  // Only the profile owner can view their following list
+  // Only the profile owner can view their friends list
   const profileUser = await prisma.user.findUnique({
     where: { username },
     select: { id: true },
@@ -33,7 +33,7 @@ export default async function FollowingPage({ params }: FollowingPageProps) {
   if (!profileUser) notFound();
   if (profileUser.id !== currentUserId) redirect(`/${username}`);
 
-  const following = await getFollowing(username);
+  const friends = await getFriends(username);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
@@ -49,14 +49,14 @@ export default async function FollowingPage({ params }: FollowingPageProps) {
             </svg>
           </Link>
           <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-            @{username} is Following
+            @{username}&apos;s Friends
           </h1>
         </div>
 
         <UserList
-          users={following}
+          users={friends}
           currentUserId={currentUserId}
-          emptyMessage="Not following anyone yet."
+          emptyMessage="No friends yet."
         />
       </div>
     </main>

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/notifications";
 import { inngest } from "@/lib/inngest";
+import type { FollowUser } from "@/app/feed/follow-actions";
 
 interface FriendActionState {
   success: boolean;
@@ -241,4 +242,64 @@ export async function getPendingFriendRequests() {
     },
     orderBy: { createdAt: "desc" },
   });
+}
+
+const friendUserSelect = {
+  id: true,
+  username: true,
+  displayName: true,
+  name: true,
+  avatar: true,
+  image: true,
+} as const;
+
+export async function getFriendsCount(userId: string): Promise<number> {
+  return prisma.friendRequest.count({
+    where: {
+      status: "ACCEPTED",
+      OR: [{ senderId: userId }, { receiverId: userId }],
+    },
+  });
+}
+
+export async function getFriends(username: string): Promise<FollowUser[]> {
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: { id: true },
+  });
+  if (!user) return [];
+
+  const session = await auth();
+  const currentUserId = session?.user?.id;
+
+  const friendships = await prisma.friendRequest.findMany({
+    where: {
+      status: "ACCEPTED",
+      OR: [{ senderId: user.id }, { receiverId: user.id }],
+    },
+    include: {
+      sender: { select: friendUserSelect },
+      receiver: { select: friendUserSelect },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  // For each friendship, return the "other" user
+  const friends = friendships.map((f) =>
+    f.senderId === user.id ? f.receiver : f.sender
+  );
+
+  let currentUserFollowingIds = new Set<string>();
+  if (currentUserId) {
+    const myFollows = await prisma.follow.findMany({
+      where: { followerId: currentUserId },
+      select: { followingId: true },
+    });
+    currentUserFollowingIds = new Set(myFollows.map((f) => f.followingId));
+  }
+
+  return friends.map((friend) => ({
+    ...friend,
+    isFollowing: currentUserFollowingIds.has(friend.id),
+  }));
 }

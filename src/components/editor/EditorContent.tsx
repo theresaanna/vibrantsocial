@@ -13,6 +13,7 @@ import { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin";
 import { editorTheme } from "./theme";
 import { editorNodes } from "./nodes";
 import { ReadOnlyChecklistPlugin } from "./plugins/ReadOnlyChecklistPlugin";
+import { PostAuthorProvider } from "./PostAuthorContext";
 
 interface EditorContentProps {
   content: string;
@@ -20,6 +21,8 @@ interface EditorContentProps {
   allowChecklistToggle?: boolean;
   /** Called with updated Lexical JSON when a checkbox is toggled. */
   onContentChange?: (json: string) => void;
+  /** When true, polls show results instead of voting UI. */
+  isPostAuthor?: boolean;
 }
 
 function isLexicalJson(str: string): boolean {
@@ -68,6 +71,7 @@ export function EditorContent({
   content,
   allowChecklistToggle = false,
   onContentChange,
+  isPostAuthor = false,
 }: EditorContentProps) {
   const editorState = isLexicalJson(content)
     ? content
@@ -91,27 +95,29 @@ export function EditorContent({
   }
 
   return (
-    <LexicalComposer initialConfig={editorConfig}>
-      <RichTextPlugin
-        contentEditable={
-          <ContentEditable
-            className={`text-sm text-zinc-900 outline-none dark:text-zinc-100${
-              editable ? " cursor-default" : ""
-            }`}
-          />
-        }
-        placeholder={null}
-        ErrorBoundary={({ children }) => <>{children}</>}
-      />
-      <ClickableLinkPlugin />
-      {allowChecklistToggle && (
-        <>
-          <ListPlugin />
-          <CheckListPlugin />
-          <ReadOnlyChecklistPlugin />
-          <OnChangePlugin onChange={handleChange} />
-        </>
-      )}
-    </LexicalComposer>
+    <PostAuthorProvider isPostAuthor={isPostAuthor}>
+      <LexicalComposer initialConfig={editorConfig}>
+        <RichTextPlugin
+          contentEditable={
+            <ContentEditable
+              className={`text-sm text-zinc-900 outline-none dark:text-zinc-100${
+                editable ? " cursor-default" : ""
+              }`}
+            />
+          }
+          placeholder={null}
+          ErrorBoundary={({ children }) => <>{children}</>}
+        />
+        <ClickableLinkPlugin />
+        {allowChecklistToggle && (
+          <>
+            <ListPlugin />
+            <CheckListPlugin />
+            <ReadOnlyChecklistPlugin />
+            <OnChangePlugin onChange={handleChange} />
+          </>
+        )}
+      </LexicalComposer>
+    </PostAuthorProvider>
   );
 }
