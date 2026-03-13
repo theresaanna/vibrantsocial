@@ -53,6 +53,7 @@ export async function cleanupTestData() {
 
     // Delete in dependency order
     const tables = [
+      { table: "CommentReaction", column: "userId" },
       { table: "Like", column: "userId" },
       { table: "Bookmark", column: "userId" },
       { table: "Comment", column: "authorId" },

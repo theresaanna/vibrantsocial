@@ -24,6 +24,9 @@ vi.mock("@/app/feed/post-actions", () => ({
   toggleRepost: (...args: unknown[]) => mockToggleRepost(...args),
   createComment: (...args: unknown[]) => mockCreateComment(...args),
   fetchComments: vi.fn().mockResolvedValue([]),
+  toggleCommentReaction: vi.fn(),
+  editComment: vi.fn(),
+  deleteComment: vi.fn(),
 }));
 
 vi.mock("@/app/feed/actions", () => ({
@@ -36,6 +39,7 @@ vi.mock("@/app/feed/actions", () => ({
 vi.mock("@/hooks/use-comments", () => ({
   useComments: (_postId: string, initial: CommentData[]) => ({
     comments: initial,
+    setComments: vi.fn(),
   }),
 }));
 
