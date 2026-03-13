@@ -66,7 +66,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    async jwt({ token, user, trigger, session, account }) {
       if (user) {
         token.id = user.id;
         token.username = user.username;
@@ -74,9 +74,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.bio = user.bio;
         token.avatar = user.avatar;
         token.tier = user.tier ?? "free";
-        token.isEmailVerified =
-          user.isEmailVerified ??
-          !!("emailVerified" in user && user.emailVerified);
+        // OAuth providers (Google, Discord) verify email themselves
+        if (account?.provider && account.provider !== "credentials") {
+          token.isEmailVerified = true;
+          // Backfill emailVerified in DB for linked accounts
+          if (user.id && !("emailVerified" in user && user.emailVerified)) {
+            prisma.user
+              .update({
+                where: { id: user.id },
+                data: { emailVerified: new Date() },
+              })
+              .catch(() => {});
+          }
+        } else {
+          token.isEmailVerified =
+            user.isEmailVerified ??
+            !!("emailVerified" in user && user.emailVerified);
+        }
       }
 
       if (trigger === "update" && session) {
