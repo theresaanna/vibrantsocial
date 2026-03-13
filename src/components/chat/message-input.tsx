@@ -14,7 +14,7 @@ export interface MediaAttachment {
 }
 
 interface MessageInputProps {
-  onSendMessage: (content: string, media?: MediaAttachment) => Promise<void>;
+  onSendMessage: (content: string, media?: MediaAttachment[]) => Promise<void>;
   onKeystroke: () => void;
   onStopTyping: () => void;
   disabled?: boolean;
@@ -38,7 +38,7 @@ export function MessageInput({
 }: MessageInputProps) {
   const [value, setValue] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [voiceBlob, setVoiceBlob] = useState<Blob | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -46,7 +46,7 @@ export function MessageInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const hasMedia = !!selectedFile || !!voiceBlob;
+  const hasMedia = selectedFiles.length > 0 || !!voiceBlob;
 
   // Focus textarea when replying starts
   useEffect(() => {
@@ -63,37 +63,56 @@ export function MessageInput({
     setIsSending(true);
     setUploadError(null);
     try {
-      let media: MediaAttachment | undefined;
+      const mediaList: MediaAttachment[] = [];
 
-      if (selectedFile || voiceBlob) {
+      if (selectedFiles.length > 0 || voiceBlob) {
         setIsUploading(true);
-        const formData = new FormData();
+
         if (voiceBlob) {
+          const formData = new FormData();
           const ext = voiceBlob.type.includes("webm") ? "webm" : "ogg";
           formData.append("file", voiceBlob, `voice-message.${ext}`);
+
+          const res = await fetch("/api/upload", { method: "POST", body: formData });
+          if (!res.ok) {
+            const err = await res.json();
+            setUploadError(err.error ?? "Upload failed");
+            return;
+          }
+          const data = await res.json();
+          mediaList.push({
+            url: data.url,
+            type: data.fileType,
+            fileName: data.fileName,
+            fileSize: data.fileSize,
+          });
         } else {
-          formData.append("file", selectedFile!);
+          for (const file of selectedFiles) {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const res = await fetch("/api/upload", { method: "POST", body: formData });
+            if (!res.ok) {
+              const err = await res.json();
+              setUploadError(err.error ?? `Upload failed for ${file.name}`);
+              return;
+            }
+            const data = await res.json();
+            mediaList.push({
+              url: data.url,
+              type: data.fileType,
+              fileName: data.fileName,
+              fileSize: data.fileSize,
+            });
+          }
         }
 
-        const res = await fetch("/api/upload", { method: "POST", body: formData });
-        if (!res.ok) {
-          const err = await res.json();
-          setUploadError(err.error ?? "Upload failed");
-          return;
-        }
-        const data = await res.json();
-        media = {
-          url: data.url,
-          type: data.fileType,
-          fileName: data.fileName,
-          fileSize: data.fileSize,
-        };
         setIsUploading(false);
       }
 
-      await onSendMessage(trimmed, media);
+      await onSendMessage(trimmed, mediaList.length > 0 ? mediaList : undefined);
       setValue("");
-      setSelectedFile(null);
+      setSelectedFiles([]);
       setVoiceBlob(null);
       onStopTyping();
       if (textareaRef.current) {
@@ -128,9 +147,9 @@ export function MessageInput({
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setSelectedFiles((prev) => [...prev, ...Array.from(files)]);
       setVoiceBlob(null);
       setUploadError(null);
     }
@@ -203,13 +222,13 @@ export function MessageInput({
       )}
 
       {/* File/voice preview */}
-      {(selectedFile || voiceBlob) && (
-        <div className="flex items-center gap-2 border-b border-zinc-100 px-4 py-2 dark:border-zinc-800">
-          {selectedFile && (
-            <div className="flex items-center gap-2" data-testid="file-preview">
-              {selectedFile.type.startsWith("image/") ? (
+      {(selectedFiles.length > 0 || voiceBlob) && (
+        <div className="flex flex-wrap items-center gap-2 border-b border-zinc-100 px-4 py-2 dark:border-zinc-800">
+          {selectedFiles.map((file, index) => (
+            <div key={`${file.name}-${index}`} className="flex items-center gap-2" data-testid="file-preview">
+              {file.type.startsWith("image/") ? (
                 <img
-                  src={URL.createObjectURL(selectedFile)}
+                  src={URL.createObjectURL(file)}
                   alt="Preview"
                   className="h-12 w-12 rounded-lg object-cover"
                 />
@@ -221,10 +240,24 @@ export function MessageInput({
                 </div>
               )}
               <span className="truncate text-sm text-zinc-600 dark:text-zinc-400">
-                {selectedFile.name}
+                {file.name}
               </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+                  setUploadError(null);
+                }}
+                className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-700"
+                aria-label={`Remove ${file.name}`}
+                data-testid="remove-attachment"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                  <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                </svg>
+              </button>
             </div>
-          )}
+          ))}
           {voiceBlob && (
             <div className="flex items-center gap-2" data-testid="voice-preview">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
@@ -234,24 +267,22 @@ export function MessageInput({
                 </svg>
               </div>
               <span className="text-sm text-zinc-600 dark:text-zinc-400">Voice message</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setVoiceBlob(null);
+                  setUploadError(null);
+                }}
+                className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-700"
+                aria-label="Remove attachment"
+                data-testid="remove-attachment"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                  <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                </svg>
+              </button>
             </div>
           )}
-          <div className="flex-1" />
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedFile(null);
-              setVoiceBlob(null);
-              setUploadError(null);
-            }}
-            className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-700"
-            aria-label="Remove attachment"
-            data-testid="remove-attachment"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
-              <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-            </svg>
-          </button>
         </div>
       )}
 
@@ -272,6 +303,7 @@ export function MessageInput({
           ref={fileInputRef}
           type="file"
           accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,image/heic,image/heif,video/mp4,video/webm,video/quicktime,video/ogg,application/pdf,audio/webm,audio/ogg,audio/mp4,audio/mpeg"
+          multiple
           onChange={handleFileSelect}
           className="hidden"
           data-testid="file-input"

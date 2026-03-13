@@ -4,6 +4,10 @@ import userEvent from "@testing-library/user-event";
 import { MessageInput } from "@/components/chat/message-input";
 import type { MessageData, ChatUserProfile } from "@/types/chat";
 
+// Mock URL.createObjectURL for image preview tests
+URL.createObjectURL = vi.fn(() => "blob:mock-url");
+URL.revokeObjectURL = vi.fn();
+
 vi.mock("@/components/chat/voice-recorder", () => ({
   VoiceRecorder: ({ onRecordingComplete, onCancel }: { onRecordingComplete: (blob: Blob) => void; onCancel: () => void }) => (
     <div data-testid="voice-recorder">
@@ -402,7 +406,8 @@ describe("MessageInput", () => {
   });
 
   // File limits hint
-  it("displays file size limits hint", () => {
+  it("displays file size limits hint when file is attached", async () => {
+    const user = userEvent.setup();
     render(
       <MessageInput
         onSendMessage={vi.fn()}
@@ -410,6 +415,13 @@ describe("MessageInput", () => {
         onStopTyping={vi.fn()}
       />
     );
+    // Hint only shows when there's media attached
+    expect(screen.queryByTestId("chat-file-limits")).not.toBeInTheDocument();
+
+    const fileInput = screen.getByTestId("file-input");
+    const file = new File(["content"], "test.pdf", { type: "application/pdf" });
+    await user.upload(fileInput, file);
+
     const hint = screen.getByTestId("chat-file-limits");
     expect(hint).toBeInTheDocument();
     expect(hint.textContent).toContain("Images");
@@ -428,5 +440,211 @@ describe("MessageInput", () => {
       />
     );
     expect(screen.queryByTestId("chat-file-limits")).not.toBeInTheDocument();
+  });
+
+  // Multiple file selection tests
+  it("file input has multiple attribute", () => {
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+      />
+    );
+    const fileInput = screen.getByTestId("file-input");
+    expect(fileInput).toHaveAttribute("multiple");
+  });
+
+  it("shows preview for a single selected file", async () => {
+    const user = userEvent.setup();
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+      />
+    );
+
+    const fileInput = screen.getByTestId("file-input");
+    const file = new File(["content"], "test.pdf", { type: "application/pdf" });
+    await user.upload(fileInput, file);
+
+    expect(screen.getByTestId("file-preview")).toBeInTheDocument();
+    expect(screen.getByText("test.pdf")).toBeInTheDocument();
+  });
+
+  it("shows previews for multiple selected files", async () => {
+    const user = userEvent.setup();
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+      />
+    );
+
+    const fileInput = screen.getByTestId("file-input");
+    const file1 = new File(["content1"], "photo.png", { type: "image/png" });
+    const file2 = new File(["content2"], "doc.pdf", { type: "application/pdf" });
+    await user.upload(fileInput, [file1, file2]);
+
+    const previews = screen.getAllByTestId("file-preview");
+    expect(previews).toHaveLength(2);
+    expect(screen.getByText("photo.png")).toBeInTheDocument();
+    expect(screen.getByText("doc.pdf")).toBeInTheDocument();
+  });
+
+  it("allows removing individual files from multi-select", async () => {
+    const user = userEvent.setup();
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+      />
+    );
+
+    const fileInput = screen.getByTestId("file-input");
+    const file1 = new File(["content1"], "photo.png", { type: "image/png" });
+    const file2 = new File(["content2"], "doc.pdf", { type: "application/pdf" });
+    await user.upload(fileInput, [file1, file2]);
+
+    expect(screen.getAllByTestId("file-preview")).toHaveLength(2);
+
+    // Remove the first file
+    const removeButtons = screen.getAllByTestId("remove-attachment");
+    await user.click(removeButtons[0]);
+
+    expect(screen.getAllByTestId("file-preview")).toHaveLength(1);
+    expect(screen.queryByText("photo.png")).not.toBeInTheDocument();
+    expect(screen.getByText("doc.pdf")).toBeInTheDocument();
+  });
+
+  it("can add more files to existing selection", async () => {
+    const user = userEvent.setup();
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+      />
+    );
+
+    const fileInput = screen.getByTestId("file-input");
+
+    // Select first file
+    const file1 = new File(["content1"], "photo.png", { type: "image/png" });
+    await user.upload(fileInput, file1);
+    expect(screen.getAllByTestId("file-preview")).toHaveLength(1);
+
+    // Select another file - should add to existing
+    const file2 = new File(["content2"], "doc.pdf", { type: "application/pdf" });
+    await user.upload(fileInput, file2);
+    expect(screen.getAllByTestId("file-preview")).toHaveLength(2);
+  });
+
+  it("shows send button when files are selected without text", async () => {
+    const user = userEvent.setup();
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+      />
+    );
+
+    const fileInput = screen.getByTestId("file-input");
+    const file = new File(["content"], "test.pdf", { type: "application/pdf" });
+    await user.upload(fileInput, file);
+
+    expect(screen.getByLabelText("Send message")).toBeInTheDocument();
+    expect(screen.queryByTestId("voice-record-button")).not.toBeInTheDocument();
+  });
+
+  it("clears all files after sending", async () => {
+    const onSendMessage = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+
+    // Mock successful upload
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ url: "https://example.com/file.pdf", fileType: "application/pdf", fileName: "test.pdf", fileSize: 100 }),
+    });
+
+    render(
+      <MessageInput
+        onSendMessage={onSendMessage}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+      />
+    );
+
+    const fileInput = screen.getByTestId("file-input");
+    const file1 = new File(["content1"], "file1.pdf", { type: "application/pdf" });
+    const file2 = new File(["content2"], "file2.pdf", { type: "application/pdf" });
+    await user.upload(fileInput, [file1, file2]);
+
+    expect(screen.getAllByTestId("file-preview")).toHaveLength(2);
+
+    // Type text and send
+    await user.type(screen.getByPlaceholderText("Type a message..."), "Here are the files");
+    await user.click(screen.getByLabelText("Send message"));
+
+    // Wait for send to complete
+    await vi.waitFor(() => {
+      expect(onSendMessage).toHaveBeenCalled();
+    });
+
+    // Files should be cleared after send
+    await vi.waitFor(() => {
+      expect(screen.queryByTestId("file-preview")).not.toBeInTheDocument();
+    });
+
+    // Restore fetch
+    vi.restoreAllMocks();
+  });
+
+  it("sends multiple media attachments as array", async () => {
+    const onSendMessage = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+
+    let uploadCount = 0;
+    global.fetch = vi.fn().mockImplementation(() => {
+      uploadCount++;
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          url: `https://example.com/file${uploadCount}.pdf`,
+          fileType: "application/pdf",
+          fileName: `file${uploadCount}.pdf`,
+          fileSize: 100,
+        }),
+      });
+    });
+
+    render(
+      <MessageInput
+        onSendMessage={onSendMessage}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+      />
+    );
+
+    const fileInput = screen.getByTestId("file-input");
+    const file1 = new File(["content1"], "file1.pdf", { type: "application/pdf" });
+    const file2 = new File(["content2"], "file2.pdf", { type: "application/pdf" });
+    await user.upload(fileInput, [file1, file2]);
+
+    await user.type(screen.getByPlaceholderText("Type a message..."), "Files");
+    await user.click(screen.getByLabelText("Send message"));
+
+    await vi.waitFor(() => {
+      expect(onSendMessage).toHaveBeenCalledWith("Files", [
+        expect.objectContaining({ url: "https://example.com/file1.pdf" }),
+        expect.objectContaining({ url: "https://example.com/file2.pdf" }),
+      ]);
+    });
+
+    vi.restoreAllMocks();
   });
 });
