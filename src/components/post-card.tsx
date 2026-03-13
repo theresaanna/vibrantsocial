@@ -463,19 +463,19 @@ export function PostCard({
                         <input
                           type="checkbox"
                           className="rounded"
-                          checked={editIsSensitive}
-                          onChange={(e) => setEditIsSensitive(e.target.checked)}
+                          checked={editIsNsfw}
+                          onChange={(e) => setEditIsNsfw(e.target.checked)}
                         />
-                        Sensitive
+                        NSFW
                       </label>
                       <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
                         <input
                           type="checkbox"
                           className="rounded"
-                          checked={editIsNsfw}
-                          onChange={(e) => setEditIsNsfw(e.target.checked)}
+                          checked={editIsSensitive}
+                          onChange={(e) => setEditIsSensitive(e.target.checked)}
                         />
-                        NSFW
+                        Sensitive
                       </label>
                       <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
                         <input

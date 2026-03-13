@@ -42,21 +42,24 @@ export function ContentFlagsInfoModal({ onClose }: ContentFlagsInfoModalProps) {
 
         <div className="space-y-4 text-sm text-zinc-700 dark:text-zinc-300">
           <div>
+            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">NSFW</h3>
+            <p>
+              Content dealing with or depicting adult topics but not outright
+              graphic adult discussion or material, or sexualized nudity, that
+              you feel too sensitive for a general adult audience. Remember that
+              VibrantSocial is an 18+ platform, so all users must be adults.
+              However, if you&apos;ve checked &ldquo;Public Profile&rdquo; in your settings,
+              posts without a content warning can be seen by users anywhere with
+              a link.
+            </p>
+          </div>
+
+          <div>
             <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">Sensitive</h3>
             <p>
               Content with detailed or graphic mentions of suicide or self harm,
               drug or substance use, violence, media depicting bodily harm, or
               anything you suspect of being harmful to a wider audience.
-            </p>
-          </div>
-
-          <div>
-            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">NSFW</h3>
-            <p>
-              Content dealing with or depicting adult topics but not outright
-              graphic adult material or sexualized nudity. Nudity in artwork,
-              general photography does not need to be marked NSFW. Use good
-              judgment.
             </p>
           </div>
 
