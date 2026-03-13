@@ -11,7 +11,7 @@ export function EmailVerificationBanner() {
   >("idle");
   const [dismissed, setDismissed] = useState(false);
 
-  if (!session?.user || session.user.emailVerified || dismissed) return null;
+  if (!session?.user || session.user.isEmailVerified || dismissed) return null;
 
   async function handleResend() {
     setStatus("sending");

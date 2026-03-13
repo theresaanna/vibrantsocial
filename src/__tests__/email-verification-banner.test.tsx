@@ -33,7 +33,7 @@ describe("EmailVerificationBanner", () => {
   it("does not render when email is already verified", () => {
     mockUseSession.mockReturnValue({
       data: {
-        user: { emailVerified: true },
+        user: { isEmailVerified: true },
         expires: "2099-01-01",
       },
       status: "authenticated",
@@ -47,7 +47,7 @@ describe("EmailVerificationBanner", () => {
   it("renders banner when email is not verified", () => {
     mockUseSession.mockReturnValue({
       data: {
-        user: { emailVerified: false },
+        user: { isEmailVerified: false },
         expires: "2099-01-01",
       },
       status: "authenticated",
@@ -63,7 +63,7 @@ describe("EmailVerificationBanner", () => {
   it("shows Resend button", () => {
     mockUseSession.mockReturnValue({
       data: {
-        user: { emailVerified: false },
+        user: { isEmailVerified: false },
         expires: "2099-01-01",
       },
       status: "authenticated",
@@ -77,7 +77,7 @@ describe("EmailVerificationBanner", () => {
   it("shows dismiss button", () => {
     mockUseSession.mockReturnValue({
       data: {
-        user: { emailVerified: false },
+        user: { isEmailVerified: false },
         expires: "2099-01-01",
       },
       status: "authenticated",
@@ -93,7 +93,7 @@ describe("EmailVerificationBanner", () => {
   it("hides banner when dismiss is clicked", async () => {
     mockUseSession.mockReturnValue({
       data: {
-        user: { emailVerified: false },
+        user: { isEmailVerified: false },
         expires: "2099-01-01",
       },
       status: "authenticated",
