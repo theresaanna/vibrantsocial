@@ -89,15 +89,15 @@ function ResizePopover({
     onApply(w, h);
   };
 
-  // Position below the image, centered horizontally
-  const top = anchorRect.bottom + 8;
+  // Center over the image
+  const top = anchorRect.top + anchorRect.height / 2;
   const left = anchorRect.left + anchorRect.width / 2;
 
   return createPortal(
     <div
       ref={popoverRef}
       data-testid="image-resize-popover"
-      className="fixed z-[200] -translate-x-1/2 rounded-lg border border-zinc-200 bg-white p-3 shadow-xl dark:border-zinc-700 dark:bg-zinc-800"
+      className="fixed z-[200] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-zinc-200 bg-white p-3 shadow-xl dark:border-zinc-700 dark:bg-zinc-800"
       style={{ top, left }}
       onMouseDown={(e) => e.stopPropagation()}
     >
