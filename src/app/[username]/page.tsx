@@ -17,6 +17,7 @@ import { ProfileTabs } from "@/components/profile-tabs";
 import { RepostCard } from "@/components/repost-card";
 import { generateAdaptiveTheme } from "@/lib/profile-themes";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
+import { buildProfilePostsContentFilter } from "./profile-queries";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
@@ -275,8 +276,8 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           authorId: user.id,
           ...loggedOutFilter,
           ...closeFriendsFilter,
-          // Flagged posts go to their own tabs
-          ...(currentUserId ? { isSensitive: false, isNsfw: false, isGraphicNudity: false } : {}),
+          // Flagged posts go to their own tabs (NSFW shown here when viewer opted in)
+          ...buildProfilePostsContentFilter(currentUserId, showNsfwContent),
         },
         orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
         take: 20,
