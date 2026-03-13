@@ -79,6 +79,9 @@ vi.mock("@/lib/prisma", () => ({
     follow: {
       findUnique: vi.fn(),
     },
+    friendRequest: {
+      findFirst: vi.fn(),
+    },
     user: {
       findUnique: vi.fn(),
       findMany: vi.fn(),
@@ -147,9 +150,8 @@ describe("startConversation", () => {
     mockPhoneGate.mockResolvedValueOnce(true);
     mockPrisma.user.findUnique.mockResolvedValueOnce({ id: "user2" } as never);
     mockPrisma.conversation.findFirst.mockResolvedValueOnce(null as never);
-    // Mutual follow check
-    mockPrisma.follow.findUnique.mockResolvedValueOnce({ id: "f1" } as never);
-    mockPrisma.follow.findUnique.mockResolvedValueOnce({ id: "f2" } as never);
+    // Friendship check via friendRequest
+    mockPrisma.friendRequest.findFirst.mockResolvedValueOnce({ id: "f1" } as never);
     mockPrisma.conversation.create.mockResolvedValueOnce({
       id: "new-conv",
     } as never);
@@ -165,9 +167,8 @@ describe("startConversation", () => {
     mockPhoneGate.mockResolvedValueOnce(true);
     mockPrisma.user.findUnique.mockResolvedValueOnce({ id: "user2" } as never);
     mockPrisma.conversation.findFirst.mockResolvedValueOnce(null as never);
-    // Not mutual
-    mockPrisma.follow.findUnique.mockResolvedValueOnce({ id: "f1" } as never);
-    mockPrisma.follow.findUnique.mockResolvedValueOnce(null as never);
+    // Not friends
+    mockPrisma.friendRequest.findFirst.mockResolvedValueOnce(null as never);
     mockPrisma.messageRequest.upsert.mockResolvedValueOnce({} as never);
 
     const result = await startConversation("user2");

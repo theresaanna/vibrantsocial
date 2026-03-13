@@ -4,6 +4,11 @@ vi.mock("@/auth", () => ({
   auth: vi.fn(),
 }));
 
+vi.mock("@/lib/rate-limit", () => ({
+  apiLimiter: {},
+  checkRateLimit: vi.fn().mockResolvedValue(null),
+}));
+
 vi.mock("ably", () => ({
   default: {
     Rest: vi.fn().mockImplementation(() => ({

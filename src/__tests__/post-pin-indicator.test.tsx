@@ -27,6 +27,31 @@ vi.mock("@/components/post-revision-history", () => ({
   PostRevisionHistory: () => <div data-testid="post-revision-history" />,
 }));
 
+vi.mock("@/components/editor/plugins/DraftPlugin", () => ({
+  clearDraft: vi.fn(),
+}));
+
+vi.mock("@/components/tag-input", () => ({
+  TagInput: () => <div data-testid="tag-input" />,
+}));
+
+vi.mock("@/components/content-flags-info-modal", () => ({
+  ContentFlagsInfoModal: () => <div data-testid="content-flags-info-modal" />,
+}));
+
+vi.mock("@/app/providers", () => ({
+  useAblyReady: vi.fn().mockReturnValue(false),
+}));
+
+vi.mock("@/lib/ably", () => ({
+  getAblyRealtimeClient: vi.fn(),
+}));
+
+vi.mock("next/link", () => ({
+  default: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => (
+    <a href={href} {...props}>{children}</a>
+  ),
+}));
 
 vi.mock("@/app/feed/actions", () => ({
   editPost: vi.fn().mockResolvedValue({ success: true, message: "" }),
@@ -75,6 +100,7 @@ describe("PostCard - pin indicator", () => {
         phoneVerified={true}
         ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}
+        showPinnedIndicator={true}
       />
     );
     expect(screen.getByTestId("post-pinned-indicator")).toBeInTheDocument();

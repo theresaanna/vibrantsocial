@@ -16,6 +16,9 @@ vi.mock("@/lib/prisma", () => ({
     follow: {
       findMany: vi.fn().mockResolvedValue([]),
     },
+    closeFriend: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
     user: {
       findUnique: vi.fn(),
     },
@@ -31,6 +34,7 @@ vi.mock("@/lib/cache", () => ({
 
 vi.mock("@/app/feed/feed-queries", () => ({
   getPostInclude: vi.fn().mockReturnValue({}),
+  getRepostInclude: vi.fn().mockReturnValue({}),
   repostUserSelect: {},
   PAGE_SIZE: 10,
 }));

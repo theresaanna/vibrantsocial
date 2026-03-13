@@ -28,6 +28,34 @@ vi.mock("@/lib/arachnid-shield", () => ({
   quarantineUpload: vi.fn(),
 }));
 
+vi.mock("@/lib/rate-limit", () => ({
+  uploadLimiter: {},
+  apiLimiter: {},
+  checkRateLimit: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("@/lib/cache", () => ({
+  invalidate: vi.fn(),
+  cacheKeys: {
+    userProfile: (username: string) => `userProfile:${username}`,
+  },
+}));
+
+vi.mock("@/lib/image-convert", () => ({
+  isConvertibleImage: vi.fn().mockReturnValue(false),
+  convertToWebP: vi.fn(),
+}));
+
+vi.mock("@/lib/limits", () => ({
+  getLimitsForTier: vi.fn().mockReturnValue({
+    maxImageSize: 5 * 1024 * 1024,
+    maxVideoSize: 50 * 1024 * 1024,
+    maxAudioSize: 10 * 1024 * 1024,
+    maxDocumentSize: 10 * 1024 * 1024,
+  }),
+  formatSizeLimit: vi.fn().mockReturnValue("5MB"),
+}));
+
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { put, del } from "@vercel/blob";

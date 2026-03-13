@@ -12,6 +12,9 @@ vi.mock("@/lib/prisma", () => ({
       update: vi.fn(),
       updateMany: vi.fn(),
     },
+    repost: {
+      updateMany: vi.fn(),
+    },
     user: {
       findUnique: vi.fn(),
     },
@@ -26,9 +29,34 @@ vi.mock("@/lib/age-gate", () => ({
   requireMinimumAge: vi.fn(),
 }));
 
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+}));
+
 vi.mock("@/lib/mentions", () => ({
   extractMentionsFromLexicalJson: vi.fn().mockReturnValue([]),
   createMentionNotifications: vi.fn(),
+}));
+
+vi.mock("@/lib/tags", () => ({
+  extractTagsFromNames: vi.fn((names: string[]) => names),
+}));
+
+vi.mock("@/lib/cache", () => ({
+  invalidate: vi.fn(),
+  cacheKeys: {
+    tagCloud: () => "tagCloud",
+    nsfwTagCloud: () => "nsfwTagCloud",
+    tagPostCount: (name: string) => `tagPostCount:${name}`,
+  },
+}));
+
+vi.mock("@/lib/subscription-notifications", () => ({
+  notifyPostSubscribers: vi.fn(),
+}));
+
+vi.mock("@/lib/tag-subscription-notifications", () => ({
+  notifyTagSubscribers: vi.fn(),
 }));
 
 import { auth } from "@/auth";
@@ -85,6 +113,7 @@ describe("togglePinPost", () => {
       isPinned: false,
     } as never);
     mockPrisma.post.updateMany.mockResolvedValueOnce({ count: 1 } as never);
+    mockPrisma.repost.updateMany.mockResolvedValueOnce({ count: 0 } as never);
     mockPrisma.post.update.mockResolvedValueOnce({} as never);
     mockPrisma.user.findUnique.mockResolvedValueOnce({ username: "testuser" } as never);
 

@@ -49,6 +49,10 @@ vi.mock("@/lib/subscription-notifications", () => ({
   notifyPostSubscribers: vi.fn(),
 }));
 
+vi.mock("@/lib/tag-subscription-notifications", () => ({
+  notifyTagSubscribers: vi.fn(),
+}));
+
 vi.mock("@/lib/phone-gate", () => ({
   requirePhoneVerification: vi.fn(),
 }));

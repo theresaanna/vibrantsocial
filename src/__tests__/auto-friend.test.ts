@@ -9,6 +9,9 @@ vi.mock("@/lib/prisma", () => ({
     follow: {
       create: vi.fn(),
     },
+    friendRequest: {
+      create: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
 }));
