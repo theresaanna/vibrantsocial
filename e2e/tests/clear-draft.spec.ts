@@ -23,8 +23,11 @@ test.describe("Clear Draft", () => {
     const draftText = `Draft test ${Date.now()}`;
     await editor.pressSequentially(draftText);
 
-    // Wait for the auto-save debounce (3s) plus a buffer
-    await page.waitForTimeout(5000);
+    // Wait until the draft is actually saved to localStorage (debounce is 3s)
+    await page.waitForFunction(
+      () => localStorage.getItem("vibrant-draft:compose") !== null,
+      { timeout: 15000 }
+    );
 
     // Reload so ClearDraftButton initializes with the saved draft from localStorage
     await page.reload();
@@ -37,9 +40,10 @@ test.describe("Clear Draft", () => {
       await gotItButton2.click();
     }
 
-    // Click the editor to dismiss any remaining popups/overlays
-    await editorAfterReload.click();
-    await page.waitForTimeout(500);
+    // Wait for the draft to be restored in the editor
+    await expect(editorAfterReload).toContainText(draftText, {
+      timeout: 15000,
+    });
 
     // The "Clear draft" button should now be visible
     const clearButton = page.getByRole("button", { name: "Clear draft" });
@@ -49,7 +53,7 @@ test.describe("Clear Draft", () => {
     await clearButton.click();
 
     // The editor content should be cleared
-    await expect(page.locator(`text=${draftText}`)).not.toBeVisible({
+    await expect(editorAfterReload).not.toContainText(draftText, {
       timeout: 10000,
     });
 
