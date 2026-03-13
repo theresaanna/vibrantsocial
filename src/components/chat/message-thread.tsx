@@ -166,22 +166,9 @@ export function MessageThread({
     return anyRead ? "read" : "delivered";
   };
 
-  const handleSendMessage = async (content: string, media?: MediaAttachment) => {
+  const handleSendMessage = async (content: string, media?: MediaAttachment[]) => {
     const currentReply = replyingTo;
     setReplyingTo(null); // Clear reply state immediately for responsiveness
-
-    const result = await sendMessage({
-      conversationId,
-      content,
-      ...(media && {
-        mediaUrl: media.url,
-        mediaType: media.type,
-        mediaFileName: media.fileName,
-        mediaFileSize: media.fileSize,
-      }),
-      ...(currentReply && { replyToId: currentReply.id }),
-    });
-    if (!result.success) return;
 
     // Build reply-to data for optimistic update
     const senderProfile = participantMap.get(currentUserId);
@@ -200,35 +187,55 @@ export function MessageThread({
         }
       : null;
 
-    // The message will arrive via Ably subscription
-    // But we can also optimistically add it
-    const newMsg: MessageData = {
-      id: result.messageId!,
-      conversationId,
-      senderId: currentUserId,
-      content,
-      mediaUrl: media?.url ?? null,
-      mediaType: (media?.type as MediaType) ?? null,
-      mediaFileName: media?.fileName ?? null,
-      mediaFileSize: media?.fileSize ?? null,
-      editedAt: null,
-      deletedAt: null,
-      createdAt: new Date(),
-      reactions: [],
-      replyTo: replyToForOptimistic,
-      sender: senderProfile ?? {
-        id: currentUserId,
-        username: null,
-        displayName: null,
-        name: null,
-        avatar: null,
-        image: null,
-      },
-    };
-    setMessages((prev) => {
-      if (prev.some((m) => m.id === newMsg.id)) return prev;
-      return [...prev, newMsg];
-    });
+    // Send one message per media attachment (DB schema stores one media per message)
+    // Text content goes on the first message only
+    const items = media && media.length > 0 ? media : [undefined];
+    for (let i = 0; i < items.length; i++) {
+      const attachment = items[i];
+      const msgContent = i === 0 ? content : "";
+
+      const result = await sendMessage({
+        conversationId,
+        content: msgContent,
+        ...(attachment && {
+          mediaUrl: attachment.url,
+          mediaType: attachment.type,
+          mediaFileName: attachment.fileName,
+          mediaFileSize: attachment.fileSize,
+        }),
+        // Reply only on the first message
+        ...(i === 0 && currentReply && { replyToId: currentReply.id }),
+      });
+      if (!result.success) return;
+
+      const newMsg: MessageData = {
+        id: result.messageId!,
+        conversationId,
+        senderId: currentUserId,
+        content: msgContent,
+        mediaUrl: attachment?.url ?? null,
+        mediaType: (attachment?.type as MediaType) ?? null,
+        mediaFileName: attachment?.fileName ?? null,
+        mediaFileSize: attachment?.fileSize ?? null,
+        editedAt: null,
+        deletedAt: null,
+        createdAt: new Date(),
+        reactions: [],
+        replyTo: i === 0 ? replyToForOptimistic : null,
+        sender: senderProfile ?? {
+          id: currentUserId,
+          username: null,
+          displayName: null,
+          name: null,
+          avatar: null,
+          image: null,
+        },
+      };
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === newMsg.id)) return prev;
+        return [...prev, newMsg];
+      });
+    }
   };
 
   const handleEditMessage = async (messageId: string, content: string) => {

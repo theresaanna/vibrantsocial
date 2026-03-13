@@ -256,7 +256,7 @@ function UnifiedUploadModal({
     "application/pdf", ".pdf",
   ].join(",");
 
-  async function handleFile(file: File) {
+  async function handleFile(file: File): Promise<boolean> {
     setError("");
     setUploading(true);
 
@@ -265,7 +265,7 @@ function UnifiedUploadModal({
         if (file.size > 5 * 1024 * 1024) {
           setError("Image must be under 5MB");
           setUploading(false);
-          return;
+          return false;
         }
         const formData = new FormData();
         formData.append("file", file);
@@ -282,7 +282,7 @@ function UnifiedUploadModal({
         if (file.size > 50 * 1024 * 1024) {
           setError("Video must be under 50MB");
           setUploading(false);
-          return;
+          return false;
         }
         const blob = await upload(file.name, file, {
           access: "public",
@@ -296,7 +296,7 @@ function UnifiedUploadModal({
         if (file.size > 10 * 1024 * 1024) {
           setError("File must be under 10MB");
           setUploading(false);
-          return;
+          return false;
         }
         const blob = await upload(file.name, file, {
           access: "public",
@@ -309,19 +309,29 @@ function UnifiedUploadModal({
       } else {
         setError("Unsupported file type");
         setUploading(false);
-        return;
+        return false;
       }
-      onClose();
+      return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
+      return false;
     } finally {
       setUploading(false);
     }
   }
 
-  function handleChange(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) handleFile(file);
+  async function handleChange(e: ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    let allSucceeded = true;
+    for (const file of Array.from(files)) {
+      const ok = await handleFile(file);
+      if (!ok) {
+        allSucceeded = false;
+        break;
+      }
+    }
+    if (allSucceeded) onClose();
   }
 
   return (
@@ -332,6 +342,7 @@ function UnifiedUploadModal({
             ref={inputRef}
             type="file"
             accept={acceptTypes}
+            multiple
             onChange={handleChange}
             className="hidden"
             disabled={uploading}
