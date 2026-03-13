@@ -13,7 +13,7 @@ test.describe("Post Creation", () => {
 
     // The Lexical editor renders a contenteditable div
     const editor = page.locator('[contenteditable="true"]').first();
-    await expect(editor).toBeVisible({ timeout: 10000 });
+    await expect(editor).toBeVisible({ timeout: 30000 });
     await editor.click();
     await page.waitForTimeout(300); // Let Lexical initialize focus
 

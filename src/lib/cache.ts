@@ -1,9 +1,12 @@
 import { Redis } from "@upstash/redis";
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
+const redis =
+  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+    ? new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN,
+      })
+    : null;
 
 /**
  * Generic cache-aside helper.
@@ -14,6 +17,8 @@ export async function cached<T>(
   fn: () => Promise<T>,
   ttlSeconds: number
 ): Promise<T> {
+  if (!redis) return fn();
+
   const hit = await redis.get<T>(key);
   if (hit !== null && hit !== undefined) return hit;
 
@@ -24,11 +29,13 @@ export async function cached<T>(
 
 /** Invalidate a specific cache key */
 export async function invalidate(key: string) {
+  if (!redis) return;
   await redis.del(key);
 }
 
 /** Invalidate all keys matching a pattern (use sparingly) */
 export async function invalidatePattern(pattern: string) {
+  if (!redis) return;
   let cursor = "0";
   do {
     const [nextCursor, keys] = await redis.scan(Number(cursor), {

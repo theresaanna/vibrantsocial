@@ -181,6 +181,7 @@ export function PostActions({
       <button
         type="button"
         onClick={onToggleComments}
+        aria-label="Toggle comments"
         className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-blue-50 hover:text-blue-500 dark:hover:bg-blue-900/20 ${
           commentCount > 0 ? "text-blue-500" : "text-zinc-500"
         }`}

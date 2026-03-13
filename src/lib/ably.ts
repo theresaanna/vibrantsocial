@@ -15,9 +15,14 @@ export function getAblyRealtimeClient(): Ably.Realtime {
 // Server-side REST client for publishing from server actions
 let restClient: Ably.Rest | null = null;
 
+// No-op stub when Ably is not configured (e.g. CI/test)
+const noopChannel = { publish: async () => {} };
+const noopClient = { channels: { get: () => noopChannel } } as unknown as Ably.Rest;
+
 export function getAblyRestClient(): Ably.Rest {
+  if (!process.env.ABLY_API_KEY) return noopClient;
   if (!restClient) {
-    restClient = new Ably.Rest(process.env.ABLY_API_KEY!);
+    restClient = new Ably.Rest(process.env.ABLY_API_KEY);
   }
   return restClient;
 }

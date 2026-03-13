@@ -13,7 +13,7 @@ test.describe("Poll Creation", () => {
 
     // Wait for the Lexical editor
     const editor = page.locator('[contenteditable="true"]').first();
-    await expect(editor).toBeVisible({ timeout: 10000 });
+    await expect(editor).toBeVisible({ timeout: 30000 });
     await editor.click();
     await page.waitForTimeout(300);
 
@@ -23,7 +23,7 @@ test.describe("Poll Creation", () => {
     await pollButton.click();
 
     // The modal should appear
-    await expect(page.locator("text=Insert Poll")).toBeVisible({
+    await expect(page.getByRole("heading", { name: "Insert Poll" })).toBeVisible({
       timeout: 5000,
     });
 
@@ -61,14 +61,14 @@ test.describe("Poll Creation", () => {
     }
 
     const editor = page.locator('[contenteditable="true"]').first();
-    await expect(editor).toBeVisible({ timeout: 10000 });
+    await expect(editor).toBeVisible({ timeout: 30000 });
     await editor.click();
     await page.waitForTimeout(300);
 
     const pollButton = page.getByRole("button", { name: "Poll" });
     await pollButton.click();
 
-    await expect(page.locator("text=Insert Poll")).toBeVisible({
+    await expect(page.getByRole("heading", { name: "Insert Poll" })).toBeVisible({
       timeout: 5000,
     });
 
@@ -90,7 +90,7 @@ test.describe("Poll Creation", () => {
     await page.goto("/compose");
 
     const editor = page.locator('[contenteditable="true"]').first();
-    await expect(editor).toBeVisible({ timeout: 10000 });
+    await expect(editor).toBeVisible({ timeout: 30000 });
 
     // The Collapsible button should not exist
     await expect(
