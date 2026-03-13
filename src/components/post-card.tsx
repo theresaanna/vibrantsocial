@@ -573,6 +573,7 @@ export function PostCard({
               isAuthenticated={isAuthenticated}
               highlightCommentId={highlightCommentId}
               onCommentCountChange={setCommentCount}
+              currentUserId={currentUserId}
             />
           )}
         </>

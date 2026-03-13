@@ -30,20 +30,54 @@ const commentAuthorSelect = {
   avatar: true,
 } as const;
 
+function groupReactions(
+  reactions: { emoji: string; userId: string }[]
+): { emoji: string; userIds: string[] }[] {
+  const map = new Map<string, string[]>();
+  for (const r of reactions) {
+    const list = map.get(r.emoji) ?? [];
+    list.push(r.userId);
+    map.set(r.emoji, list);
+  }
+  return Array.from(map, ([emoji, userIds]) => ({ emoji, userIds }));
+}
+
+const commentReactionSelect = {
+  reactions: { select: { emoji: true, userId: true } },
+} as const;
+
+function transformCommentsWithReactions(
+  comments: Array<Record<string, unknown>>
+): Array<Record<string, unknown>> {
+  return comments.map((c) => {
+    const reactions = c.reactions as { emoji: string; userId: string }[] | undefined;
+    const replies = c.replies as Array<Record<string, unknown>> | undefined;
+    return {
+      ...c,
+      reactions: reactions ? groupReactions(reactions) : [],
+      replies: replies ? transformCommentsWithReactions(replies) : undefined,
+    };
+  });
+}
+
 export async function fetchComments(postId: string) {
   const comments = await prisma.comment.findMany({
     where: { postId, parentId: null },
     orderBy: { createdAt: "asc" },
     include: {
       author: { select: commentAuthorSelect },
+      ...commentReactionSelect,
       replies: {
         orderBy: { createdAt: "asc" },
-        include: { author: { select: commentAuthorSelect } },
+        include: {
+          author: { select: commentAuthorSelect },
+          ...commentReactionSelect,
+        },
       },
     },
   });
 
-  return JSON.parse(JSON.stringify(comments));
+  return JSON.parse(JSON.stringify(transformCommentsWithReactions(comments)));
 }
 
 export async function toggleLike(
@@ -780,4 +814,176 @@ export async function createRepostComment(
   revalidatePath("/feed");
   revalidatePath(`/quote/${repostId}`);
   return { success: true, message: "Comment added" };
+}
+
+// ── Comment reactions ─────────────────────────────────────────────
+
+export async function toggleCommentReaction(data: {
+  commentId: string;
+  emoji: string;
+}): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const { commentId, emoji } = data;
+
+  const comment = await prisma.comment.findUnique({
+    where: { id: commentId },
+    select: { id: true, postId: true, authorId: true },
+  });
+  if (!comment) {
+    return { success: false, message: "Comment not found" };
+  }
+
+  // Toggle: remove if exists, add if not
+  const existing = await prisma.commentReaction.findUnique({
+    where: {
+      commentId_userId_emoji: {
+        commentId,
+        userId: session.user.id,
+        emoji,
+      },
+    },
+  });
+
+  if (existing) {
+    await prisma.commentReaction.delete({ where: { id: existing.id } });
+  } else {
+    await prisma.commentReaction.create({
+      data: { commentId, userId: session.user.id, emoji },
+    });
+
+    // Notify comment author about the reaction
+    if (comment.authorId !== session.user.id) {
+      try {
+        await createNotification({
+          type: "REACTION",
+          actorId: session.user.id,
+          targetUserId: comment.authorId,
+          postId: comment.postId,
+          commentId,
+        });
+      } catch {
+        // Non-critical
+      }
+    }
+  }
+
+  // Fetch updated reactions for this comment
+  const reactions = await prisma.commentReaction.findMany({
+    where: { commentId },
+    select: { emoji: true, userId: true },
+  });
+
+  // Publish to Ably for real-time updates
+  try {
+    const ably = getAblyRestClient();
+    const channel = ably.channels.get(`comments:${comment.postId}`);
+    await channel.publish("reaction", {
+      commentId,
+      reactions: JSON.stringify(groupReactions(reactions)),
+    });
+  } catch {
+    // Non-critical
+  }
+
+  return { success: true, message: existing ? "Reaction removed" : "Reaction added" };
+}
+
+export async function editComment(data: {
+  commentId: string;
+  content: string;
+}): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const { commentId, content } = data;
+  const trimmed = content.trim();
+
+  if (!trimmed) {
+    return { success: false, message: "Comment cannot be empty" };
+  }
+  if (trimmed.length > 1000) {
+    return { success: false, message: "Comment too long (max 1000 characters)" };
+  }
+
+  const comment = await prisma.comment.findUnique({
+    where: { id: commentId },
+    select: { id: true, postId: true, authorId: true },
+  });
+  if (!comment) {
+    return { success: false, message: "Comment not found" };
+  }
+  if (comment.authorId !== session.user.id) {
+    return { success: false, message: "Not authorized" };
+  }
+
+  await prisma.comment.update({
+    where: { id: commentId },
+    data: { content: trimmed, editedAt: new Date() },
+  });
+
+  // Publish to Ably for real-time updates
+  try {
+    const ably = getAblyRestClient();
+    const channel = ably.channels.get(`comments:${comment.postId}`);
+    await channel.publish("edit", {
+      commentId,
+      content: trimmed,
+    });
+  } catch {
+    // Non-critical
+  }
+
+  revalidatePath(`/post/${comment.postId}`);
+  revalidatePath("/feed");
+  return { success: true, message: "Comment updated" };
+}
+
+export async function deleteComment(data: {
+  commentId: string;
+}): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const { commentId } = data;
+
+  const comment = await prisma.comment.findUnique({
+    where: { id: commentId },
+    select: { id: true, postId: true, authorId: true, parentId: true },
+  });
+  if (!comment) {
+    return { success: false, message: "Comment not found" };
+  }
+  if (comment.authorId !== session.user.id) {
+    return { success: false, message: "Not authorized" };
+  }
+
+  await prisma.comment.delete({ where: { id: commentId } });
+
+  // Publish to Ably for real-time updates
+  try {
+    const ably = getAblyRestClient();
+    const channel = ably.channels.get(`comments:${comment.postId}`);
+    await channel.publish("delete", {
+      commentId,
+      parentId: comment.parentId,
+    });
+
+    // Also publish updated comment count
+    const count = await prisma.comment.count({ where: { postId: comment.postId } });
+    await channel.publish("count", { count });
+  } catch {
+    // Non-critical
+  }
+
+  revalidatePath(`/post/${comment.postId}`);
+  revalidatePath("/feed");
+  return { success: true, message: "Comment deleted" };
 }

@@ -193,6 +193,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       },
     },
     comments: {
+      where: { parentId: null },
       orderBy: { createdAt: "asc" as const },
       take: 5,
       include: {
@@ -204,6 +205,21 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             name: true,
             image: true,
             avatar: true,
+          },
+        },
+        replies: {
+          orderBy: { createdAt: "asc" as const },
+          include: {
+            author: {
+              select: {
+                id: true,
+                username: true,
+                displayName: true,
+                name: true,
+                image: true,
+                avatar: true,
+              },
+            },
           },
         },
       },
