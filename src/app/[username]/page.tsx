@@ -23,21 +23,36 @@ interface ProfilePageProps {
   searchParams: Promise<{ tab?: string }>;
 }
 
+const profileSelect = {
+  id: true,
+  username: true,
+  displayName: true,
+  name: true,
+  image: true,
+  avatar: true,
+  bio: true,
+  profileBgColor: true,
+  profileTextColor: true,
+  profileLinkColor: true,
+  profileSecondaryColor: true,
+  profileContainerColor: true,
+  isProfilePublic: true,
+  _count: {
+    select: {
+      posts: true,
+      followers: true,
+      following: true,
+    },
+  },
+} as const;
+
 export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
   const { username } = await params;
   const user = await cached(
     cacheKeys.userProfile(username),
     () => prisma.user.findUnique({
       where: { username },
-      select: {
-        username: true,
-        displayName: true,
-        name: true,
-        bio: true,
-        avatar: true,
-        image: true,
-        _count: { select: { followers: true, posts: true } },
-      },
+      select: profileSelect,
     }),
     120
   );
@@ -71,28 +86,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
     cacheKeys.userProfile(username),
     () => prisma.user.findUnique({
       where: { username },
-      select: {
-        id: true,
-        username: true,
-        displayName: true,
-        name: true,
-        image: true,
-        avatar: true,
-        bio: true,
-        profileBgColor: true,
-        profileTextColor: true,
-        profileLinkColor: true,
-        profileSecondaryColor: true,
-        profileContainerColor: true,
-        isProfilePublic: true,
-        _count: {
-          select: {
-            posts: true,
-            followers: true,
-            following: true,
-          },
-        },
-      },
+      select: profileSelect,
     }),
     120 // cache for 2 minutes
   );
