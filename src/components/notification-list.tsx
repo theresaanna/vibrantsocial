@@ -25,6 +25,7 @@ interface NotificationItem {
   postId: string | null;
   commentId: string | null;
   messageId: string | null;
+  repostId: string | null;
   readAt: Date | null;
   createdAt: Date;
   actor: NotificationActor;
@@ -132,6 +133,8 @@ export function NotificationList({
             href = `/${notification.actor.username}`;
           } else if (notification.postId) {
             href = `/post/${notification.postId}`;
+          } else if (notification.repostId) {
+            href = `/quote/${notification.repostId}`;
           } else {
             href = "/notifications";
           }

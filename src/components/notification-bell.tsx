@@ -32,6 +32,7 @@ interface NotificationItem {
   postId: string | null;
   commentId: string | null;
   messageId: string | null;
+  repostId: string | null;
   readAt: Date | null;
   createdAt: Date;
   actor: NotificationActor;
@@ -88,6 +89,9 @@ function getNotificationHref(notification: NotificationItem): string {
   }
   if (notification.postId) {
     return `/post/${notification.postId}`;
+  }
+  if (notification.repostId) {
+    return `/quote/${notification.repostId}`;
   }
   return "/notifications";
 }
