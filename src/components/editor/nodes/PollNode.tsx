@@ -10,7 +10,7 @@ import {
   type SerializedLexicalNode,
   type Spread,
 } from "lexical";
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $getNodeByKey } from "lexical";
 
@@ -21,27 +21,51 @@ export interface PollOption {
 }
 
 export type SerializedPollNode = Spread<
-  { question: string; options: PollOption[] },
+  { question: string; options: PollOption[]; expiresAt: string | null },
   SerializedLexicalNode
 >;
 
 function PollComponent({
   question,
   options: initialOptions,
+  expiresAt,
   nodeKey,
 }: {
   question: string;
   options: PollOption[];
+  expiresAt: string | null;
   nodeKey: NodeKey;
 }) {
   const [editor] = useLexicalComposerContext();
   const [options, setOptions] = useState(initialOptions);
   const [votedId, setVotedId] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
   const totalVotes = options.reduce((sum, o) => sum + o.votes, 0);
+  const isExpired = expiresAt ? new Date(expiresAt).getTime() <= now : false;
+
+  useEffect(() => {
+    if (!expiresAt || isExpired) return;
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [expiresAt, isExpired]);
+
+  function getTimeRemaining(): string {
+    if (!expiresAt) return "";
+    const diff = new Date(expiresAt).getTime() - now;
+    if (diff <= 0) return "Poll ended";
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    if (days > 0) return `${days}d ${hours % 24}h remaining`;
+    if (hours > 0) return `${hours}h ${minutes % 60}m remaining`;
+    if (minutes > 0) return `${minutes}m ${seconds % 60}s remaining`;
+    return `${seconds}s remaining`;
+  }
 
   function handleVote(optionId: string) {
-    if (votedId) return;
+    if (votedId || isExpired) return;
     setVotedId(optionId);
     const updated = options.map((o) =>
       o.id === optionId ? { ...o, votes: o.votes + 1 } : o
@@ -55,25 +79,27 @@ function PollComponent({
     });
   }
 
+  const showResults = !!votedId || isExpired;
+
   return (
     <div className="my-2 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
       <p className="mb-3 font-medium text-zinc-900 dark:text-zinc-100">{question}</p>
       <div className="space-y-2">
         {options.map((option) => {
-          const pct = totalVotes > 0 ? Math.round((option.votes / (totalVotes + (votedId ? 0 : 1))) * 100) : 0;
+          const pct = totalVotes > 0 ? Math.round((option.votes / (totalVotes + (showResults ? 0 : 1))) * 100) : 0;
           return (
             <button
               key={option.id}
               type="button"
               onClick={() => handleVote(option.id)}
-              disabled={!!votedId}
+              disabled={showResults}
               className={`relative w-full overflow-hidden rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
-                votedId
+                showResults
                   ? "cursor-default border-zinc-200 dark:border-zinc-700"
                   : "border-zinc-300 hover:border-blue-400 hover:bg-blue-50 dark:border-zinc-600 dark:hover:border-blue-500 dark:hover:bg-blue-900/20"
               }`}
             >
-              {votedId && (
+              {showResults && (
                 <div
                   className={`absolute inset-y-0 left-0 ${
                     votedId === option.id ? "bg-blue-100 dark:bg-blue-900/30" : "bg-zinc-100 dark:bg-zinc-800"
@@ -83,15 +109,20 @@ function PollComponent({
               )}
               <span className="relative flex justify-between">
                 <span>{option.text}</span>
-                {votedId && <span className="text-zinc-500">{pct}%</span>}
+                {showResults && <span className="text-zinc-500">{pct}%</span>}
               </span>
             </button>
           );
         })}
       </div>
-      {votedId && (
+      {showResults && (
         <p className="mt-2 text-xs text-zinc-500">
           {totalVotes} vote{totalVotes !== 1 ? "s" : ""}
+        </p>
+      )}
+      {expiresAt && (
+        <p className={`mt-1 text-xs ${isExpired ? "text-red-500" : "text-zinc-500"}`}>
+          {getTimeRemaining()}
         </p>
       )}
     </div>
@@ -101,31 +132,34 @@ function PollComponent({
 export class PollNode extends DecoratorNode<ReactNode> {
   __question: string;
   __options: PollOption[];
+  __expiresAt: string | null;
 
   static getType(): string {
     return "poll";
   }
 
   static clone(node: PollNode): PollNode {
-    return new PollNode(node.__question, [...node.__options], node.__key);
+    return new PollNode(node.__question, [...node.__options], node.__expiresAt, node.__key);
   }
 
-  constructor(question: string, options: PollOption[], key?: NodeKey) {
+  constructor(question: string, options: PollOption[], expiresAt: string | null = null, key?: NodeKey) {
     super(key);
     this.__question = question;
     this.__options = options;
+    this.__expiresAt = expiresAt;
   }
 
   static importJSON(json: SerializedPollNode): PollNode {
-    return $createPollNode(json.question, json.options);
+    return $createPollNode(json.question, json.options, (json as Record<string, unknown>).expiresAt as string | null ?? null);
   }
 
   exportJSON(): SerializedPollNode {
     return {
       type: "poll",
-      version: 1,
+      version: 2,
       question: this.__question,
       options: this.__options,
+      expiresAt: this.__expiresAt,
     };
   }
 
@@ -148,19 +182,28 @@ export class PollNode extends DecoratorNode<ReactNode> {
     writable.__options = options;
   }
 
+  getExpiresAt(): string | null {
+    return this.__expiresAt;
+  }
+
   decorate(): ReactNode {
     return (
       <PollComponent
         question={this.__question}
         options={this.__options}
+        expiresAt={this.__expiresAt}
         nodeKey={this.__key}
       />
     );
   }
 }
 
-export function $createPollNode(question: string, options: PollOption[]): PollNode {
-  return $applyNodeReplacement(new PollNode(question, options));
+export function $createPollNode(
+  question: string,
+  options: PollOption[],
+  expiresAt: string | null = null,
+): PollNode {
+  return $applyNodeReplacement(new PollNode(question, options, expiresAt));
 }
 
 export function $isPollNode(node: LexicalNode | null | undefined): node is PollNode {

@@ -25,7 +25,7 @@ import { MentionsPlugin } from "@/components/editor/plugins/MentionsPlugin";
 import { TagInput } from "@/components/tag-input";
 import { AutoTagButton } from "@/components/auto-tag-button";
 import { ContentFlagsInfoModal } from "@/components/content-flags-info-modal";
-import { DraftPlugin, clearDraft, type DraftSaveStatus } from "@/components/editor/plugins/DraftPlugin";
+import { DraftPlugin, ClearDraftButton, clearDraft, type DraftSaveStatus } from "@/components/editor/plugins/DraftPlugin";
 
 function ClearOnSuccess({
   shouldClear,
@@ -159,6 +159,17 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
             shouldClear={shouldClear}
             onCleared={() => setShouldClear(false)}
           />
+          <div className="flex items-center justify-between border-t border-zinc-200 px-4 py-1.5 dark:border-zinc-700">
+            <div className="flex items-center gap-2">
+              {draftStatus === "saving" && (
+                <span className="text-xs text-zinc-400 dark:text-zinc-500">Saving…</span>
+              )}
+              {draftStatus === "saved" && (
+                <span className="text-xs text-zinc-400 dark:text-zinc-500">Saved</span>
+              )}
+            </div>
+            <ClearDraftButton draftKey="compose" />
+          </div>
         </LexicalComposer>
         <div className="flex min-h-[48px] items-center">
           <div className="flex-1">
@@ -258,12 +269,6 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
             )}
           </div>
           <div className="flex items-center gap-3">
-            {draftStatus === "saving" && (
-              <span className="text-xs text-zinc-400 dark:text-zinc-500">Saving…</span>
-            )}
-            {draftStatus === "saved" && (
-              <span className="text-xs text-zinc-400 dark:text-zinc-500">Saved</span>
-            )}
             <label
               className="flex cursor-pointer items-center gap-1.5"
               title="Only visible to your close friends"

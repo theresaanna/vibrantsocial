@@ -15,7 +15,7 @@ import { $createVideoNode } from "../nodes/VideoNode";
 import { $createFileNode } from "../nodes/FileNode";
 import { $createYouTubeNode } from "../nodes/YouTubeNode";
 import { $createEquationNode } from "../nodes/EquationNode";
-import { $createCollapsibleWithDefaults } from "../nodes/CollapsibleNodes";
+
 import { $createStickyNoteNode } from "../nodes/StickyNoteNode";
 import { $createPollNode, type PollOption } from "../nodes/PollNode";
 import { extractYouTubeVideoID } from "../utils/url";
@@ -37,13 +37,6 @@ export function InsertDropdown() {
 
   function insertHorizontalRule() {
     editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined);
-  }
-
-  function insertCollapsible() {
-    editor.update(() => {
-      const container = $createCollapsibleWithDefaults();
-      $insertNodes([container, $createParagraphNode()]);
-    });
   }
 
   function insertStickyNote() {
@@ -76,7 +69,6 @@ export function InsertDropdown() {
         <DropdownItem label="Poll" onClick={() => setModal("poll")} />
         <div className="my-1 border-t border-zinc-200 dark:border-zinc-700" />
         <DropdownItem label="Equation" onClick={() => setModal("equation")} />
-        <DropdownItem label="Collapsible" onClick={insertCollapsible} />
         <DropdownItem label="Sticky Note" onClick={insertStickyNote} />
       </DropdownMenu>
 
@@ -162,9 +154,9 @@ export function InsertDropdown() {
       {modal === "poll" && (
         <PollInsertModal
           onClose={() => setModal(null)}
-          onInsert={(question, options) => {
+          onInsert={(question, options, expiresAt) => {
             editor.update(() => {
-              const node = $createPollNode(question, options);
+              const node = $createPollNode(question, options, expiresAt);
               $insertNodes([node, $createParagraphNode()]);
             });
             setModal(null);
@@ -540,15 +532,34 @@ function TableInsertModal({
 }
 
 /* ── Poll Insert Modal ────────────────────────────── */
+
+const TIMEFRAME_PRESETS = [
+  { value: null, label: "No limit" },
+  { value: "1h", label: "1 hour" },
+  { value: "24h", label: "24 hours" },
+  { value: "3d", label: "3 days" },
+  { value: "7d", label: "1 week" },
+  { value: "custom", label: "Custom" },
+] as const;
+
+const TIMEFRAME_MS: Record<string, number> = {
+  "1h": 3600000,
+  "24h": 86400000,
+  "3d": 259200000,
+  "7d": 604800000,
+};
+
 function PollInsertModal({
   onClose,
   onInsert,
 }: {
   onClose: () => void;
-  onInsert: (question: string, options: PollOption[]) => void;
+  onInsert: (question: string, options: PollOption[], expiresAt: string | null) => void;
 }) {
   const [question, setQuestion] = useState("");
   const [optionTexts, setOptionTexts] = useState(["", ""]);
+  const [timeframe, setTimeframe] = useState<string | null>(null);
+  const [customDate, setCustomDate] = useState("");
 
   function addOption() {
     setOptionTexts([...optionTexts, ""]);
@@ -568,7 +579,15 @@ function PollInsertModal({
       text: text.trim(),
       votes: 0,
     }));
-    onInsert(question.trim(), options);
+
+    let expiresAt: string | null = null;
+    if (timeframe === "custom" && customDate) {
+      expiresAt = new Date(customDate).toISOString();
+    } else if (timeframe && TIMEFRAME_MS[timeframe]) {
+      expiresAt = new Date(Date.now() + TIMEFRAME_MS[timeframe]).toISOString();
+    }
+
+    onInsert(question.trim(), options, expiresAt);
   }
 
   return (
@@ -613,6 +632,36 @@ function PollInsertModal({
         >
           + Add option
         </button>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            Poll duration (optional)
+          </label>
+          <div className="flex flex-wrap gap-1.5">
+            {TIMEFRAME_PRESETS.map((opt) => (
+              <button
+                key={opt.label}
+                type="button"
+                onClick={() => setTimeframe(opt.value)}
+                className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                  timeframe === opt.value
+                    ? "border-blue-500 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+                    : "border-zinc-300 text-zinc-600 hover:border-zinc-400 dark:border-zinc-600 dark:text-zinc-400"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {timeframe === "custom" && (
+            <input
+              type="datetime-local"
+              value={customDate}
+              onChange={(e) => setCustomDate(e.target.value)}
+              min={new Date().toISOString().slice(0, 16)}
+              className="mt-2 w-full rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800"
+            />
+          )}
+        </div>
         <button
           type="button"
           onClick={handleInsert}

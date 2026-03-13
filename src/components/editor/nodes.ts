@@ -9,11 +9,7 @@ import { ImageNode } from "./nodes/ImageNode";
 import { YouTubeNode } from "./nodes/YouTubeNode";
 import { EquationNode } from "./nodes/EquationNode";
 import { PageBreakNode } from "./nodes/PageBreakNode";
-import {
-  CollapsibleContainerNode,
-  CollapsibleTitleNode,
-  CollapsibleContentNode,
-} from "./nodes/CollapsibleNodes";
+
 import { StickyNoteNode } from "./nodes/StickyNoteNode";
 import { PollNode } from "./nodes/PollNode";
 import { DateNode } from "./nodes/DateNode";
@@ -39,9 +35,7 @@ export const editorNodes: Array<Klass<LexicalNode>> = [
   YouTubeNode,
   EquationNode,
   PageBreakNode,
-  CollapsibleContainerNode,
-  CollapsibleTitleNode,
-  CollapsibleContentNode,
+
   StickyNoteNode,
   PollNode,
   DateNode,
