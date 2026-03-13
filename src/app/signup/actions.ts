@@ -1,11 +1,13 @@
 "use server";
 
+import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { signIn } from "@/auth";
 import { AuthError } from "next-auth";
 import { autoFriendNewUser } from "@/lib/auto-friend";
 import { inngest } from "@/lib/inngest";
+import { sendEmailVerificationEmail } from "@/lib/email";
 
 interface SignupState {
   success: boolean;
@@ -107,7 +109,7 @@ export async function signup(
       username,
       passwordHash,
       dateOfBirth,
-      emailVerified: new Date(),
+      pendingEmail: email,
     },
   });
 
@@ -120,11 +122,25 @@ export async function signup(
     data: { toEmail: email },
   });
 
+  // Send email verification
+  const token = crypto.randomUUID();
+  const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+  await prisma.verificationToken.create({
+    data: {
+      identifier: `email-verify:${email}`,
+      token,
+      expires,
+    },
+  });
+
+  sendEmailVerificationEmail({ toEmail: email, token });
+
   try {
     await signIn("credentials", {
       email,
       password,
-      redirectTo: "/profile",
+      redirectTo: "/feed",
     });
   } catch (error) {
     if (error instanceof AuthError) {

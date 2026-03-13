@@ -9,6 +9,7 @@ declare module "next-auth" {
       bio: string | null;
       avatar: string | null;
       tier: string;
+      emailVerified: boolean;
     } & DefaultSession["user"];
   }
 
@@ -18,6 +19,7 @@ declare module "next-auth" {
     bio: string | null;
     avatar: string | null;
     tier: string;
+    emailVerified: boolean;
   }
 }
 
@@ -29,6 +31,7 @@ declare module "next-auth/jwt" {
     bio: string | null;
     avatar: string | null;
     tier: string;
+    emailVerified: boolean;
   }
 }
 
@@ -39,5 +42,6 @@ declare module "@auth/core/adapters" {
     bio: string | null;
     avatar: string | null;
     tier: string;
+    emailVerified: boolean;
   }
 }

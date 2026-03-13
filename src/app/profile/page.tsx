@@ -1,6 +1,7 @@
 import { auth, signOut } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { isProfileIncomplete } from "@/lib/require-profile";
 import { ProfileForm } from "./profile-form";
 
 export default async function ProfilePage() {
@@ -10,6 +11,7 @@ export default async function ProfilePage() {
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
+      username: true,
       email: true,
       pendingEmail: true,
       dateOfBirth: true,
@@ -37,7 +39,7 @@ export default async function ProfilePage() {
     },
   });
 
-  if (!user?.dateOfBirth) redirect("/complete-profile");
+  if (isProfileIncomplete(user)) redirect("/complete-profile");
 
   const isCredentialsUser = !!user?.passwordHash;
   const oauthImage = user?.image ?? session.user.image ?? null;

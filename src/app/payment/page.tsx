@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import { isProfileIncomplete } from "@/lib/require-profile";
 import { PaymentForm } from "./payment-form";
 
 export default async function PaymentPage({
@@ -18,13 +19,15 @@ export default async function PaymentPage({
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
+      username: true,
+      email: true,
       dateOfBirth: true,
       ageVerified: true,
       ageVerificationPaid: true,
     },
   });
 
-  if (!user?.dateOfBirth) redirect("/complete-profile");
+  if (isProfileIncomplete(user)) redirect("/complete-profile");
   if (user.ageVerified) redirect("/profile");
   if (user.ageVerificationPaid) redirect("/age-verify");
 

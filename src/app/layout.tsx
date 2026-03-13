@@ -7,6 +7,7 @@ import { Providers } from "./providers";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { VersionCheck } from "@/components/version-check";
+import { EmailVerificationBanner } from "@/components/email-verification-banner";
 
 const lexend = Lexend({
   variable: "--font-lexend",
@@ -44,6 +45,7 @@ export default function RootLayout({
         <Providers>
           <VersionCheck />
           <Header />
+          <EmailVerificationBanner />
           {children}
           <Footer />
         </Providers>

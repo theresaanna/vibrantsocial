@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
+import { isProfileIncomplete } from "@/lib/require-profile";
 import { PostPageClient } from "./post-page-client";
 
 interface Props {
@@ -23,6 +24,8 @@ export default async function PostPage({ params, searchParams }: Props) {
     const currentUser = await prisma.user.findUnique({
       where: { id: userId },
       select: {
+        username: true,
+        email: true,
         phoneVerified: true,
         dateOfBirth: true,
         ageVerified: true,
@@ -31,7 +34,7 @@ export default async function PostPage({ params, searchParams }: Props) {
       },
     });
 
-    if (!currentUser?.dateOfBirth) redirect("/complete-profile");
+    if (isProfileIncomplete(currentUser)) redirect("/complete-profile");
 
     phoneVerified = !!currentUser?.phoneVerified;
     ageVerified = !!currentUser?.ageVerified;

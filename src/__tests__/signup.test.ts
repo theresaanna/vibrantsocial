@@ -11,6 +11,12 @@ vi.mock("@/lib/prisma", () => ({
     follow: {
       create: vi.fn(),
     },
+    friendRequest: {
+      create: vi.fn(),
+    },
+    verificationToken: {
+      create: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
 }));
@@ -27,6 +33,11 @@ vi.mock("bcryptjs", () => ({
 
 vi.mock("@/lib/email", () => ({
   sendWelcomeEmail: vi.fn(),
+  sendEmailVerificationEmail: vi.fn(),
+}));
+
+vi.mock("@/lib/inngest", () => ({
+  inngest: { send: vi.fn() },
 }));
 
 import { prisma } from "@/lib/prisma";
@@ -344,7 +355,7 @@ describe("signup", () => {
         username: "newuser",
         passwordHash: "hashed_password",
         dateOfBirth: expect.any(Date),
-        emailVerified: expect.any(Date),
+        pendingEmail: "new@example.com",
       }),
     });
 

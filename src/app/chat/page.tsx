@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getConversations, getMessageRequests } from "./actions";
 import { ChatPageClient } from "./chat-page-client";
 import { generateAdaptiveTheme } from "@/lib/profile-themes";
+import { isProfileIncomplete } from "@/lib/require-profile";
 
 export default async function ChatPage() {
   const session = await auth();
@@ -12,6 +13,8 @@ export default async function ChatPage() {
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
+      username: true,
+      email: true,
       dateOfBirth: true,
       profileBgColor: true,
       profileTextColor: true,
@@ -20,7 +23,7 @@ export default async function ChatPage() {
       profileSecondaryColor: true,
     },
   });
-  if (!user?.dateOfBirth) redirect("/complete-profile");
+  if (isProfileIncomplete(user)) redirect("/complete-profile");
 
   const conversations = await getConversations();
   const messageRequests = await getMessageRequests();

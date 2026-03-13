@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { calculateAge } from "@/lib/age-gate";
 import { ComposeClient } from "./compose-client";
+import { isProfileIncomplete } from "@/lib/require-profile";
 
 export default async function ComposePage() {
   const session = await auth();
@@ -11,12 +12,14 @@ export default async function ComposePage() {
   const currentUser = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
+      username: true,
+      email: true,
       phoneVerified: true,
       dateOfBirth: true,
     },
   });
 
-  if (!currentUser?.dateOfBirth) redirect("/complete-profile");
+  if (isProfileIncomplete(currentUser)) redirect("/complete-profile");
 
   const phoneVerified = !!currentUser.phoneVerified;
   const isOldEnough = calculateAge(currentUser.dateOfBirth) >= 18;
