@@ -22,7 +22,7 @@ export default async function ComposePage() {
   if (!currentUser || isProfileIncomplete(currentUser)) redirect("/complete-profile");
 
   const phoneVerified = !!currentUser.phoneVerified;
-  const isOldEnough = calculateAge(currentUser.dateOfBirth) >= 18;
+  const isOldEnough = calculateAge(currentUser.dateOfBirth!) >= 18;
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
