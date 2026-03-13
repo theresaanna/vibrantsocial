@@ -21,8 +21,8 @@ import { editorNodes } from "./nodes";
 import { Toolbar } from "./toolbar/Toolbar";
 import { AutoLinkPlugin } from "./plugins/AutoLinkPlugin";
 import { MentionsPlugin } from "./plugins/MentionsPlugin";
-import { CollapsiblePlugin } from "./plugins/CollapsiblePlugin";
-import { DraftPlugin } from "./plugins/DraftPlugin";
+
+import { DraftPlugin, ClearDraftButton } from "./plugins/DraftPlugin";
 
 interface EditorProps {
   /** Initial content as Lexical JSON string */
@@ -131,9 +131,13 @@ export function Editor({
           <TablePlugin />
           <TabIndentationPlugin />
           <MentionsPlugin />
-          <CollapsiblePlugin />
           {draftKey && <DraftPlugin draftKey={draftKey} />}
         </div>
+        {draftKey && (
+          <div className="flex justify-end border-t border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
+            <ClearDraftButton draftKey={draftKey} />
+          </div>
+        )}
       </LexicalComposer>
     </div>
   );

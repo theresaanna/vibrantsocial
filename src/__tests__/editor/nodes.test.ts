@@ -5,11 +5,6 @@ import { YouTubeNode } from "@/components/editor/nodes/YouTubeNode";
 import { EquationNode } from "@/components/editor/nodes/EquationNode";
 import { PageBreakNode } from "@/components/editor/nodes/PageBreakNode";
 import { DateNode } from "@/components/editor/nodes/DateNode";
-import {
-  CollapsibleContainerNode,
-  CollapsibleTitleNode,
-  CollapsibleContentNode,
-} from "@/components/editor/nodes/CollapsibleNodes";
 import { StickyNoteNode } from "@/components/editor/nodes/StickyNoteNode";
 import { PollNode } from "@/components/editor/nodes/PollNode";
 import { ExcalidrawNode } from "@/components/editor/nodes/ExcalidrawNode";
@@ -23,9 +18,6 @@ const allNodes = [
   EquationNode,
   PageBreakNode,
   DateNode,
-  CollapsibleContainerNode,
-  CollapsibleTitleNode,
-  CollapsibleContentNode,
   StickyNoteNode,
   PollNode,
   ExcalidrawNode,
@@ -226,37 +218,6 @@ describe("DateNode", () => {
   });
 });
 
-describe("CollapsibleNodes", () => {
-  let editor: LexicalEditor;
-  beforeEach(() => {
-    editor = createTestEditor();
-  });
-
-  it("has correct types", () => {
-    expect(CollapsibleContainerNode.getType()).toBe("collapsible-container");
-    expect(CollapsibleTitleNode.getType()).toBe("collapsible-title");
-    expect(CollapsibleContentNode.getType()).toBe("collapsible-content");
-  });
-
-  it("container has open state", () => {
-    const { openState, closedState } = withEditor(editor, () => {
-      const open = new CollapsibleContainerNode(true);
-      const closed = new CollapsibleContainerNode(false);
-      return { openState: open.getOpen(), closedState: closed.getOpen() };
-    });
-    expect(openState).toBe(true);
-    expect(closedState).toBe(false);
-  });
-
-  it("serializes open state", () => {
-    const json = withEditor(editor, () => {
-      const node = new CollapsibleContainerNode(false);
-      return node.exportJSON();
-    });
-    expect(json.open).toBe(false);
-  });
-});
-
 describe("StickyNoteNode", () => {
   let editor: LexicalEditor;
   beforeEach(() => {
@@ -297,7 +258,7 @@ describe("PollNode", () => {
     expect(PollNode.getType()).toBe("poll");
   });
 
-  it("serializes with question and options", () => {
+  it("serializes with question, options, and no expiry", () => {
     const options = [
       { id: "1", text: "Option A", votes: 0 },
       { id: "2", text: "Option B", votes: 3 },
@@ -307,9 +268,78 @@ describe("PollNode", () => {
       return node.exportJSON();
     });
     expect(json.type).toBe("poll");
+    expect(json.version).toBe(2);
     expect(json.question).toBe("What's your favorite?");
     expect(json.options).toHaveLength(2);
     expect(json.options[1].votes).toBe(3);
+    expect(json.expiresAt).toBeNull();
+  });
+
+  it("serializes with expiresAt", () => {
+    const options = [
+      { id: "1", text: "Yes", votes: 0 },
+      { id: "2", text: "No", votes: 0 },
+    ];
+    const deadline = "2026-12-31T23:59:59.000Z";
+    const json = withEditor(editor, () => {
+      const node = new PollNode("Keep it?", options, deadline);
+      return node.exportJSON();
+    });
+    expect(json.expiresAt).toBe(deadline);
+    expect(json.version).toBe(2);
+  });
+
+  it("round-trips through importJSON/exportJSON", () => {
+    const options = [
+      { id: "1", text: "A", votes: 0 },
+      { id: "2", text: "B", votes: 0 },
+    ];
+    const deadline = "2026-06-15T12:00:00.000Z";
+    const json = withEditor(editor, () => {
+      const node = new PollNode("Test?", options, deadline);
+      return node.exportJSON();
+    });
+    const restoredJson = withEditor(editor, () => {
+      const restored = PollNode.importJSON(json);
+      return restored.exportJSON();
+    });
+    expect(restoredJson).toEqual(json);
+  });
+
+  it("handles v1 JSON without expiresAt (backward compat)", () => {
+    const v1Json = {
+      type: "poll",
+      version: 1,
+      question: "Old poll?",
+      options: [
+        { id: "1", text: "A", votes: 1 },
+        { id: "2", text: "B", votes: 2 },
+      ],
+    } as any;
+
+    const json = withEditor(editor, () => {
+      const node = PollNode.importJSON(v1Json);
+      return node.exportJSON();
+    });
+    expect(json.expiresAt).toBeNull();
+    expect(json.version).toBe(2);
+    expect(json.question).toBe("Old poll?");
+  });
+
+  it("reports expiresAt via getter", () => {
+    const pastDate = "2020-01-01T00:00:00.000Z";
+    const expiresAt = withEditor(editor, () => {
+      const node = new PollNode(
+        "Done?",
+        [
+          { id: "1", text: "A", votes: 0 },
+          { id: "2", text: "B", votes: 0 },
+        ],
+        pastDate
+      );
+      return node.getExpiresAt();
+    });
+    expect(expiresAt).toBe(pastDate);
   });
 });
 
@@ -503,8 +533,7 @@ describe("MentionNode", () => {
 describe("editorNodes registry", () => {
   it("exports all node types", async () => {
     const { editorNodes } = await import("@/components/editor/nodes");
-    // Should have all the custom nodes plus standard ones
-    expect(editorNodes.length).toBeGreaterThanOrEqual(18);
+    expect(editorNodes.length).toBeGreaterThanOrEqual(15);
 
     const types = editorNodes.map((n) => n.getType());
     expect(types).toContain("image");
@@ -512,7 +541,6 @@ describe("editorNodes registry", () => {
     expect(types).toContain("equation");
     expect(types).toContain("page-break");
     expect(types).toContain("date");
-    expect(types).toContain("collapsible-container");
     expect(types).toContain("sticky-note");
     expect(types).toContain("poll");
     expect(types).toContain("excalidraw");
@@ -527,5 +555,9 @@ describe("editorNodes registry", () => {
     expect(types).toContain("mention");
     expect(types).toContain("list");
     expect(types).toContain("listitem");
+    // collapsible-container should no longer be registered
+    expect(types).not.toContain("collapsible-container");
+    expect(types).not.toContain("collapsible-title");
+    expect(types).not.toContain("collapsible-content");
   });
 });

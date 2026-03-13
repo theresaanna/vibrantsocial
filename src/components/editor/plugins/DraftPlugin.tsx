@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
+import { $getRoot } from "lexical";
 
 const DRAFT_PREFIX = "vibrant-draft:";
 const SAVE_DEBOUNCE_MS = 3000;
@@ -140,4 +141,39 @@ export function DraftPlugin({ draftKey, onSaveStatusChange }: DraftPluginProps) 
   }, [editor, draftKey]);
 
   return null;
+}
+
+/**
+ * Button to clear the current draft from localStorage and reset the editor.
+ * Must be rendered inside a LexicalComposer context.
+ */
+export function ClearDraftButton({ draftKey }: { draftKey: string }) {
+  const [editor] = useLexicalComposerContext();
+  const [hasDraft, setHasDraft] = useState(() => readDraft(draftKey) !== null);
+
+  useEffect(() => {
+    const unregister = editor.registerUpdateListener(() => {
+      setHasDraft(readDraft(draftKey) !== null);
+    });
+    return unregister;
+  }, [editor, draftKey]);
+
+  if (!hasDraft) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        clearDraft(draftKey);
+        editor.update(() => {
+          $getRoot().clear();
+        });
+        setHasDraft(false);
+      }}
+      className="text-xs text-zinc-400 hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400"
+      title="Discard saved draft"
+    >
+      Clear draft
+    </button>
+  );
 }
