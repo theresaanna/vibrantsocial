@@ -44,7 +44,7 @@ export async function FeedContent({ userId }: { userId: string }) {
     }).then((rows) => rows.map((r) => r.userId)),
   ]);
 
-  if (isProfileIncomplete(currentUser)) redirect("/complete-profile");
+  if (!currentUser || isProfileIncomplete(currentUser)) redirect("/complete-profile");
 
   const phoneVerified = !!currentUser.phoneVerified;
   const ageVerified = !!currentUser.ageVerified;

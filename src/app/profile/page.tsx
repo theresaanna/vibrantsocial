@@ -39,7 +39,7 @@ export default async function ProfilePage() {
     },
   });
 
-  if (isProfileIncomplete(user)) redirect("/complete-profile");
+  if (!user || isProfileIncomplete(user)) redirect("/complete-profile");
 
   const isCredentialsUser = !!user?.passwordHash;
   const oauthImage = user?.image ?? session.user.image ?? null;

@@ -20,7 +20,7 @@ export default async function QuotePage({ params }: Props) {
     select: { username: true, email: true, dateOfBirth: true },
   });
 
-  if (isProfileIncomplete(currentUser)) redirect("/complete-profile");
+  if (!currentUser || isProfileIncomplete(currentUser)) redirect("/complete-profile");
 
   const post = await prisma.post.findUnique({
     where: { id },

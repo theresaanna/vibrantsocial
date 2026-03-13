@@ -23,7 +23,7 @@ export default async function ChatPage() {
       profileSecondaryColor: true,
     },
   });
-  if (isProfileIncomplete(user)) redirect("/complete-profile");
+  if (!user || isProfileIncomplete(user)) redirect("/complete-profile");
 
   const conversations = await getConversations();
   const messageRequests = await getMessageRequests();

@@ -33,7 +33,7 @@ export default async function QuotePage({ params }: Props) {
       },
     });
 
-    if (isProfileIncomplete(currentUser)) redirect("/complete-profile");
+    if (!currentUser || isProfileIncomplete(currentUser)) redirect("/complete-profile");
 
     phoneVerified = !!currentUser?.phoneVerified;
     ageVerified = !!currentUser?.ageVerified;

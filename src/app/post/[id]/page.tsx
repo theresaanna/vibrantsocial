@@ -34,7 +34,7 @@ export default async function PostPage({ params, searchParams }: Props) {
       },
     });
 
-    if (isProfileIncomplete(currentUser)) redirect("/complete-profile");
+    if (!currentUser || isProfileIncomplete(currentUser)) redirect("/complete-profile");
 
     phoneVerified = !!currentUser?.phoneVerified;
     ageVerified = !!currentUser?.ageVerified;

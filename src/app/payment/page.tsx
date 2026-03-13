@@ -27,7 +27,7 @@ export default async function PaymentPage({
     },
   });
 
-  if (isProfileIncomplete(user)) redirect("/complete-profile");
+  if (!user || isProfileIncomplete(user)) redirect("/complete-profile");
   if (user.ageVerified) redirect("/profile");
   if (user.ageVerificationPaid) redirect("/age-verify");
 

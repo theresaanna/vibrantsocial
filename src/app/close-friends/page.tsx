@@ -31,7 +31,7 @@ export default async function CloseFriendsPage() {
     getAcceptedFriends(),
   ]);
 
-  if (isProfileIncomplete(currentUser)) redirect("/complete-profile");
+  if (!currentUser || isProfileIncomplete(currentUser)) redirect("/complete-profile");
 
   const phoneVerified = !!currentUser.phoneVerified;
   const ageVerified = !!currentUser.ageVerified;

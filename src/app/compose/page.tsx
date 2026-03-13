@@ -19,7 +19,7 @@ export default async function ComposePage() {
     },
   });
 
-  if (isProfileIncomplete(currentUser)) redirect("/complete-profile");
+  if (!currentUser || isProfileIncomplete(currentUser)) redirect("/complete-profile");
 
   const phoneVerified = !!currentUser.phoneVerified;
   const isOldEnough = calculateAge(currentUser.dateOfBirth) >= 18;
