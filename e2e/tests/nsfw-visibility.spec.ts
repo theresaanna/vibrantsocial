@@ -19,9 +19,11 @@ test.describe("NSFW Content Visibility", () => {
 
     if (!(await nsfwCheckbox.isChecked())) {
       await nsfwCheckbox.check();
-      // Wait for autosave
-      await page.waitForTimeout(2500);
     }
+
+    // Explicitly save and wait for confirmation instead of relying on autosave
+    await page.click('button:has-text("Save")');
+    await expect(page.locator("text=Saved")).toBeVisible({ timeout: 10000 });
 
     // Create an NSFW post via compose page
     await page.goto("/compose");
@@ -106,9 +108,11 @@ test.describe("NSFW Content Visibility", () => {
 
     if (await nsfwCheckbox.isChecked()) {
       await nsfwCheckbox.uncheck();
-      // Wait for autosave
-      await page.waitForTimeout(2500);
     }
+
+    // Explicitly save and wait for confirmation
+    await page.click('button:has-text("Save")');
+    await expect(page.locator("text=Saved")).toBeVisible({ timeout: 10000 });
 
     // Go to profile posts tab - NSFW post should NOT appear
     await page.goto(`/${TEST_USER.username}`);
@@ -131,7 +135,9 @@ test.describe("NSFW Content Visibility", () => {
 
     if (!(await nsfwCheckbox.isChecked())) {
       await nsfwCheckbox.check();
-      await page.waitForTimeout(2500);
     }
+
+    await page.click('button:has-text("Save")');
+    await expect(page.locator("text=Saved")).toBeVisible({ timeout: 10000 });
   });
 });
