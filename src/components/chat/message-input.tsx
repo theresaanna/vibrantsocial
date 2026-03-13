@@ -149,7 +149,11 @@ export function MessageInput({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      setSelectedFiles((prev) => [...prev, ...Array.from(files)]);
+      // Eagerly snapshot the FileList into an array before resetting the input,
+      // because e.target.value = "" clears the live FileList and React's
+      // batched state updater would otherwise see an empty list.
+      const fileArray = Array.from(files);
+      setSelectedFiles((prev) => [...prev, ...fileArray]);
       setVoiceBlob(null);
       setUploadError(null);
     }
