@@ -10,7 +10,7 @@ declare module "next-auth" {
       avatar: string | null;
       tier: string;
       emailVerified: boolean;
-    } & DefaultSession["user"];
+    } & Omit<DefaultSession["user"], "emailVerified">;
   }
 
   interface User {
