@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { timeAgo } from "@/lib/time";
 import {
   markNotificationRead,
@@ -72,6 +73,7 @@ export function NotificationList({
   const [notifications, setNotifications] =
     useState<NotificationItem[]>(initialNotifications);
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   const hasUnread = notifications.some((n) => !n.readAt);
 
@@ -149,7 +151,16 @@ export function NotificationList({
                   : ""
               }`}
             >
-              <div className="flex-shrink-0">
+              <span
+                className={`flex-shrink-0${notification.actor.username ? " cursor-pointer" : ""}`}
+                onClick={(e) => {
+                  if (notification.actor.username) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    router.push(`/${notification.actor.username}`);
+                  }
+                }}
+              >
                 {avatar ? (
                   <img
                     src={avatar}
@@ -161,7 +172,7 @@ export function NotificationList({
                     {name[0]?.toUpperCase()}
                   </div>
                 )}
-              </div>
+              </span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm text-zinc-700 dark:text-zinc-300">
                   <span className="font-semibold text-zinc-900 dark:text-zinc-100">
