@@ -528,6 +528,7 @@ export function PostCard({
                   setCurrentContent(json);
                   updatePostChecklist(post.id, json);
                 }}
+                isPostAuthor={isAuthor}
               />
             )}
           </div>

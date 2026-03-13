@@ -8,7 +8,7 @@ import { PostCard } from "@/components/post-card";
 import { FollowButton } from "@/components/follow-button";
 import { FriendButton } from "@/components/friend-button";
 import { SubscribeButton } from "@/components/subscribe-button";
-import { getFriendshipStatus } from "@/app/feed/friend-actions";
+import { getFriendshipStatus, getFriendsCount } from "@/app/feed/friend-actions";
 import type { FriendshipStatus } from "@/app/feed/friend-actions";
 import { isSubscribedToUser } from "@/app/feed/subscription-actions";
 import { ProfileShareButton } from "@/components/profile-share-button";
@@ -107,6 +107,9 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   if (!user.isProfilePublic && !currentUserId) redirect("/login");
 
   const isOwnProfile = currentUserId === user.id;
+
+  // Fetch friends count (only for profile owner)
+  const friendsCount = isOwnProfile ? await getFriendsCount(user.id) : 0;
 
   // Check if current user follows this profile
   let isFollowing = false;
@@ -475,20 +478,21 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                     followers
                   </span>
                 )}
-                {currentUserId ? (
+                {isOwnProfile && (
                   <Link href={`/${user.username}/following`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
                     <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
                       {user._count.following}
                     </span>{" "}
                     following
                   </Link>
-                ) : (
-                  <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                )}
+                {isOwnProfile && (
+                  <Link href={`/${user.username}/friends`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
                     <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
-                      {user._count.following}
+                      {friendsCount}
                     </span>{" "}
-                    following
-                  </span>
+                    friends
+                  </Link>
                 )}
               </div>
             </div>
