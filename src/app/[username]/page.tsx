@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
@@ -15,10 +16,46 @@ import { BioContent } from "@/components/bio-content";
 import { ProfileTabs } from "@/components/profile-tabs";
 import { RepostCard } from "@/components/repost-card";
 import { generateAdaptiveTheme } from "@/lib/profile-themes";
+import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
   searchParams: Promise<{ tab?: string }>;
+}
+
+export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
+  const { username } = await params;
+  const user = await cached(
+    cacheKeys.userProfile(username),
+    () => prisma.user.findUnique({
+      where: { username },
+      select: {
+        username: true,
+        displayName: true,
+        name: true,
+        bio: true,
+        avatar: true,
+        image: true,
+        _count: { select: { followers: true, posts: true } },
+      },
+    }),
+    120
+  );
+
+  if (!user) return { title: "User Not Found" };
+
+  const displayName = user.displayName || user.name || user.username;
+  const description = user.bio
+    ? truncateText(user.bio, 160)
+    : `${displayName} (@${user.username}) on ${SITE_NAME}. ${user._count.posts} posts, ${user._count.followers} followers.`;
+  const avatarUrl = user.avatar || user.image || undefined;
+
+  return buildMetadata({
+    title: `${displayName} (@${user.username})`,
+    description,
+    path: `/${user.username}`,
+    images: avatarUrl ? [{ url: avatarUrl, alt: `${displayName}'s avatar` }] : undefined,
+  });
 }
 
 export default async function PublicProfilePage({ params, searchParams }: ProfilePageProps) {

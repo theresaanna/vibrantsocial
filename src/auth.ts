@@ -74,7 +74,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.bio = user.bio;
         token.avatar = user.avatar;
         token.tier = user.tier ?? "free";
-        token.isEmailVerified = user.isEmailVerified ?? false;
+        token.isEmailVerified =
+          user.isEmailVerified ??
+          !!("emailVerified" in user && user.emailVerified);
       }
 
       if (trigger === "update" && session) {

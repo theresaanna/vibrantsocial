@@ -21,8 +21,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VibrantSocial",
-  description: "Connect and share with VibrantSocial",
+  title: {
+    default: "VibrantSocial",
+    template: "%s - VibrantSocial",
+  },
+  description:
+    "Social media for adults. No algorithms, no AI nonsense — just self expression.",
+  openGraph: {
+    siteName: "VibrantSocial",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+  },
 };
 
 export default function RootLayout({

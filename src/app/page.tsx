@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+
+export const metadata: Metadata = {
+  title: "VibrantSocial — Social media for adults",
+  description:
+    "Relive the good ol' days of the internet, before content algorithms and AI nonsense. 18+ only.",
+};
 
 export default async function Home() {
   const session = await auth();

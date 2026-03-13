@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { isProfileIncomplete } from "@/lib/require-profile";
 import { PaymentForm } from "./payment-form";
+
+export const metadata: Metadata = {
+  title: "Payment",
+  robots: { index: false, follow: false },
+};
 
 export default async function PaymentPage({
   searchParams,

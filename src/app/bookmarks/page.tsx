@@ -1,9 +1,15 @@
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { PostCard } from "@/components/post-card";
 import { calculateAge } from "@/lib/age-gate";
 import { isProfileIncomplete } from "@/lib/require-profile";
+
+export const metadata: Metadata = {
+  title: "Bookmarks",
+  robots: { index: false, follow: false },
+};
 
 export default async function BookmarksPage() {
   const session = await auth();

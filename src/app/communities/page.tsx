@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getTagCloudData, getNsfwTagCloudData } from "@/app/tags/actions";
 import { TagCloud } from "./tag-cloud";
+
+export const metadata: Metadata = {
+  title: "Communities",
+  description: "Explore tags and communities on VibrantSocial.",
+};
 
 export default async function CommunitiesPage() {
   const tagData = await getTagCloudData();

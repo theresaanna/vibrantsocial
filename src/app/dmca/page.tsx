@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "DMCA Takedown Policy - VibrantSocial",
-  description: "VibrantSocial DMCA Takedown Policy",
+  title: "DMCA Takedown Policy",
+  description: "Read the VibrantSocial DMCA Takedown Policy.",
 };
 
 export default function DMCAPage() {

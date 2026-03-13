@@ -1,9 +1,15 @@
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { calculateAge } from "@/lib/age-gate";
 import { ComposeClient } from "./compose-client";
 import { isProfileIncomplete } from "@/lib/require-profile";
+
+export const metadata: Metadata = {
+  title: "Compose",
+  robots: { index: false, follow: false },
+};
 
 export default async function ComposePage() {
   const session = await auth();

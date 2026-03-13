@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { getFollowers } from "@/app/feed/follow-actions";
@@ -6,6 +7,15 @@ import Link from "next/link";
 
 interface FollowersPageProps {
   params: Promise<{ username: string }>;
+}
+
+export async function generateMetadata({ params }: FollowersPageProps): Promise<Metadata> {
+  const { username } = await params;
+  return {
+    title: `People following @${username}`,
+    description: `See who follows @${username} on VibrantSocial.`,
+    robots: { index: false, follow: false },
+  };
 }
 
 export default async function FollowersPage({ params }: FollowersPageProps) {

@@ -1,12 +1,52 @@
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import { isProfileIncomplete } from "@/lib/require-profile";
 import { PostPageClient } from "./post-page-client";
+import { extractContentFromLexicalJson } from "@/lib/lexical-text";
+import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
 
 interface Props {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ commentId?: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const post = await prisma.post.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      content: true,
+      author: {
+        select: {
+          username: true,
+          displayName: true,
+          name: true,
+          avatar: true,
+          image: true,
+        },
+      },
+    },
+  });
+
+  if (!post?.author) return { title: "Post Not Found" };
+
+  const displayName = post.author.displayName || post.author.name || post.author.username;
+  const { text, imageUrls } = extractContentFromLexicalJson(post.content);
+  const description = text
+    ? truncateText(text, 160)
+    : `A post by ${displayName} on ${SITE_NAME}.`;
+  const avatarUrl = post.author.avatar || post.author.image || undefined;
+  const ogImage = imageUrls[0] ?? avatarUrl;
+
+  return buildMetadata({
+    title: `${displayName} on ${SITE_NAME}`,
+    description,
+    path: `/post/${post.id}`,
+    images: ogImage ? [{ url: ogImage, alt: `Post by ${displayName}` }] : undefined,
+  });
 }
 
 export default async function PostPage({ params, searchParams }: Props) {

@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ForgotPasswordForm } from "./forgot-password-form";
+
+export const metadata: Metadata = {
+  title: "Forgot Password",
+  description: "Reset your VibrantSocial password.",
+};
 
 export default async function ForgotPasswordPage() {
   const session = await auth();

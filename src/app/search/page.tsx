@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { searchUsers, searchPosts } from "./actions";
 import { SearchPageClient } from "./search-page-client";
+
+export const metadata: Metadata = {
+  title: "Search",
+  description: "Search for people and posts on VibrantSocial.",
+  robots: { index: false, follow: false },
+};
 
 interface SearchPageProps {
   searchParams: Promise<{ q?: string; tab?: string }>;

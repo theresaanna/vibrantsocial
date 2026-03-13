@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy - VibrantSocial",
-  description: "VibrantSocial Privacy Policy",
+  title: "Privacy Policy",
+  description: "Read the VibrantSocial Privacy Policy.",
 };
 
 export default function PrivacyPolicyPage() {

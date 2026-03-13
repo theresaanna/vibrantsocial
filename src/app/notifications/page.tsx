@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { getNotifications } from "./actions";
 import { NotificationList } from "@/components/notification-list";
+
+export const metadata: Metadata = {
+  title: "Notifications",
+  robots: { index: false, follow: false },
+};
 
 export default async function NotificationsPage() {
   const session = await auth();
