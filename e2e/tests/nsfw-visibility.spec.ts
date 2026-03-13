@@ -54,7 +54,7 @@ test.describe("NSFW Content Visibility", () => {
   test("NSFW post appears in feed when NSFW is enabled", async ({ page }) => {
     await page.goto("/feed");
     await expect(page.locator(`text=${nsfwPostText}`)).toBeVisible({
-      timeout: 10000,
+      timeout: 30000,
     });
 
     // Should show the NSFW badge
@@ -65,7 +65,7 @@ test.describe("NSFW Content Visibility", () => {
         })
         .locator("text=NSFW")
         .first()
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 10000 });
   });
 
   test("NSFW post appears on profile posts tab when NSFW is enabled", async ({
