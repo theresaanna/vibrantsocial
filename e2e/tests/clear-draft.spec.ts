@@ -7,11 +7,10 @@ test.describe("Clear Draft", () => {
     await page.goto("/compose");
     await expect(page).toHaveURL(/\/compose/, { timeout: 15000 });
 
-    // Dismiss tooltips
-    const gotItButton = page.getByRole("button", { name: "Got it" });
-    if (await gotItButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await gotItButton.click();
-    }
+    // Pre-dismiss the auto-tag hint so its popover won't block clicks later
+    await page.evaluate(() =>
+      localStorage.setItem("autotag-hint-dismissed", "1")
+    );
 
     // Wait for editor
     const editor = page.locator('[contenteditable="true"]').first();
@@ -30,15 +29,10 @@ test.describe("Clear Draft", () => {
     );
 
     // Reload so ClearDraftButton initializes with the saved draft from localStorage
+    // The autotag-hint-dismissed key persists, so the hint won't reappear
     await page.reload();
     const editorAfterReload = page.locator('[contenteditable="true"]').first();
     await expect(editorAfterReload).toBeVisible({ timeout: 30000 });
-
-    // Dismiss any tooltips/popups that may appear after reload
-    const gotItButton2 = page.getByRole("button", { name: "Got it" });
-    if (await gotItButton2.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await gotItButton2.click();
-    }
 
     // Wait for the draft to be restored in the editor
     await expect(editorAfterReload).toContainText(draftText, {
