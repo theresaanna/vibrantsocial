@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import type { InboundMessage } from "ably";
 import { useAblyReady } from "@/app/providers";
@@ -106,7 +106,6 @@ export function NotificationBell({
   const { data: session } = useSession();
   const ablyReady = useAblyReady();
   const pathname = usePathname();
-  const router = useRouter();
   const wasOnNotificationsRef = useRef(false);
   const pathnameRef = useRef(pathname);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -261,42 +260,46 @@ export function NotificationBell({
               const isUnread = !notification.readAt;
               const href = getNotificationHref(notification);
 
+              const avatarImg = avatar ? (
+                <img
+                  src={avatar}
+                  alt={name}
+                  className="h-8 w-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+                  {name[0]?.toUpperCase()}
+                </div>
+              );
+
               return (
-                <Link
+                <div
                   key={notification.id}
-                  href={href}
-                  onClick={() => {
-                    if (isUnread) handleMarkRead(notification.id);
-                    setIsOpen(false);
-                  }}
-                  className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${
+                  className={`relative flex items-start gap-3 px-4 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${
                     isUnread ? "bg-blue-50/50 dark:bg-blue-950/20" : ""
                   }`}
                 >
-                  <span
-                    className={`flex-shrink-0${notification.actor.username ? " cursor-pointer" : ""}`}
-                    onClick={(e) => {
-                      if (notification.actor.username) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setIsOpen(false);
-                        router.push(`/${notification.actor.username}`);
-                      }
+                  {notification.actor.username ? (
+                    <Link
+                      href={`/${notification.actor.username}`}
+                      className="relative z-10 flex-shrink-0"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      {avatarImg}
+                    </Link>
+                  ) : (
+                    <span className="relative z-10 flex-shrink-0">
+                      {avatarImg}
+                    </span>
+                  )}
+                  <Link
+                    href={href}
+                    onClick={() => {
+                      if (isUnread) handleMarkRead(notification.id);
+                      setIsOpen(false);
                     }}
+                    className="static min-w-0 flex-1 after:absolute after:inset-0 after:content-['']"
                   >
-                    {avatar ? (
-                      <img
-                        src={avatar}
-                        alt={name}
-                        className="h-8 w-8 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-                        {name[0]?.toUpperCase()}
-                      </div>
-                    )}
-                  </span>
-                  <div className="min-w-0 flex-1">
                     <p className="text-xs text-zinc-700 dark:text-zinc-300">
                       <span className="font-semibold text-zinc-900 dark:text-zinc-100">
                         {name}
@@ -306,11 +309,11 @@ export function NotificationBell({
                     <p className="mt-0.5 text-[10px] text-zinc-400">
                       {timeAgo(new Date(notification.createdAt))}
                     </p>
-                  </div>
+                  </Link>
                   {isUnread && (
-                    <span className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
+                    <span className="relative z-10 mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
                   )}
-                </Link>
+                </div>
               );
             })
           )}

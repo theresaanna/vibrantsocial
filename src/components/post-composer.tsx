@@ -197,17 +197,6 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
               <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
                 <input
                   type="checkbox"
-                  name="isSensitive"
-                  value="true"
-                  className="rounded"
-                  checked={isSensitive}
-                  onChange={(e) => setIsSensitive(e.target.checked)}
-                />
-                Sensitive
-              </label>
-              <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
-                <input
-                  type="checkbox"
                   name="isNsfw"
                   value="true"
                   className="rounded"
@@ -215,6 +204,17 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
                   onChange={(e) => setIsNsfw(e.target.checked)}
                 />
                 NSFW
+              </label>
+              <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+                <input
+                  type="checkbox"
+                  name="isSensitive"
+                  value="true"
+                  className="rounded"
+                  checked={isSensitive}
+                  onChange={(e) => setIsSensitive(e.target.checked)}
+                />
+                Sensitive
               </label>
               <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
                 <input
