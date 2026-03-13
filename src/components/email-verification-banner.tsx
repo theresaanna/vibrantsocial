@@ -13,6 +13,10 @@ export function EmailVerificationBanner() {
 
   if (!session?.user || session.user.isEmailVerified || dismissed) return null;
 
+  const isOAuth =
+    session.user.authProvider &&
+    session.user.authProvider !== "credentials";
+
   async function handleResend() {
     setStatus("sending");
     try {
@@ -25,6 +29,26 @@ export function EmailVerificationBanner() {
     } catch {
       setStatus("error");
     }
+  }
+
+  if (isOAuth) {
+    return (
+      <div className="border-b border-blue-200 bg-blue-50 px-4 py-2.5 text-center text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
+        <div className="flex items-center justify-center gap-2">
+          <span>
+            Your email is verified. Please sign out and back in to refresh your
+            session.
+          </span>
+          <button
+            onClick={() => setDismissed(true)}
+            className="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+            aria-label="Dismiss"
+          >
+            &times;
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
