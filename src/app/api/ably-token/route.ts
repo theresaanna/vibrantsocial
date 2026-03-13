@@ -12,7 +12,11 @@ export async function GET() {
   const rateLimited = await checkRateLimit(apiLimiter, session.user.id);
   if (rateLimited) return rateLimited;
 
-  const client = new Ably.Rest(process.env.ABLY_API_KEY!);
+  if (!process.env.ABLY_API_KEY) {
+    return NextResponse.json({ error: "Realtime not configured" }, { status: 503 });
+  }
+
+  const client = new Ably.Rest(process.env.ABLY_API_KEY);
   const tokenRequest = await client.auth.createTokenRequest({
     clientId: session.user.id,
   });
