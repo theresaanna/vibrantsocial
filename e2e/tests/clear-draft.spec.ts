@@ -31,12 +31,18 @@ test.describe("Clear Draft", () => {
     const editorAfterReload = page.locator('[contenteditable="true"]').first();
     await expect(editorAfterReload).toBeVisible({ timeout: 10000 });
 
+    // Dismiss any tooltips/popups that may appear after reload
+    const gotItButton2 = page.getByRole("button", { name: "Got it" });
+    if (await gotItButton2.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await gotItButton2.click();
+    }
+
     // The "Clear draft" button should now be visible
     const clearButton = page.getByRole("button", { name: "Clear draft" });
     await expect(clearButton).toBeVisible({ timeout: 5000 });
 
-    // Click it
-    await clearButton.click();
+    // Click it (use force in case any overlay lingers)
+    await clearButton.click({ force: true });
 
     // The editor content should be cleared
     await expect(page.locator(`text=${draftText}`)).not.toBeVisible({

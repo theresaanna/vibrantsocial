@@ -31,12 +31,23 @@ async function createPostAndOpenComments(page: import("@playwright/test").Page, 
 }
 
 // Helper to write a comment
+// Note: without Ably in CI, new comments don't appear via real-time.
+// After submitting, toggle comments off/on to re-fetch from the server.
 async function writeComment(page: import("@playwright/test").Page, text: string) {
   const commentInput = page.getByPlaceholder("Write a comment...");
   await expect(commentInput).toBeVisible({ timeout: 10000 });
   await commentInput.fill(text);
   await page.click('button:has-text("Reply")');
-  await expect(page.locator(`text=${text}`)).toBeVisible({ timeout: 10000 });
+
+  // Wait for server action to complete
+  await page.waitForTimeout(2000);
+
+  // Toggle comments off/on to re-fetch from server (needed without Ably)
+  const toggle = page.getByRole("button", { name: "Toggle comments" }).first();
+  await toggle.click();
+  await toggle.click();
+
+  await expect(page.locator(`text=${text}`)).toBeVisible({ timeout: 15000 });
 }
 
 test.describe("Comments", () => {
@@ -74,8 +85,14 @@ test.describe("Comments", () => {
     const submitButton = page.locator('button[type="submit"]:has-text("Reply")');
     await submitButton.click();
 
+    // Wait for server action, then toggle comments to re-fetch
+    await page.waitForTimeout(2000);
+    const toggle = page.getByRole("button", { name: "Toggle comments" }).first();
+    await toggle.click();
+    await toggle.click();
+
     // Reply should appear
-    await expect(page.locator(`text=${replyText}`)).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(`text=${replyText}`)).toBeVisible({ timeout: 15000 });
 
     // Reply should be nested (inside a border-l container)
     const replyContainer = page.locator(".border-l-2").filter({
@@ -167,7 +184,14 @@ test.describe("Comments", () => {
 
     const submitButton = page.locator('button[type="submit"]:has-text("Reply")');
     await submitButton.click();
-    await expect(page.locator(`text=${replyText}`)).toBeVisible({ timeout: 10000 });
+
+    // Wait for server action, then toggle comments to re-fetch
+    await page.waitForTimeout(2000);
+    const toggle2 = page.getByRole("button", { name: "Toggle comments" }).first();
+    await toggle2.click();
+    await toggle2.click();
+
+    await expect(page.locator(`text=${replyText}`)).toBeVisible({ timeout: 15000 });
 
     // Navigate to post detail page by clicking the post text
     await page.locator(`text=${postText}`).click();

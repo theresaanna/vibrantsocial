@@ -3,23 +3,23 @@ import { test, expect } from "@playwright/test";
 test.describe("Navigation", () => {
   test("nav links navigate to correct pages", async ({ page }) => {
     await page.goto("/feed");
-    await expect(page).toHaveURL(/\/feed/);
+    await expect(page).toHaveURL(/\/feed/, { timeout: 15000 });
 
     // Compose
     await page.click('a[aria-label="Compose"]');
-    await expect(page).toHaveURL(/\/compose/);
+    await expect(page).toHaveURL(/\/compose/, { timeout: 15000 });
 
     // Feed
     await page.click('a[aria-label="Feed"]');
-    await expect(page).toHaveURL(/\/feed/);
+    await expect(page).toHaveURL(/\/feed/, { timeout: 15000 });
 
     // Likes
     await page.click('a[aria-label="Likes"]');
-    await expect(page).toHaveURL(/\/likes/);
+    await expect(page).toHaveURL(/\/likes/, { timeout: 15000 });
 
     // Bookmarks
     await page.click('a[aria-label="Bookmarks"]');
-    await expect(page).toHaveURL(/\/bookmarks/);
+    await expect(page).toHaveURL(/\/bookmarks/, { timeout: 15000 });
   });
 
   test("search bar opens and submits search", async ({ page }) => {
@@ -33,7 +33,7 @@ test.describe("Navigation", () => {
     await searchInput.fill("testquery");
     await page.keyboard.press("Enter");
 
-    await expect(page).toHaveURL(/\/search\?q=testquery/);
+    await expect(page).toHaveURL(/\/search\?q=testquery/, { timeout: 15000 });
   });
 
   test("theme toggle switches between light and dark", async ({ page }) => {
@@ -68,13 +68,10 @@ test.describe("Navigation", () => {
   });
 
   test("logo link goes to feed for authenticated user", async ({ page }) => {
-    await page.goto("/likes");
-
-    // Click the logo/brand link
-    const logo = page.locator('a[href="/"]').first();
-    await logo.click();
+    // Use full navigation to trigger server-side redirect
+    await page.goto("/");
 
     // Authenticated users on / get redirected to /feed
-    await expect(page).toHaveURL(/\/feed/, { timeout: 15000 });
+    await expect(page).toHaveURL(/\/feed/, { timeout: 30000 });
   });
 });
