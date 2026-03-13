@@ -23,7 +23,7 @@ test.describe("Poll Creation", () => {
     await pollButton.click();
 
     // The modal should appear
-    await expect(page.locator("text=Insert Poll")).toBeVisible({
+    await expect(page.getByRole("heading", { name: "Insert Poll" })).toBeVisible({
       timeout: 5000,
     });
 
@@ -68,7 +68,7 @@ test.describe("Poll Creation", () => {
     const pollButton = page.getByRole("button", { name: "Poll" });
     await pollButton.click();
 
-    await expect(page.locator("text=Insert Poll")).toBeVisible({
+    await expect(page.getByRole("heading", { name: "Insert Poll" })).toBeVisible({
       timeout: 5000,
     });
 

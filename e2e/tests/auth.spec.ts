@@ -11,9 +11,14 @@ test.describe("Authentication", () => {
     await page.fill('input[name="password"]', TEST_USER.password);
     await page.click('button[type="submit"]');
 
-    // Login redirects to /complete-profile, which redirects to /feed
-    // if the profile is already complete
-    await page.waitForURL("**/feed", { timeout: 15000 });
+    // Login redirects to /complete-profile, which then redirects to /feed
+    // if the profile is already complete. Wait for either URL first.
+    await page.waitForURL(/(\/feed|\/complete-profile)/, { timeout: 15000 });
+
+    // If we landed on /complete-profile, wait for the redirect to /feed
+    if (page.url().includes("/complete-profile")) {
+      await page.waitForURL("**/feed", { timeout: 30000 });
+    }
     await expect(page).toHaveURL(/\/feed/);
 
     // Save auth state for all other test suites
