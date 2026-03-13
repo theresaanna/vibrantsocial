@@ -346,6 +346,61 @@ export async function cancelEmailChange(): Promise<EmailChangeState> {
   return { success: true, message: "Email change cancelled" };
 }
 
+export async function resendVerificationEmail(): Promise<ProfileState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { email: true, emailVerified: true, pendingEmail: true },
+  });
+
+  if (!user) {
+    return { success: false, message: "User not found" };
+  }
+
+  // Use pending email if set, otherwise current email
+  const emailToVerify = user.pendingEmail ?? user.email;
+
+  if (!emailToVerify) {
+    return { success: false, message: "No email address on file" };
+  }
+
+  if (user.emailVerified && !user.pendingEmail) {
+    return { success: false, message: "Email is already verified" };
+  }
+
+  // Clean up existing tokens for this email
+  await prisma.verificationToken.deleteMany({
+    where: { identifier: `email-verify:${emailToVerify}` },
+  });
+
+  const token = crypto.randomUUID();
+  const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+  await prisma.verificationToken.create({
+    data: {
+      identifier: `email-verify:${emailToVerify}`,
+      token,
+      expires,
+    },
+  });
+
+  // Set pendingEmail if not already set
+  if (!user.pendingEmail) {
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { pendingEmail: emailToVerify },
+    });
+  }
+
+  await sendEmailVerificationEmail({ toEmail: emailToVerify, token });
+
+  return { success: true, message: "Verification email sent" };
+}
+
 const EMPTY_LEXICAL_CONTENT = '{"root":{"children":[],"direction":null,"format":"","indent":0,"type":"root","version":1}}';
 const BLOB_URL_REGEX = /https:\/\/[^"'\s]+\.blob\.vercel-storage\.com[^"'\s]*/g;
 

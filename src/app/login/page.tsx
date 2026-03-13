@@ -33,7 +33,7 @@ export default async function LoginPage() {
           <form
             action={async () => {
               "use server";
-              await signIn("google", { redirectTo: "/feed" });
+              await signIn("google", { redirectTo: "/complete-profile" });
             }}
           >
             <button
@@ -47,7 +47,7 @@ export default async function LoginPage() {
           <form
             action={async () => {
               "use server";
-              await signIn("discord", { redirectTo: "/feed" });
+              await signIn("discord", { redirectTo: "/complete-profile" });
             }}
           >
             <button

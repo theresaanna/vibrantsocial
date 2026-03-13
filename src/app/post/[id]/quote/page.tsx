@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
+import { isProfileIncomplete } from "@/lib/require-profile";
 import { QuotePostPage } from "./quote-post-page";
 
 interface Props {
@@ -16,10 +17,10 @@ export default async function QuotePage({ params }: Props) {
 
   const currentUser = await prisma.user.findUnique({
     where: { id: userId },
-    select: { dateOfBirth: true },
+    select: { username: true, email: true, dateOfBirth: true },
   });
 
-  if (!currentUser?.dateOfBirth) redirect("/complete-profile");
+  if (!currentUser || isProfileIncomplete(currentUser)) redirect("/complete-profile");
 
   const post = await prisma.post.findUnique({
     where: { id },

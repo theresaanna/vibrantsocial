@@ -5,6 +5,7 @@ import { calculateAge } from "@/lib/age-gate";
 import { getPostInclude, getRepostInclude, PAGE_SIZE } from "./feed-queries";
 import { cached, cacheKeys } from "@/lib/cache";
 import { getCloseFriendIds } from "@/app/feed/close-friends-actions";
+import { isProfileIncomplete } from "@/lib/require-profile";
 
 /**
  * Async server component that fetches all feed data.
@@ -16,6 +17,7 @@ export async function FeedContent({ userId }: { userId: string }) {
     prisma.user.findUnique({
       where: { id: userId },
       select: {
+        username: true,
         email: true,
         phoneVerified: true,
         dateOfBirth: true,
@@ -42,7 +44,7 @@ export async function FeedContent({ userId }: { userId: string }) {
     }).then((rows) => rows.map((r) => r.userId)),
   ]);
 
-  if (!currentUser?.dateOfBirth) redirect("/complete-profile");
+  if (!currentUser || isProfileIncomplete(currentUser)) redirect("/complete-profile");
 
   const phoneVerified = !!currentUser.phoneVerified;
   const ageVerified = !!currentUser.ageVerified;

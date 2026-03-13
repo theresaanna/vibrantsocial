@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { PostCard } from "@/components/post-card";
 import { calculateAge } from "@/lib/age-gate";
+import { isProfileIncomplete } from "@/lib/require-profile";
 
 export default async function BookmarksPage() {
   const session = await auth();
@@ -13,6 +14,8 @@ export default async function BookmarksPage() {
   const currentUser = await prisma.user.findUnique({
     where: { id: userId },
     select: {
+      username: true,
+      email: true,
       phoneVerified: true,
       dateOfBirth: true,
       ageVerified: true,
@@ -21,7 +24,7 @@ export default async function BookmarksPage() {
     },
   });
 
-  if (!currentUser?.dateOfBirth) redirect("/complete-profile");
+  if (!currentUser || isProfileIncomplete(currentUser)) redirect("/complete-profile");
 
   const phoneVerified = !!currentUser?.phoneVerified;
   const ageVerified = !!currentUser?.ageVerified;

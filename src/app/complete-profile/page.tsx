@@ -9,10 +9,20 @@ export default async function CompleteProfilePage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { dateOfBirth: true },
+    select: { username: true, email: true, dateOfBirth: true },
   });
 
-  if (user?.dateOfBirth) redirect("/feed");
+  const needsUsername = !user?.username;
+  const needsEmail = !user?.email;
+  const needsDateOfBirth = !user?.dateOfBirth;
+
+  if (!needsUsername && !needsEmail && !needsDateOfBirth) redirect("/feed");
+
+  const description = needsUsername
+    ? "Pick a username for your profile URL."
+    : needsEmail
+      ? "We need your email address to continue."
+      : "We need your date of birth to continue.";
 
   return (
     <div className="flex min-h-[calc(100vh-57px)] items-center justify-center">
@@ -22,11 +32,15 @@ export default async function CompleteProfilePage() {
             Complete Your Profile
           </h1>
           <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-            We need your date of birth to continue.
+            {description}
           </p>
         </div>
 
-        <CompleteProfileForm />
+        <CompleteProfileForm
+          needsUsername={needsUsername}
+          needsEmail={needsEmail}
+          needsDateOfBirth={needsDateOfBirth}
+        />
       </div>
     </div>
   );

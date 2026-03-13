@@ -5,6 +5,7 @@ import { calculateAge } from "@/lib/age-gate";
 import { getCloseFriends, getCloseFriendIds, getAcceptedFriends } from "@/app/feed/close-friends-actions";
 import { getPostInclude, getRepostInclude, PAGE_SIZE } from "@/app/feed/feed-queries";
 import { CloseFriendsPageClient } from "./close-friends-page-client";
+import { isProfileIncomplete } from "@/lib/require-profile";
 
 export default async function CloseFriendsPage() {
   const session = await auth();
@@ -16,6 +17,8 @@ export default async function CloseFriendsPage() {
     prisma.user.findUnique({
       where: { id: userId },
       select: {
+        username: true,
+        email: true,
         phoneVerified: true,
         dateOfBirth: true,
         ageVerified: true,
@@ -28,7 +31,7 @@ export default async function CloseFriendsPage() {
     getAcceptedFriends(),
   ]);
 
-  if (!currentUser?.dateOfBirth) redirect("/complete-profile");
+  if (!currentUser || isProfileIncomplete(currentUser)) redirect("/complete-profile");
 
   const phoneVerified = !!currentUser.phoneVerified;
   const ageVerified = !!currentUser.ageVerified;

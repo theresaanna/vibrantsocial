@@ -16,7 +16,7 @@ export async function loginWithCredentials(
     await signIn("credentials", {
       email: formData.get("email") as string,
       password: formData.get("password") as string,
-      redirectTo: "/feed",
+      redirectTo: "/complete-profile",
     });
     return { success: true, message: "" };
   } catch (error) {

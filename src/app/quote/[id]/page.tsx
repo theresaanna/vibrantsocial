@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
+import { isProfileIncomplete } from "@/lib/require-profile";
 import { QuotePageClient } from "./quote-page-client";
 import { getPostInclude } from "@/app/feed/feed-queries";
 
@@ -22,6 +23,8 @@ export default async function QuotePage({ params }: Props) {
     const currentUser = await prisma.user.findUnique({
       where: { id: userId },
       select: {
+        username: true,
+        email: true,
         phoneVerified: true,
         dateOfBirth: true,
         ageVerified: true,
@@ -30,7 +33,7 @@ export default async function QuotePage({ params }: Props) {
       },
     });
 
-    if (!currentUser?.dateOfBirth) redirect("/complete-profile");
+    if (!currentUser || isProfileIncomplete(currentUser)) redirect("/complete-profile");
 
     phoneVerified = !!currentUser?.phoneVerified;
     ageVerified = !!currentUser?.ageVerified;

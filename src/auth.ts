@@ -43,6 +43,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           bio: user.bio,
           avatar: user.avatar,
           tier: user.tier ?? "free",
+          isEmailVerified: !!user.emailVerified,
         };
       },
     }),
@@ -73,6 +74,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.bio = user.bio;
         token.avatar = user.avatar;
         token.tier = user.tier ?? "free";
+        token.isEmailVerified = user.isEmailVerified ?? false;
       }
 
       if (trigger === "update" && session) {
@@ -81,6 +83,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.bio = session.user.bio;
         token.avatar = session.user.avatar;
         if (session.user.tier) token.tier = session.user.tier;
+        if (session.user.isEmailVerified !== undefined)
+          token.isEmailVerified = session.user.isEmailVerified;
       }
 
       return token;
@@ -92,6 +96,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       session.user.bio = (token.bio as string) ?? null;
       session.user.avatar = (token.avatar as string) ?? null;
       session.user.tier = (token.tier as string) ?? "free";
+      session.user.isEmailVerified =
+        (token.isEmailVerified as boolean) ?? false;
       return session;
     },
   },
