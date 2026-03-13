@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Terms of Service - VibrantSocial",
-  description: "VibrantSocial Terms of Service",
+  title: "Terms of Service",
+  description: "Read the VibrantSocial Terms of Service.",
 };
 
 export default function TermsOfServicePage() {

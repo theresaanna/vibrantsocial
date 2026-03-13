@@ -1,12 +1,52 @@
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import { isProfileIncomplete } from "@/lib/require-profile";
 import { QuotePageClient } from "./quote-page-client";
 import { getPostInclude } from "@/app/feed/feed-queries";
+import { extractContentFromLexicalJson } from "@/lib/lexical-text";
+import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
 
 interface Props {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const repost = await prisma.repost.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      content: true,
+      user: {
+        select: {
+          username: true,
+          displayName: true,
+          name: true,
+          avatar: true,
+          image: true,
+        },
+      },
+    },
+  });
+
+  if (!repost?.user || !repost.content) return { title: "Quote Not Found" };
+
+  const displayName = repost.user.displayName || repost.user.name || repost.user.username;
+  const { text, imageUrls } = extractContentFromLexicalJson(repost.content);
+  const description = text
+    ? truncateText(text, 160)
+    : `A quote post by ${displayName} on ${SITE_NAME}.`;
+  const avatarUrl = repost.user.avatar || repost.user.image || undefined;
+  const ogImage = imageUrls[0] ?? avatarUrl;
+
+  return buildMetadata({
+    title: `${displayName} on ${SITE_NAME}`,
+    description,
+    path: `/quote/${repost.id}`,
+    images: ogImage ? [{ url: ogImage, alt: `Quote by ${displayName}` }] : undefined,
+  });
 }
 
 export default async function QuotePage({ params }: Props) {

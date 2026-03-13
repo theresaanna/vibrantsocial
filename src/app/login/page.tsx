@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import { auth, signIn } from "@/auth";
 import { redirect } from "next/navigation";
 import { LoginForm } from "./login-form";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Sign In",
+  description: "Sign in to your VibrantSocial account.",
+};
 
 export default async function LoginPage() {
   const session = await auth();

@@ -1,12 +1,32 @@
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { getPostsByTag } from "@/app/tags/actions";
 import { TagPostList } from "./tag-post-list";
 import { TagSubscribeButton } from "./tag-subscribe-button";
+import { buildMetadata, SITE_NAME } from "@/lib/metadata";
 
 interface TagPageProps {
   params: Promise<{ name: string }>;
+}
+
+export async function generateMetadata({ params }: TagPageProps): Promise<Metadata> {
+  const { name } = await params;
+  const decodedName = decodeURIComponent(name).toLowerCase();
+
+  const tag = await prisma.tag.findUnique({
+    where: { name: decodedName },
+    select: { name: true, _count: { select: { posts: true } } },
+  });
+
+  if (!tag) return { title: "Tag Not Found" };
+
+  return buildMetadata({
+    title: `#${tag.name}`,
+    description: `Browse ${tag._count.posts} ${tag._count.posts === 1 ? "post" : "posts"} tagged #${tag.name} on ${SITE_NAME}.`,
+    path: `/tag/${encodeURIComponent(tag.name)}`,
+  });
 }
 
 export default async function TagPage({ params }: TagPageProps) {

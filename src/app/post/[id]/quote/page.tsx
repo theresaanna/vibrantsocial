@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import { isProfileIncomplete } from "@/lib/require-profile";
 import { QuotePostPage } from "./quote-post-page";
+
+export const metadata: Metadata = {
+  title: "Quote Post",
+  robots: { index: false, follow: false },
+};
 
 interface Props {
   params: Promise<{ id: string }>;

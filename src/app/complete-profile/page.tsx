@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { CompleteProfileForm } from "./complete-profile-form";
+
+export const metadata: Metadata = {
+  title: "Complete Your Profile",
+  robots: { index: false, follow: false },
+};
 
 export default async function CompleteProfilePage() {
   const session = await auth();

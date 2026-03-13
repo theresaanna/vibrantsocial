@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import { auth, signIn } from "@/auth";
 import { redirect } from "next/navigation";
 import { SignupForm } from "./signup-form";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Create Account",
+  description: "Join VibrantSocial — social media for adults. No algorithms, just self expression.",
+};
 
 export default async function SignupPage() {
   const session = await auth();

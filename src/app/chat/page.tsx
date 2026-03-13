@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
@@ -5,6 +6,11 @@ import { getConversations, getMessageRequests } from "./actions";
 import { ChatPageClient } from "./chat-page-client";
 import { generateAdaptiveTheme } from "@/lib/profile-themes";
 import { isProfileIncomplete } from "@/lib/require-profile";
+
+export const metadata: Metadata = {
+  title: "Chat",
+  robots: { index: false, follow: false },
+};
 
 export default async function ChatPage() {
   const session = await auth();

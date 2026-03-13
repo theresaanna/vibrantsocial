@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { auth, signOut } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { isProfileIncomplete } from "@/lib/require-profile";
 import { ProfileForm } from "./profile-form";
+
+export const metadata: Metadata = {
+  title: "Edit Profile",
+  robots: { index: false, follow: false },
+};
 
 export default async function ProfilePage() {
   const session = await auth();

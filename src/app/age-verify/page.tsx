@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { isProfileIncomplete } from "@/lib/require-profile";
 import { AgeVerifyForm } from "./age-verify-form";
+
+export const metadata: Metadata = {
+  title: "Age Verification",
+  robots: { index: false, follow: false },
+};
 
 export default async function AgeVerifyPage() {
   const session = await auth();

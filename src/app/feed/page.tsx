@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { FeedContent } from "./feed-content";
 import { FeedSkeleton } from "@/components/feed-skeleton";
+
+export const metadata: Metadata = {
+  title: "Feed",
+  robots: { index: false, follow: false },
+};
 
 export default async function FeedPage() {
   const session = await auth();

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -5,6 +6,11 @@ import { requirePhoneVerification } from "@/lib/phone-gate";
 import { getConversations, getMessages, getMessageRequests } from "../actions";
 import { ConversationPageClient } from "./conversation-page-client";
 import { generateAdaptiveTheme } from "@/lib/profile-themes";
+
+export const metadata: Metadata = {
+  title: "Conversation",
+  robots: { index: false, follow: false },
+};
 
 interface Props {
   params: Promise<{ conversationId: string }>;
