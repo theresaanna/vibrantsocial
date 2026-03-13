@@ -13,13 +13,15 @@ vi.mock("@/lib/notifications", () => ({
   createNotification: vi.fn(),
 }));
 
-vi.mock("@/lib/email", () => ({
-  sendMentionEmail: vi.fn(),
+const mockInngestSend = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/inngest", () => ({
+  inngest: {
+    send: (...args: unknown[]) => mockInngestSend(...args),
+  },
 }));
 
 import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notifications";
-import { sendMentionEmail } from "@/lib/email";
 import {
   extractMentionsFromLexicalJson,
   extractMentionsFromPlainText,
@@ -28,7 +30,6 @@ import {
 
 const mockPrisma = vi.mocked(prisma);
 const mockCreateNotification = vi.mocked(createNotification);
-const mockSendMentionEmail = vi.mocked(sendMentionEmail);
 
 describe("extractMentionsFromLexicalJson", () => {
   it("extracts mention usernames from Lexical JSON", () => {
@@ -205,13 +206,16 @@ describe("createMentionNotifications", () => {
       commentId: undefined,
     });
 
-    // Emails sent for both users
-    expect(mockSendMentionEmail).toHaveBeenCalledTimes(2);
-    expect(mockSendMentionEmail).toHaveBeenCalledWith({
-      toEmail: "alice@example.com",
-      mentionerName: "Actor Name",
-      postId: "post1",
-      commentId: undefined,
+    // Emails sent for both users via inngest
+    expect(mockInngestSend).toHaveBeenCalledTimes(2);
+    expect(mockInngestSend).toHaveBeenCalledWith({
+      name: "email/mention",
+      data: {
+        toEmail: "alice@example.com",
+        mentionerName: "Actor Name",
+        postId: "post1",
+        commentId: undefined,
+      },
     });
   });
 
@@ -236,11 +240,14 @@ describe("createMentionNotifications", () => {
       commentId: "comment1",
     });
 
-    expect(mockSendMentionEmail).toHaveBeenCalledWith({
-      toEmail: "alice@example.com",
-      mentionerName: "Actor Name",
-      postId: "post1",
-      commentId: "comment1",
+    expect(mockInngestSend).toHaveBeenCalledWith({
+      name: "email/mention",
+      data: {
+        toEmail: "alice@example.com",
+        mentionerName: "Actor Name",
+        postId: "post1",
+        commentId: "comment1",
+      },
     });
   });
 
@@ -257,7 +264,7 @@ describe("createMentionNotifications", () => {
     });
 
     expect(mockCreateNotification).toHaveBeenCalledTimes(1);
-    expect(mockSendMentionEmail).not.toHaveBeenCalled();
+    expect(mockInngestSend).not.toHaveBeenCalled();
   });
 
   it("does not send email when user has no email", async () => {
@@ -273,7 +280,7 @@ describe("createMentionNotifications", () => {
     });
 
     expect(mockCreateNotification).toHaveBeenCalledTimes(1);
-    expect(mockSendMentionEmail).not.toHaveBeenCalled();
+    expect(mockInngestSend).not.toHaveBeenCalled();
   });
 
   it("does not send email for self-mentions", async () => {
@@ -291,7 +298,7 @@ describe("createMentionNotifications", () => {
     // Notification is still created (self-mention prevention is in createNotification)
     expect(mockCreateNotification).toHaveBeenCalledTimes(1);
     // But no email for self-mention
-    expect(mockSendMentionEmail).not.toHaveBeenCalled();
+    expect(mockInngestSend).not.toHaveBeenCalled();
   });
 
   it("does nothing when usernames array is empty", async () => {
@@ -303,7 +310,7 @@ describe("createMentionNotifications", () => {
 
     expect(mockPrisma.user.findMany).not.toHaveBeenCalled();
     expect(mockCreateNotification).not.toHaveBeenCalled();
-    expect(mockSendMentionEmail).not.toHaveBeenCalled();
+    expect(mockInngestSend).not.toHaveBeenCalled();
   });
 
   it("handles case where no users found in database", async () => {
@@ -317,7 +324,7 @@ describe("createMentionNotifications", () => {
 
     expect(mockPrisma.user.findMany).toHaveBeenCalled();
     expect(mockCreateNotification).not.toHaveBeenCalled();
-    expect(mockSendMentionEmail).not.toHaveBeenCalled();
+    expect(mockInngestSend).not.toHaveBeenCalled();
   });
 
   it("uses username as fallback actor name", async () => {
@@ -337,8 +344,10 @@ describe("createMentionNotifications", () => {
       postId: "post1",
     });
 
-    expect(mockSendMentionEmail).toHaveBeenCalledWith(
-      expect.objectContaining({ mentionerName: "actor_user" })
+    expect(mockInngestSend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ mentionerName: "actor_user" }),
+      })
     );
   });
 });

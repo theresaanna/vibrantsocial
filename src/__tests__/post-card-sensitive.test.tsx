@@ -20,6 +20,36 @@ vi.mock("@/components/post-revision-history", () => ({
   PostRevisionHistory: () => <div data-testid="post-revision-history" />,
 }));
 
+vi.mock("@/components/editor/Editor", () => ({
+  Editor: () => <div data-testid="mock-editor" />,
+}));
+
+vi.mock("@/components/editor/plugins/DraftPlugin", () => ({
+  clearDraft: vi.fn(),
+}));
+
+vi.mock("@/components/tag-input", () => ({
+  TagInput: () => <div data-testid="tag-input" />,
+}));
+
+vi.mock("@/components/content-flags-info-modal", () => ({
+  ContentFlagsInfoModal: () => <div data-testid="content-flags-info-modal" />,
+}));
+
+vi.mock("@/app/providers", () => ({
+  useAblyReady: vi.fn().mockReturnValue(false),
+}));
+
+vi.mock("@/lib/ably", () => ({
+  getAblyRealtimeClient: vi.fn(),
+}));
+
+vi.mock("next/link", () => ({
+  default: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => (
+    <a href={href} {...props}>{children}</a>
+  ),
+}));
+
 vi.mock("@/app/feed/actions", () => ({
   editPost: vi.fn(),
   deletePost: vi.fn(),
@@ -77,7 +107,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
     render(
       <PostCard
         post={{ ...basePost, isSensitive: true }}
-        currentUserId="user1"
+        currentUserId="viewer1"
         phoneVerified={true}
         ageVerified={false}
         showGraphicByDefault={false}
@@ -142,7 +172,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
     render(
       <PostCard
         post={{ ...basePost, isGraphicNudity: true }}
-        currentUserId="user1"
+        currentUserId="viewer1"
         phoneVerified={true}
         ageVerified={false}
         showGraphicByDefault={false}

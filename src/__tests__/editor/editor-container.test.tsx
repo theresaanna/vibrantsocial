@@ -69,6 +69,18 @@ vi.mock("@/components/editor/plugins/AutoLinkPlugin", () => ({
 vi.mock("@/components/editor/plugins/MentionsPlugin", () => ({
   MentionsPlugin: () => null,
 }));
+vi.mock("@lexical/react/LexicalClickableLinkPlugin", () => ({
+  ClickableLinkPlugin: () => null,
+}));
+vi.mock("@lexical/react/LexicalComposerContext", () => ({
+  useLexicalComposerContext: () => [{}],
+}));
+vi.mock("@/components/editor/plugins/CollapsiblePlugin", () => ({
+  CollapsiblePlugin: () => null,
+}));
+vi.mock("@/components/editor/plugins/DraftPlugin", () => ({
+  DraftPlugin: () => null,
+}));
 
 import { Editor } from "@/components/editor/Editor";
 

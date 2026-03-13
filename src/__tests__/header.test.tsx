@@ -12,6 +12,7 @@ vi.mock("@/app/chat/actions", () => ({
 
 vi.mock("@/app/notifications/actions", () => ({
   getUnreadNotificationCount: vi.fn().mockResolvedValue(0),
+  getRecentNotifications: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock("next/link", () => ({
@@ -49,6 +50,20 @@ vi.mock("@/components/search-bar", () => ({
   SearchBar: () => <div data-testid="search-bar">Search</div>,
 }));
 
+vi.mock("@/components/nav-links", () => ({
+  NavLinks: ({ username }: { username?: string | null }) => (
+    <div data-testid="nav-links">
+      <a href="/feed" aria-label="Feed"><svg /></a>
+      <a href="/likes" aria-label="Likes"><svg /></a>
+      <a href="/bookmarks" aria-label="Bookmarks"><svg /></a>
+      <a href={username ? `/${username}` : "/profile"} aria-label="Profile"><svg /></a>
+    </div>
+  ),
+  MobileProfileLink: ({ username }: { username?: string | null }) => (
+    <a href={username ? `/${username}` : "/profile"} aria-label="Mobile Profile"><svg /></a>
+  ),
+}));
+
 import { auth } from "@/auth";
 
 const authedSession = {
@@ -66,7 +81,7 @@ describe("Header", () => {
     const jsx = await Header();
     render(jsx);
 
-    const logo = screen.getByText("VibrantSocial");
+    const logo = screen.getByText("Vibrant");
     expect(logo.closest("a")).toHaveAttribute("href", "/");
   });
 

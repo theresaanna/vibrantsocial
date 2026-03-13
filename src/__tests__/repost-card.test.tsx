@@ -6,6 +6,10 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
 }));
 
+vi.mock("@/lib/anthropic", () => ({
+  anthropic: {},
+}));
+
 vi.mock("@/lib/notifications", () => ({
   createNotification: vi.fn(),
 }));

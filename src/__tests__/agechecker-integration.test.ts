@@ -415,7 +415,7 @@ describe("initiateAgeVerification action", () => {
     mockPrisma.user.findUnique.mockResolvedValueOnce({
       ageVerified: null,
       dateOfBirth: new Date("1990-01-01"),
-      email: null,
+      email: "john@example.com",
     } as never);
 
     mockFetch.mockResolvedValueOnce({

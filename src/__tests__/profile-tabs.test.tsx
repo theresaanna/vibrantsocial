@@ -24,13 +24,13 @@ describe("ProfileTabs", () => {
   it("Posts tab has active styling when activeTab is posts", () => {
     render(<ProfileTabs username="alice" activeTab="posts" hasCustomTheme={false} showSensitiveTab={false} showNsfwTab={false} showGraphicTab={false} />);
     const postsLink = screen.getByText("Posts").closest("a");
-    expect(postsLink?.className).toContain("border-zinc-900");
+    expect(postsLink?.className).toContain("border-fuchsia-600");
   });
 
   it("Reposts tab has active styling when activeTab is reposts", () => {
     render(<ProfileTabs username="alice" activeTab="reposts" hasCustomTheme={false} showSensitiveTab={false} showNsfwTab={false} showGraphicTab={false} />);
     const repostsLink = screen.getByText("Reposts").closest("a");
-    expect(repostsLink?.className).toContain("border-zinc-900");
+    expect(repostsLink?.className).toContain("border-fuchsia-600");
   });
 
   it("does not show NSFW tab when showNsfwTab is false", () => {
@@ -52,7 +52,7 @@ describe("ProfileTabs", () => {
   it("NSFW tab has active styling when activeTab is nsfw", () => {
     render(<ProfileTabs username="alice" activeTab="nsfw" hasCustomTheme={false} showSensitiveTab={false} showNsfwTab={true} showGraphicTab={false} />);
     const nsfwLink = screen.getByText("NSFW").closest("a");
-    expect(nsfwLink?.className).toContain("border-zinc-900");
+    expect(nsfwLink?.className).toContain("border-fuchsia-600");
   });
 
   it("does not show Sensitive tab when showSensitiveTab is false", () => {

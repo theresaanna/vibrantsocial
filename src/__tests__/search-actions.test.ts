@@ -6,7 +6,7 @@ vi.mock("@/auth", () => ({
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    user: { findMany: vi.fn() },
+    user: { findMany: vi.fn(), findUnique: vi.fn() },
     post: { findMany: vi.fn() },
   },
 }));
@@ -186,6 +186,14 @@ describe("searchUsers", () => {
   });
 });
 
+function mockUserPreferences(overrides?: { ageVerified?: boolean; showNsfwContent?: boolean }) {
+  mockPrisma.user.findUnique.mockResolvedValueOnce({
+    ageVerified: false,
+    showNsfwContent: false,
+    ...overrides,
+  } as never);
+}
+
 describe("searchPosts", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -217,6 +225,7 @@ describe("searchPosts", () => {
 
   it("searches content with insensitive contains", async () => {
     mockSession();
+    mockUserPreferences();
     mockPrisma.post.findMany.mockResolvedValueOnce([] as never);
 
     await searchPosts("hello world");
@@ -232,6 +241,7 @@ describe("searchPosts", () => {
 
   it("orders results by createdAt desc", async () => {
     mockSession();
+    mockUserPreferences();
     mockPrisma.post.findMany.mockResolvedValueOnce([] as never);
 
     await searchPosts("hello");
@@ -245,6 +255,7 @@ describe("searchPosts", () => {
 
   it("includes author and counts for search result cards", async () => {
     mockSession();
+    mockUserPreferences();
     mockPrisma.post.findMany.mockResolvedValueOnce([] as never);
 
     await searchPosts("hello");
@@ -261,6 +272,7 @@ describe("searchPosts", () => {
 
   it("returns hasMore=true and trims results when more than PAGE_SIZE", async () => {
     mockSession();
+    mockUserPreferences();
     const posts = Array.from({ length: PAGE_SIZE + 1 }, (_, i) => ({
       id: `post${i}`,
       content: "hello",
@@ -277,6 +289,7 @@ describe("searchPosts", () => {
 
   it("returns hasMore=false when fewer results", async () => {
     mockSession();
+    mockUserPreferences();
     const posts = [{ id: "post1", content: "hello", createdAt: new Date() }];
     mockPrisma.post.findMany.mockResolvedValueOnce(posts as never);
 
@@ -288,6 +301,7 @@ describe("searchPosts", () => {
 
   it("filters by createdAt when cursor provided", async () => {
     mockSession();
+    mockUserPreferences();
     mockPrisma.post.findMany.mockResolvedValueOnce([] as never);
 
     const cursor = "2025-01-15T12:00:00.000Z";
@@ -304,6 +318,7 @@ describe("searchPosts", () => {
 
   it("does not include createdAt filter when no cursor", async () => {
     mockSession();
+    mockUserPreferences();
     mockPrisma.post.findMany.mockResolvedValueOnce([] as never);
 
     await searchPosts("hello");
@@ -315,6 +330,7 @@ describe("searchPosts", () => {
 
   it("trims whitespace from query", async () => {
     mockSession();
+    mockUserPreferences();
     mockPrisma.post.findMany.mockResolvedValueOnce([] as never);
 
     await searchPosts("  hello  ");

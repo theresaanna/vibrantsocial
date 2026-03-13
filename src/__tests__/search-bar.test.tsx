@@ -7,6 +7,9 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: mockPush,
   }),
+  usePathname: vi.fn().mockReturnValue("/"),
+  redirect: vi.fn(),
+  notFound: vi.fn(),
 }));
 
 import { SearchBar } from "@/components/search-bar";

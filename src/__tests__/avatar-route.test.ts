@@ -23,6 +23,23 @@ vi.mock("@/lib/arachnid-shield", () => ({
   quarantineUpload: vi.fn(),
 }));
 
+vi.mock("@/lib/rate-limit", () => ({
+  uploadLimiter: {},
+  apiLimiter: {},
+  checkRateLimit: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("@/lib/cache", () => ({
+  invalidate: vi.fn(),
+  cacheKeys: {
+    userProfile: (username: string) => `userProfile:${username}`,
+  },
+}));
+
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+}));
+
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { put } from "@vercel/blob";
