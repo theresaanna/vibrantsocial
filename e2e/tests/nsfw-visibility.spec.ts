@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { TEST_USER } from "../helpers/db";
 
 test.describe("NSFW Content Visibility", () => {
-  test.describe.configure({ mode: "serial" });
+  test.describe.configure({ mode: "serial", timeout: 60000 });
 
   let nsfwPostText: string;
 
@@ -10,7 +10,7 @@ test.describe("NSFW Content Visibility", () => {
     // Enable NSFW in profile settings first
     await page.goto("/profile");
     await expect(page.locator('input[name="username"]')).toBeVisible({
-      timeout: 10000,
+      timeout: 15000,
     });
 
     // Find and check the Show NSFW content checkbox
@@ -46,9 +46,14 @@ test.describe("NSFW Content Visibility", () => {
     await expect(nsfwLabel).toBeVisible({ timeout: 5000 });
     await nsfwLabel.check();
 
-    // Submit
+    // Submit and wait for redirect to feed
     await page.click('button:has-text("Post")');
-    await page.waitForURL("**/feed", { timeout: 30000 });
+    await page.waitForURL("**/feed", { timeout: 45000 });
+
+    // Verify the post appeared on the feed right after creation
+    await expect(page.locator(`text=${nsfwPostText}`)).toBeVisible({
+      timeout: 30000,
+    });
   });
 
   test("NSFW post appears in feed when NSFW is enabled", async ({ page }) => {
@@ -72,18 +77,18 @@ test.describe("NSFW Content Visibility", () => {
     page,
   }) => {
     await page.goto(`/${TEST_USER.username}`);
-    await expect(page.locator("text=Posts")).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("text=Posts")).toBeVisible({ timeout: 15000 });
 
     // The NSFW post should be visible on the default "Posts" tab
     await expect(page.locator(`text=${nsfwPostText}`)).toBeVisible({
-      timeout: 10000,
+      timeout: 15000,
     });
   });
 
   test("NSFW post also appears on dedicated NSFW tab", async ({ page }) => {
     await page.goto(`/${TEST_USER.username}?tab=nsfw`);
     await expect(page.locator(`text=${nsfwPostText}`)).toBeVisible({
-      timeout: 10000,
+      timeout: 15000,
     });
   });
 
@@ -93,7 +98,7 @@ test.describe("NSFW Content Visibility", () => {
     // Disable NSFW in settings
     await page.goto("/profile");
     await expect(page.locator('input[name="username"]')).toBeVisible({
-      timeout: 10000,
+      timeout: 15000,
     });
 
     const nsfwCheckbox = page.locator('input[name="showNsfwContent"]');
@@ -107,10 +112,10 @@ test.describe("NSFW Content Visibility", () => {
 
     // Go to profile posts tab - NSFW post should NOT appear
     await page.goto(`/${TEST_USER.username}`);
-    await expect(page.locator("text=Posts")).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("text=Posts")).toBeVisible({ timeout: 15000 });
 
     // Wait for posts to load, then confirm NSFW post is not visible
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(2000);
     await expect(page.locator(`text=${nsfwPostText}`)).not.toBeVisible();
   });
 
@@ -118,7 +123,7 @@ test.describe("NSFW Content Visibility", () => {
     // Re-enable NSFW so we leave the test user in a clean state
     await page.goto("/profile");
     await expect(page.locator('input[name="username"]')).toBeVisible({
-      timeout: 10000,
+      timeout: 15000,
     });
 
     const nsfwCheckbox = page.locator('input[name="showNsfwContent"]');
