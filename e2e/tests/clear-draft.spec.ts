@@ -26,6 +26,11 @@ test.describe("Clear Draft", () => {
     // Wait for the auto-save debounce (3s) plus a buffer
     await page.waitForTimeout(4000);
 
+    // Reload so ClearDraftButton initializes with the saved draft from localStorage
+    await page.reload();
+    const editorAfterReload = page.locator('[contenteditable="true"]').first();
+    await expect(editorAfterReload).toBeVisible({ timeout: 10000 });
+
     // The "Clear draft" button should now be visible
     const clearButton = page.getByRole("button", { name: "Clear draft" });
     await expect(clearButton).toBeVisible({ timeout: 5000 });

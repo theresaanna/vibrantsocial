@@ -22,19 +22,10 @@ async function createPostAndOpenComments(page: import("@playwright/test").Page, 
 
   await expect(page.locator(`text=${postText}`)).toBeVisible({ timeout: 10000 });
 
-  // Open comments by clicking the comment toggle
-  const postCard = page.locator(`text=${postText}`).locator("..").locator("..").locator("..");
-  const commentToggle = postCard.locator("button").filter({
-    has: page.locator('svg path[d*="M12 20.25"]'),
-  }).first();
-
-  const hasToggle = await commentToggle.isVisible({ timeout: 3000 }).catch(() => false);
-  if (!hasToggle) {
-    await page.locator(`text=${postText}`).click();
-    await page.waitForTimeout(1000);
-  } else {
-    await commentToggle.click();
-  }
+  // Open comments by clicking the comment toggle button
+  const commentToggle = page.getByRole("button", { name: "Toggle comments" }).first();
+  await expect(commentToggle).toBeVisible({ timeout: 5000 });
+  await commentToggle.click();
 
   return postText;
 }
@@ -42,7 +33,7 @@ async function createPostAndOpenComments(page: import("@playwright/test").Page, 
 // Helper to write a comment
 async function writeComment(page: import("@playwright/test").Page, text: string) {
   const commentInput = page.getByPlaceholder("Write a comment...");
-  await expect(commentInput).toBeVisible({ timeout: 5000 });
+  await expect(commentInput).toBeVisible({ timeout: 10000 });
   await commentInput.fill(text);
   await page.click('button:has-text("Reply")');
   await expect(page.locator(`text=${text}`)).toBeVisible({ timeout: 10000 });

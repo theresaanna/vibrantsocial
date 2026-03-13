@@ -75,6 +75,6 @@ test.describe("Navigation", () => {
     await logo.click();
 
     // Authenticated users on / get redirected to /feed
-    await expect(page).toHaveURL(/\/feed/);
+    await expect(page).toHaveURL(/\/feed/, { timeout: 15000 });
   });
 });

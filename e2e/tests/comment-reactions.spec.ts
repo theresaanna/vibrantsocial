@@ -26,22 +26,10 @@ test.describe("Comment Emoji Reactions", () => {
       timeout: 10000,
     });
 
-    // Open comments section by clicking the comment button on the post
-    // The comment button is a button with an SVG chat bubble icon
-    const postCard = page.locator(`text=${postText}`).locator("..").locator("..").locator("..");
-    const commentToggle = postCard.locator("button").filter({
-      has: page.locator('svg path[d*="M12 20.25"]'),
-    }).first();
-
-    // If the toggle is not found by path, fall back to finding comment-related button
-    const hasToggle = await commentToggle.isVisible({ timeout: 3000 }).catch(() => false);
-    if (!hasToggle) {
-      // Navigate to the post detail page instead
-      await page.locator(`text=${postText}`).click();
-      await page.waitForTimeout(1000);
-    } else {
-      await commentToggle.click();
-    }
+    // Open comments section by clicking the comment toggle button
+    const commentToggle = page.getByRole("button", { name: "Toggle comments" }).first();
+    await expect(commentToggle).toBeVisible({ timeout: 5000 });
+    await commentToggle.click();
 
     // Write a comment
     const commentInput = page.getByPlaceholder("Write a comment...");
