@@ -79,7 +79,7 @@ test.describe("NSFW Content Visibility", () => {
     page,
   }) => {
     await page.goto(`/${TEST_USER.username}`);
-    await expect(page.locator("text=Posts")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("link", { name: "Posts", exact: true })).toBeVisible({ timeout: 15000 });
 
     // The NSFW post should be visible on the default "Posts" tab
     await expect(page.locator(`text=${nsfwPostText}`)).toBeVisible({
@@ -116,7 +116,7 @@ test.describe("NSFW Content Visibility", () => {
 
     // Go to profile posts tab - NSFW post should NOT appear
     await page.goto(`/${TEST_USER.username}`);
-    await expect(page.locator("text=Posts")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("link", { name: "Posts", exact: true })).toBeVisible({ timeout: 15000 });
 
     // Wait for posts to load, then confirm NSFW post is not visible
     await page.waitForTimeout(2000);
