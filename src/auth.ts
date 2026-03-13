@@ -74,6 +74,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.bio = user.bio;
         token.avatar = user.avatar;
         token.tier = user.tier ?? "free";
+        token.authProvider = account?.provider ?? null;
         // OAuth providers (Google, Discord) verify email themselves
         if (account?.provider && account.provider !== "credentials") {
           token.isEmailVerified = true;
@@ -114,6 +115,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       session.user.tier = (token.tier as string) ?? "free";
       session.user.isEmailVerified =
         (token.isEmailVerified as boolean) ?? false;
+      session.user.authProvider = (token.authProvider as string) ?? null;
       return session;
     },
   },

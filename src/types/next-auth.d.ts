@@ -10,6 +10,7 @@ declare module "next-auth" {
       avatar: string | null;
       tier: string;
       isEmailVerified: boolean;
+      authProvider: string | null;
     } & DefaultSession["user"];
   }
 
@@ -32,6 +33,7 @@ declare module "next-auth/jwt" {
     avatar: string | null;
     tier: string;
     isEmailVerified: boolean;
+    authProvider: string | null;
   }
 }
 
