@@ -25,7 +25,7 @@ export async function startOAuthLink(
     return;
   }
 
-  const finishLinkUrl = `/api/auth/finish-link?from=${session.user.id}`;
+  const finishLinkUrl = `/api/finish-link?from=${session.user.id}`;
   console.log("[startOAuthLink] userId:", session.user.id, "provider:", provider, "redirectTo:", finishLinkUrl);
 
   const cookieStore = await cookies();

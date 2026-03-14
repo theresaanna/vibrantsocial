@@ -366,7 +366,7 @@ describe("JWT callback – OAuth linking flow", () => {
     // Should load linked accounts for the original user
     expect(loadLinkedAccounts).toHaveBeenCalledWith("original-user-id");
 
-    // Cookie cleanup is handled by /api/auth/finish-link, not the JWT callback
+    // Cookie cleanup is handled by /api/finish-link, not the JWT callback
   });
 
   it("handles same-email linking by creating a new user for the OAuth identity", async () => {
@@ -437,7 +437,7 @@ describe("JWT callback – OAuth linking flow", () => {
     expect(result.id).toBe("same-user-id");
     expect(result.username).toBe("alice");
 
-    // Cookie cleanup is handled by /api/auth/finish-link, not the JWT callback
+    // Cookie cleanup is handled by /api/finish-link, not the JWT callback
   });
 
   it("does NOT link when no cookie is present (regular sign-in)", async () => {
@@ -593,7 +593,7 @@ describe("JWT callback – OAuth linking flow", () => {
       trigger: "signIn",
     });
 
-    // Cookie cleanup is handled by /api/auth/finish-link, not the JWT callback
+    // Cookie cleanup is handled by /api/finish-link, not the JWT callback
   });
 
   it("falls back to AsyncLocalStorage when cookies() returns undefined", async () => {

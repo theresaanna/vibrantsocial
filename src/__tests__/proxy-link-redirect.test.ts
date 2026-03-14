@@ -25,13 +25,13 @@ describe("proxy – linkRedirect cookie handling", () => {
 
   it("redirects to finish-link when linkRedirect is set", async () => {
     const req = makeRequest("/", {
-      linkRedirect: "/api/auth/finish-link?from=user1",
+      linkRedirect: "/api/finish-link?from=user1",
     });
     const response = await proxy(req);
 
     expect(response.status).toBe(307);
     const location = new URL(response.headers.get("location")!);
-    expect(location.pathname).toBe("/api/auth/finish-link");
+    expect(location.pathname).toBe("/api/finish-link");
     expect(location.searchParams.get("from")).toBe("user1");
   });
 
@@ -39,19 +39,19 @@ describe("proxy – linkRedirect cookie handling", () => {
     // linkFromUserId may not have been cleaned up by the JWT callback,
     // but the proxy should still redirect to finish-link
     const req = makeRequest("/feed", {
-      linkRedirect: "/api/auth/finish-link?from=user1",
+      linkRedirect: "/api/finish-link?from=user1",
       linkFromUserId: "user1",
     });
     const response = await proxy(req);
 
     expect(response.status).toBe(307);
     const location = new URL(response.headers.get("location")!);
-    expect(location.pathname).toBe("/api/auth/finish-link");
+    expect(location.pathname).toBe("/api/finish-link");
   });
 
   it("deletes linkRedirect cookie on redirect", async () => {
     const req = makeRequest("/feed", {
-      linkRedirect: "/api/auth/finish-link?from=user1",
+      linkRedirect: "/api/finish-link?from=user1",
     });
     const response = await proxy(req);
 
