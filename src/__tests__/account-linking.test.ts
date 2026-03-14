@@ -9,6 +9,7 @@ import {
 
 vi.mock("@/auth", () => ({
   auth: vi.fn(),
+  signIn: vi.fn(),
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -42,11 +43,12 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
-import { auth } from "@/auth";
+import { auth, signIn } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
 const mockAuth = vi.mocked(auth);
+const mockSignIn = vi.mocked(signIn);
 const mockPrisma = vi.mocked(prisma);
 const mockBcrypt = vi.mocked(bcrypt);
 
@@ -508,11 +510,9 @@ describe("startOAuthLink", () => {
     expect(result.message).toBe("Invalid provider");
   });
 
-  it("sets cookie and returns success for google", async () => {
+  it("sets cookie and calls signIn for google", async () => {
     mockAuth.mockResolvedValue(mockSession as never);
-    const result = await startOAuthLink("google");
-    expect(result.success).toBe(true);
-    expect(result.message).toBe("Ready to link");
+    await startOAuthLink("google");
     expect(mockCookieSet).toHaveBeenCalledWith("linkFromUserId", "user1", {
       httpOnly: true,
       secure: false,
@@ -520,13 +520,12 @@ describe("startOAuthLink", () => {
       maxAge: 300,
       path: "/",
     });
+    expect(mockSignIn).toHaveBeenCalledWith("google", { redirectTo: "/profile" });
   });
 
-  it("sets cookie and returns success for discord", async () => {
+  it("sets cookie and calls signIn for discord", async () => {
     mockAuth.mockResolvedValue(mockSession as never);
-    const result = await startOAuthLink("discord");
-    expect(result.success).toBe(true);
-    expect(result.message).toBe("Ready to link");
+    await startOAuthLink("discord");
     expect(mockCookieSet).toHaveBeenCalledWith("linkFromUserId", "user1", {
       httpOnly: true,
       secure: false,
@@ -534,5 +533,6 @@ describe("startOAuthLink", () => {
       maxAge: 300,
       path: "/",
     });
+    expect(mockSignIn).toHaveBeenCalledWith("discord", { redirectTo: "/profile" });
   });
 });

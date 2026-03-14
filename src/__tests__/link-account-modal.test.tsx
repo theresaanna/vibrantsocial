@@ -7,7 +7,6 @@ vi.mock("next-auth/react", () => ({
     status: "authenticated",
     update: vi.fn(),
   }),
-  signIn: vi.fn(),
   SessionProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
@@ -16,12 +15,10 @@ vi.mock("@/app/profile/account-linking-actions", () => ({
   startOAuthLink: vi.fn(),
 }));
 
-import { signIn } from "next-auth/react";
 import { startOAuthLink } from "@/app/profile/account-linking-actions";
 import { LinkAccountModal } from "@/components/link-account-modal";
 
 const mockStartOAuthLink = vi.mocked(startOAuthLink);
-const mockSignIn = vi.mocked(signIn);
 
 describe("LinkAccountModal", () => {
   beforeEach(() => {
@@ -123,21 +120,19 @@ describe("LinkAccountModal", () => {
     expect(screen.getByText("or sign in with credentials")).toBeInTheDocument();
   });
 
-  it("calls startOAuthLink and signIn when Google button is clicked", async () => {
+  it("calls startOAuthLink when Google button is clicked", async () => {
     mockStartOAuthLink.mockResolvedValue({ success: true, message: "Ready to link" });
     render(<LinkAccountModal isOpen={true} onClose={vi.fn()} />);
 
     const googleButton = screen.getByTestId("link-google-button");
     fireEvent.click(googleButton);
 
-    // Wait for async operations
     await vi.waitFor(() => {
       expect(mockStartOAuthLink).toHaveBeenCalledWith("google");
     });
-    expect(mockSignIn).toHaveBeenCalledWith("google", { callbackUrl: "/profile" });
   });
 
-  it("calls startOAuthLink and signIn when Discord button is clicked", async () => {
+  it("calls startOAuthLink when Discord button is clicked", async () => {
     mockStartOAuthLink.mockResolvedValue({ success: true, message: "Ready to link" });
     render(<LinkAccountModal isOpen={true} onClose={vi.fn()} />);
 
@@ -147,20 +142,6 @@ describe("LinkAccountModal", () => {
     await vi.waitFor(() => {
       expect(mockStartOAuthLink).toHaveBeenCalledWith("discord");
     });
-    expect(mockSignIn).toHaveBeenCalledWith("discord", { callbackUrl: "/profile" });
-  });
-
-  it("does not call signIn when startOAuthLink fails", async () => {
-    mockStartOAuthLink.mockResolvedValue({ success: false, message: "Not authenticated" });
-    render(<LinkAccountModal isOpen={true} onClose={vi.fn()} />);
-
-    const googleButton = screen.getByTestId("link-google-button");
-    fireEvent.click(googleButton);
-
-    await vi.waitFor(() => {
-      expect(mockStartOAuthLink).toHaveBeenCalledWith("google");
-    });
-    expect(mockSignIn).not.toHaveBeenCalled();
   });
 
   it("disables OAuth buttons while loading", async () => {
