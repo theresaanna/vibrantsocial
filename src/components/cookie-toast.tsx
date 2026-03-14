@@ -30,6 +30,7 @@ export function CookieToast() {
         </div>,
         {
           duration: Infinity,
+          closeButton: true,
           onDismiss: () => {
             try {
               localStorage.setItem(STORAGE_KEY, "true");
