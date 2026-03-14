@@ -134,6 +134,9 @@ export default async function PostPage({ params, searchParams }: Props) {
   // Redirect unauthenticated visitors away from flagged content
   if (!userId && (post.isSensitive || post.isNsfw || post.isGraphicNudity)) redirect("/login");
 
+  // Redirect unauthenticated visitors away from logged-in-only posts
+  if (!userId && post.isLoggedInOnly) redirect("/login");
+
   // Close-friends-only posts: only the author and their close friends can view
   if (post.isCloseFriendsOnly && post.author) {
     if (!userId) redirect("/login");

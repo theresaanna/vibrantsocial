@@ -11,43 +11,29 @@ test.describe("Search", () => {
     ).toBeVisible({ timeout: 10000 });
   });
 
-  test("search via header search bar navigates to search page", async ({
+  test("search nav link navigates to search page", async ({
     page,
   }) => {
     await page.goto("/feed");
+    await expect(page).toHaveURL(/\/feed/, { timeout: 15000 });
 
-    // Open search dropdown
-    await page.click('button[aria-label="Open search"]');
+    // Click the Search nav link
+    await page.click('a[aria-label="Search"]');
 
-    const searchInput = page.locator('input[aria-label="Search"]');
-    await expect(searchInput).toBeVisible();
+    await expect(page).toHaveURL(/\/search/, { timeout: 15000 });
 
+    // The search input on the search page should be visible
+    const searchInput = page.locator('input[type="search"], input[placeholder*="Search"]').first();
+    await expect(searchInput).toBeVisible({ timeout: 10000 });
+
+    // Type a query and search
     await searchInput.fill(TEST_USER.username);
-    await page.keyboard.press("Enter");
-
-    await expect(page).toHaveURL(
-      new RegExp(`/search\\?q=${TEST_USER.username}`)
-    );
+    await page.waitForTimeout(500); // Wait for debounce
 
     // Should find the test user in results
     await expect(
       page.getByText(`@${TEST_USER.username}`, { exact: true })
     ).toBeVisible({ timeout: 10000 });
-  });
-
-  test("search with short query does not trigger search", async ({
-    page,
-  }) => {
-    await page.goto("/feed");
-
-    await page.click('button[aria-label="Open search"]');
-
-    const searchInput = page.locator('input[aria-label="Search"]');
-    await searchInput.fill("a");
-    await page.keyboard.press("Enter");
-
-    // Should stay on the current page — query < 2 chars doesn't submit
-    await expect(page).toHaveURL(/\/feed/);
   });
 
   test("search page has users and posts tabs", async ({ page }) => {

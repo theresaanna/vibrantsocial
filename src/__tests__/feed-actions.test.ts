@@ -216,7 +216,7 @@ describe("createPost", () => {
     expect(result.success).toBe(true);
     expect(result.message).toBe("Post created");
     expect(mockPrisma.post.create).toHaveBeenCalledWith({
-      data: { content: validLexicalContent, authorId: "user1", isSensitive: false, isNsfw: false, isGraphicNudity: false, isCloseFriendsOnly: false },
+      data: { content: validLexicalContent, authorId: "user1", isSensitive: false, isNsfw: false, isGraphicNudity: false, isCloseFriendsOnly: false, isLoggedInOnly: false },
     });
   });
 
@@ -232,7 +232,7 @@ describe("createPost", () => {
     );
     expect(result.success).toBe(true);
     expect(mockPrisma.post.create).toHaveBeenCalledWith({
-      data: { content: validLexicalContent, authorId: "user1", isSensitive: true, isNsfw: false, isGraphicNudity: false, isCloseFriendsOnly: false },
+      data: { content: validLexicalContent, authorId: "user1", isSensitive: true, isNsfw: false, isGraphicNudity: false, isCloseFriendsOnly: false, isLoggedInOnly: false },
     });
   });
 
@@ -248,7 +248,7 @@ describe("createPost", () => {
     );
     expect(result.success).toBe(true);
     expect(mockPrisma.post.create).toHaveBeenCalledWith({
-      data: { content: validLexicalContent, authorId: "user1", isSensitive: false, isNsfw: true, isGraphicNudity: false, isCloseFriendsOnly: false },
+      data: { content: validLexicalContent, authorId: "user1", isSensitive: false, isNsfw: true, isGraphicNudity: false, isCloseFriendsOnly: false, isLoggedInOnly: false },
     });
   });
 
@@ -264,7 +264,7 @@ describe("createPost", () => {
     );
     expect(result.success).toBe(true);
     expect(mockPrisma.post.create).toHaveBeenCalledWith({
-      data: { content: validLexicalContent, authorId: "user1", isSensitive: false, isNsfw: false, isGraphicNudity: true, isCloseFriendsOnly: false },
+      data: { content: validLexicalContent, authorId: "user1", isSensitive: false, isNsfw: false, isGraphicNudity: true, isCloseFriendsOnly: false, isLoggedInOnly: false },
     });
   });
 
@@ -455,7 +455,7 @@ describe("editPost", () => {
     });
     expect(mockPrisma.post.update).toHaveBeenCalledWith({
       where: { id: "p1" },
-      data: { content: "new content", editedAt: expect.any(Date), isSensitive: false, isNsfw: false, isGraphicNudity: false, isCloseFriendsOnly: false },
+      data: { content: "new content", editedAt: expect.any(Date), isSensitive: false, isNsfw: false, isGraphicNudity: false, isCloseFriendsOnly: false, isLoggedInOnly: false },
     });
   });
 });

@@ -5,7 +5,6 @@ import { getUnreadNotificationCount, getRecentNotifications } from "@/app/notifi
 import { ChatNav } from "@/components/chat-nav";
 import { DynamicFavicon } from "@/components/dynamic-favicon";
 import { NotificationBell } from "@/components/notification-bell";
-import { SearchBar } from "@/components/search-bar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NavLinks, MobileProfileLink } from "@/components/nav-links";
 import { AccountSwitcherWrapper } from "@/components/account-switcher-wrapper";
@@ -48,7 +47,6 @@ export async function Header() {
                   conversations.some((c: { unreadCount: number }) => c.unreadCount > 0)
                 }
               />
-              <SearchBar />
               <NavLinks username={session.user.username} />
               <div className="hidden sm:block"><AccountSwitcherWrapper /></div>
               <NotificationBell initialUnreadCount={unreadNotifications} initialNotifications={recentNotifications} />

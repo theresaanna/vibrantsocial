@@ -26,6 +26,7 @@ describe("NavLinks", () => {
 
   it("renders all nav links", () => {
     render(<NavLinks username="testuser" />);
+    expect(screen.getByLabelText("Search")).toBeInTheDocument();
     expect(screen.getByLabelText("Feed")).toBeInTheDocument();
     expect(screen.getByLabelText("Compose")).toBeInTheDocument();
     expect(screen.getByLabelText("Likes")).toBeInTheDocument();
@@ -37,6 +38,10 @@ describe("NavLinks", () => {
 
   it("links to correct hrefs", () => {
     render(<NavLinks username="testuser" />);
+    expect(screen.getByLabelText("Search")).toHaveAttribute(
+      "href",
+      "/search"
+    );
     expect(screen.getByLabelText("Feed")).toHaveAttribute("href", "/feed");
     expect(screen.getByLabelText("Compose")).toHaveAttribute(
       "href",
@@ -76,6 +81,27 @@ describe("NavLinks", () => {
       "href",
       "/profile"
     );
+  });
+
+  it("highlights Search link when on /search", () => {
+    vi.mocked(usePathname).mockReturnValue("/search");
+    render(<NavLinks username="testuser" />);
+    const searchLink = screen.getByLabelText("Search");
+    expect(searchLink.className).toMatch(/(^| )text-teal-500( |$)/);
+  });
+
+  it("highlights Search link using prefix matching on /search?q=test", () => {
+    vi.mocked(usePathname).mockReturnValue("/search");
+    render(<NavLinks username="testuser" />);
+    const searchLink = screen.getByLabelText("Search");
+    expect(searchLink.className).toMatch(/(^| )text-teal-500( |$)/);
+  });
+
+  it("does not highlight Search link when on different page", () => {
+    vi.mocked(usePathname).mockReturnValue("/feed");
+    render(<NavLinks username="testuser" />);
+    const searchLink = screen.getByLabelText("Search");
+    expect(searchLink.className).toContain("text-zinc-600");
   });
 
   it("highlights Feed link when on /feed", () => {

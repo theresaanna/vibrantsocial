@@ -68,7 +68,6 @@ const mockAgeGate = vi.mocked(requireMinimumAge);
 
 const prevState = { success: false, message: "" };
 
-// Minimal valid Lexical JSON (must be > 50 chars when stringified)
 const validContent = JSON.stringify({
   root: {
     children: [
@@ -89,7 +88,7 @@ function makeFormData(data: Record<string, string>): FormData {
   return fd;
 }
 
-describe("createPost with isCloseFriendsOnly", () => {
+describe("createPost with isLoggedInOnly", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAuth.mockResolvedValue({ user: { id: "user1" } } as never);
@@ -97,47 +96,12 @@ describe("createPost with isCloseFriendsOnly", () => {
     mockAgeGate.mockResolvedValue(true);
   });
 
-  it("creates a post with isCloseFriendsOnly=true", async () => {
+  it("creates a post with isLoggedInOnly=true", async () => {
     mockPrisma.post.create.mockResolvedValueOnce({
       id: "post1",
       content: validContent,
       authorId: "user1",
-      isCloseFriendsOnly: true,
-      isSensitive: false,
-      isNsfw: false,
-      isGraphicNudity: false,
-    } as never);
-
-    const result = await createPost(
-      prevState,
-      makeFormData({
-        content: validContent,
-        isSensitive: "false",
-        isNsfw: "false",
-        isGraphicNudity: "false",
-        isCloseFriendsOnly: "true",
-      })
-    );
-
-    expect(result.success).toBe(true);
-    expect(mockPrisma.post.create).toHaveBeenCalledWith({
-      data: {
-        content: validContent,
-        authorId: "user1",
-        isSensitive: false,
-        isNsfw: false,
-        isGraphicNudity: false,
-        isCloseFriendsOnly: true,
-        isLoggedInOnly: false,
-      },
-    });
-  });
-
-  it("creates a post with isCloseFriendsOnly=false by default", async () => {
-    mockPrisma.post.create.mockResolvedValueOnce({
-      id: "post2",
-      content: validContent,
-      authorId: "user1",
+      isLoggedInOnly: true,
       isCloseFriendsOnly: false,
       isSensitive: false,
       isNsfw: false,
@@ -152,28 +116,24 @@ describe("createPost with isCloseFriendsOnly", () => {
         isNsfw: "false",
         isGraphicNudity: "false",
         isCloseFriendsOnly: "false",
+        isLoggedInOnly: "true",
       })
     );
 
     expect(result.success).toBe(true);
     expect(mockPrisma.post.create).toHaveBeenCalledWith({
-      data: {
-        content: validContent,
-        authorId: "user1",
-        isSensitive: false,
-        isNsfw: false,
-        isGraphicNudity: false,
-        isCloseFriendsOnly: false,
-        isLoggedInOnly: false,
-      },
+      data: expect.objectContaining({
+        isLoggedInOnly: true,
+      }),
     });
   });
 
-  it("treats missing isCloseFriendsOnly as false", async () => {
+  it("creates a post with isLoggedInOnly=false by default", async () => {
     mockPrisma.post.create.mockResolvedValueOnce({
-      id: "post3",
+      id: "post2",
       content: validContent,
       authorId: "user1",
+      isLoggedInOnly: false,
       isCloseFriendsOnly: false,
       isSensitive: false,
       isNsfw: false,
@@ -187,7 +147,40 @@ describe("createPost with isCloseFriendsOnly", () => {
         isSensitive: "false",
         isNsfw: "false",
         isGraphicNudity: "false",
-        // isCloseFriendsOnly not set
+        isCloseFriendsOnly: "false",
+        isLoggedInOnly: "false",
+      })
+    );
+
+    expect(result.success).toBe(true);
+    expect(mockPrisma.post.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        isLoggedInOnly: false,
+      }),
+    });
+  });
+
+  it("treats missing isLoggedInOnly as false", async () => {
+    mockPrisma.post.create.mockResolvedValueOnce({
+      id: "post3",
+      content: validContent,
+      authorId: "user1",
+      isLoggedInOnly: false,
+      isSensitive: false,
+      isNsfw: false,
+      isGraphicNudity: false,
+      isCloseFriendsOnly: false,
+    } as never);
+
+    const result = await createPost(
+      prevState,
+      makeFormData({
+        content: validContent,
+        isSensitive: "false",
+        isNsfw: "false",
+        isGraphicNudity: "false",
+        isCloseFriendsOnly: "false",
+        // isLoggedInOnly not set
       })
     );
 
@@ -195,9 +188,42 @@ describe("createPost with isCloseFriendsOnly", () => {
     expect(mockPrisma.post.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          isCloseFriendsOnly: false,
+          isLoggedInOnly: false,
         }),
       })
     );
+  });
+
+  it("can combine isLoggedInOnly with isCloseFriendsOnly", async () => {
+    mockPrisma.post.create.mockResolvedValueOnce({
+      id: "post4",
+      content: validContent,
+      authorId: "user1",
+      isLoggedInOnly: true,
+      isCloseFriendsOnly: true,
+      isSensitive: false,
+      isNsfw: false,
+      isGraphicNudity: false,
+    } as never);
+
+    const result = await createPost(
+      prevState,
+      makeFormData({
+        content: validContent,
+        isSensitive: "false",
+        isNsfw: "false",
+        isGraphicNudity: "false",
+        isCloseFriendsOnly: "true",
+        isLoggedInOnly: "true",
+      })
+    );
+
+    expect(result.success).toBe(true);
+    expect(mockPrisma.post.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        isLoggedInOnly: true,
+        isCloseFriendsOnly: true,
+      }),
+    });
   });
 });

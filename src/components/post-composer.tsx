@@ -63,6 +63,7 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
   const [isGraphicNudity, setIsGraphicNudity] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [isCloseFriendsOnly, setIsCloseFriendsOnly] = useState(false);
+  const [isLoggedInOnly, setIsLoggedInOnly] = useState(false);
   const [showContentWarnings, setShowContentWarnings] = useState(false);
   const [draftStatus, setDraftStatus] = useState<DraftSaveStatus>("idle");
 
@@ -80,6 +81,7 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
         setIsNsfw(false);
         setIsGraphicNudity(false);
         setIsCloseFriendsOnly(false);
+        setIsLoggedInOnly(false);
         clearDraft("compose");
         if (result.postId) onPostCreated?.(result.postId);
       }
@@ -192,6 +194,7 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
         </div>
         <input type="hidden" name="isGraphicNudity" value={isGraphicNudity ? "true" : "false"} />
         <input type="hidden" name="isCloseFriendsOnly" value={isCloseFriendsOnly ? "true" : "false"} />
+        <input type="hidden" name="isLoggedInOnly" value={isLoggedInOnly ? "true" : "false"} />
         <div className="border-t border-zinc-200 px-4 py-2 dark:border-zinc-700">
           <button
             type="button"
@@ -286,6 +289,10 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
                 Close Friends
               </span>
             </label>
+            <LoggedInOnlyToggle
+              checked={isLoggedInOnly}
+              onChange={setIsLoggedInOnly}
+            />
             <button
               type="submit"
               disabled={isPending}
@@ -296,6 +303,67 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
           </div>
         </div>
       </form>
+    </div>
+  );
+}
+
+function LoggedInOnlyToggle({
+  checked,
+  onChange,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  return (
+    <div className="relative flex items-center gap-1">
+      <label
+        className="flex cursor-pointer items-center gap-1.5"
+        title="Only visible to logged-in users"
+      >
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="sr-only peer"
+        />
+        <span
+          className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${checked ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-400" : "border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-500 dark:border-zinc-700 dark:text-zinc-500 dark:hover:border-zinc-600 dark:hover:text-zinc-400"}`}
+        >
+          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+          </svg>
+          Logged-in Only
+        </span>
+      </label>
+      <button
+        type="button"
+        onClick={() => setShowTooltip((prev) => !prev)}
+        className="rounded-full p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+        aria-label="Logged-in only info"
+      >
+        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+          <path strokeLinecap="round" d="M12 16v-4M12 8h.01" />
+        </svg>
+      </button>
+      {showTooltip && (
+        <div className="absolute bottom-full right-0 z-20 mb-2 w-64 rounded-lg border border-zinc-200 bg-white p-3 text-xs leading-relaxed text-zinc-600 shadow-lg dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+          <p>
+            If you have a public profile, people outside Vibrant can see your
+            posts unless they are marked with a content warning. Enabling this
+            prevents people who are not logged in from seeing this post.
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowTooltip(false)}
+            className="mt-2 text-xs font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
+          >
+            Got it
+          </button>
+        </div>
+      )}
     </div>
   );
 }

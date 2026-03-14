@@ -256,7 +256,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
 
   // Build content flag filter for logged-out users
   const loggedOutFilter = !currentUserId
-    ? { isSensitive: false, isNsfw: false, isGraphicNudity: false }
+    ? { isSensitive: false, isNsfw: false, isGraphicNudity: false, isLoggedInOnly: false }
     : {};
 
   // Check if viewer can see close-friends-only posts

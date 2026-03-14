@@ -22,18 +22,12 @@ test.describe("Navigation", () => {
     await expect(page).toHaveURL(/\/bookmarks/, { timeout: 15000 });
   });
 
-  test("search bar opens and submits search", async ({ page }) => {
+  test("search nav link navigates to /search", async ({ page }) => {
     await page.goto("/feed");
+    await expect(page).toHaveURL(/\/feed/, { timeout: 15000 });
 
-    await page.click('button[aria-label="Open search"]');
-
-    const searchInput = page.locator('input[aria-label="Search"]');
-    await expect(searchInput).toBeVisible();
-
-    await searchInput.fill("testquery");
-    await page.keyboard.press("Enter");
-
-    await expect(page).toHaveURL(/\/search\?q=testquery/, { timeout: 15000 });
+    await page.click('a[aria-label="Search"]');
+    await expect(page).toHaveURL(/\/search/, { timeout: 15000 });
   });
 
   test("theme toggle switches between light and dark", async ({ page }) => {

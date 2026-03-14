@@ -167,6 +167,7 @@ model Post {
   isNsfw             Boolean   @default(false)
   isGraphicNudity    Boolean   @default(false)
   isCloseFriendsOnly Boolean   @default(false)
+  isLoggedInOnly     Boolean   @default(false)
   isPinned           Boolean   @default(false)
   editedAt           DateTime?
   createdAt          DateTime  @default(now())
