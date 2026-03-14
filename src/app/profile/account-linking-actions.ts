@@ -25,6 +25,31 @@ export async function startOAuthLink(
     return;
   }
 
+  // Clean up orphaned Account+User records from previous failed linking attempts.
+  // The JWT callback's same-email splitting creates a new User and moves the
+  // Account to it.  If the overall flow fails, this orphan prevents future
+  // attempts (OAuthAccountNotLinked error).  An orphan is a User with no email
+  // and no passwordHash that owns an Account for this provider.
+  try {
+    const orphanedAccounts = await prisma.account.findMany({
+      where: {
+        provider,
+        user: { email: null, passwordHash: null },
+      },
+      select: { id: true, userId: true },
+    });
+    for (const orphan of orphanedAccounts) {
+      console.log("[startOAuthLink] Cleaning up orphaned account:", orphan.id, "user:", orphan.userId);
+      await prisma.account.delete({ where: { id: orphan.id } });
+      const remaining = await prisma.account.count({ where: { userId: orphan.userId } });
+      if (remaining === 0) {
+        await prisma.user.delete({ where: { id: orphan.userId } }).catch(() => {});
+      }
+    }
+  } catch (err) {
+    console.error("[startOAuthLink] Orphan cleanup error:", err);
+  }
+
   const finishLinkUrl = `/api/finish-link?from=${session.user.id}`;
   console.log("[startOAuthLink] userId:", session.user.id, "provider:", provider, "redirectTo:", finishLinkUrl);
 
