@@ -70,6 +70,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   callbacks: {
+    async signIn({ account }) {
+      // When the linkFromUserId cookie is present, this is an account-linking
+      // flow initiated from /profile.  Return "/profile" so NextAuth redirects
+      // there instead of relying on the callbackUrl cookie (which can be lost
+      // due to origin / protocol mismatches in some hosting environments).
+      if (account?.provider && account.provider !== "credentials") {
+        try {
+          const cookieStore = await cookies();
+          if (cookieStore.get("linkFromUserId")?.value) {
+            return "/profile";
+          }
+        } catch {
+          // cookies() may throw in non-request contexts; ignore
+        }
+      }
+      return true;
+    },
     async jwt({ token, user, trigger, session, account, profile }) {
       if (user) {
         // Check for OAuth account-linking flow (cookie set by startOAuthLink)
