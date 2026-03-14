@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 /**
- * Reads a `_switchTo` query param (set by /api/auth/finish-link) and
+ * Reads a `_switchTo` query param (set by /api/finish-link) and
  * tells NextAuth to switch the JWT to the original user's identity.
  * Renders nothing — just performs the side-effect once.
  */

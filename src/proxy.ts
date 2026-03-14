@@ -7,7 +7,7 @@ export async function proxy(request: Request) {
   // After an OAuth account-linking flow, NextAuth may lose the callbackUrl
   // and redirect to "/" (→ /feed).  The linkRedirect cookie, set alongside
   // linkFromUserId in startOAuthLink, tells us where the user should go
-  // (the /api/auth/finish-link handler).
+  // (the /api/finish-link handler).
   const rawCookies = request.headers.get("cookie") ?? "";
   const linkRedirectMatch = rawCookies.match(
     /(?:^|;\s*)linkRedirect=([^;]*)/

@@ -73,7 +73,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async redirect({ url, baseUrl }) {
       // If the URL already points to finish-link, let it through unchanged.
-      if (url.includes("/api/auth/finish-link")) {
+      if (url.includes("/api/finish-link")) {
         const result = url.startsWith("/") ? `${baseUrl}${url}` : url;
         console.log("[auth:redirect] finish-link URL passthrough →", result);
         return result;
@@ -96,7 +96,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         console.log("[auth:redirect] AsyncLocalStorage fallback:", linkFromUserId);
       }
       if (linkFromUserId) {
-        const result = `${baseUrl}/api/auth/finish-link?from=${linkFromUserId}`;
+        const result = `${baseUrl}/api/finish-link?from=${linkFromUserId}`;
         console.log("[auth:redirect] linking flow →", result);
         return result;
       }
@@ -163,7 +163,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             console.error("[auth] OAuth linking flow error:", err);
           }
 
-          // Cookie cleanup is handled by /api/auth/finish-link
+          // Cookie cleanup is handled by /api/finish-link
         } else if (linkCookieValue && account?.provider && account.providerAccountId) {
           // Same-email case: adapter linked the OAuth account to the existing user.
           // We need to split into a separate user for multi-account switching.
@@ -230,7 +230,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             console.error("[auth] Same-email OAuth split error:", err);
           }
 
-          // Cookie cleanup is handled by /api/auth/finish-link
+          // Cookie cleanup is handled by /api/finish-link
         }
 
         if (!isLinkingFlow) {
