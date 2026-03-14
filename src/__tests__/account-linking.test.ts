@@ -489,25 +489,25 @@ describe("startOAuthLink", () => {
     vi.clearAllMocks();
   });
 
-  it("returns error when not authenticated", async () => {
+  it("returns early when not authenticated", async () => {
     mockAuth.mockResolvedValue(null);
-    const result = await startOAuthLink("google");
-    expect(result.success).toBe(false);
-    expect(result.message).toBe("Not authenticated");
+    await startOAuthLink("google");
+    expect(mockCookieSet).not.toHaveBeenCalled();
+    expect(mockSignIn).not.toHaveBeenCalled();
   });
 
-  it("returns error for invalid provider", async () => {
+  it("returns early for invalid provider", async () => {
     mockAuth.mockResolvedValue(mockSession as never);
-    const result = await startOAuthLink("twitter");
-    expect(result.success).toBe(false);
-    expect(result.message).toBe("Invalid provider");
+    await startOAuthLink("twitter");
+    expect(mockCookieSet).not.toHaveBeenCalled();
+    expect(mockSignIn).not.toHaveBeenCalled();
   });
 
-  it("returns error for empty provider", async () => {
+  it("returns early for empty provider", async () => {
     mockAuth.mockResolvedValue(mockSession as never);
-    const result = await startOAuthLink("");
-    expect(result.success).toBe(false);
-    expect(result.message).toBe("Invalid provider");
+    await startOAuthLink("");
+    expect(mockCookieSet).not.toHaveBeenCalled();
+    expect(mockSignIn).not.toHaveBeenCalled();
   });
 
   it("sets cookie and calls signIn for google", async () => {

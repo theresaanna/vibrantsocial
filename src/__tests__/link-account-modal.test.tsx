@@ -123,7 +123,7 @@ describe("LinkAccountModal", () => {
   });
 
   it("submits Google OAuth form with startOAuthLink action", async () => {
-    mockStartOAuthLink.mockResolvedValue({ success: true, message: "Ready to link" });
+    mockStartOAuthLink.mockResolvedValue(undefined);
     render(<LinkAccountModal isOpen={true} onClose={vi.fn()} />);
 
     const googleButton = screen.getByTestId("link-google-button");
@@ -138,7 +138,7 @@ describe("LinkAccountModal", () => {
   });
 
   it("submits Discord OAuth form with startOAuthLink action", async () => {
-    mockStartOAuthLink.mockResolvedValue({ success: true, message: "Ready to link" });
+    mockStartOAuthLink.mockResolvedValue(undefined);
     render(<LinkAccountModal isOpen={true} onClose={vi.fn()} />);
 
     const discordButton = screen.getByTestId("link-discord-button");
@@ -151,7 +151,7 @@ describe("LinkAccountModal", () => {
   });
 
   it("shows Redirecting text when OAuth button is clicked", async () => {
-    mockStartOAuthLink.mockResolvedValue({ success: true, message: "Ready to link" });
+    mockStartOAuthLink.mockResolvedValue(undefined);
     render(<LinkAccountModal isOpen={true} onClose={vi.fn()} />);
 
     const googleButton = screen.getByTestId("link-google-button");

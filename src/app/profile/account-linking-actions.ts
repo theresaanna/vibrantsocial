@@ -15,15 +15,14 @@ interface AccountLinkingState {
 const VALID_OAUTH_PROVIDERS = ["google", "discord"] as const;
 
 export async function startOAuthLink(
-  provider: string
-): Promise<AccountLinkingState> {
+  provider: string,
+  _formData?: FormData
+): Promise<void> {
   const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
+  if (!session?.user?.id) return;
 
   if (!VALID_OAUTH_PROVIDERS.includes(provider as (typeof VALID_OAUTH_PROVIDERS)[number])) {
-    return { success: false, message: "Invalid provider" };
+    return;
   }
 
   const cookieStore = await cookies();
@@ -38,9 +37,6 @@ export async function startOAuthLink(
   // Redirect to OAuth provider in the same response that sets the cookie.
   // This uses the server-side signIn which throws a NEXT_REDIRECT.
   await signIn(provider, { redirectTo: "/profile" });
-
-  // Unreachable — signIn throws a redirect above
-  return { success: true, message: "Ready to link" };
 }
 
 export async function getLinkedAccounts(): Promise<LinkedAccount[]> {
