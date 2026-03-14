@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { isProfileIncomplete } from "@/lib/require-profile";
 import { ProfileForm } from "./profile-form";
+import { Suspense } from "react";
+import { AutoAccountSwitch } from "@/components/auto-account-switch";
 
 export const metadata: Metadata = {
   title: "Edit Profile",
@@ -52,6 +54,9 @@ export default async function ProfilePage() {
 
   return (
     <div className="flex min-h-[calc(100vh-57px)] items-center justify-center">
+      <Suspense>
+        <AutoAccountSwitch />
+      </Suspense>
       <div className="w-full max-w-2xl space-y-6 rounded-2xl bg-white p-8 shadow-lg dark:bg-zinc-900">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-amber-600">

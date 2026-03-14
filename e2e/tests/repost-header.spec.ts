@@ -6,6 +6,16 @@ function createPool() {
   return new pg.Pool({ connectionString: process.env.DATABASE_URL });
 }
 
+/** Clear the cached followingIds so the feed picks up new Follow rows. */
+async function invalidateFollowingCache(userId: string) {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return;
+  const { Redis } = await import("@upstash/redis");
+  const redis = new Redis({ url, token });
+  await redis.del(`user:${userId}:following`);
+}
+
 /** Seed a post by TEST_USER_2 and a simple repost of it by TEST_USER. */
 async function seedRepostData() {
   const pool = createPool();
@@ -25,15 +35,13 @@ async function seedRepostData() {
     const testUserId = u1.rows[0].id;
     const testUser2Id = u2.rows[0].id;
 
-    // Ensure TEST_USER follows TEST_USER_2 (so reposts appear in feed)
-    await pool.query(
-      `INSERT INTO "Follow" (id, "followerId", "followingId", "createdAt")
-       VALUES ($1, $2, $3, NOW())
-       ON CONFLICT DO NOTHING`,
-      [`follow_e2e_${Date.now()}`, testUserId, testUser2Id]
-    );
+    // NOTE: Do NOT have TEST_USER follow TEST_USER_2 here — if the user
+    // follows the original post's author, the post appears directly in the
+    // feed AND via repost, and the dedup filter removes the simple repost.
+    // By only following themselves, the repost (by TEST_USER) will appear
+    // without the direct post competing.
 
-    // Ensure TEST_USER follows themselves (own posts appear in feed)
+    // Ensure TEST_USER follows themselves (own reposts appear in feed)
     await pool.query(
       `INSERT INTO "Follow" (id, "followerId", "followingId", "createdAt")
        VALUES ($1, $2, $3, NOW())
@@ -57,6 +65,9 @@ async function seedRepostData() {
        ON CONFLICT DO NOTHING`,
       [repostId, postId, testUserId]
     );
+
+    // Invalidate Redis cache so the feed query picks up the new follow
+    await invalidateFollowingCache(testUserId);
 
     return { postId, repostId, testUserId, testUser2Id };
   } finally {

@@ -25,6 +25,8 @@ export async function startOAuthLink(
     return;
   }
 
+  const finishLinkUrl = `/api/auth/finish-link?from=${session.user.id}`;
+
   const cookieStore = await cookies();
   cookieStore.set("linkFromUserId", session.user.id, {
     httpOnly: true,
@@ -33,9 +35,9 @@ export async function startOAuthLink(
     maxAge: 300, // 5 minutes
     path: "/",
   });
-  // Fallback redirect cookie: middleware will redirect to /profile after
+  // Fallback redirect cookie: proxy will redirect to finish-link after
   // the OAuth flow completes, even if NextAuth's callbackUrl cookie is lost.
-  cookieStore.set("linkRedirect", "/profile", {
+  cookieStore.set("linkRedirect", finishLinkUrl, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -45,7 +47,9 @@ export async function startOAuthLink(
 
   // Redirect to OAuth provider in the same response that sets the cookie.
   // This uses the server-side signIn which throws a NEXT_REDIRECT.
-  await signIn(provider, { redirectTo: "/profile" });
+  // After OAuth, NextAuth will redirect to finish-link which handles
+  // account linking with guaranteed cookie access via req.cookies.
+  await signIn(provider, { redirectTo: finishLinkUrl });
 }
 
 export async function getLinkedAccounts(): Promise<LinkedAccount[]> {

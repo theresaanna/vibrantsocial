@@ -6,28 +6,15 @@ export async function proxy(request: Request) {
 
   // After an OAuth account-linking flow, NextAuth may lose the callbackUrl
   // and redirect to "/" (→ /feed).  The linkRedirect cookie, set alongside
-  // linkFromUserId in startOAuthLink, tells us where the user should go.
-  //
-  // Only consume the cookie when `linkFromUserId` is absent — that means
-  // the JWT callback has already processed the linking (or we've returned
-  // from the OAuth provider).  While `linkFromUserId` is still present the
-  // user hasn't left for the OAuth provider yet, so eating the cookie now
-  // would lose the redirect target.
+  // linkFromUserId in startOAuthLink, tells us where the user should go
+  // (the /api/auth/finish-link handler).
   const rawCookies = request.headers.get("cookie") ?? "";
   const linkRedirectMatch = rawCookies.match(
     /(?:^|;\s*)linkRedirect=([^;]*)/
   );
-  const hasLinkFromUserId = /(?:^|;\s*)linkFromUserId=/.test(rawCookies);
-  if (linkRedirectMatch && !hasLinkFromUserId) {
+  if (linkRedirectMatch) {
     const target = decodeURIComponent(linkRedirectMatch[1]);
-    const targetPath = new URL(target, request.url).pathname;
-    if (pathname !== targetPath) {
-      const response = NextResponse.redirect(new URL(target, request.url));
-      response.cookies.delete("linkRedirect");
-      return response;
-    }
-    // Already at the target — just clean up the cookie
-    const response = NextResponse.next();
+    const response = NextResponse.redirect(new URL(target, request.url));
     response.cookies.delete("linkRedirect");
     return response;
   }

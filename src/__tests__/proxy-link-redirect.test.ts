@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NextResponse } from "next/server";
 
 vi.mock("@/auth", () => ({
   auth: vi.fn().mockResolvedValue({ user: { id: "user1" } }),
@@ -24,48 +23,48 @@ describe("proxy – linkRedirect cookie handling", () => {
     vi.clearAllMocks();
   });
 
-  it("redirects to target when linkRedirect is set and linkFromUserId is absent", async () => {
-    const req = makeRequest("/", { linkRedirect: "/profile" });
+  it("redirects to finish-link when linkRedirect is set", async () => {
+    const req = makeRequest("/", {
+      linkRedirect: "/api/auth/finish-link?from=user1",
+    });
     const response = await proxy(req);
 
     expect(response.status).toBe(307);
-    expect(new URL(response.headers.get("location")!).pathname).toBe(
-      "/profile"
-    );
+    const location = new URL(response.headers.get("location")!);
+    expect(location.pathname).toBe("/api/auth/finish-link");
+    expect(location.searchParams.get("from")).toBe("user1");
   });
 
-  it("does NOT consume linkRedirect when linkFromUserId is still present", async () => {
-    const req = makeRequest("/profile", {
-      linkRedirect: "/profile",
+  it("redirects even when linkFromUserId is still present", async () => {
+    // linkFromUserId may not have been cleaned up by the JWT callback,
+    // but the proxy should still redirect to finish-link
+    const req = makeRequest("/feed", {
+      linkRedirect: "/api/auth/finish-link?from=user1",
       linkFromUserId: "user1",
     });
     const response = await proxy(req);
 
-    // Should pass through without redirect (linkFromUserId still present
-    // means we haven't completed the OAuth flow yet)
-    expect(response.status).not.toBe(307);
+    expect(response.status).toBe(307);
+    const location = new URL(response.headers.get("location")!);
+    expect(location.pathname).toBe("/api/auth/finish-link");
   });
 
-  it("cleans up linkRedirect when already at the target path", async () => {
-    const req = makeRequest("/profile", { linkRedirect: "/profile" });
+  it("deletes linkRedirect cookie on redirect", async () => {
+    const req = makeRequest("/feed", {
+      linkRedirect: "/api/auth/finish-link?from=user1",
+    });
     const response = await proxy(req);
 
-    // Should not redirect (already at target)
-    expect(response.status).not.toBe(307);
-    // Should delete the cookie
+    expect(response.status).toBe(307);
     const setCookie = response.headers.get("set-cookie") ?? "";
     expect(setCookie).toContain("linkRedirect");
   });
 
-  it("redirects from /feed to /profile via linkRedirect after OAuth", async () => {
-    // Simulates: OAuth callback redirected to / → /feed, but linkRedirect
-    // should send the user to /profile instead
-    const req = makeRequest("/feed", { linkRedirect: "/profile" });
+  it("does not redirect when no linkRedirect cookie", async () => {
+    const req = makeRequest("/feed");
     const response = await proxy(req);
 
-    expect(response.status).toBe(307);
-    expect(new URL(response.headers.get("location")!).pathname).toBe(
-      "/profile"
-    );
+    // Should pass through (not a redirect to finish-link)
+    expect(response.status).not.toBe(307);
   });
 });
