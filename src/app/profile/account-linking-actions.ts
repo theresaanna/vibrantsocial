@@ -33,6 +33,15 @@ export async function startOAuthLink(
     maxAge: 300, // 5 minutes
     path: "/",
   });
+  // Fallback redirect cookie: middleware will redirect to /profile after
+  // the OAuth flow completes, even if NextAuth's callbackUrl cookie is lost.
+  cookieStore.set("linkRedirect", "/profile", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 300,
+    path: "/",
+  });
 
   // Redirect to OAuth provider in the same response that sets the cookie.
   // This uses the server-side signIn which throws a NEXT_REDIRECT.
