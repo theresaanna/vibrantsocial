@@ -117,37 +117,8 @@ export default async function QuotePage({ params }: Props) {
         where: { userId: userId ?? "" },
         select: { id: true },
       },
-      comments: {
-        where: { parentId: null },
-        orderBy: { createdAt: "asc" },
-        include: {
-          author: {
-            select: {
-              id: true,
-              username: true,
-              displayName: true,
-              name: true,
-              image: true,
-              avatar: true,
-            },
-          },
-          replies: {
-            orderBy: { createdAt: "asc" },
-            include: {
-              author: {
-                select: {
-                  id: true,
-                  username: true,
-                  displayName: true,
-                  name: true,
-                  image: true,
-                  avatar: true,
-                },
-              },
-            },
-          },
-        },
-      },
+      // Comments are lazy-loaded by RepostCommentSection via fetchRepostComments
+      // which builds the full nested tree (not just 2 levels)
     },
   });
 

@@ -8,6 +8,7 @@ import { NotificationBell } from "@/components/notification-bell";
 import { SearchBar } from "@/components/search-bar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NavLinks, MobileProfileLink } from "@/components/nav-links";
+import { AccountSwitcherWrapper } from "@/components/account-switcher-wrapper";
 
 export async function Header() {
   const session = await auth();
@@ -48,6 +49,7 @@ export async function Header() {
               />
               <SearchBar />
               <NavLinks username={session.user.username} />
+              <AccountSwitcherWrapper />
               <NotificationBell initialUnreadCount={unreadNotifications} initialNotifications={recentNotifications} />
               <ChatNav initialConversations={conversations} />
             </>

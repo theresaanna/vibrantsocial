@@ -58,11 +58,13 @@ export function RepostCommentSection({
 
   useEffect(() => {
     if (!onCommentCountChange) return;
-    const total = comments.reduce(
-      (sum, c) => sum + 1 + (c.replies?.length ?? 0),
-      0
-    );
-    onCommentCountChange(total);
+    function countAll(list: RepostCommentData[]): number {
+      return list.reduce(
+        (sum, c) => sum + 1 + countAll(c.replies ?? []),
+        0
+      );
+    }
+    onCommentCountChange(countAll(comments));
   }, [comments, onCommentCountChange]);
 
   const [replyingTo, setReplyingTo] = useState<{
@@ -104,23 +106,12 @@ export function RepostCommentSection({
       {comments.length > 0 && (
         <div className="mb-3 space-y-3">
           {comments.map((comment) => (
-            <div key={comment.id}>
-              <RepostCommentItem
-                comment={comment}
-                onReply={isAuthenticated && phoneVerified ? (id, name) => setReplyingTo({ id, name }) : undefined}
-              />
-              {comment.replies && comment.replies.length > 0 && (
-                <div className="ml-8 mt-2 space-y-2 border-l-2 border-zinc-100 pl-3 dark:border-zinc-800">
-                  {comment.replies.map((reply) => (
-                    <RepostCommentItem
-                      key={reply.id}
-                      comment={reply}
-                      onReply={isAuthenticated && phoneVerified ? (id, name) => setReplyingTo({ id, name }) : undefined}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+            <RepostCommentThread
+              key={comment.id}
+              comment={comment}
+              depth={0}
+              onReply={isAuthenticated && phoneVerified ? (id, name) => setReplyingTo({ id, name }) : undefined}
+            />
           ))}
         </div>
       )}
@@ -186,6 +177,42 @@ export function RepostCommentSection({
 
       {state.message && !state.success && (
         <p className="mt-1 text-sm text-red-600">{state.message}</p>
+      )}
+    </div>
+  );
+}
+
+const MAX_VISUAL_DEPTH = 4;
+
+function RepostCommentThread({
+  comment,
+  depth,
+  onReply,
+}: {
+  comment: RepostCommentData;
+  depth: number;
+  onReply?: (commentId: string, authorName: string) => void;
+}) {
+  return (
+    <div>
+      <RepostCommentItem comment={comment} onReply={onReply} />
+      {comment.replies && comment.replies.length > 0 && (
+        <div
+          className={
+            depth < MAX_VISUAL_DEPTH
+              ? "ml-8 mt-2 space-y-2 border-l-2 border-zinc-100 pl-3 dark:border-zinc-800"
+              : "mt-2 space-y-2"
+          }
+        >
+          {comment.replies.map((reply) => (
+            <RepostCommentThread
+              key={reply.id}
+              comment={reply}
+              depth={depth + 1}
+              onReply={onReply}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

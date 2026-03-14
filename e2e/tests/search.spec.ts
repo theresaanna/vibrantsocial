@@ -7,7 +7,7 @@ test.describe("Search", () => {
 
     // The Users tab should be active by default and show results
     await expect(
-      page.locator(`text=@${TEST_USER.username}`)
+      page.getByText(`@${TEST_USER.username}`, { exact: true })
     ).toBeVisible({ timeout: 10000 });
   });
 
@@ -31,7 +31,7 @@ test.describe("Search", () => {
 
     // Should find the test user in results
     await expect(
-      page.locator(`text=@${TEST_USER.username}`)
+      page.getByText(`@${TEST_USER.username}`, { exact: true })
     ).toBeVisible({ timeout: 10000 });
   });
 

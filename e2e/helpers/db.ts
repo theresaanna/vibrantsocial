@@ -8,6 +8,14 @@ export const TEST_USER = {
   dateOfBirth: new Date("2001-01-15"),
 };
 
+export const TEST_USER_2 = {
+  email: "e2e-test2@example.com",
+  username: "e2e_testuser2",
+  displayName: "E2E User Two",
+  password: "TestPassword456!",
+  dateOfBirth: new Date("2000-06-15"),
+};
+
 function createPool() {
   return new pg.Pool({ connectionString: process.env.DATABASE_URL });
 }
@@ -41,6 +49,54 @@ export async function seedTestUser() {
   }
 }
 
+export async function seedSecondTestUser() {
+  const pool = createPool();
+  try {
+    const existing = await pool.query(
+      'SELECT id FROM "User" WHERE email = $1',
+      [TEST_USER_2.email]
+    );
+    if (existing.rows.length > 0) return existing.rows[0];
+
+    const passwordHash = await bcrypt.hash(TEST_USER_2.password, 12);
+    const id = "e2e2_" + Date.now().toString(36);
+    const result = await pool.query(
+      `INSERT INTO "User" (id, email, username, "displayName", "passwordHash", "dateOfBirth", "phoneVerified", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW(), NOW())
+       RETURNING id`,
+      [
+        id,
+        TEST_USER_2.email,
+        TEST_USER_2.username,
+        TEST_USER_2.displayName,
+        passwordHash,
+        TEST_USER_2.dateOfBirth.toISOString(),
+      ]
+    );
+    return result.rows[0];
+  } finally {
+    await pool.end();
+  }
+}
+
+export async function cleanupLinkedAccountGroups() {
+  const pool = createPool();
+  try {
+    // Unlink all test users from any groups
+    await pool.query(
+      `UPDATE "User" SET "linkedAccountGroupId" = NULL WHERE email LIKE 'e2e-%'`
+    );
+    // Delete orphaned groups (no members)
+    await pool.query(
+      `DELETE FROM "LinkedAccountGroup" WHERE id NOT IN (
+        SELECT DISTINCT "linkedAccountGroupId" FROM "User" WHERE "linkedAccountGroupId" IS NOT NULL
+      )`
+    );
+  } finally {
+    await pool.end();
+  }
+}
+
 export async function cleanupTestData() {
   const pool = createPool();
   try {
@@ -50,6 +106,12 @@ export async function cleanupTestData() {
     );
     const ids = users.rows.map((r: { id: string }) => r.id);
     if (ids.length === 0) return;
+
+    // Unlink from account groups first
+    await pool.query(
+      `UPDATE "User" SET "linkedAccountGroupId" = NULL WHERE id = ANY($1)`,
+      [ids]
+    );
 
     // Delete in dependency order
     const tables = [

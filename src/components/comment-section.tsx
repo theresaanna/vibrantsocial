@@ -52,11 +52,13 @@ export function CommentSection({
   // Report comment count changes to parent (PostCard)
   useEffect(() => {
     if (!onCommentCountChange) return;
-    const total = comments.reduce(
-      (sum, c) => sum + 1 + (c.replies?.length ?? 0),
-      0
-    );
-    onCommentCountChange(total);
+    function countAll(list: CommentData[]): number {
+      return list.reduce(
+        (sum, c) => sum + 1 + countAll(c.replies ?? []),
+        0
+      );
+    }
+    onCommentCountChange(countAll(comments));
   }, [comments, onCommentCountChange]);
 
   const [replyingTo, setReplyingTo] = useState<{
@@ -100,56 +102,40 @@ export function CommentSection({
   const handleReaction = useCallback(async (commentId: string, emoji: string) => {
     if (!currentUserId) return;
 
-    // Optimistic update
-    setComments((prev) =>
-      prev.map((c) => {
-        if (c.id === commentId) return applyReactionOptimistic(c, emoji, currentUserId);
-        if (c.replies?.some((r) => r.id === commentId)) {
-          return {
-            ...c,
-            replies: c.replies.map((r) =>
-              r.id === commentId ? applyReactionOptimistic(r, emoji, currentUserId) : r
-            ),
-          };
-        }
+    // Recursive optimistic update
+    function updateDeep(list: CommentData[]): CommentData[] {
+      return list.map((c) => {
+        if (c.id === commentId) return applyReactionOptimistic(c, emoji, currentUserId!);
+        if (c.replies) return { ...c, replies: updateDeep(c.replies) };
         return c;
-      })
-    );
+      });
+    }
+    setComments(updateDeep);
 
     await toggleCommentReaction({ commentId, emoji });
   }, [currentUserId, setComments]);
 
   const handleEdit = useCallback(async (commentId: string, content: string) => {
-    // Optimistic update
-    setComments((prev) =>
-      prev.map((c) => {
+    // Recursive optimistic update
+    function updateDeep(list: CommentData[]): CommentData[] {
+      return list.map((c) => {
         if (c.id === commentId) return { ...c, content, editedAt: new Date() };
-        if (c.replies?.some((r) => r.id === commentId)) {
-          return {
-            ...c,
-            replies: c.replies.map((r) =>
-              r.id === commentId ? { ...r, content, editedAt: new Date() } : r
-            ),
-          };
-        }
+        if (c.replies) return { ...c, replies: updateDeep(c.replies) };
         return c;
-      })
-    );
+      });
+    }
+    setComments(updateDeep);
     await editComment({ commentId, content });
   }, [setComments]);
 
-  const handleDelete = useCallback(async (commentId: string, parentId?: string | null) => {
-    // Optimistic update
-    setComments((prev) => {
-      if (parentId) {
-        return prev.map((c) =>
-          c.id === parentId
-            ? { ...c, replies: c.replies?.filter((r) => r.id !== commentId) }
-            : c
-        );
-      }
-      return prev.filter((c) => c.id !== commentId);
-    });
+  const handleDelete = useCallback(async (commentId: string, _parentId?: string | null) => {
+    // Recursive optimistic delete
+    function removeDeep(list: CommentData[]): CommentData[] {
+      return list
+        .filter((c) => c.id !== commentId)
+        .map((c) => c.replies ? { ...c, replies: removeDeep(c.replies) } : c);
+    }
+    setComments(removeDeep);
     await deleteComment({ commentId });
   }, [setComments]);
 
@@ -166,35 +152,17 @@ export function CommentSection({
       {comments.length > 0 && (
         <div className="mb-3 space-y-3">
           {comments.map((comment) => (
-            <div key={comment.id} id={`comment-${comment.id}`}>
-              <CommentItem
-                comment={comment}
-                onReply={isAuthenticated && phoneVerified ? (id, name) => setReplyingTo({ id, name }) : undefined}
-                isHighlighted={highlightCommentId === comment.id}
-                onReaction={isAuthenticated ? handleReaction : undefined}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                currentUserId={currentUserId}
-              />
-              {comment.replies && comment.replies.length > 0 && (
-                <div className="ml-8 mt-2 space-y-2 border-l-2 border-zinc-100 pl-3 dark:border-zinc-800">
-                  {comment.replies.map((reply) => (
-                    <div key={reply.id} id={`comment-${reply.id}`}>
-                      <CommentItem
-                        comment={reply}
-                        parentId={comment.id}
-                        onReply={isAuthenticated && phoneVerified ? (id, name) => setReplyingTo({ id, name }) : undefined}
-                        isHighlighted={highlightCommentId === reply.id}
-                        onReaction={isAuthenticated ? handleReaction : undefined}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                        currentUserId={currentUserId}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <CommentThread
+              key={comment.id}
+              comment={comment}
+              depth={0}
+              onReply={isAuthenticated && phoneVerified ? (id, name) => setReplyingTo({ id, name }) : undefined}
+              highlightCommentId={highlightCommentId}
+              onReaction={isAuthenticated ? handleReaction : undefined}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              currentUserId={currentUserId}
+            />
           ))}
         </div>
       )}
@@ -260,6 +228,66 @@ export function CommentSection({
 
       {state.message && !state.success && (
         <p className="mt-1 text-sm text-red-600">{state.message}</p>
+      )}
+    </div>
+  );
+}
+
+const MAX_VISUAL_DEPTH = 4;
+
+function CommentThread({
+  comment,
+  depth,
+  onReply,
+  highlightCommentId,
+  onReaction,
+  onEdit,
+  onDelete,
+  currentUserId,
+}: {
+  comment: CommentData;
+  depth: number;
+  onReply?: (commentId: string, authorName: string) => void;
+  highlightCommentId?: string | null;
+  onReaction?: (commentId: string, emoji: string) => void;
+  onEdit?: (commentId: string, content: string) => void;
+  onDelete?: (commentId: string, parentId?: string | null) => void;
+  currentUserId?: string;
+}) {
+  return (
+    <div id={`comment-${comment.id}`}>
+      <CommentItem
+        comment={comment}
+        parentId={comment.parentId ?? undefined}
+        onReply={onReply}
+        isHighlighted={highlightCommentId === comment.id}
+        onReaction={onReaction}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        currentUserId={currentUserId}
+      />
+      {comment.replies && comment.replies.length > 0 && (
+        <div
+          className={
+            depth < MAX_VISUAL_DEPTH
+              ? "ml-8 mt-2 space-y-2 border-l-2 border-zinc-100 pl-3 dark:border-zinc-800"
+              : "mt-2 space-y-2"
+          }
+        >
+          {comment.replies.map((reply) => (
+            <CommentThread
+              key={reply.id}
+              comment={reply}
+              depth={depth + 1}
+              onReply={onReply}
+              highlightCommentId={highlightCommentId}
+              onReaction={onReaction}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              currentUserId={currentUserId}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

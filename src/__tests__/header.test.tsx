@@ -50,6 +50,10 @@ vi.mock("@/components/search-bar", () => ({
   SearchBar: () => <div data-testid="search-bar">Search</div>,
 }));
 
+vi.mock("@/components/account-switcher-wrapper", () => ({
+  AccountSwitcherWrapper: () => <div data-testid="account-switcher">Switcher</div>,
+}));
+
 vi.mock("@/components/nav-links", () => ({
   NavLinks: ({ username }: { username?: string | null }) => (
     <div data-testid="nav-links">

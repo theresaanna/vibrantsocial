@@ -1,5 +1,12 @@
 import { DefaultSession } from "next-auth";
 
+export interface LinkedAccount {
+  id: string;
+  username: string | null;
+  displayName: string | null;
+  avatar: string | null;
+}
+
 declare module "next-auth" {
   interface Session {
     user: {
@@ -11,6 +18,7 @@ declare module "next-auth" {
       tier: string;
       isEmailVerified: boolean;
       authProvider: string | null;
+      linkedAccounts: LinkedAccount[];
     } & DefaultSession["user"];
   }
 
@@ -34,6 +42,7 @@ declare module "next-auth/jwt" {
     tier: string;
     isEmailVerified: boolean;
     authProvider: string | null;
+    linkedAccounts: LinkedAccount[];
   }
 }
 
