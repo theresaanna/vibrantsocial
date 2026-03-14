@@ -138,48 +138,61 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         // Check for OAuth account-linking flow (cookie set by startOAuthLink)
         let isLinkingFlow = false;
+        let linkCookieValue: string | undefined;
         try {
           const cookieStore = await cookies();
-          const linkCookie = cookieStore.get("linkFromUserId");
-          if (linkCookie?.value && linkCookie.value !== user.id) {
-            // OAuth linking flow: link the two users and keep the original session
-            const originalUserId = linkCookie.value;
-            cookieStore.delete("linkFromUserId");
-
-            const originalUser = await prisma.user.findUnique({
-              where: { id: originalUserId },
-              select: {
-                id: true,
-                username: true,
-                displayName: true,
-                bio: true,
-                avatar: true,
-                tier: true,
-                emailVerified: true,
-              },
-            });
-
-            if (originalUser) {
-              await linkUsersInGroup(originalUserId, user.id!);
-
-              // Set token to the ORIGINAL user, not the OAuth user
-              token.id = originalUser.id;
-              token.username = originalUser.username;
-              token.displayName = originalUser.displayName;
-              token.bio = originalUser.bio;
-              token.avatar = originalUser.avatar;
-              token.tier = originalUser.tier ?? "free";
-              token.isEmailVerified = !!originalUser.emailVerified;
-              token.authProvider = account?.provider ?? null;
-              token.linkedAccounts = await loadLinkedAccounts(originalUser.id);
-              isLinkingFlow = true;
-            }
-          } else if (linkCookie?.value) {
-            // Cookie user === OAuth user (self-link), just clear it
-            cookieStore.delete("linkFromUserId");
-          }
+          linkCookieValue = cookieStore.get("linkFromUserId")?.value;
         } catch {
           // cookies() may throw in non-request contexts; ignore
+        }
+
+        if (linkCookieValue && linkCookieValue !== user.id) {
+          // OAuth linking flow: link the two users and keep the original session
+          const originalUser = await prisma.user.findUnique({
+            where: { id: linkCookieValue },
+            select: {
+              id: true,
+              username: true,
+              displayName: true,
+              bio: true,
+              avatar: true,
+              tier: true,
+              emailVerified: true,
+            },
+          });
+
+          if (originalUser) {
+            await linkUsersInGroup(linkCookieValue, user.id!);
+
+            // Set token to the ORIGINAL user, not the OAuth user
+            token.id = originalUser.id;
+            token.username = originalUser.username;
+            token.displayName = originalUser.displayName;
+            token.bio = originalUser.bio;
+            token.avatar = originalUser.avatar;
+            token.tier = originalUser.tier ?? "free";
+            token.isEmailVerified = !!originalUser.emailVerified;
+            token.authProvider = account?.provider ?? null;
+            token.linkedAccounts = await loadLinkedAccounts(originalUser.id);
+            isLinkingFlow = true;
+          }
+
+          // Clean up the cookie (best-effort; may silently fail in GET context,
+          // but it expires in 5 minutes anyway)
+          try {
+            const cookieStore = await cookies();
+            cookieStore.delete("linkFromUserId");
+          } catch {
+            // Ignore — cookie will expire naturally
+          }
+        } else if (linkCookieValue) {
+          // Cookie user === OAuth user (self-link), just clear it
+          try {
+            const cookieStore = await cookies();
+            cookieStore.delete("linkFromUserId");
+          } catch {
+            // Ignore — cookie will expire naturally
+          }
         }
 
         if (!isLinkingFlow) {
