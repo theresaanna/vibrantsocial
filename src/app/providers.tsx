@@ -6,6 +6,7 @@ import { AblyProvider, ChannelProvider, usePresence } from "ably/react";
 import { getAblyRealtimeClient } from "@/lib/ably";
 import { createContext, useContext, useEffect, useRef } from "react";
 import { ToastProvider } from "@/components/toast-provider";
+import { CookieToast } from "@/components/cookie-toast";
 import { Toaster } from "sonner";
 
 const PRESENCE_CHANNEL = "presence:global";
@@ -42,6 +43,7 @@ function AblyProviderWrapper({ children }: { children: React.ReactNode }) {
     return (
       <AblyReadyContext.Provider value={false}>
         <Toaster position="bottom-right" />
+        <CookieToast />
         {children}
       </AblyReadyContext.Provider>
     );
@@ -53,6 +55,7 @@ function AblyProviderWrapper({ children }: { children: React.ReactNode }) {
         <ChannelProvider channelName={PRESENCE_CHANNEL}>
           <PresenceEntry />
           <ToastProvider />
+          <CookieToast />
           {children}
         </ChannelProvider>
       </AblyReadyContext.Provider>

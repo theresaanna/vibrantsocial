@@ -119,6 +119,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
+    error: "/auth-error",
   },
   events: {
     async createUser({ user }) {
@@ -134,7 +135,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   callbacks: {
-    async jwt({ token, user, trigger, session, account }) {
+    async jwt({ token, user, trigger, session, account, profile }) {
       if (user) {
         // Check for OAuth account-linking flow (cookie set by startOAuthLink)
         let isLinkingFlow = false;
@@ -148,33 +149,37 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (linkCookieValue && linkCookieValue !== user.id) {
           // OAuth linking flow: link the two users and keep the original session
-          const originalUser = await prisma.user.findUnique({
-            where: { id: linkCookieValue },
-            select: {
-              id: true,
-              username: true,
-              displayName: true,
-              bio: true,
-              avatar: true,
-              tier: true,
-              emailVerified: true,
-            },
-          });
+          try {
+            const originalUser = await prisma.user.findUnique({
+              where: { id: linkCookieValue },
+              select: {
+                id: true,
+                username: true,
+                displayName: true,
+                bio: true,
+                avatar: true,
+                tier: true,
+                emailVerified: true,
+              },
+            });
 
-          if (originalUser) {
-            await linkUsersInGroup(linkCookieValue, user.id!);
+            if (originalUser) {
+              await linkUsersInGroup(linkCookieValue, user.id!);
 
-            // Set token to the ORIGINAL user, not the OAuth user
-            token.id = originalUser.id;
-            token.username = originalUser.username;
-            token.displayName = originalUser.displayName;
-            token.bio = originalUser.bio;
-            token.avatar = originalUser.avatar;
-            token.tier = originalUser.tier ?? "free";
-            token.isEmailVerified = !!originalUser.emailVerified;
-            token.authProvider = account?.provider ?? null;
-            token.linkedAccounts = await loadLinkedAccounts(originalUser.id);
-            isLinkingFlow = true;
+              // Set token to the ORIGINAL user, not the OAuth user
+              token.id = originalUser.id;
+              token.username = originalUser.username;
+              token.displayName = originalUser.displayName;
+              token.bio = originalUser.bio;
+              token.avatar = originalUser.avatar;
+              token.tier = originalUser.tier ?? "free";
+              token.isEmailVerified = !!originalUser.emailVerified;
+              token.authProvider = account?.provider ?? null;
+              token.linkedAccounts = await loadLinkedAccounts(originalUser.id);
+              isLinkingFlow = true;
+            }
+          } catch (err) {
+            console.error("[auth] OAuth linking flow error:", err);
           }
 
           // Clean up the cookie (best-effort; may silently fail in GET context,
@@ -185,8 +190,73 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           } catch {
             // Ignore — cookie will expire naturally
           }
-        } else if (linkCookieValue) {
-          // Cookie user === OAuth user (self-link), just clear it
+        } else if (linkCookieValue && account?.provider && account.providerAccountId) {
+          // Same-email case: adapter linked the OAuth account to the existing user.
+          // We need to split into a separate user for multi-account switching.
+          try {
+            // Build display info from the OAuth profile
+            const oauthProfile = profile as Record<string, unknown> | undefined;
+            const oauthDisplayName =
+              (oauthProfile?.global_name as string) ??
+              (oauthProfile?.name as string) ??
+              (oauthProfile?.login as string) ??
+              null;
+            const oauthImage =
+              (oauthProfile?.image_url as string) ??
+              (user.image as string) ??
+              null;
+
+            // Build a Discord avatar URL if we have the hash
+            let avatarUrl = oauthImage;
+            if (
+              account.provider === "discord" &&
+              oauthProfile?.id &&
+              oauthProfile?.avatar
+            ) {
+              avatarUrl = `https://cdn.discordapp.com/avatars/${oauthProfile.id}/${oauthProfile.avatar}.png`;
+            }
+
+            // Create a new user for this OAuth identity (no email to avoid
+            // unique-constraint conflicts)
+            const newUser = await prisma.user.create({
+              data: {
+                name: oauthDisplayName,
+                displayName: oauthDisplayName,
+                image: avatarUrl,
+                avatar: avatarUrl,
+                emailVerified: new Date(),
+              },
+            });
+
+            // Move the OAuth Account from the current user to the new user
+            await prisma.account.updateMany({
+              where: {
+                userId: user.id!,
+                provider: account.provider,
+                providerAccountId: account.providerAccountId,
+              },
+              data: { userId: newUser.id },
+            });
+
+            // Link both users in a group
+            await linkUsersInGroup(linkCookieValue, newUser.id);
+
+            // Keep the ORIGINAL user session
+            token.id = user.id;
+            token.username = user.username;
+            token.displayName = user.displayName;
+            token.bio = user.bio;
+            token.avatar = user.avatar;
+            token.tier = user.tier ?? "free";
+            token.isEmailVerified = !!("emailVerified" in user && user.emailVerified);
+            token.authProvider = account?.provider ?? null;
+            token.linkedAccounts = await loadLinkedAccounts(user.id!);
+            isLinkingFlow = true;
+          } catch (err) {
+            console.error("[auth] Same-email OAuth split error:", err);
+          }
+
+          // Clean up the cookie
           try {
             const cookieStore = await cookies();
             cookieStore.delete("linkFromUserId");

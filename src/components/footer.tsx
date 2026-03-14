@@ -25,6 +25,13 @@ export function Footer() {
           DMCA Policy
         </Link>
         <span className="text-xs text-zinc-300 dark:text-zinc-700">·</span>
+        <Link
+          href="/cookies"
+          className="text-xs text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+        >
+          Cookie Policy
+        </Link>
+        <span className="text-xs text-zinc-300 dark:text-zinc-700">·</span>
         <a
           href="mailto:vibrantsocial@proton.me"
           className="text-xs text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
