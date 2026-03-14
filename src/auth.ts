@@ -9,6 +9,7 @@ import bcrypt from "bcryptjs";
 import { autoFriendNewUser } from "@/lib/auto-friend";
 import { inngest } from "@/lib/inngest";
 import { linkUsersInGroup, loadLinkedAccounts } from "@/lib/account-linking-db";
+import type { LinkedAccount } from "@/types/next-auth";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
