@@ -38,7 +38,7 @@ test.describe("Account Switching", () => {
     await expect(page.getByTestId("link-account-modal")).toBeVisible({
       timeout: 5000,
     });
-    await expect(page.getByText("Link another account")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Link another account" })).toBeVisible();
 
     // Verify form fields are present
     await expect(page.getByTestId("link-email-input")).toBeVisible();
