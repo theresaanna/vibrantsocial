@@ -43,6 +43,7 @@ interface PostCardProps {
     isNsfw: boolean;
     isGraphicNudity: boolean;
     isCloseFriendsOnly?: boolean;
+    isLoggedInOnly?: boolean;
     isPinned: boolean;
     author: PostAuthor | null;
     tags?: Array<{ tag: { name: string } }>;
@@ -198,6 +199,9 @@ export function PostCard({
   // Client-side safety net: hide all flagged content from logged-out users
   if (isRestricted && !isAuthenticated) return null;
 
+  // Hide logged-in-only posts from logged-out users
+  if (post.isLoggedInOnly && !isAuthenticated) return null;
+
   if (isRestricted && !revealed) {
     // Sensitive: requires age verification (authors can always reveal their own posts)
     if (post.isSensitive) {
@@ -326,6 +330,13 @@ export function PostCard({
                 </svg>
               </span>
             )}
+            {post.isLoggedInOnly && (
+              <span className="flex items-center gap-0.5 rounded-full bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" title="Logged-in users only">
+                <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                </svg>
+              </span>
+            )}
           </div>
         </div>
 
@@ -429,6 +440,7 @@ export function PostCard({
                 <input type="hidden" name="isSensitive" value={editIsSensitive ? "true" : "false"} />
                 <input type="hidden" name="isNsfw" value={editIsNsfw ? "true" : "false"} />
                 <input type="hidden" name="isGraphicNudity" value={editIsGraphicNudity ? "true" : "false"} />
+                <input type="hidden" name="isLoggedInOnly" value={post.isLoggedInOnly ? "true" : "false"} />
                 <div data-testid="post-edit-editor">
                   <Editor
                     initialContent={currentContent}

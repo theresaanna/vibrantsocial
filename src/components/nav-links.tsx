@@ -19,6 +19,18 @@ export function NavLinks({ username }: { username?: string | null }) {
 
   const links: NavLink[] = [
     {
+      href: "/search",
+      label: "Search",
+      matchPrefix: true,
+      color: "hover:bg-teal-50 hover:text-teal-500 dark:hover:bg-teal-900/20 dark:hover:text-teal-500",
+      activeColor: "bg-teal-50 text-teal-500 dark:bg-teal-900/20 dark:text-teal-500",
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+        </svg>
+      ),
+    },
+    {
       href: "/feed",
       label: "Feed",
       color: "hover:bg-purple-50 hover:text-purple-500 dark:hover:bg-purple-900/20 dark:hover:text-purple-500",

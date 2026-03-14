@@ -95,6 +95,7 @@ vi.mock("@/components/editor/plugins/MentionsPlugin", () => ({
 
 vi.mock("@/components/editor/plugins/DraftPlugin", () => ({
   DraftPlugin: () => null,
+  ClearDraftButton: () => null,
   clearDraft: vi.fn(),
 }));
 
