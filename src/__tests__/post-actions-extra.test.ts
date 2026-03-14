@@ -150,26 +150,41 @@ const prevState = { success: false, message: "" };
 describe("fetchComments", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns serialized comments", async () => {
-    const comments = [
+  it("returns serialized comments with tree built from flat data", async () => {
+    const flatComments = [
       {
         id: "c1",
         content: "Hello",
+        parentId: null,
         createdAt: new Date("2024-01-01"),
         author: { id: "a1", username: "alice" },
-        replies: [],
+        reactions: [],
+      },
+      {
+        id: "c2",
+        content: "Reply",
+        parentId: "c1",
+        createdAt: new Date("2024-01-02"),
+        author: { id: "a2", username: "bob" },
+        reactions: [],
       },
     ];
-    mockPrisma.comment.findMany.mockResolvedValueOnce(comments as never);
+    mockPrisma.comment.findMany.mockResolvedValueOnce(flatComments as never);
 
     const result = await fetchComments("p1");
-    expect(result).toEqual(JSON.parse(JSON.stringify(comments)));
+
+    // Should build a tree: c1 has c2 as a reply
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("c1");
+    expect(result[0].replies).toHaveLength(1);
+    expect(result[0].replies[0].id).toBe("c2");
+
+    // Query should fetch ALL comments (no parentId filter, no nested replies include)
     expect(mockPrisma.comment.findMany).toHaveBeenCalledWith({
-      where: { postId: "p1", parentId: null },
+      where: { postId: "p1" },
       orderBy: { createdAt: "asc" },
       include: expect.objectContaining({
         author: expect.any(Object),
-        replies: expect.any(Object),
       }),
     });
   });
@@ -655,20 +670,30 @@ describe("createComment", () => {
 describe("fetchRepostComments", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns serialized repost comments", async () => {
-    const comments = [
+  it("returns serialized repost comments with tree built from flat data", async () => {
+    const flatComments = [
       {
         id: "rc1",
         content: "Quote comment",
-        createdAt: new Date(),
+        parentId: null,
+        createdAt: new Date("2024-01-01"),
         author: { id: "a1", username: "alice" },
-        replies: [],
+      },
+      {
+        id: "rc2",
+        content: "Reply to quote",
+        parentId: "rc1",
+        createdAt: new Date("2024-01-02"),
+        author: { id: "a2", username: "bob" },
       },
     ];
-    mockPrisma.repostComment.findMany.mockResolvedValueOnce(comments as never);
+    mockPrisma.repostComment.findMany.mockResolvedValueOnce(flatComments as never);
 
     const result = await fetchRepostComments("r1");
-    expect(result).toEqual(JSON.parse(JSON.stringify(comments)));
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("rc1");
+    expect(result[0].replies).toHaveLength(1);
+    expect(result[0].replies[0].id).toBe("rc2");
   });
 });
 

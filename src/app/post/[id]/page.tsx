@@ -121,37 +121,8 @@ export default async function PostPage({ params, searchParams }: Props) {
           tag: { select: { name: true } },
         },
       },
-      comments: {
-        where: { parentId: null },
-        orderBy: { createdAt: "asc" },
-        include: {
-          author: {
-            select: {
-              id: true,
-              username: true,
-              displayName: true,
-              name: true,
-              image: true,
-              avatar: true,
-            },
-          },
-          replies: {
-            orderBy: { createdAt: "asc" },
-            include: {
-              author: {
-                select: {
-                  id: true,
-                  username: true,
-                  displayName: true,
-                  name: true,
-                  image: true,
-                  avatar: true,
-                },
-              },
-            },
-          },
-        },
-      },
+      // Comments are lazy-loaded by CommentSection via fetchComments
+      // which builds the full nested tree (not just 2 levels)
     },
   });
 

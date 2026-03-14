@@ -60,24 +60,42 @@ function transformCommentsWithReactions(
   });
 }
 
+function buildCommentTree(
+  comments: Array<Record<string, unknown>>
+): Array<Record<string, unknown>> {
+  const map = new Map<string, Record<string, unknown>>();
+  const roots: Array<Record<string, unknown>> = [];
+
+  for (const c of comments) {
+    map.set(c.id as string, { ...c, replies: [] });
+  }
+
+  for (const c of comments) {
+    const node = map.get(c.id as string)!;
+    const parentId = c.parentId as string | null;
+    if (parentId && map.has(parentId)) {
+      const parent = map.get(parentId)!;
+      (parent.replies as Array<Record<string, unknown>>).push(node);
+    } else {
+      roots.push(node);
+    }
+  }
+
+  return roots;
+}
+
 export async function fetchComments(postId: string) {
-  const comments = await prisma.comment.findMany({
-    where: { postId, parentId: null },
+  // Fetch ALL comments flat, then build tree in JS to support unlimited nesting
+  const allComments = await prisma.comment.findMany({
+    where: { postId },
     orderBy: { createdAt: "asc" },
     include: {
       author: { select: commentAuthorSelect },
       ...commentReactionSelect,
-      replies: {
-        orderBy: { createdAt: "asc" },
-        include: {
-          author: { select: commentAuthorSelect },
-          ...commentReactionSelect,
-        },
-      },
     },
   });
 
-  return JSON.parse(JSON.stringify(transformCommentsWithReactions(comments)));
+  return JSON.parse(JSON.stringify(transformCommentsWithReactions(buildCommentTree(allComments))));
 }
 
 export async function toggleLike(
@@ -621,19 +639,15 @@ export async function createComment(
 // ── Quote post interactions ───────────────────────────────────────
 
 export async function fetchRepostComments(repostId: string) {
-  const comments = await prisma.repostComment.findMany({
-    where: { repostId, parentId: null },
+  const allComments = await prisma.repostComment.findMany({
+    where: { repostId },
     orderBy: { createdAt: "asc" },
     include: {
       author: { select: commentAuthorSelect },
-      replies: {
-        orderBy: { createdAt: "asc" },
-        include: { author: { select: commentAuthorSelect } },
-      },
     },
   });
 
-  return JSON.parse(JSON.stringify(comments));
+  return JSON.parse(JSON.stringify(buildCommentTree(allComments)));
 }
 
 export async function toggleRepostLike(

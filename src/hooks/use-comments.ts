@@ -24,6 +24,7 @@ export interface CommentData {
   content: string;
   createdAt: Date;
   editedAt?: Date | null;
+  parentId?: string | null;
   author: CommentAuthor;
   reactions?: ReactionGroup[];
   replies?: CommentData[];
@@ -41,81 +42,85 @@ export function useComments(postId: string, initialComments: CommentData[]) {
   }, [initialComments]);
 
   const handleMessage = useCallback((event: InboundMessage) => {
+    // Recursive helpers for deep comment trees
+    function findComment(list: CommentData[], id: string): boolean {
+      return list.some(
+        (c) => c.id === id || (c.replies && findComment(c.replies, id))
+      );
+    }
+
+    function addReply(list: CommentData[], parentId: string, reply: CommentData): CommentData[] {
+      return list.map((c) => {
+        if (c.id === parentId) {
+          return { ...c, replies: [...(c.replies || []), reply] };
+        }
+        if (c.replies) {
+          return { ...c, replies: addReply(c.replies, parentId, reply) };
+        }
+        return c;
+      });
+    }
+
+    function updateComment(
+      list: CommentData[],
+      id: string,
+      updater: (c: CommentData) => CommentData
+    ): CommentData[] {
+      return list.map((c) => {
+        if (c.id === id) return updater(c);
+        if (c.replies) {
+          return { ...c, replies: updateComment(c.replies, id, updater) };
+        }
+        return c;
+      });
+    }
+
+    function removeComment(list: CommentData[], id: string): CommentData[] {
+      return list
+        .filter((c) => c.id !== id)
+        .map((c) =>
+          c.replies ? { ...c, replies: removeComment(c.replies, id) } : c
+        );
+    }
+
     if (event.name === "new") {
       const data = event.data as Record<string, string | null>;
+      const parentId = data.parentId || null;
       const comment: CommentData = {
         id: data.id as string,
         content: data.content as string,
         createdAt: new Date(data.createdAt as string),
+        parentId,
         author: JSON.parse(data.author as string),
         reactions: [],
       };
-      const parentId = data.parentId || null;
 
       setComments((prev) => {
+        if (findComment(prev, comment.id)) return prev;
         if (parentId) {
-          const alreadyExists = prev.some((c) =>
-            c.replies?.some((r) => r.id === comment.id)
-          );
-          if (alreadyExists) return prev;
-
-          return prev.map((c) =>
-            c.id === parentId
-              ? { ...c, replies: [...(c.replies || []), comment] }
-              : c
-          );
+          return addReply(prev, parentId, comment);
         }
-
-        if (prev.some((c) => c.id === comment.id)) return prev;
         return [...prev, comment];
       });
     } else if (event.name === "reaction") {
       const data = event.data as { commentId: string; reactions: string };
-      const commentId = data.commentId;
       const reactions: ReactionGroup[] = JSON.parse(data.reactions);
 
       setComments((prev) =>
-        prev.map((c) => {
-          if (c.id === commentId) return { ...c, reactions };
-          if (c.replies?.some((r) => r.id === commentId)) {
-            return {
-              ...c,
-              replies: c.replies.map((r) =>
-                r.id === commentId ? { ...r, reactions } : r
-              ),
-            };
-          }
-          return c;
-        })
+        updateComment(prev, data.commentId, (c) => ({ ...c, reactions }))
       );
     } else if (event.name === "edit") {
       const data = event.data as { commentId: string; content: string };
       setComments((prev) =>
-        prev.map((c) => {
-          if (c.id === data.commentId) return { ...c, content: data.content, editedAt: new Date() };
-          if (c.replies?.some((r) => r.id === data.commentId)) {
-            return {
-              ...c,
-              replies: c.replies.map((r) =>
-                r.id === data.commentId ? { ...r, content: data.content, editedAt: new Date() } : r
-              ),
-            };
-          }
-          return c;
-        })
+        updateComment(prev, data.commentId, (c) => ({
+          ...c,
+          content: data.content,
+          editedAt: new Date(),
+        }))
       );
     } else if (event.name === "delete") {
       const data = event.data as { commentId: string; parentId: string | null };
-      setComments((prev) => {
-        if (data.parentId) {
-          return prev.map((c) =>
-            c.id === data.parentId
-              ? { ...c, replies: c.replies?.filter((r) => r.id !== data.commentId) }
-              : c
-          );
-        }
-        return prev.filter((c) => c.id !== data.commentId);
-      });
+      setComments((prev) => removeComment(prev, data.commentId));
     }
   }, []);
 
