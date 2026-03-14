@@ -17,9 +17,13 @@ export async function GET(req: NextRequest) {
   const from = req.nextUrl.searchParams.get("from");
   const linkCookie = req.cookies.get("linkFromUserId")?.value;
 
+  console.log("[finish-link] from:", from, "linkCookie:", linkCookie, "url:", req.url);
+  console.log("[finish-link] all cookies:", req.cookies.getAll().map(c => c.name).join(", "));
+
   // Security: the URL param must match the httpOnly cookie to prove
   // the linking was initiated by an authenticated server action.
   if (!from || from !== linkCookie) {
+    console.log("[finish-link] SECURITY CHECK FAILED — from/cookie mismatch. Redirecting to /profile");
     // Can't verify linking intent — just go to profile
     const res = NextResponse.redirect(new URL("/profile", req.url));
     // Clean up stale cookies if present
@@ -29,7 +33,9 @@ export async function GET(req: NextRequest) {
   }
 
   const session = await auth();
+  console.log("[finish-link] session user:", session?.user?.id);
   if (!session?.user?.id) {
+    console.log("[finish-link] No session — redirecting to /login");
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
@@ -37,15 +43,19 @@ export async function GET(req: NextRequest) {
   let needsSwitch = false;
 
   if (from !== oauthUserId) {
+    console.log("[finish-link] Different users — linking", from, "↔", oauthUserId);
     // Different users (different email on Discord vs credentials).
     // The JWT callback may have already linked — linkUsersInGroup is
     // idempotent (returns early if they share a group).
     try {
       await linkUsersInGroup(from, oauthUserId);
+      console.log("[finish-link] linkUsersInGroup succeeded");
     } catch (err) {
       console.error("[finish-link] linking error:", err);
     }
     needsSwitch = true;
+  } else {
+    console.log("[finish-link] Same user (same-email case) — no DB linking needed here");
   }
   // Same-email case (from === oauthUserId): the adapter auto-linked the
   // Account to the existing user.  The JWT callback handles the
@@ -61,6 +71,7 @@ export async function GET(req: NextRequest) {
     redirectUrl.searchParams.set("_switchTo", from);
   }
 
+  console.log("[finish-link] redirecting to:", redirectUrl.toString());
   const res = NextResponse.redirect(redirectUrl);
   res.cookies.delete("linkFromUserId");
   res.cookies.delete("linkRedirect");
