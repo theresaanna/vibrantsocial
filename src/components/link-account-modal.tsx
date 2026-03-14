@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { signIn, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { linkAccount, startOAuthLink } from "@/app/profile/account-linking-actions";
 
 interface LinkAccountModalProps {
@@ -45,11 +45,10 @@ export function LinkAccountModal({ isOpen, onClose, onLinked }: LinkAccountModal
   async function handleOAuthLink(provider: string) {
     setOauthLoading(provider);
     try {
-      const result = await startOAuthLink(provider);
-      if (result.success) {
-        // Cookie is set — now redirect to OAuth provider
-        signIn(provider, { callbackUrl: "/profile" });
-      }
+      // Server action sets the cookie and redirects to OAuth in one response
+      await startOAuthLink(provider);
+      // If we reach here, validation failed (redirect didn't happen)
+      setOauthLoading(null);
     } catch {
       setOauthLoading(null);
     }

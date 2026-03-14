@@ -7,9 +7,9 @@
  *
  * The flow:
  * 1. User clicks "Link with Google/Discord" on /profile
- * 2. startOAuthLink() sets a linkFromUserId cookie with the current user's ID
- * 3. signIn() redirects to OAuth provider with callbackUrl: "/profile"
- * 4. OAuth provider returns → JWT callback runs
+ * 2. startOAuthLink() sets a linkFromUserId cookie and calls server-side
+ *    signIn() which redirects to the OAuth provider (redirectTo: "/profile")
+ * 3. OAuth provider returns → JWT callback runs
  * 5. JWT callback reads the cookie to detect linking flow
  * 6. If linking: calls linkUsersInGroup(), sets token to ORIGINAL user
  * 7. If NOT linking: regular sign-in, token set to OAuth user

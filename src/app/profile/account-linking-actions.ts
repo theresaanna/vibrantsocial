@@ -1,6 +1,6 @@
 "use server";
 
-import { auth } from "@/auth";
+import { auth, signIn } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
@@ -35,6 +35,11 @@ export async function startOAuthLink(
     path: "/",
   });
 
+  // Redirect to OAuth provider in the same response that sets the cookie.
+  // This uses the server-side signIn which throws a NEXT_REDIRECT.
+  await signIn(provider, { redirectTo: "/profile" });
+
+  // Unreachable — signIn throws a redirect above
   return { success: true, message: "Ready to link" };
 }
 
