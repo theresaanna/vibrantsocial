@@ -72,25 +72,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
+      // If the URL already points to finish-link, let it through unchanged.
+      if (url.includes("/api/auth/finish-link")) {
+        return url.startsWith("/") ? `${baseUrl}${url}` : url;
+      }
+
       // When the linkFromUserId cookie is present, this is an account-linking
-      // flow — always redirect to /profile regardless of the callbackUrl cookie
-      // (which can be lost due to origin / protocol mismatches in some hosting
-      // environments).
-      //
-      // Unlike the signIn callback, the redirect callback runs AFTER the JWT
-      // callback, so account linking has already been performed by the time
-      // we get here.
+      // flow — redirect to finish-link so the route handler can reliably
+      // read cookies and link accounts (the JWT callback may have failed to
+      // read cookies in this context).
+      let linkFromUserId: string | undefined;
       try {
         const cookieStore = await cookies();
-        if (cookieStore.get("linkFromUserId")?.value) {
-          return `${baseUrl}/profile`;
-        }
+        linkFromUserId = cookieStore.get("linkFromUserId")?.value;
       } catch {
         // cookies() may throw in non-request contexts; ignore
       }
-      // Fallback: check AsyncLocalStorage
-      if (linkCookieStore.getStore()) {
-        return `${baseUrl}/profile`;
+      if (!linkFromUserId) {
+        linkFromUserId = linkCookieStore.getStore();
+      }
+      if (linkFromUserId) {
+        return `${baseUrl}/api/auth/finish-link?from=${linkFromUserId}`;
       }
 
       // Default redirect behaviour (same as NextAuth's built-in default)
