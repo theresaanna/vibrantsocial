@@ -1,6 +1,34 @@
 import { test, expect } from "@playwright/test";
 import { TEST_USER } from "../helpers/db";
 
+/**
+ * Helper: dismiss the cookie consent toast if it appears.
+ * In CI, localStorage is not preserved between tests, so the
+ * Sonner toast (duration: Infinity) shows on every page load.
+ */
+async function dismissCookieToast(page: import("@playwright/test").Page) {
+  const closeToast = page.getByRole("button", { name: "Close toast" });
+  if (await closeToast.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await closeToast.click();
+  }
+}
+
+/**
+ * Helper: save profile settings and wait for the server action to complete.
+ * Uses waitForResponse instead of relying on the transient "Saved" status text,
+ * which only displays for 2 seconds and is prone to timing issues in CI.
+ */
+async function saveProfileSettings(page: import("@playwright/test").Page) {
+  const responsePromise = page.waitForResponse(
+    (resp) => resp.request().method() === "POST" && resp.url().includes("/profile"),
+    { timeout: 15000 }
+  );
+  await page.click('button:has-text("Save")');
+  await responsePromise;
+  // Brief wait for React state to settle after the server action completes
+  await page.waitForTimeout(500);
+}
+
 test.describe("NSFW Content Visibility", () => {
   test.describe.configure({ mode: "serial", timeout: 60000 });
 
@@ -13,6 +41,8 @@ test.describe("NSFW Content Visibility", () => {
       timeout: 15000,
     });
 
+    await dismissCookieToast(page);
+
     // Find and check the Show NSFW content checkbox
     const nsfwCheckbox = page.locator('input[name="showNsfwContent"]');
     await nsfwCheckbox.scrollIntoViewIfNeeded();
@@ -21,9 +51,8 @@ test.describe("NSFW Content Visibility", () => {
       await nsfwCheckbox.check();
     }
 
-    // Explicitly save and wait for confirmation instead of relying on autosave
-    await page.click('button:has-text("Save")');
-    await expect(page.locator("text=Saved")).toBeVisible({ timeout: 10000 });
+    // Save and wait for the server action to complete
+    await saveProfileSettings(page);
 
     // Create an NSFW post via compose page
     await page.goto("/compose");
@@ -103,6 +132,8 @@ test.describe("NSFW Content Visibility", () => {
       timeout: 15000,
     });
 
+    await dismissCookieToast(page);
+
     const nsfwCheckbox = page.locator('input[name="showNsfwContent"]');
     await nsfwCheckbox.scrollIntoViewIfNeeded();
 
@@ -110,9 +141,8 @@ test.describe("NSFW Content Visibility", () => {
       await nsfwCheckbox.uncheck();
     }
 
-    // Explicitly save and wait for confirmation
-    await page.click('button:has-text("Save")');
-    await expect(page.locator("text=Saved")).toBeVisible({ timeout: 10000 });
+    // Save and wait for the server action to complete
+    await saveProfileSettings(page);
 
     // Go to profile posts tab - NSFW post should NOT appear
     await page.goto(`/${TEST_USER.username}`);
@@ -130,6 +160,8 @@ test.describe("NSFW Content Visibility", () => {
       timeout: 15000,
     });
 
+    await dismissCookieToast(page);
+
     const nsfwCheckbox = page.locator('input[name="showNsfwContent"]');
     await nsfwCheckbox.scrollIntoViewIfNeeded();
 
@@ -137,7 +169,6 @@ test.describe("NSFW Content Visibility", () => {
       await nsfwCheckbox.check();
     }
 
-    await page.click('button:has-text("Save")');
-    await expect(page.locator("text=Saved")).toBeVisible({ timeout: 10000 });
+    await saveProfileSettings(page);
   });
 });
