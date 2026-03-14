@@ -50,7 +50,7 @@ export async function startOAuthLink(
     console.error("[startOAuthLink] Orphan cleanup error:", err);
   }
 
-  const finishLinkUrl = `/api/finish-link?from=${session.user.id}`;
+  const finishLinkUrl = `/api/finish-link?from=${session.user.id}&provider=${provider}`;
   console.log("[startOAuthLink] userId:", session.user.id, "provider:", provider, "redirectTo:", finishLinkUrl);
 
   const cookieStore = await cookies();
