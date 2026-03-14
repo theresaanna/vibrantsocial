@@ -25,6 +25,13 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+vi.mock("@/app/profile/account-linking-actions", () => ({
+  linkAccount: vi.fn(),
+  unlinkAccount: vi.fn(),
+  switchAccount: vi.fn(),
+  getLinkedAccounts: vi.fn().mockResolvedValue([]),
+}));
+
 vi.mock("@/app/profile/actions", () => ({
   updateProfile: vi.fn(),
   removeAvatar: vi.fn(),

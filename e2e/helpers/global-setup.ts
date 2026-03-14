@@ -1,6 +1,7 @@
 import "dotenv/config";
-import { seedTestUser } from "./db";
+import { seedTestUser, seedSecondTestUser } from "./db";
 
 export default async function globalSetup() {
   await seedTestUser();
+  await seedSecondTestUser();
 }

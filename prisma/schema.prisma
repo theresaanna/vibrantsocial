@@ -115,6 +115,12 @@ model User {
 
   // Tag subscriptions
   tagSubscriptions TagSubscription[]
+
+  // Linked accounts (multi-account switching)
+  linkedAccountGroupId String?
+  linkedAccountGroup   LinkedAccountGroup? @relation(fields: [linkedAccountGroupId], references: [id])
+
+  @@index([linkedAccountGroupId])
 }
 
 model Account {
@@ -627,4 +633,12 @@ model DeletedUser {
   username    String?
   displayName String?
   deletedAt   DateTime @default(now())
+}
+
+// Linked account groups (multi-account switching)
+
+model LinkedAccountGroup {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  members   User[]
 }

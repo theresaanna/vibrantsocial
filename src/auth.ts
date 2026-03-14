@@ -7,6 +7,28 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { autoFriendNewUser } from "@/lib/auto-friend";
 import { inngest } from "@/lib/inngest";
+import type { LinkedAccount } from "@/types/next-auth";
+
+async function loadLinkedAccounts(
+  userId: string
+): Promise<LinkedAccount[]> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { linkedAccountGroupId: true },
+  });
+
+  if (!user?.linkedAccountGroupId) return [];
+
+  const members = await prisma.user.findMany({
+    where: {
+      linkedAccountGroupId: user.linkedAccountGroupId,
+      id: { not: userId },
+    },
+    select: { id: true, username: true, displayName: true, avatar: true },
+  });
+
+  return members;
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -92,16 +114,71 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             user.isEmailVerified ??
             !!("emailVerified" in user && user.emailVerified);
         }
+
+        // Load linked accounts on sign-in
+        token.linkedAccounts = await loadLinkedAccounts(user.id!);
       }
 
       if (trigger === "update" && session) {
-        token.username = session.user.username;
-        token.displayName = session.user.displayName;
-        token.bio = session.user.bio;
-        token.avatar = session.user.avatar;
-        if (session.user.tier) token.tier = session.user.tier;
-        if (session.user.isEmailVerified !== undefined)
-          token.isEmailVerified = session.user.isEmailVerified;
+        // Handle account switching
+        if (session.switchToUserId) {
+          const targetUserId = session.switchToUserId as string;
+
+          // Verify group membership server-side
+          const currentUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { linkedAccountGroupId: true },
+          });
+
+          const targetUser = await prisma.user.findUnique({
+            where: { id: targetUserId },
+            select: {
+              id: true,
+              username: true,
+              displayName: true,
+              bio: true,
+              avatar: true,
+              tier: true,
+              emailVerified: true,
+              linkedAccountGroupId: true,
+            },
+          });
+
+          if (
+            currentUser?.linkedAccountGroupId &&
+            targetUser?.linkedAccountGroupId === currentUser.linkedAccountGroupId
+          ) {
+            // Swap JWT to target user
+            token.id = targetUser.id;
+            token.username = targetUser.username;
+            token.displayName = targetUser.displayName;
+            token.bio = targetUser.bio;
+            token.avatar = targetUser.avatar;
+            token.tier = targetUser.tier ?? "free";
+            token.isEmailVerified = !!targetUser.emailVerified;
+
+            // Reload linked accounts for the new active user
+            token.linkedAccounts = await loadLinkedAccounts(targetUser.id);
+          }
+        } else {
+          // Normal session update (profile changes)
+          if (session.user?.username !== undefined)
+            token.username = session.user.username;
+          if (session.user?.displayName !== undefined)
+            token.displayName = session.user.displayName;
+          if (session.user?.bio !== undefined)
+            token.bio = session.user.bio;
+          if (session.user?.avatar !== undefined)
+            token.avatar = session.user.avatar;
+          if (session.user?.tier) token.tier = session.user.tier;
+          if (session.user?.isEmailVerified !== undefined)
+            token.isEmailVerified = session.user.isEmailVerified;
+
+          // Refresh linked accounts if requested
+          if (session.refreshLinkedAccounts) {
+            token.linkedAccounts = await loadLinkedAccounts(token.id as string);
+          }
+        }
       }
 
       return token;
@@ -116,6 +193,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       session.user.isEmailVerified =
         (token.isEmailVerified as boolean) ?? false;
       session.user.authProvider = (token.authProvider as string) ?? null;
+      session.user.linkedAccounts =
+        (token.linkedAccounts as LinkedAccount[]) ?? [];
       return session;
     },
   },

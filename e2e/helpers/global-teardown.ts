@@ -1,6 +1,7 @@
 import "dotenv/config";
-import { cleanupTestData } from "./db";
+import { cleanupTestData, cleanupLinkedAccountGroups } from "./db";
 
 export default async function globalTeardown() {
+  await cleanupLinkedAccountGroups();
   await cleanupTestData();
 }
