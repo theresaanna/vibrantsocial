@@ -21,23 +21,63 @@ export async function GET(req: NextRequest) {
   // During a linking flow, if Auth.js redirected to the error page with
   // OAuthAccountNotLinked, clean up orphaned accounts so the next attempt
   // succeeds.
-  if (linkCookie && response instanceof Response && response.status >= 300 && response.status < 400) {
+  //
+  // The error occurs because Auth.js Scenario 1: the user IS signed in,
+  // and the OAuth Account belongs to a different user (the orphan created
+  // by the JWT callback's same-email splitting during a previous failed attempt).
+  if (
+    linkCookie &&
+    response instanceof Response &&
+    response.status >= 300 &&
+    response.status < 400
+  ) {
     const location = response.headers.get("location") ?? "";
     if (location.includes("OAuthAccountNotLinked")) {
       // Extract provider from callback URL (e.g. /api/auth/callback/discord)
       const pathParts = req.nextUrl.pathname.split("/");
       const callbackIdx = pathParts.indexOf("callback");
-      const provider = callbackIdx >= 0 ? pathParts[callbackIdx + 1] : null;
+      const provider =
+        callbackIdx >= 0 ? pathParts[callbackIdx + 1] : null;
 
       if (provider) {
-        console.log("[nextauth] OAuthAccountNotLinked during linking flow — cleaning up orphans for provider:", provider);
+        console.log(
+          "[nextauth] OAuthAccountNotLinked during linking flow — cleaning up orphans for provider:",
+          provider
+        );
         try {
-          const orphans = await prisma.account.findMany({
-            where: { provider, user: { email: null } },
-            select: { id: true, userId: true },
+          // Fetch ALL accounts for this provider (avoids Prisma relation
+          // filter issues) and filter orphans in JavaScript.
+          const allAccounts = await prisma.account.findMany({
+            where: { provider },
+            include: {
+              user: { select: { id: true, email: true } },
+            },
           });
-          console.log("[nextauth] Found", orphans.length, "orphaned accounts");
+          console.log(
+            "[nextauth] All",
+            provider,
+            "accounts:",
+            JSON.stringify(
+              allAccounts.map((a) => ({
+                accountId: a.id,
+                userId: a.userId,
+                email: a.user?.email ?? null,
+              }))
+            )
+          );
+
+          // Orphans = accounts whose user has no email (created by the
+          // JWT callback's same-email splitting logic).
+          const orphans = allAccounts.filter((a) => !a.user?.email);
+          console.log("[nextauth] Orphans to delete:", orphans.length);
+
           for (const orphan of orphans) {
+            console.log(
+              "[nextauth] Deleting orphaned account:",
+              orphan.id,
+              "user:",
+              orphan.userId
+            );
             await prisma.account.delete({ where: { id: orphan.id } });
             const remaining = await prisma.account.count({
               where: { userId: orphan.userId },
