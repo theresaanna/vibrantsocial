@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import type { LinkedAccount } from "@/types/next-auth";
 
@@ -9,6 +10,32 @@ interface AccountLinkingState {
   success: boolean;
   message: string;
   linkedAccounts?: LinkedAccount[];
+}
+
+const VALID_OAUTH_PROVIDERS = ["google", "discord"] as const;
+
+export async function startOAuthLink(
+  provider: string
+): Promise<AccountLinkingState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  if (!VALID_OAUTH_PROVIDERS.includes(provider as (typeof VALID_OAUTH_PROVIDERS)[number])) {
+    return { success: false, message: "Invalid provider" };
+  }
+
+  const cookieStore = await cookies();
+  cookieStore.set("linkFromUserId", session.user.id, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 300, // 5 minutes
+    path: "/",
+  });
+
+  return { success: true, message: "Ready to link" };
 }
 
 export async function getLinkedAccounts(): Promise<LinkedAccount[]> {

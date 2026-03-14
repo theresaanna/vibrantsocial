@@ -4,6 +4,7 @@ import {
   unlinkAccount,
   switchAccount,
   getLinkedAccounts,
+  startOAuthLink,
 } from "@/app/profile/account-linking-actions";
 
 vi.mock("@/auth", () => ({
@@ -30,6 +31,15 @@ vi.mock("bcryptjs", () => ({
   default: {
     compare: vi.fn(),
   },
+}));
+
+const mockCookieSet = vi.fn();
+vi.mock("next/headers", () => ({
+  cookies: vi.fn().mockResolvedValue({
+    set: (...args: unknown[]) => mockCookieSet(...args),
+    get: vi.fn(),
+    delete: vi.fn(),
+  }),
 }));
 
 import { auth } from "@/auth";
@@ -469,5 +479,60 @@ describe("switchAccount", () => {
 
     const result = await switchAccount("user2");
     expect(result.success).toBe(true);
+  });
+});
+
+describe("startOAuthLink", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns error when not authenticated", async () => {
+    mockAuth.mockResolvedValue(null);
+    const result = await startOAuthLink("google");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Not authenticated");
+  });
+
+  it("returns error for invalid provider", async () => {
+    mockAuth.mockResolvedValue(mockSession as never);
+    const result = await startOAuthLink("twitter");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Invalid provider");
+  });
+
+  it("returns error for empty provider", async () => {
+    mockAuth.mockResolvedValue(mockSession as never);
+    const result = await startOAuthLink("");
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Invalid provider");
+  });
+
+  it("sets cookie and returns success for google", async () => {
+    mockAuth.mockResolvedValue(mockSession as never);
+    const result = await startOAuthLink("google");
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("Ready to link");
+    expect(mockCookieSet).toHaveBeenCalledWith("linkFromUserId", "user1", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      maxAge: 300,
+      path: "/",
+    });
+  });
+
+  it("sets cookie and returns success for discord", async () => {
+    mockAuth.mockResolvedValue(mockSession as never);
+    const result = await startOAuthLink("discord");
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("Ready to link");
+    expect(mockCookieSet).toHaveBeenCalledWith("linkFromUserId", "user1", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      maxAge: 300,
+      path: "/",
+    });
   });
 });
