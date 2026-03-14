@@ -34,7 +34,7 @@ export async function startOAuthLink(
     const orphanedAccounts = await prisma.account.findMany({
       where: {
         provider,
-        user: { email: null, passwordHash: null },
+        user: { email: null },
       },
       select: { id: true, userId: true },
     });
