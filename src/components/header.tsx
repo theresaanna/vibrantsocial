@@ -32,6 +32,7 @@ export async function Header() {
         {/* Mobile-only profile link + theme toggle next to logo */}
         {session?.user && (
           <div className="order-2 flex items-center gap-1 sm:hidden">
+            <AccountSwitcherWrapper />
             <ThemeToggle />
             <MobileProfileLink username={session.user.username} />
           </div>
@@ -49,7 +50,7 @@ export async function Header() {
               />
               <SearchBar />
               <NavLinks username={session.user.username} />
-              <AccountSwitcherWrapper />
+              <div className="hidden sm:block"><AccountSwitcherWrapper /></div>
               <NotificationBell initialUnreadCount={unreadNotifications} initialNotifications={recentNotifications} />
               <ChatNav initialConversations={conversations} />
             </>

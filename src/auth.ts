@@ -4,6 +4,7 @@ import Discord from "next-auth/providers/discord";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
+import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { autoFriendNewUser } from "@/lib/auto-friend";
 import { inngest } from "@/lib/inngest";
@@ -28,6 +29,51 @@ async function loadLinkedAccounts(
   });
 
   return members;
+}
+
+async function linkUsersInGroup(userIdA: string, userIdB: string) {
+  const [userA, userB] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userIdA },
+      select: { linkedAccountGroupId: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: userIdB },
+      select: { linkedAccountGroupId: true },
+    }),
+  ]);
+
+  if (!userA || !userB) return;
+
+  const groupA = userA.linkedAccountGroupId;
+  const groupB = userB.linkedAccountGroupId;
+
+  // Already in the same group
+  if (groupA && groupA === groupB) return;
+
+  if (!groupA && !groupB) {
+    const group = await prisma.linkedAccountGroup.create({ data: {} });
+    await prisma.user.updateMany({
+      where: { id: { in: [userIdA, userIdB] } },
+      data: { linkedAccountGroupId: group.id },
+    });
+  } else if (groupA && !groupB) {
+    await prisma.user.update({
+      where: { id: userIdB },
+      data: { linkedAccountGroupId: groupA },
+    });
+  } else if (!groupA && groupB) {
+    await prisma.user.update({
+      where: { id: userIdA },
+      data: { linkedAccountGroupId: groupB },
+    });
+  } else if (groupA && groupB) {
+    await prisma.user.updateMany({
+      where: { linkedAccountGroupId: groupB },
+      data: { linkedAccountGroupId: groupA },
+    });
+    await prisma.linkedAccountGroup.delete({ where: { id: groupB } });
+  }
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -90,33 +136,81 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async jwt({ token, user, trigger, session, account }) {
       if (user) {
-        token.id = user.id;
-        token.username = user.username;
-        token.displayName = user.displayName;
-        token.bio = user.bio;
-        token.avatar = user.avatar;
-        token.tier = user.tier ?? "free";
-        token.authProvider = account?.provider ?? null;
-        // OAuth providers (Google, Discord) verify email themselves
-        if (account?.provider && account.provider !== "credentials") {
-          token.isEmailVerified = true;
-          // Backfill emailVerified in DB for linked accounts
-          if (user.id && !("emailVerified" in user && user.emailVerified)) {
-            prisma.user
-              .update({
-                where: { id: user.id },
-                data: { emailVerified: new Date() },
-              })
-              .catch(() => {});
+        // Check for OAuth account-linking flow (cookie set by startOAuthLink)
+        let isLinkingFlow = false;
+        try {
+          const cookieStore = await cookies();
+          const linkCookie = cookieStore.get("linkFromUserId");
+          if (linkCookie?.value && linkCookie.value !== user.id) {
+            // OAuth linking flow: link the two users and keep the original session
+            const originalUserId = linkCookie.value;
+            cookieStore.delete("linkFromUserId");
+
+            const originalUser = await prisma.user.findUnique({
+              where: { id: originalUserId },
+              select: {
+                id: true,
+                username: true,
+                displayName: true,
+                bio: true,
+                avatar: true,
+                tier: true,
+                emailVerified: true,
+              },
+            });
+
+            if (originalUser) {
+              await linkUsersInGroup(originalUserId, user.id!);
+
+              // Set token to the ORIGINAL user, not the OAuth user
+              token.id = originalUser.id;
+              token.username = originalUser.username;
+              token.displayName = originalUser.displayName;
+              token.bio = originalUser.bio;
+              token.avatar = originalUser.avatar;
+              token.tier = originalUser.tier ?? "free";
+              token.isEmailVerified = !!originalUser.emailVerified;
+              token.authProvider = account?.provider ?? null;
+              token.linkedAccounts = await loadLinkedAccounts(originalUser.id);
+              isLinkingFlow = true;
+            }
+          } else if (linkCookie?.value) {
+            // Cookie user === OAuth user (self-link), just clear it
+            cookieStore.delete("linkFromUserId");
           }
-        } else {
-          token.isEmailVerified =
-            user.isEmailVerified ??
-            !!("emailVerified" in user && user.emailVerified);
+        } catch {
+          // cookies() may throw in non-request contexts; ignore
         }
 
-        // Load linked accounts on sign-in
-        token.linkedAccounts = await loadLinkedAccounts(user.id!);
+        if (!isLinkingFlow) {
+          token.id = user.id;
+          token.username = user.username;
+          token.displayName = user.displayName;
+          token.bio = user.bio;
+          token.avatar = user.avatar;
+          token.tier = user.tier ?? "free";
+          token.authProvider = account?.provider ?? null;
+          // OAuth providers (Google, Discord) verify email themselves
+          if (account?.provider && account.provider !== "credentials") {
+            token.isEmailVerified = true;
+            // Backfill emailVerified in DB for linked accounts
+            if (user.id && !("emailVerified" in user && user.emailVerified)) {
+              prisma.user
+                .update({
+                  where: { id: user.id },
+                  data: { emailVerified: new Date() },
+                })
+                .catch(() => {});
+            }
+          } else {
+            token.isEmailVerified =
+              user.isEmailVerified ??
+              !!("emailVerified" in user && user.emailVerified);
+          }
+
+          // Load linked accounts on sign-in
+          token.linkedAccounts = await loadLinkedAccounts(user.id!);
+        }
       }
 
       if (trigger === "update" && session) {

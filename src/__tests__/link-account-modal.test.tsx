@@ -7,14 +7,21 @@ vi.mock("next-auth/react", () => ({
     status: "authenticated",
     update: vi.fn(),
   }),
+  signIn: vi.fn(),
   SessionProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 vi.mock("@/app/profile/account-linking-actions", () => ({
   linkAccount: vi.fn(),
+  startOAuthLink: vi.fn(),
 }));
 
+import { signIn } from "next-auth/react";
+import { startOAuthLink } from "@/app/profile/account-linking-actions";
 import { LinkAccountModal } from "@/components/link-account-modal";
+
+const mockStartOAuthLink = vi.mocked(startOAuthLink);
+const mockSignIn = vi.mocked(signIn);
 
 describe("LinkAccountModal", () => {
   beforeEach(() => {
@@ -95,5 +102,90 @@ describe("LinkAccountModal", () => {
     expect(passwordInput).toHaveAttribute("type", "password");
     expect(passwordInput).toHaveAttribute("required");
     expect(passwordInput).toHaveAttribute("name", "password");
+  });
+
+  it("renders Google OAuth button", () => {
+    render(<LinkAccountModal isOpen={true} onClose={vi.fn()} />);
+    const googleButton = screen.getByTestId("link-google-button");
+    expect(googleButton).toBeInTheDocument();
+    expect(googleButton).toHaveTextContent("Link with Google");
+  });
+
+  it("renders Discord OAuth button", () => {
+    render(<LinkAccountModal isOpen={true} onClose={vi.fn()} />);
+    const discordButton = screen.getByTestId("link-discord-button");
+    expect(discordButton).toBeInTheDocument();
+    expect(discordButton).toHaveTextContent("Link with Discord");
+  });
+
+  it("renders credentials divider", () => {
+    render(<LinkAccountModal isOpen={true} onClose={vi.fn()} />);
+    expect(screen.getByText("or sign in with credentials")).toBeInTheDocument();
+  });
+
+  it("calls startOAuthLink and signIn when Google button is clicked", async () => {
+    mockStartOAuthLink.mockResolvedValue({ success: true, message: "Ready to link" });
+    render(<LinkAccountModal isOpen={true} onClose={vi.fn()} />);
+
+    const googleButton = screen.getByTestId("link-google-button");
+    fireEvent.click(googleButton);
+
+    // Wait for async operations
+    await vi.waitFor(() => {
+      expect(mockStartOAuthLink).toHaveBeenCalledWith("google");
+    });
+    expect(mockSignIn).toHaveBeenCalledWith("google", { callbackUrl: "/profile" });
+  });
+
+  it("calls startOAuthLink and signIn when Discord button is clicked", async () => {
+    mockStartOAuthLink.mockResolvedValue({ success: true, message: "Ready to link" });
+    render(<LinkAccountModal isOpen={true} onClose={vi.fn()} />);
+
+    const discordButton = screen.getByTestId("link-discord-button");
+    fireEvent.click(discordButton);
+
+    await vi.waitFor(() => {
+      expect(mockStartOAuthLink).toHaveBeenCalledWith("discord");
+    });
+    expect(mockSignIn).toHaveBeenCalledWith("discord", { callbackUrl: "/profile" });
+  });
+
+  it("does not call signIn when startOAuthLink fails", async () => {
+    mockStartOAuthLink.mockResolvedValue({ success: false, message: "Not authenticated" });
+    render(<LinkAccountModal isOpen={true} onClose={vi.fn()} />);
+
+    const googleButton = screen.getByTestId("link-google-button");
+    fireEvent.click(googleButton);
+
+    await vi.waitFor(() => {
+      expect(mockStartOAuthLink).toHaveBeenCalledWith("google");
+    });
+    expect(mockSignIn).not.toHaveBeenCalled();
+  });
+
+  it("disables OAuth buttons while loading", async () => {
+    // Create a promise that we can control
+    let resolveOAuth: (value: { success: boolean; message: string }) => void;
+    const pendingPromise = new Promise<{ success: boolean; message: string }>((resolve) => {
+      resolveOAuth = resolve;
+    });
+    mockStartOAuthLink.mockReturnValue(pendingPromise);
+
+    render(<LinkAccountModal isOpen={true} onClose={vi.fn()} />);
+
+    const googleButton = screen.getByTestId("link-google-button");
+    const discordButton = screen.getByTestId("link-discord-button");
+
+    fireEvent.click(googleButton);
+
+    // Both buttons should be disabled while loading
+    await vi.waitFor(() => {
+      expect(googleButton).toBeDisabled();
+    });
+    expect(discordButton).toBeDisabled();
+    expect(googleButton).toHaveTextContent("Redirecting...");
+
+    // Resolve the promise
+    resolveOAuth!({ success: true, message: "Ready to link" });
   });
 });
