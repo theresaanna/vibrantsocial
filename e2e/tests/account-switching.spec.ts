@@ -45,8 +45,8 @@ test.describe("Account Switching", () => {
     await expect(page.getByTestId("link-password-input")).toBeVisible();
     await expect(page.getByTestId("link-account-submit")).toBeVisible();
 
-    // Close via the close button
-    await page.getByLabel("Close").click();
+    // Close via the close button (use role to avoid matching "Close Friends" link)
+    await page.getByRole("button", { name: "Close" }).click();
     await expect(page.getByTestId("link-account-modal")).not.toBeVisible();
   });
 
