@@ -48,9 +48,10 @@ function ResizePopover({
   onClose: () => void;
   anchorRect: DOMRect;
 }) {
-  const [w, setW] = useState(initialWidth);
-  const [h, setH] = useState(initialHeight);
+  const [w, setW] = useState(String(initialWidth));
+  const [h, setH] = useState(String(initialHeight));
   const [locked, setLocked] = useState(true);
+  const [error, setError] = useState("");
   const aspectRatio = naturalWidth / naturalHeight;
   const popoverRef = useRef<HTMLDivElement>(null);
 
@@ -72,21 +73,37 @@ function ResizePopover({
     };
   }, [onClose]);
 
-  const handleWidthChange = (val: number) => {
-    const clamped = Math.max(10, val);
-    setW(clamped);
-    if (locked) setH(Math.round(clamped / aspectRatio));
+  const handleWidthChange = (val: string) => {
+    setW(val);
+    setError("");
+    const num = Number(val);
+    if (locked && val !== "" && Number.isFinite(num) && num > 0) {
+      setH(String(Math.round(num / aspectRatio)));
+    }
   };
 
-  const handleHeightChange = (val: number) => {
-    const clamped = Math.max(10, val);
-    setH(clamped);
-    if (locked) setW(Math.round(clamped * aspectRatio));
+  const handleHeightChange = (val: string) => {
+    setH(val);
+    setError("");
+    const num = Number(val);
+    if (locked && val !== "" && Number.isFinite(num) && num > 0) {
+      setW(String(Math.round(num * aspectRatio)));
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onApply(w, h);
+    const parsedW = Number(w);
+    const parsedH = Number(h);
+    if (w.trim() === "" || h.trim() === "" || !Number.isFinite(parsedW) || !Number.isFinite(parsedH) || parsedW !== Math.floor(parsedW) || parsedH !== Math.floor(parsedH) || parsedW < 1 || parsedH < 1) {
+      setError("Width and height must be positive whole numbers.");
+      return;
+    }
+    if (parsedW < 10 || parsedH < 10) {
+      setError("Minimum size is 10 \u00d7 10 pixels.");
+      return;
+    }
+    onApply(parsedW, parsedH);
   };
 
   // Center over the image
@@ -105,10 +122,10 @@ function ResizePopover({
         <label className="flex flex-col gap-1 text-xs text-zinc-600 dark:text-zinc-400">
           Width
           <input
-            type="number"
-            min={10}
+            type="text"
+            inputMode="numeric"
             value={w}
-            onChange={(e) => handleWidthChange(Number(e.target.value))}
+            onChange={(e) => handleWidthChange(e.target.value)}
             data-testid="resize-width-input"
             className="w-20 rounded border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-900 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100"
           />
@@ -141,10 +158,10 @@ function ResizePopover({
         <label className="flex flex-col gap-1 text-xs text-zinc-600 dark:text-zinc-400">
           Height
           <input
-            type="number"
-            min={10}
+            type="text"
+            inputMode="numeric"
             value={h}
-            onChange={(e) => handleHeightChange(Number(e.target.value))}
+            onChange={(e) => handleHeightChange(e.target.value)}
             data-testid="resize-height-input"
             className="w-20 rounded border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-900 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100"
           />
@@ -153,6 +170,88 @@ function ResizePopover({
         <button
           type="submit"
           data-testid="resize-apply-button"
+          className="rounded bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          Apply
+        </button>
+      </form>
+      {error && (
+        <p data-testid="resize-error" className="mt-1.5 text-xs text-red-600 dark:text-red-400">
+          {error}
+        </p>
+      )}
+    </div>,
+    document.body
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Alt Text Popover                                                   */
+/* ------------------------------------------------------------------ */
+
+function AltTextPopover({
+  initialAltText,
+  onApply,
+  onClose,
+  anchorRect,
+}: {
+  initialAltText: string;
+  onApply: (altText: string) => void;
+  onClose: () => void;
+  anchorRect: DOMRect;
+}) {
+  const [value, setValue] = useState(initialAltText);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    }
+    function handleEsc(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEsc);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, [onClose]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onApply(value);
+  };
+
+  const top = anchorRect.top + anchorRect.height / 2;
+  const left = anchorRect.left + anchorRect.width / 2;
+
+  return createPortal(
+    <div
+      ref={popoverRef}
+      data-testid="alt-text-popover"
+      className="fixed z-[200] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-zinc-200 bg-white p-3 shadow-xl dark:border-zinc-700 dark:bg-zinc-800"
+      style={{ top, left }}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
+      <form onSubmit={handleSubmit} className="flex items-end gap-2">
+        <label className="flex flex-col gap-1 text-xs text-zinc-600 dark:text-zinc-400">
+          Alt text
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            data-testid="alt-text-input"
+            placeholder="Describe this image"
+            className="w-56 rounded border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-900 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100"
+          />
+        </label>
+
+        <button
+          type="submit"
+          data-testid="alt-text-apply-button"
           className="rounded bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700"
         >
           Apply
@@ -171,11 +270,13 @@ function ImageContextMenu({
   x,
   y,
   onResize,
+  onAltText,
   onClose,
 }: {
   x: number;
   y: number;
   onResize: () => void;
+  onAltText: () => void;
   onClose: () => void;
 }) {
   const menuRef = useRef<HTMLDivElement>(null);
@@ -215,6 +316,17 @@ function ImageContextMenu({
         </svg>
         Resize
       </button>
+      <button
+        type="button"
+        onClick={onAltText}
+        data-testid="context-menu-alt-text"
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+      >
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path d="M4 6h16M4 12h10M4 18h14" />
+        </svg>
+        Alt text
+      </button>
     </div>,
     document.body
   );
@@ -237,10 +349,13 @@ export default function ImageComponent({
   const [isResizing, setIsResizing] = useState(false);
   const [imgSize, setImgSize] = useState({ width, height });
 
+  const [imgAltText, setImgAltText] = useState(altText);
+
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
-  // Resize popover state
+  // Popover state
   const [showResizePopover, setShowResizePopover] = useState(false);
+  const [showAltTextPopover, setShowAltTextPopover] = useState(false);
 
   const onDelete = useCallback(
     (event: KeyboardEvent) => {
@@ -288,9 +403,12 @@ export default function ImageComponent({
       // Left-side handles invert the drag direction
       const xMultiplier = direction === "sw" || direction === "nw" ? -1 : 1;
 
+      // Track latest width in a mutable variable so onMouseUp reads the final value
+      let latestWidth = startWidth;
+
       function onMouseMove(moveEvent: MouseEvent) {
-        const newWidth = Math.max(100, startWidth + xMultiplier * (moveEvent.clientX - startX));
-        setImgSize({ width: newWidth, height: "inherit" });
+        latestWidth = Math.max(100, startWidth + xMultiplier * (moveEvent.clientX - startX));
+        setImgSize({ width: latestWidth, height: "inherit" });
       }
 
       function onMouseUp() {
@@ -300,11 +418,7 @@ export default function ImageComponent({
         editor.update(() => {
           const node = $getNodeByKey(nodeKey);
           if ($isImageNode(node)) {
-            const currentWidth =
-              typeof imgSize.width === "number"
-                ? imgSize.width
-                : imgRef.current?.naturalWidth ?? 300;
-            node.setWidthAndHeight(currentWidth, "inherit");
+            node.setWidthAndHeight(latestWidth, "inherit");
           }
         });
       }
@@ -334,6 +448,25 @@ export default function ImageComponent({
     setContextMenu(null);
     setShowResizePopover(true);
   }, []);
+
+  const openAltTextPopover = useCallback(() => {
+    setContextMenu(null);
+    setShowAltTextPopover(true);
+  }, []);
+
+  const handleAltTextApply = useCallback(
+    (newAltText: string) => {
+      setImgAltText(newAltText);
+      setShowAltTextPopover(false);
+      editor.update(() => {
+        const node = $getNodeByKey(nodeKey);
+        if ($isImageNode(node)) {
+          node.setAltText(newAltText);
+        }
+      });
+    },
+    [editor, nodeKey]
+  );
 
   const handleResizeApply = useCallback(
     (newWidth: number, newHeight: number) => {
@@ -370,7 +503,7 @@ export default function ImageComponent({
       <img
         ref={imgRef}
         src={src}
-        alt={altText}
+        alt={imgAltText}
         style={style}
         className="max-w-full rounded"
         draggable={false}
@@ -407,6 +540,7 @@ export default function ImageComponent({
           x={contextMenu.x}
           y={contextMenu.y}
           onResize={openResizePopover}
+          onAltText={openAltTextPopover}
           onClose={() => setContextMenu(null)}
         />
       )}
@@ -426,6 +560,16 @@ export default function ImageComponent({
           />
         );
       })()}
+
+      {/* Alt text popover */}
+      {showAltTextPopover && imgRef.current && (
+        <AltTextPopover
+          initialAltText={imgAltText}
+          onApply={handleAltTextApply}
+          onClose={() => setShowAltTextPopover(false)}
+          anchorRect={imgRef.current.getBoundingClientRect()}
+        />
+      )}
     </span>
   );
 }

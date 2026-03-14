@@ -117,6 +117,11 @@ export class ImageNode extends DecoratorNode<ReactNode> {
     writable.__height = height;
   }
 
+  setAltText(altText: string): void {
+    const writable = this.getWritable();
+    writable.__altText = altText;
+  }
+
   decorate(): ReactNode {
     return (
       <Suspense fallback={null}>

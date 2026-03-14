@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
+
+const mockSetWidthAndHeight = vi.fn();
 
 // Mock Lexical hooks
 const mockEditor = {
   registerCommand: vi.fn().mockReturnValue(() => {}),
-  update: vi.fn(),
+  update: vi.fn((fn: () => void) => fn()),
   isEditable: vi.fn().mockReturnValue(true),
 };
 
@@ -23,7 +25,9 @@ vi.mock("@lexical/utils", () => ({
 }));
 
 vi.mock("lexical", () => ({
-  $getNodeByKey: vi.fn(),
+  $getNodeByKey: vi.fn(() => ({
+    setWidthAndHeight: mockSetWidthAndHeight,
+  })),
   $getSelection: vi.fn(),
   $isNodeSelection: vi.fn(),
   CLICK_COMMAND: "CLICK_COMMAND",
@@ -128,5 +132,102 @@ describe("ImageComponent resize handles", () => {
     // NW: top-left
     expect(nw.className).toContain("-left-1");
     expect(nw.className).toContain("-top-1");
+  });
+
+  it("persists the final dragged width to the Lexical node on mouseup", () => {
+    render(
+      <ImageComponent
+        src="https://example.com/img.png"
+        altText="test"
+        width={400}
+        height="inherit"
+        nodeKey="test-key"
+      />
+    );
+
+    const handle = screen.getByTestId("resize-handle-se");
+
+    // Start drag at x=500
+    act(() => {
+      fireEvent.mouseDown(handle, { clientX: 500 });
+    });
+
+    // Drag to x=700 (delta = +200, so new width = 400 + 200 = 600)
+    act(() => {
+      fireEvent.mouseMove(document, { clientX: 700 });
+    });
+
+    // Release mouse
+    act(() => {
+      fireEvent.mouseUp(document);
+    });
+
+    // The Lexical node should be updated with the final dragged width (600), not the initial (400)
+    expect(mockSetWidthAndHeight).toHaveBeenCalledWith(600, "inherit");
+  });
+
+  it("persists the correct width after multiple mousemove events", () => {
+    render(
+      <ImageComponent
+        src="https://example.com/img.png"
+        altText="test"
+        width={400}
+        height="inherit"
+        nodeKey="test-key"
+      />
+    );
+
+    const handle = screen.getByTestId("resize-handle-se");
+
+    act(() => {
+      fireEvent.mouseDown(handle, { clientX: 500 });
+    });
+
+    // Move through several positions
+    act(() => {
+      fireEvent.mouseMove(document, { clientX: 600 });
+    });
+    act(() => {
+      fireEvent.mouseMove(document, { clientX: 700 });
+    });
+    act(() => {
+      fireEvent.mouseMove(document, { clientX: 650 });
+    });
+
+    act(() => {
+      fireEvent.mouseUp(document);
+    });
+
+    // Final position: delta = 650 - 500 = 150, width = 400 + 150 = 550
+    expect(mockSetWidthAndHeight).toHaveBeenCalledWith(550, "inherit");
+  });
+
+  it("clamps dragged width to a minimum of 100", () => {
+    render(
+      <ImageComponent
+        src="https://example.com/img.png"
+        altText="test"
+        width={400}
+        height="inherit"
+        nodeKey="test-key"
+      />
+    );
+
+    const handle = screen.getByTestId("resize-handle-se");
+
+    act(() => {
+      fireEvent.mouseDown(handle, { clientX: 500 });
+    });
+
+    // Drag far left: delta = -500, so width would be 400 - 500 = -100, clamped to 100
+    act(() => {
+      fireEvent.mouseMove(document, { clientX: 0 });
+    });
+
+    act(() => {
+      fireEvent.mouseUp(document);
+    });
+
+    expect(mockSetWidthAndHeight).toHaveBeenCalledWith(100, "inherit");
   });
 });
