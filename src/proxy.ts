@@ -2,8 +2,23 @@ import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 
 export async function proxy(request: Request) {
-  const session = await auth();
   const { pathname } = new URL(request.url);
+
+  // After an OAuth account-linking flow, NextAuth may lose the callbackUrl
+  // and redirect to "/" (→ /feed).  The linkRedirect cookie, set alongside
+  // linkFromUserId in startOAuthLink, tells us where the user should go.
+  const cookies = request.headers.get("cookie") ?? "";
+  const linkRedirectMatch = cookies.match(
+    /(?:^|;\s*)linkRedirect=([^;]*)/
+  );
+  if (linkRedirectMatch) {
+    const target = decodeURIComponent(linkRedirectMatch[1]);
+    const response = NextResponse.redirect(new URL(target, request.url));
+    response.cookies.delete("linkRedirect");
+    return response;
+  }
+
+  const session = await auth();
 
   const protectedPaths = ["/profile", "/settings", "/feed", "/verify-phone"];
   const isProtected = protectedPaths.some((path) =>
