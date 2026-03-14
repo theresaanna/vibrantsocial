@@ -74,7 +74,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async redirect({ url, baseUrl }) {
       // If the URL already points to finish-link, let it through unchanged.
       if (url.includes("/api/auth/finish-link")) {
-        return url.startsWith("/") ? `${baseUrl}${url}` : url;
+        const result = url.startsWith("/") ? `${baseUrl}${url}` : url;
+        console.log("[auth:redirect] finish-link URL passthrough →", result);
+        return result;
       }
 
       // When the linkFromUserId cookie is present, this is an account-linking
@@ -85,17 +87,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       try {
         const cookieStore = await cookies();
         linkFromUserId = cookieStore.get("linkFromUserId")?.value;
-      } catch {
-        // cookies() may throw in non-request contexts; ignore
+        console.log("[auth:redirect] cookies() linkFromUserId:", linkFromUserId);
+      } catch (err) {
+        console.log("[auth:redirect] cookies() threw:", (err as Error).message);
       }
       if (!linkFromUserId) {
         linkFromUserId = linkCookieStore.getStore();
+        console.log("[auth:redirect] AsyncLocalStorage fallback:", linkFromUserId);
       }
       if (linkFromUserId) {
-        return `${baseUrl}/api/auth/finish-link?from=${linkFromUserId}`;
+        const result = `${baseUrl}/api/auth/finish-link?from=${linkFromUserId}`;
+        console.log("[auth:redirect] linking flow →", result);
+        return result;
       }
 
       // Default redirect behaviour (same as NextAuth's built-in default)
+      console.log("[auth:redirect] default redirect, url:", url, "baseUrl:", baseUrl);
       if (url.startsWith("/")) return `${baseUrl}${url}`;
       try {
         if (new URL(url).origin === baseUrl) return url;
@@ -110,13 +117,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         try {
           const cookieStore = await cookies();
           linkCookieValue = cookieStore.get("linkFromUserId")?.value;
-        } catch {
-          // cookies() may throw in non-request contexts; ignore
+          console.log("[auth:jwt] cookies() linkFromUserId:", linkCookieValue);
+        } catch (err) {
+          console.log("[auth:jwt] cookies() threw:", (err as Error).message);
         }
         // Fallback: the route handler stores the cookie in AsyncLocalStorage
         if (!linkCookieValue) {
           linkCookieValue = linkCookieStore.getStore();
+          console.log("[auth:jwt] AsyncLocalStorage fallback:", linkCookieValue);
         }
+        console.log("[auth:jwt] user.id:", user.id, "linkCookieValue:", linkCookieValue, "provider:", account?.provider);
 
         if (linkCookieValue && linkCookieValue !== user.id) {
           // OAuth linking flow: link the two users and keep the original session
@@ -153,14 +163,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             console.error("[auth] OAuth linking flow error:", err);
           }
 
-          // Clean up the cookie (best-effort; may silently fail in GET context,
-          // but it expires in 5 minutes anyway)
-          try {
-            const cookieStore = await cookies();
-            cookieStore.delete("linkFromUserId");
-          } catch {
-            // Ignore — cookie will expire naturally
-          }
+          // Cookie cleanup is handled by /api/auth/finish-link
         } else if (linkCookieValue && account?.provider && account.providerAccountId) {
           // Same-email case: adapter linked the OAuth account to the existing user.
           // We need to split into a separate user for multi-account switching.
@@ -227,13 +230,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             console.error("[auth] Same-email OAuth split error:", err);
           }
 
-          // Clean up the cookie
-          try {
-            const cookieStore = await cookies();
-            cookieStore.delete("linkFromUserId");
-          } catch {
-            // Ignore — cookie will expire naturally
-          }
+          // Cookie cleanup is handled by /api/auth/finish-link
         }
 
         if (!isLinkingFlow) {

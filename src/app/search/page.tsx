@@ -35,6 +35,22 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
+      <div className="mb-6 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-teal-400 to-cyan-600">
+          <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607z" />
+          </svg>
+        </div>
+        <div>
+          <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+            Search
+          </h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            Find people and posts
+          </p>
+        </div>
+      </div>
+
       <SearchPageClient
         initialQuery={query}
         initialTab={tab}
