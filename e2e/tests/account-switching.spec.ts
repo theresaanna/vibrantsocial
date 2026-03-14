@@ -133,12 +133,14 @@ test.describe("Account Switching", () => {
     await page.waitForLoadState("networkidle");
 
     // The account switcher button should now be visible in the header
-    await expect(page.getByTestId("account-switcher-button")).toBeVisible({
+    // Use :visible filter because mobile + desktop instances both exist in DOM
+    const switcherButton = page.locator('[data-testid="account-switcher-button"]:visible');
+    await expect(switcherButton).toBeVisible({
       timeout: 10000,
     });
 
     // Click the switcher
-    await page.getByTestId("account-switcher-button").click();
+    await switcherButton.click();
     await expect(page.getByTestId("account-switcher-dropdown")).toBeVisible({
       timeout: 5000,
     });
@@ -174,7 +176,8 @@ test.describe("Account Switching", () => {
     await page.waitForLoadState("networkidle");
 
     // Switch to second account
-    await page.getByTestId("account-switcher-button").click();
+    // Use :visible filter because mobile + desktop instances both exist in DOM
+    await page.locator('[data-testid="account-switcher-button"]:visible').click();
     await page.getByTestId(`switch-to-${TEST_USER_2.username}`).click();
 
     // Wait for the page to reload/refresh and verify identity changed
@@ -192,7 +195,7 @@ test.describe("Account Switching", () => {
     });
 
     // Now switch back to the first account
-    await page.getByTestId("account-switcher-button").click();
+    await page.locator('[data-testid="account-switcher-button"]:visible').click();
     await page.getByTestId(`switch-to-${TEST_USER.username}`).click();
 
     await page.waitForLoadState("networkidle");
@@ -242,7 +245,7 @@ test.describe("Account Switching", () => {
     await page.reload();
     await page.waitForLoadState("networkidle");
     await expect(
-      page.getByTestId("account-switcher-button")
+      page.locator('[data-testid="account-switcher-button"]').first()
     ).not.toBeVisible({ timeout: 5000 });
   });
 
