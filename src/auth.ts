@@ -9,6 +9,7 @@ import bcrypt from "bcryptjs";
 import { autoFriendNewUser } from "@/lib/auto-friend";
 import { inngest } from "@/lib/inngest";
 import { linkUsersInGroup, loadLinkedAccounts } from "@/lib/account-linking-db";
+import { linkCookieStore } from "@/lib/link-cookie-store";
 import type { LinkedAccount } from "@/types/next-auth";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -87,6 +88,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       } catch {
         // cookies() may throw in non-request contexts; ignore
       }
+      // Fallback: check AsyncLocalStorage
+      if (linkCookieStore.getStore()) {
+        return `${baseUrl}/profile`;
+      }
 
       // Default redirect behaviour (same as NextAuth's built-in default)
       if (url.startsWith("/")) return `${baseUrl}${url}`;
@@ -105,6 +110,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           linkCookieValue = cookieStore.get("linkFromUserId")?.value;
         } catch {
           // cookies() may throw in non-request contexts; ignore
+        }
+        // Fallback: the route handler stores the cookie in AsyncLocalStorage
+        if (!linkCookieValue) {
+          linkCookieValue = linkCookieStore.getStore();
         }
 
         if (linkCookieValue && linkCookieValue !== user.id) {

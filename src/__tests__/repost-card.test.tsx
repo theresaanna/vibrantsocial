@@ -92,6 +92,23 @@ describe("RepostCard", () => {
     expect(screen.getByText("reposted")).toBeInTheDocument();
   });
 
+  it("shows repost-header testid for simple reposts", () => {
+    render(
+      <RepostCard repost={defaultRepost} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} />
+    );
+    expect(screen.getByTestId("repost-header")).toBeInTheDocument();
+    expect(screen.queryByTestId("quote-header")).toBeNull();
+  });
+
+  it("shows quote-header testid for quote posts", () => {
+    const quoteRepost = { ...defaultRepost, content: "My thoughts" };
+    render(
+      <RepostCard repost={quoteRepost} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} />
+    );
+    expect(screen.getByTestId("quote-header")).toBeInTheDocument();
+    expect(screen.queryByTestId("repost-header")).toBeNull();
+  });
+
   it("renders the original post content", () => {
     render(
       <RepostCard repost={defaultRepost} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} />

@@ -215,6 +215,7 @@ describe("JWT callback – OAuth linking flow", () => {
   let jwtCallback: Function;
   const mockCookieGet = vi.fn();
   const mockCookieDelete = vi.fn();
+  const mockLinkCookieStoreGetStore = vi.fn();
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -251,6 +252,12 @@ describe("JWT callback – OAuth linking flow", () => {
         set: vi.fn(),
         delete: mockCookieDelete,
       }),
+    }));
+
+    vi.doMock("@/lib/link-cookie-store", () => ({
+      linkCookieStore: {
+        getStore: mockLinkCookieStoreGetStore,
+      },
     }));
 
     vi.doMock("bcryptjs", () => ({
@@ -590,5 +597,114 @@ describe("JWT callback – OAuth linking flow", () => {
 
     // Cookie should still be cleaned up
     expect(mockCookieDelete).toHaveBeenCalledWith("linkFromUserId");
+  });
+
+  it("falls back to AsyncLocalStorage when cookies() returns undefined", async () => {
+    const { linkUsersInGroup, loadLinkedAccounts } = await import(
+      "@/lib/account-linking-db"
+    );
+    const { prisma: mockP } = await import("@/lib/prisma");
+
+    // cookies() returns undefined for linkFromUserId
+    mockCookieGet.mockReturnValue(undefined);
+
+    // But AsyncLocalStorage has the value
+    mockLinkCookieStoreGetStore.mockReturnValue("original-user-id");
+
+    // Original user found in DB
+    vi.mocked(mockP.user.findUnique).mockResolvedValue({
+      id: "original-user-id",
+      username: "alice",
+      displayName: "Alice",
+      bio: "Hello",
+      avatar: "/alice.png",
+      tier: "free",
+      emailVerified: new Date(),
+    } as never);
+
+    vi.mocked(loadLinkedAccounts).mockResolvedValue([
+      {
+        id: "oauth-user-id",
+        username: "discord-bob",
+        displayName: "Discord Bob",
+        avatar: null,
+      },
+    ]);
+
+    const token = {} as Record<string, unknown>;
+    const result = await jwtCallback({
+      token,
+      user: {
+        id: "oauth-user-id",
+        username: "discord-bob",
+        displayName: "Discord Bob",
+        bio: null,
+        avatar: null,
+        tier: "free",
+      },
+      account: { provider: "discord", providerAccountId: "discord-123" },
+      profile: {},
+      trigger: "signIn",
+    });
+
+    // Should still link via the AsyncLocalStorage fallback
+    expect(linkUsersInGroup).toHaveBeenCalledWith(
+      "original-user-id",
+      "oauth-user-id"
+    );
+
+    // Token should be set to the ORIGINAL user
+    expect(result.id).toBe("original-user-id");
+    expect(result.username).toBe("alice");
+  });
+
+  it("falls back to AsyncLocalStorage when cookies() throws", async () => {
+    const { linkUsersInGroup, loadLinkedAccounts } = await import(
+      "@/lib/account-linking-db"
+    );
+    const { prisma: mockP } = await import("@/lib/prisma");
+    const { cookies } = await import("next/headers");
+
+    // cookies() throws (non-request context)
+    vi.mocked(cookies).mockRejectedValue(new Error("Not in request context"));
+
+    // AsyncLocalStorage has the value
+    mockLinkCookieStoreGetStore.mockReturnValue("original-user-id");
+
+    vi.mocked(mockP.user.findUnique).mockResolvedValue({
+      id: "original-user-id",
+      username: "alice",
+      displayName: "Alice",
+      bio: null,
+      avatar: null,
+      tier: "free",
+      emailVerified: new Date(),
+    } as never);
+
+    vi.mocked(loadLinkedAccounts).mockResolvedValue([]);
+
+    const token = {} as Record<string, unknown>;
+    const result = await jwtCallback({
+      token,
+      user: {
+        id: "oauth-user-id",
+        username: "bob",
+        displayName: "Bob",
+        bio: null,
+        avatar: null,
+        tier: "free",
+      },
+      account: { provider: "discord", providerAccountId: "discord-456" },
+      profile: {},
+      trigger: "signIn",
+    });
+
+    // Should still link via the AsyncLocalStorage fallback
+    expect(linkUsersInGroup).toHaveBeenCalledWith(
+      "original-user-id",
+      "oauth-user-id"
+    );
+
+    expect(result.id).toBe("original-user-id");
   });
 });
