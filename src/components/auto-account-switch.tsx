@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 /**
@@ -12,7 +12,6 @@ import { useEffect, useRef } from "react";
 export function AutoAccountSwitch() {
   const { update } = useSession();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const switchTo = searchParams.get("_switchTo");
   const didRun = useRef(false);
 
@@ -21,12 +20,13 @@ export function AutoAccountSwitch() {
     didRun.current = true;
 
     update({ switchToUserId: switchTo }).then(() => {
-      // Remove the query param from the URL
+      // Full reload so every server component, layout, and client cache
+      // picks up the new identity. Remove the _switchTo param first.
       const url = new URL(window.location.href);
       url.searchParams.delete("_switchTo");
-      router.replace(url.pathname + url.search);
+      window.location.replace(url.pathname + url.search);
     });
-  }, [switchTo, update, router]);
+  }, [switchTo, update]);
 
   return null;
 }

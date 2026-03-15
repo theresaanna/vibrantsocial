@@ -1,7 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
-const mockRefresh = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: vi.fn().mockReturnValue({ push: vi.fn(), replace: vi.fn(), back: vi.fn(), refresh: vi.fn() }),
   usePathname: vi.fn().mockReturnValue("/"),
@@ -28,9 +27,24 @@ const linkedAccounts = [
   { id: "user3", username: "user_three", displayName: "User Three", avatar: "https://example.com/avatar.jpg" },
 ];
 
+// Save/restore the real location so we can spy on reload()
+const originalLocation = window.location;
+
 describe("AccountSwitcher", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Replace window.location with a spy-able object
+    Object.defineProperty(window, "location", {
+      writable: true,
+      value: { ...originalLocation, reload: vi.fn() },
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(window, "location", {
+      writable: true,
+      value: originalLocation,
+    });
   });
 
   it("renders nothing when no linked accounts", () => {
@@ -122,7 +136,7 @@ describe("AccountSwitcher", () => {
     expect(screen.getByText("User Three")).toBeInTheDocument();
   });
 
-  it("calls switchAccount when clicking a linked account", async () => {
+  it("calls switchAccount and does a full page reload on success", async () => {
     const mockUpdate = vi.fn().mockResolvedValue(undefined);
     mockUseSession.mockReturnValue({
       data: {
@@ -156,6 +170,47 @@ describe("AccountSwitcher", () => {
     await waitFor(() => {
       expect(mockUpdate).toHaveBeenCalledWith({ switchToUserId: "user2" });
     });
+
+    // Must do a full page reload, NOT router.refresh()
+    await waitFor(() => {
+      expect(window.location.reload).toHaveBeenCalled();
+    });
+  });
+
+  it("does not reload when switchAccount fails", async () => {
+    const mockUpdate = vi.fn().mockResolvedValue(undefined);
+    mockUseSession.mockReturnValue({
+      data: {
+        user: {
+          id: "user1",
+          username: "user_one",
+          displayName: "User One",
+          avatar: null,
+          bio: null,
+          tier: "free",
+          isEmailVerified: true,
+          authProvider: "credentials",
+          linkedAccounts,
+        },
+        expires: "2026-12-31",
+      },
+      status: "authenticated",
+      update: mockUpdate,
+    });
+
+    mockSwitchAccount.mockResolvedValue({ success: false, message: "No linked accounts" });
+
+    render(<AccountSwitcher />);
+    fireEvent.click(screen.getByTestId("account-switcher-button"));
+    fireEvent.click(screen.getByTestId("switch-to-user_two"));
+
+    await waitFor(() => {
+      expect(mockSwitchAccount).toHaveBeenCalledWith("user2");
+    });
+
+    // Should NOT update session or reload when switch fails
+    expect(mockUpdate).not.toHaveBeenCalled();
+    expect(window.location.reload).not.toHaveBeenCalled();
   });
 
   it("shows add account button when onAddAccount is provided", () => {

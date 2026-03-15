@@ -1,7 +1,6 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { switchAccount } from "@/app/profile/account-linking-actions";
 import type { LinkedAccount } from "@/types/next-auth";
@@ -41,7 +40,6 @@ export function AccountSwitcher({
   onAddAccount?: () => void;
 }) {
   const { data: session, update } = useSession();
-  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [switching, setSwitching] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -76,8 +74,9 @@ export function AccountSwitcher({
       const result = await switchAccount(targetAccount.id);
       if (result.success) {
         await update({ switchToUserId: targetAccount.id });
-        setIsOpen(false);
-        router.refresh();
+        // Full reload so every server component, layout, and client cache
+        // picks up the new identity (router.refresh() leaves stale data).
+        window.location.reload();
       }
     } finally {
       setSwitching(null);
