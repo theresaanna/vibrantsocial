@@ -91,6 +91,7 @@ vi.mock("@/lib/time", () => ({
 
 const basePost = {
   id: "post1",
+  slug: "test-post-slug",
   content: "Test content",
   createdAt: new Date(),
   editedAt: null,
@@ -115,10 +116,36 @@ const basePost = {
 };
 
 describe("PostCard - timestamp permalink", () => {
-  it("renders timestamp as a link to /post/[postId]", () => {
+  it("renders timestamp as a link to slug URL when slug and username available", () => {
     render(
       <PostCard
         post={basePost}
+        phoneVerified={true}
+        ageVerified={false}
+        showGraphicByDefault={false} showNsfwContent={false}
+      />
+    );
+    const link = screen.getByText("1m ago").closest("a");
+    expect(link).toHaveAttribute("href", "/testuser/post/test-post-slug");
+  });
+
+  it("falls back to /post/[id] when slug is null", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, slug: null }}
+        phoneVerified={true}
+        ageVerified={false}
+        showGraphicByDefault={false} showNsfwContent={false}
+      />
+    );
+    const link = screen.getByText("1m ago").closest("a");
+    expect(link).toHaveAttribute("href", "/post/post1");
+  });
+
+  it("falls back to /post/[id] when author has no username", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, author: { ...basePost.author, username: null } }}
         phoneVerified={true}
         ageVerified={false}
         showGraphicByDefault={false} showNsfwContent={false}

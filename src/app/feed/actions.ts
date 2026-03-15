@@ -13,11 +13,38 @@ import { extractTagsFromNames } from "@/lib/tags";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { notifyPostSubscribers } from "@/lib/subscription-notifications";
 import { notifyTagSubscribers } from "@/lib/tag-subscription-notifications";
+import { generateSlugFromContent, validateSlug } from "@/lib/slugs";
 
 interface PostState {
   success: boolean;
   message: string;
   postId?: string;
+  slug?: string;
+}
+
+async function resolveUniqueSlug(
+  authorId: string,
+  baseSlug: string,
+  excludePostId?: string
+): Promise<string> {
+  if (!baseSlug) baseSlug = "post";
+
+  let candidate = baseSlug;
+  let suffix = 1;
+
+  while (true) {
+    const existing = await prisma.post.findFirst({
+      where: {
+        authorId,
+        slug: candidate,
+        ...(excludePostId ? { id: { not: excludePostId } } : {}),
+      },
+      select: { id: true },
+    });
+    if (!existing) return candidate;
+    suffix++;
+    candidate = `${baseSlug}-${suffix}`;
+  }
 }
 
 export async function createPost(
@@ -67,8 +94,21 @@ export async function createPost(
   const isCloseFriendsOnly = formData.get("isCloseFriendsOnly") === "true";
   const isLoggedInOnly = formData.get("isLoggedInOnly") === "true";
 
+  // Slug: use user-provided slug or auto-generate from content
+  const rawSlug = formData.get("slug") as string;
+  let slug: string;
+  if (rawSlug?.trim()) {
+    slug = validateSlug(rawSlug);
+    if (!slug) {
+      return { success: false, message: "Invalid slug format" };
+    }
+  } else {
+    slug = generateSlugFromContent(content);
+  }
+  slug = await resolveUniqueSlug(session.user.id, slug);
+
   const post = await prisma.post.create({
-    data: { content, authorId: session.user.id, isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly, isLoggedInOnly },
+    data: { content, slug, authorId: session.user.id, isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly, isLoggedInOnly },
   });
 
   // Attach tags (skip for sensitive/graphic posts; NSFW posts can have tags)
@@ -135,7 +175,7 @@ export async function createPost(
   }
 
   revalidatePath("/feed");
-  return { success: true, message: "Post created", postId: post.id };
+  return { success: true, message: "Post created", postId: post.id, slug: post.slug ?? undefined };
 }
 
 const MAX_POST_REVISIONS = 20;
@@ -187,9 +227,19 @@ export async function editPost(
   const isCloseFriendsOnly = formData.get("isCloseFriendsOnly") === "true";
   const isLoggedInOnly = formData.get("isLoggedInOnly") === "true";
 
+  // Only update slug if user explicitly changed it
+  let slugUpdate: { slug?: string } = {};
+  const rawSlug = formData.get("slug") as string | null;
+  if (rawSlug !== null && rawSlug !== undefined) {
+    const newSlug = validateSlug(rawSlug);
+    if (newSlug && newSlug !== post.slug) {
+      slugUpdate = { slug: await resolveUniqueSlug(session.user.id, newSlug, postId) };
+    }
+  }
+
   await prisma.post.update({
     where: { id: postId },
-    data: { content, editedAt: new Date(), isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly, isLoggedInOnly },
+    data: { content, editedAt: new Date(), isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly, isLoggedInOnly, ...slugUpdate },
   });
 
   // Update tags

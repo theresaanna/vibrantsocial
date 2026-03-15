@@ -65,6 +65,8 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
   const [isCloseFriendsOnly, setIsCloseFriendsOnly] = useState(false);
   const [isLoggedInOnly, setIsLoggedInOnly] = useState(false);
   const [showContentWarnings, setShowContentWarnings] = useState(false);
+  const [slug, setSlug] = useState("");
+  const [showSlugInput, setShowSlugInput] = useState(false);
   const [draftStatus, setDraftStatus] = useState<DraftSaveStatus>("idle");
 
   const [state, formAction, isPending] = useActionState(
@@ -82,6 +84,8 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
         setIsGraphicNudity(false);
         setIsCloseFriendsOnly(false);
         setIsLoggedInOnly(false);
+        setSlug("");
+        setShowSlugInput(false);
         clearDraft("compose");
         if (result.postId) onPostCreated?.(result.postId);
       }
@@ -195,6 +199,35 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
         <input type="hidden" name="isGraphicNudity" value={isGraphicNudity ? "true" : "false"} />
         <input type="hidden" name="isCloseFriendsOnly" value={isCloseFriendsOnly ? "true" : "false"} />
         <input type="hidden" name="isLoggedInOnly" value={isLoggedInOnly ? "true" : "false"} />
+        {!showSlugInput && <input type="hidden" name="slug" value={slug} />}
+        <div className="border-t border-zinc-200 px-4 py-2 dark:border-zinc-700">
+          <button
+            type="button"
+            onClick={() => setShowSlugInput(!showSlugInput)}
+            className="flex w-full items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300"
+          >
+            <svg className={`h-3.5 w-3.5 transition-transform ${showSlugInput ? "rotate-90" : ""}`} fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+            </svg>
+            Custom URL
+          </button>
+          {showSlugInput && (
+            <div className="mt-2">
+              <label className="mb-1 block text-xs text-zinc-500 dark:text-zinc-400">
+                URL slug (optional, auto-generated if empty)
+              </label>
+              <input
+                type="text"
+                name="slug"
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+                placeholder="my-post-title"
+                className="w-full rounded-md border border-zinc-200 px-3 py-1.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-500"
+                maxLength={60}
+              />
+            </div>
+          )}
+        </div>
         <div className="border-t border-zinc-200 px-4 py-2 dark:border-zinc-700">
           <button
             type="button"

@@ -4,6 +4,7 @@ import { extractTextFromLexicalJson } from "@/lib/lexical-text";
 interface SearchPostCardProps {
   post: {
     id: string;
+    slug?: string | null;
     content: string;
     createdAt: string;
     author: {
@@ -35,7 +36,11 @@ export function SearchPostCard({ post }: SearchPostCardProps) {
 
   return (
     <Link
-      href={`/post/${post.id}`}
+      href={
+        post.slug && post.author.username
+          ? `/${post.author.username}/post/${post.slug}`
+          : `/post/${post.id}`
+      }
       className="block rounded-lg border border-zinc-200 p-4 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
     >
       <div className="flex items-center gap-2">

@@ -9,6 +9,8 @@ import {
 
 interface PostActionsProps {
   postId: string;
+  postSlug?: string | null;
+  authorUsername?: string | null;
   likeCount: number;
   commentCount: number;
   repostCount: number;
@@ -23,6 +25,8 @@ interface PostActionsProps {
 
 export function PostActions({
   postId,
+  postSlug,
+  authorUsername,
   likeCount,
   commentCount,
   repostCount,
@@ -99,7 +103,9 @@ export function PostActions({
   };
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/post/${postId}`;
+    const url = postSlug && authorUsername
+      ? `${window.location.origin}/${authorUsername}/post/${postSlug}`
+      : `${window.location.origin}/post/${postId}`;
 
     if (navigator.share) {
       try {
