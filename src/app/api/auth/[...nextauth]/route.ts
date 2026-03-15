@@ -10,8 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
  * `next/headers` fails in that context.
  *
  * Also handles the case where the OAuth Account already belongs to another
- * user — either linking the two users directly (if the owner is a real user)
- * or cleaning up orphan artifacts (if the owner has no password).
+ * user by linking the two users directly.
  */
 export async function GET(req: NextRequest) {
   const linkCookie = req.cookies.get("linkFromUserId")?.value;
@@ -44,11 +43,9 @@ export async function GET(req: NextRequest) {
             "hasPassword:", !!owner?.passwordHash
           );
 
-          if (owner?.passwordHash) {
-            // ── REAL USER: link directly, skip Auth.js callback ──
-            // The Account belongs to a legitimate user (has password).
-            // Link the two users together and redirect to profile.
-            console.log("[nextauth] Account belongs to real user — linking", linkCookie, "↔", owner.id);
+          if (owner) {
+            // Account belongs to an existing user — link directly
+            console.log("[nextauth] Account belongs to user — linking", linkCookie, "↔", owner.id);
             await linkUsersInGroup(linkCookie, owner.id);
             console.log("[nextauth] linkUsersInGroup succeeded");
 
@@ -58,24 +55,9 @@ export async function GET(req: NextRequest) {
             res.cookies.delete("linkFromUserId");
             res.cookies.delete("linkRedirect");
             return res;
-          } else if (!owner) {
-            // Owner doesn't exist — delete orphan Account
-            console.log("[nextauth] Deleting orphan account (no owner):", acct.id);
-            await prisma.account.delete({ where: { id: acct.id } });
-          } else {
-            // Owner has no password — OAuth-only artifact, delete it
-            console.log("[nextauth] Deleting orphan account:", acct.id, "user:", owner.id);
-            await prisma.account.delete({ where: { id: acct.id } });
-            const remaining = await prisma.account.count({
-              where: { userId: owner.id },
-            });
-            if (remaining === 0) {
-              await prisma.user
-                .delete({ where: { id: owner.id } })
-                .catch(() => {});
-              console.log("[nextauth] Deleted orphan user:", owner.id);
-            }
           }
+          // No owner — Account is truly orphaned (dangling FK), skip it
+          console.log("[nextauth] Skipping orphan account (no owner):", acct.id);
         }
       } catch (err) {
         console.error("[nextauth] Pre-callback error:", err);
@@ -111,10 +93,10 @@ export async function GET(req: NextRequest) {
           if (conflictAccount) {
             const owner = await prisma.user.findUnique({
               where: { id: conflictAccount.userId },
-              select: { id: true, passwordHash: true },
+              select: { id: true },
             });
-            if (owner?.passwordHash) {
-              // Real user — link them
+            if (owner) {
+              // Link the users (works for both password and OAuth-only users)
               await linkUsersInGroup(linkCookie, owner.id);
               console.log("[nextauth] Post-callback: linked", linkCookie, "↔", owner.id);
               const profileUrl = new URL("/profile", req.url);
