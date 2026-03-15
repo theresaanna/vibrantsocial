@@ -64,10 +64,30 @@ export async function GET(req: NextRequest) {
     } else {
       console.log("[finish-link] Same-email: splitting Account into separate user");
       try {
-        // Find the Account that Auth.js just linked to the current user
-        const account = await prisma.account.findFirst({
-          where: { userId: from, provider },
+        // Dump ALL accounts for this user for diagnostics
+        const allUserAccounts = await prisma.account.findMany({
+          where: { userId: from },
         });
+        console.log(
+          "[finish-link] All accounts for user:",
+          JSON.stringify(allUserAccounts.map((a) => ({
+            id: a.id, provider: a.provider, providerAccountId: a.providerAccountId,
+          })))
+        );
+
+        // Also check ALL accounts for this provider (across all users)
+        const allProviderAccounts = await prisma.account.findMany({
+          where: { provider },
+        });
+        console.log(
+          "[finish-link] All", provider, "accounts:",
+          JSON.stringify(allProviderAccounts.map((a) => ({
+            id: a.id, userId: a.userId, providerAccountId: a.providerAccountId,
+          })))
+        );
+
+        // Find the Account that Auth.js just linked to the current user
+        const account = allUserAccounts.find((a) => a.provider === provider) ?? null;
 
         if (account) {
           // Fetch display info from the OAuth provider
