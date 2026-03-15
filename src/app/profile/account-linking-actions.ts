@@ -26,30 +26,36 @@ export async function startOAuthLink(
   }
 
   // Clean up orphaned Account+User records from previous failed linking attempts.
-  // Previous attempts may have created a User (with or without email) and moved
-  // the Account to it.  An orphan is any Account for this provider whose User
-  // has no passwordHash (i.e. not a real credentials user) and is NOT the
-  // current user.
+  // Uses separate queries (no nested include/select) for compatibility with
+  // the PrismaPg driver adapter.
   try {
     const allProviderAccounts = await prisma.account.findMany({
       where: { provider },
-      include: {
-        user: { select: { id: true, email: true, passwordHash: true } },
-      },
     });
-    const orphans = allProviderAccounts.filter(
-      (a) => a.userId !== session.user!.id && !a.user?.passwordHash
-    );
-    console.log(
-      "[startOAuthLink] Found", allProviderAccounts.length, provider,
-      "accounts,", orphans.length, "orphans to clean up"
-    );
-    for (const orphan of orphans) {
-      console.log("[startOAuthLink] Cleaning up orphaned account:", orphan.id, "user:", orphan.userId, "email:", orphan.user?.email);
-      await prisma.account.delete({ where: { id: orphan.id } });
-      const remaining = await prisma.account.count({ where: { userId: orphan.userId } });
-      if (remaining === 0) {
-        await prisma.user.delete({ where: { id: orphan.userId } }).catch(() => {});
+    console.log("[startOAuthLink] Found", allProviderAccounts.length, provider, "accounts total");
+
+    for (const acct of allProviderAccounts) {
+      if (acct.userId === session.user!.id) continue; // skip current user's accounts
+
+      // Separately query the user to check if it's an orphan
+      const owner = await prisma.user.findUnique({
+        where: { id: acct.userId },
+        select: { id: true, email: true, passwordHash: true },
+      });
+      console.log("[startOAuthLink] Account", acct.id, "→ user:", acct.userId,
+        "email:", owner?.email ?? "null", "hasPassword:", !!owner?.passwordHash);
+
+      if (!owner || !owner.passwordHash) {
+        // No password = OAuth-only artifact, safe to delete
+        console.log("[startOAuthLink] Deleting orphaned account:", acct.id, "user:", acct.userId);
+        await prisma.account.delete({ where: { id: acct.id } });
+        if (owner) {
+          const remaining = await prisma.account.count({ where: { userId: owner.id } });
+          if (remaining === 0) {
+            await prisma.user.delete({ where: { id: owner.id } }).catch(() => {});
+            console.log("[startOAuthLink] Deleted orphaned user:", owner.id);
+          }
+        }
       }
     }
   } catch (err) {
