@@ -36,15 +36,22 @@ function AccountAvatar({
 
 export function AccountSwitcher({
   onAddAccount,
+  initialLinkedAccounts = [],
 }: {
   onAddAccount?: () => void;
+  initialLinkedAccounts?: LinkedAccount[];
 }) {
   const { data: session, update } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [switching, setSwitching] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const linkedAccounts = session?.user?.linkedAccounts ?? [];
+  // Prefer session data (reflects real-time updates like account switches),
+  // fall back to server-loaded data so the button renders immediately.
+  const sessionLinkedAccounts = session?.user?.linkedAccounts ?? [];
+  const linkedAccounts = sessionLinkedAccounts.length > 0
+    ? sessionLinkedAccounts
+    : initialLinkedAccounts;
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -66,7 +73,7 @@ export function AccountSwitcher({
     };
   }, [isOpen]);
 
-  if (!session?.user || linkedAccounts.length === 0) return null;
+  if (linkedAccounts.length === 0) return null;
 
   async function handleSwitch(targetAccount: LinkedAccount) {
     setSwitching(targetAccount.id);
@@ -97,7 +104,7 @@ export function AccountSwitcher({
         </svg>
       </button>
 
-      {isOpen && (
+      {isOpen && session?.user && (
         <div
           className="absolute right-0 top-full z-50 mt-1 w-64 rounded-xl border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
           data-testid="account-switcher-dropdown"
