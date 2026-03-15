@@ -96,7 +96,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         console.log("[auth:redirect] AsyncLocalStorage fallback:", linkFromUserId);
       }
       if (linkFromUserId) {
-        const result = `${baseUrl}/api/finish-link?from=${linkFromUserId}`;
+        // Try to use the full finish-link URL from the linkRedirect cookie
+        // (includes the provider param).  Fall back to a basic URL.
+        let linkRedirectUrl: string | undefined;
+        try {
+          const cookieStore = await cookies();
+          linkRedirectUrl = cookieStore.get("linkRedirect")?.value;
+        } catch {}
+        const result = linkRedirectUrl
+          ? `${baseUrl}${linkRedirectUrl}`
+          : `${baseUrl}/api/finish-link?from=${linkFromUserId}`;
         console.log("[auth:redirect] linking flow →", result);
         return result;
       }
@@ -129,7 +138,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         console.log("[auth:jwt] user.id:", user.id, "linkCookieValue:", linkCookieValue, "provider:", account?.provider);
 
         if (linkCookieValue && linkCookieValue !== user.id) {
-          // OAuth linking flow: link the two users and keep the original session
+          // Different-email OAuth linking: link the two users and keep the
+          // original session.  finish-link also handles this as a fallback.
           try {
             const originalUser = await prisma.user.findUnique({
               where: { id: linkCookieValue },
@@ -164,73 +174,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
 
           // Cookie cleanup is handled by /api/finish-link
-        } else if (linkCookieValue && account?.provider && account.providerAccountId) {
-          // Same-email case: adapter linked the OAuth account to the existing user.
-          // We need to split into a separate user for multi-account switching.
-          try {
-            // Build display info from the OAuth profile
-            const oauthProfile = profile as Record<string, unknown> | undefined;
-            const oauthDisplayName =
-              (oauthProfile?.global_name as string) ??
-              (oauthProfile?.name as string) ??
-              (oauthProfile?.login as string) ??
-              null;
-            const oauthImage =
-              (oauthProfile?.image_url as string) ??
-              (user.image as string) ??
-              null;
-
-            // Build a Discord avatar URL if we have the hash
-            let avatarUrl = oauthImage;
-            if (
-              account.provider === "discord" &&
-              oauthProfile?.id &&
-              oauthProfile?.avatar
-            ) {
-              avatarUrl = `https://cdn.discordapp.com/avatars/${oauthProfile.id}/${oauthProfile.avatar}.png`;
-            }
-
-            // Create a new user for this OAuth identity (no email to avoid
-            // unique-constraint conflicts)
-            const newUser = await prisma.user.create({
-              data: {
-                name: oauthDisplayName,
-                displayName: oauthDisplayName,
-                image: avatarUrl,
-                avatar: avatarUrl,
-                emailVerified: new Date(),
-              },
-            });
-
-            // Move the OAuth Account from the current user to the new user
-            await prisma.account.updateMany({
-              where: {
-                userId: user.id!,
-                provider: account.provider,
-                providerAccountId: account.providerAccountId,
-              },
-              data: { userId: newUser.id },
-            });
-
-            // Link both users in a group
-            await linkUsersInGroup(linkCookieValue, newUser.id);
-
-            // Keep the ORIGINAL user session
-            token.id = user.id;
-            token.username = user.username;
-            token.displayName = user.displayName;
-            token.bio = user.bio;
-            token.avatar = user.avatar;
-            token.tier = user.tier ?? "free";
-            token.isEmailVerified = !!("emailVerified" in user && user.emailVerified);
-            token.authProvider = account?.provider ?? null;
-            token.linkedAccounts = await loadLinkedAccounts(user.id!);
-            isLinkingFlow = true;
-          } catch (err) {
-            console.error("[auth] Same-email OAuth split error:", err);
-          }
-
-          // Cookie cleanup is handled by /api/finish-link
+        } else if (linkCookieValue) {
+          // Same-email case: the adapter auto-linked the Account to the
+          // existing user.  Do NOT split here — finish-link handles the
+          // splitting with guaranteed cookie access and provider API calls.
+          // Just keep the session on the current user.
+          console.log("[auth:jwt] Same-email linking flow — deferring to finish-link");
+          isLinkingFlow = false; // let the normal token population run below
         }
 
         if (!isLinkingFlow) {

@@ -45,12 +45,13 @@ export async function GET(req: NextRequest) {
           provider
         );
         try {
-          // Fetch ALL accounts for this provider (avoids Prisma relation
-          // filter issues) and filter orphans in JavaScript.
+          // Fetch ALL accounts for this provider and filter orphans:
+          // any Account whose User has no passwordHash (not a real
+          // credentials user) and is NOT the linking initiator.
           const allAccounts = await prisma.account.findMany({
             where: { provider },
             include: {
-              user: { select: { id: true, email: true } },
+              user: { select: { id: true, email: true, passwordHash: true } },
             },
           });
           console.log(
@@ -62,13 +63,14 @@ export async function GET(req: NextRequest) {
                 accountId: a.id,
                 userId: a.userId,
                 email: a.user?.email ?? null,
+                hasPassword: !!a.user?.passwordHash,
               }))
             )
           );
 
-          // Orphans = accounts whose user has no email (created by the
-          // JWT callback's same-email splitting logic).
-          const orphans = allAccounts.filter((a) => !a.user?.email);
+          const orphans = allAccounts.filter(
+            (a) => a.userId !== linkCookie && !a.user?.passwordHash
+          );
           console.log("[nextauth] Orphans to delete:", orphans.length);
 
           for (const orphan of orphans) {
@@ -76,7 +78,9 @@ export async function GET(req: NextRequest) {
               "[nextauth] Deleting orphaned account:",
               orphan.id,
               "user:",
-              orphan.userId
+              orphan.userId,
+              "email:",
+              orphan.user?.email
             );
             await prisma.account.delete({ where: { id: orphan.id } });
             const remaining = await prisma.account.count({
