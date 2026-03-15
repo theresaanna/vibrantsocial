@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
+import { setTestUserTier } from "../helpers/db";
 
-test.describe("Profile Settings & Themes", () => {
+test.describe("Profile Settings", () => {
   test("profile settings page loads with editable fields", async ({
     page,
   }) => {
@@ -15,6 +16,16 @@ test.describe("Profile Settings & Themes", () => {
     await expect(
       page.locator('input[name="displayName"]')
     ).toBeVisible();
+  });
+});
+
+test.describe("Theme editor (premium)", () => {
+  test.beforeEach(async () => {
+    await setTestUserTier("premium");
+  });
+
+  test.afterEach(async () => {
+    await setTestUserTier("free");
   });
 
   test("profile theme editor shows preset buttons", async ({ page }) => {
@@ -89,5 +100,48 @@ test.describe("Profile Settings & Themes", () => {
 
     // Modal should be gone
     await expect(page.locator("text=Theme Preview")).not.toBeVisible();
+  });
+});
+
+test.describe("Theme editor gating (free tier)", () => {
+  test.beforeEach(async () => {
+    await setTestUserTier("free");
+  });
+
+  test("free user sees upgrade prompt instead of theme editor", async ({
+    page,
+  }) => {
+    await page.goto("/profile");
+
+    // Scroll to bottom to ensure the section is visible
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.waitForTimeout(500);
+
+    // Upgrade prompt should be visible
+    await expect(
+      page.getByTestId("theme-upgrade-prompt")
+    ).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByText(/profile themes are a premium feature/i)
+    ).toBeVisible();
+  });
+
+  test("free user does not see color pickers or presets", async ({
+    page,
+  }) => {
+    await page.goto("/profile");
+
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.waitForTimeout(500);
+
+    // Theme preset buttons should not exist
+    await expect(
+      page.locator("button[aria-pressed]", { hasText: "default" })
+    ).not.toBeVisible();
+
+    // Color picker inputs should not exist
+    await expect(
+      page.locator('input[aria-label="Background"]')
+    ).not.toBeVisible();
   });
 });

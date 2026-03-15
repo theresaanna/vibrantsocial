@@ -110,6 +110,7 @@ export function RepostCard({
   const [editIsSensitive, setEditIsSensitive] = useState(repost.isSensitive ?? false);
   const [editIsNsfw, setEditIsNsfw] = useState(repost.isNsfw ?? false);
   const [editIsGraphicNudity, setEditIsGraphicNudity] = useState(repost.isGraphicNudity ?? false);
+  const [editIsCloseFriendsOnly, setEditIsCloseFriendsOnly] = useState(repost.isCloseFriendsOnly ?? false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [showContentWarnings, setShowContentWarnings] = useState(
     (repost.isSensitive || repost.isNsfw || repost.isGraphicNudity) ?? false
@@ -287,6 +288,7 @@ export function RepostCard({
                 <input type="hidden" name="isSensitive" value={editIsSensitive ? "true" : "false"} />
                 <input type="hidden" name="isNsfw" value={editIsNsfw ? "true" : "false"} />
                 <input type="hidden" name="isGraphicNudity" value={editIsGraphicNudity ? "true" : "false"} />
+                <input type="hidden" name="isCloseFriendsOnly" value={editIsCloseFriendsOnly ? "true" : "false"} />
                 <div data-testid="repost-edit-editor">
                   <Editor
                     initialContent={currentContent || undefined}
@@ -370,23 +372,41 @@ export function RepostCard({
                     </div>
                   )}
                 </div>
-                <div className="mt-2 flex gap-2">
-                  <button
-                    type="submit"
-                    disabled={editPending}
-                    className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-                    data-testid="repost-edit-save"
-                  >
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsEditing(false)}
-                    className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                    data-testid="repost-edit-cancel"
-                  >
-                    Cancel
-                  </button>
+                <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <div className="flex items-center gap-3">
+                    <label className="flex cursor-pointer items-center gap-1.5">
+                      <input
+                        type="checkbox"
+                        checked={editIsCloseFriendsOnly}
+                        onChange={(e) => setEditIsCloseFriendsOnly(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <span className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${editIsCloseFriendsOnly ? "border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-900/30 dark:text-green-400" : "border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-500 dark:border-zinc-700 dark:text-zinc-500 dark:hover:border-zinc-600 dark:hover:text-zinc-400"}`}>
+                        <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
+                        </svg>
+                        Close Friends
+                      </span>
+                    </label>
+                  </div>
+                  <div className="flex gap-2 sm:ml-auto">
+                    <button
+                      type="submit"
+                      disabled={editPending}
+                      className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                      data-testid="repost-edit-save"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditing(false)}
+                      className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                      data-testid="repost-edit-cancel"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               </form>
             ) : (

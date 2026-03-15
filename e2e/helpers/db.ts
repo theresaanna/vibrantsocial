@@ -79,6 +79,42 @@ export async function seedSecondTestUser() {
   }
 }
 
+export async function setTestUserTier(tier: "free" | "premium") {
+  const pool = createPool();
+  try {
+    await pool.query('UPDATE "User" SET tier = $1 WHERE email = $2', [
+      tier,
+      TEST_USER.email,
+    ]);
+  } finally {
+    await pool.end();
+  }
+}
+
+export async function getTestUserStars(): Promise<number> {
+  const pool = createPool();
+  try {
+    const result = await pool.query(
+      'SELECT stars FROM "User" WHERE email = $1',
+      [TEST_USER.email]
+    );
+    return result.rows[0]?.stars ?? 0;
+  } finally {
+    await pool.end();
+  }
+}
+
+export async function resetTestUserStars() {
+  const pool = createPool();
+  try {
+    await pool.query('UPDATE "User" SET stars = 0 WHERE email = $1', [
+      TEST_USER.email,
+    ]);
+  } finally {
+    await pool.end();
+  }
+}
+
 export async function cleanupLinkedAccountGroups() {
   const pool = createPool();
   try {

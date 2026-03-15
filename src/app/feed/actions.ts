@@ -110,6 +110,7 @@ export async function createPost(
   const post = await prisma.post.create({
     data: { content, slug, authorId: session.user.id, isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly, isLoggedInOnly },
   });
+  await prisma.user.update({ where: { id: session.user.id }, data: { stars: { increment: 1 } } });
 
   // Attach tags (skip for sensitive/graphic posts; NSFW posts can have tags)
   const rawTags = formData.get("tags") as string;

@@ -57,7 +57,7 @@ vi.mock("@/components/theme-editor", () => ({
 
 const defaultUser = {
   id: "user1",
-  username: "testuser",
+  username: "testuser" as string | null,
   displayName: "Test User",
   bio: null,
   profileBgColor: null as string | null,
@@ -75,6 +75,8 @@ interface RenderFormOptions {
   emailOnNewChat?: boolean;
   emailOnMention?: boolean;
   emailOnFriendRequest?: boolean;
+  emailOnSubscribedPost?: boolean;
+  emailOnTagPost?: boolean;
   ageVerified?: boolean;
   showGraphicByDefault?: boolean;
   showNsfwContent?: boolean;
@@ -83,6 +85,8 @@ interface RenderFormOptions {
   phoneVerified?: boolean;
   phoneNumber?: string | null;
   isCredentialsUser?: boolean;
+  isPremium?: boolean;
+  stars?: number;
 }
 
 function renderForm(options: RenderFormOptions = {}) {
@@ -94,6 +98,8 @@ function renderForm(options: RenderFormOptions = {}) {
     emailOnNewChat = true,
     emailOnMention = true,
     emailOnFriendRequest = true,
+    emailOnSubscribedPost = true,
+    emailOnTagPost = true,
     ageVerified = false,
     showGraphicByDefault = false,
     showNsfwContent = false,
@@ -102,6 +108,8 @@ function renderForm(options: RenderFormOptions = {}) {
     phoneVerified = false,
     phoneNumber = null,
     isCredentialsUser = false,
+    isPremium = true,
+    stars = 0,
   } = options;
   return render(
     <ProfileForm
@@ -117,11 +125,15 @@ function renderForm(options: RenderFormOptions = {}) {
       emailOnNewChat={emailOnNewChat}
       emailOnMention={emailOnMention}
       emailOnFriendRequest={emailOnFriendRequest}
+      emailOnSubscribedPost={emailOnSubscribedPost}
+      emailOnTagPost={emailOnTagPost}
       pushEnabled={pushEnabled}
       isProfilePublic={isProfilePublic}
       phoneVerified={phoneVerified}
       phoneNumber={phoneNumber}
       isCredentialsUser={isCredentialsUser}
+      isPremium={isPremium}
+      stars={stars}
     />
   );
 }
@@ -142,9 +154,30 @@ describe("ProfileForm", () => {
     vi.useRealTimers();
   });
 
-  it("renders the theme editor", () => {
-    renderForm();
-    expect(screen.getByTestId("theme-editor")).toBeInTheDocument();
+  describe("theme editor gating", () => {
+    it("renders the theme editor for premium users", () => {
+      renderForm({ isPremium: true });
+      expect(screen.getByTestId("theme-editor")).toBeInTheDocument();
+      expect(screen.queryByTestId("theme-upgrade-prompt")).not.toBeInTheDocument();
+    });
+
+    it("does NOT render the theme editor for free users", () => {
+      renderForm({ isPremium: false });
+      expect(screen.queryByTestId("theme-editor")).not.toBeInTheDocument();
+    });
+
+    it("shows upgrade prompt for free users", () => {
+      renderForm({ isPremium: false });
+      expect(screen.getByTestId("theme-upgrade-prompt")).toBeInTheDocument();
+      expect(
+        screen.getByText(/profile themes are a premium feature/i)
+      ).toBeInTheDocument();
+    });
+
+    it("does NOT show upgrade prompt for premium users", () => {
+      renderForm({ isPremium: true });
+      expect(screen.queryByTestId("theme-upgrade-prompt")).not.toBeInTheDocument();
+    });
   });
 
   describe("username status - no 'available' message for current username", () => {
@@ -396,6 +429,25 @@ describe("ProfileForm", () => {
       expect(checkbox).not.toBeChecked();
       await userEvent.click(checkbox);
       expect(checkbox).toBeChecked();
+    });
+  });
+
+  describe("stars display", () => {
+    it("displays stars count on profile", () => {
+      renderForm({ userOverrides: { username: "testuser" }, stars: 42 });
+      const starsEl = screen.getByTestId("stars-count");
+      expect(starsEl).toBeInTheDocument();
+      expect(starsEl).toHaveTextContent("42 stars");
+    });
+
+    it("uses singular 'star' for count of 1", () => {
+      renderForm({ userOverrides: { username: "testuser" }, stars: 1 });
+      expect(screen.getByTestId("stars-count")).toHaveTextContent("1 star");
+    });
+
+    it("shows 0 stars by default", () => {
+      renderForm({ userOverrides: { username: "testuser" } });
+      expect(screen.getByTestId("stars-count")).toHaveTextContent("0 stars");
     });
   });
 });

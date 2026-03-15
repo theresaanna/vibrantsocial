@@ -116,6 +116,7 @@ export async function toggleLike(
 
   if (existing) {
     await prisma.like.delete({ where: { id: existing.id } });
+    await prisma.user.update({ where: { id: session.user.id }, data: { stars: { decrement: 1 } } });
     const post = await prisma.post.findUnique({
       where: { id: postId },
       select: { author: { select: { username: true } } },
@@ -125,6 +126,7 @@ export async function toggleLike(
     await prisma.like.create({
       data: { postId, userId: session.user.id },
     });
+    await prisma.user.update({ where: { id: session.user.id }, data: { stars: { increment: 1 } } });
 
     const post = await prisma.post.findUnique({
       where: { id: postId },
@@ -209,10 +211,12 @@ export async function toggleRepost(
 
   if (existing) {
     await prisma.repost.delete({ where: { id: existing.id } });
+    await prisma.user.update({ where: { id: session.user.id }, data: { stars: { decrement: 1 } } });
   } else {
     await prisma.repost.create({
       data: { postId, userId: session.user.id },
     });
+    await prisma.user.update({ where: { id: session.user.id }, data: { stars: { increment: 1 } } });
 
     const post = await prisma.post.findUnique({
       where: { id: postId },
@@ -267,6 +271,7 @@ export async function createQuoteRepost(
   const repost = await prisma.repost.create({
     data: { postId, userId: session.user.id, content, isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly },
   });
+  await prisma.user.update({ where: { id: session.user.id }, data: { stars: { increment: 1 } } });
 
   // Attach tags (skip for sensitive/graphic; NSFW can have tags)
   const rawTags = formData.get("tags") as string;
@@ -549,6 +554,7 @@ export async function createComment(
       },
     },
   });
+  await prisma.user.update({ where: { id: session.user.id }, data: { stars: { increment: 1 } } });
 
   // Notify post author about the comment
   const post = await prisma.post.findUnique({
@@ -666,10 +672,12 @@ export async function toggleRepostLike(
 
   if (existing) {
     await prisma.repostLike.delete({ where: { id: existing.id } });
+    await prisma.user.update({ where: { id: session.user.id }, data: { stars: { decrement: 1 } } });
   } else {
     await prisma.repostLike.create({
       data: { repostId, userId: session.user.id },
     });
+    await prisma.user.update({ where: { id: session.user.id }, data: { stars: { increment: 1 } } });
 
     const repost = await prisma.repost.findUnique({
       where: { id: repostId },
@@ -766,6 +774,7 @@ export async function createRepostComment(
       author: { select: commentAuthorSelect },
     },
   });
+  await prisma.user.update({ where: { id: session.user.id }, data: { stars: { increment: 1 } } });
 
   // Notify quote post author
   const repost = await prisma.repost.findUnique({

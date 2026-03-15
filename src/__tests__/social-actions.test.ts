@@ -38,6 +38,7 @@ vi.mock("@/lib/prisma", () => ({
     },
     user: {
       findUnique: vi.fn(),
+      update: vi.fn(),
     },
     $transaction: vi.fn(),
   },

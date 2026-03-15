@@ -93,6 +93,8 @@ function renderForm(options: RenderFormOptions = {}) {
       phoneVerified={false}
       phoneNumber={null}
       isCredentialsUser={false}
+      isPremium={true}
+      stars={0}
     />
   );
 }

@@ -43,6 +43,8 @@ interface ProfileFormProps {
   phoneVerified: boolean;
   phoneNumber: string | null;
   isCredentialsUser: boolean;
+  isPremium: boolean;
+  stars: number;
 }
 
 interface ProfileState {
@@ -52,7 +54,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, phoneVerified, phoneNumber, isCredentialsUser }: ProfileFormProps) {
+export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, phoneVerified, phoneNumber, isCredentialsUser, isPremium, stars }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [displayNameValue, setDisplayNameValue] = useState(user.displayName ?? "");
@@ -410,6 +412,9 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
 
         {savedUsername ? (
           <div className="flex flex-col justify-between rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+            <p className="mb-2 text-sm text-zinc-500 dark:text-zinc-400" data-testid="stars-count">
+              {stars} {stars === 1 ? "star" : "stars"}
+            </p>
             <Link
               href={`/${savedUsername}`}
               className="text-sm font-semibold text-zinc-900 transition-colors hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-400"
@@ -525,20 +530,50 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
           />
         )}
 
-        <ThemeEditor
-          initialColors={{
-            profileBgColor: user.profileBgColor ?? undefined,
-            profileTextColor: user.profileTextColor ?? undefined,
-            profileLinkColor: user.profileLinkColor ?? undefined,
-            profileSecondaryColor: user.profileSecondaryColor ?? undefined,
-            profileContainerColor: user.profileContainerColor ?? undefined,
-          }}
-          username={savedUsername ?? null}
-          displayName={user.displayName}
-          bio={user.bio}
-          avatarSrc={avatarPreview || oauthImage}
-          onChange={scheduleAutosave}
-        />
+        {isPremium ? (
+          <ThemeEditor
+            initialColors={{
+              profileBgColor: user.profileBgColor ?? undefined,
+              profileTextColor: user.profileTextColor ?? undefined,
+              profileLinkColor: user.profileLinkColor ?? undefined,
+              profileSecondaryColor: user.profileSecondaryColor ?? undefined,
+              profileContainerColor: user.profileContainerColor ?? undefined,
+            }}
+            username={savedUsername ?? null}
+            displayName={user.displayName}
+            bio={user.bio}
+            avatarSrc={avatarPreview || oauthImage}
+            onChange={scheduleAutosave}
+          />
+        ) : (
+          <div
+            data-testid="theme-upgrade-prompt"
+            className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700"
+          >
+            <div className="flex items-center gap-2">
+              <svg
+                className="h-5 w-5 text-zinc-400"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+                />
+              </svg>
+              <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Profile Theme
+              </h2>
+            </div>
+            <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+              Profile themes are a premium feature. Upgrade to customize your
+              profile colors.
+            </p>
+          </div>
+        )}
 
         <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
           <p className="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">

@@ -101,6 +101,8 @@ export function PostCard({
   const [editIsSensitive, setEditIsSensitive] = useState(post.isSensitive);
   const [editIsNsfw, setEditIsNsfw] = useState(post.isNsfw);
   const [editIsGraphicNudity, setEditIsGraphicNudity] = useState(post.isGraphicNudity);
+  const [editIsCloseFriendsOnly, setEditIsCloseFriendsOnly] = useState(post.isCloseFriendsOnly ?? false);
+  const [editIsLoggedInOnly, setEditIsLoggedInOnly] = useState(post.isLoggedInOnly ?? false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [showContentWarnings, setShowContentWarnings] = useState(
     post.isSensitive || post.isNsfw || post.isGraphicNudity
@@ -447,7 +449,8 @@ export function PostCard({
                 <input type="hidden" name="isSensitive" value={editIsSensitive ? "true" : "false"} />
                 <input type="hidden" name="isNsfw" value={editIsNsfw ? "true" : "false"} />
                 <input type="hidden" name="isGraphicNudity" value={editIsGraphicNudity ? "true" : "false"} />
-                <input type="hidden" name="isLoggedInOnly" value={post.isLoggedInOnly ? "true" : "false"} />
+                <input type="hidden" name="isCloseFriendsOnly" value={editIsCloseFriendsOnly ? "true" : "false"} />
+                <input type="hidden" name="isLoggedInOnly" value={editIsLoggedInOnly ? "true" : "false"} />
                 <div data-testid="post-edit-editor">
                   <Editor
                     initialContent={currentContent}
@@ -532,23 +535,55 @@ export function PostCard({
                     </div>
                   )}
                 </div>
-                <div className="mt-2 flex justify-end gap-2">
-                  <button
-                    type="submit"
-                    disabled={editPending}
-                    className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-                    data-testid="post-edit-save"
-                  >
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsEditing(false)}
-                    className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                    data-testid="post-edit-cancel"
-                  >
-                    Cancel
-                  </button>
+                <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <div className="flex items-center gap-3">
+                    <label className="flex cursor-pointer items-center gap-1.5">
+                      <input
+                        type="checkbox"
+                        checked={editIsCloseFriendsOnly}
+                        onChange={(e) => setEditIsCloseFriendsOnly(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <span className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${editIsCloseFriendsOnly ? "border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-900/30 dark:text-green-400" : "border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-500 dark:border-zinc-700 dark:text-zinc-500 dark:hover:border-zinc-600 dark:hover:text-zinc-400"}`}>
+                        <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
+                        </svg>
+                        Close Friends
+                      </span>
+                    </label>
+                    <label className="flex cursor-pointer items-center gap-1.5">
+                      <input
+                        type="checkbox"
+                        checked={editIsLoggedInOnly}
+                        onChange={(e) => setEditIsLoggedInOnly(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <span className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${editIsLoggedInOnly ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-400" : "border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-500 dark:border-zinc-700 dark:text-zinc-500 dark:hover:border-zinc-600 dark:hover:text-zinc-400"}`}>
+                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                        </svg>
+                        Logged-in Only
+                      </span>
+                    </label>
+                  </div>
+                  <div className="flex gap-2 sm:ml-auto">
+                    <button
+                      type="submit"
+                      disabled={editPending}
+                      className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                      data-testid="post-edit-save"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditing(false)}
+                      className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                      data-testid="post-edit-cancel"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               </form>
             ) : (
