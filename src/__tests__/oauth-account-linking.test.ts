@@ -369,33 +369,13 @@ describe("JWT callback – OAuth linking flow", () => {
     // Cookie cleanup is handled by /api/finish-link, not the JWT callback
   });
 
-  it("handles same-email linking by creating a new user for the OAuth identity", async () => {
-    const { linkUsersInGroup, loadLinkedAccounts } = await import(
-      "@/lib/account-linking-db"
-    );
+  it("defers same-email linking to finish-link (does NOT split in JWT callback)", async () => {
+    const { linkUsersInGroup } = await import("@/lib/account-linking-db");
     const { prisma: mockP } = await import("@/lib/prisma");
 
     // Cookie value matches user.id → same-email case
     // (adapter auto-linked the OAuth account to the existing user)
     mockCookieGet.mockReturnValue({ value: "same-user-id" });
-
-    // Create a new user for the OAuth identity
-    vi.mocked(mockP.user.create).mockResolvedValue({
-      id: "new-oauth-user-id",
-    } as never);
-
-    vi.mocked(mockP.account.updateMany).mockResolvedValue({
-      count: 1,
-    } as never);
-
-    vi.mocked(loadLinkedAccounts).mockResolvedValue([
-      {
-        id: "new-oauth-user-id",
-        username: null,
-        displayName: "Google User",
-        avatar: null,
-      },
-    ]);
 
     const token = {} as Record<string, unknown>;
     const result = await jwtCallback({
@@ -414,30 +394,14 @@ describe("JWT callback – OAuth linking flow", () => {
       trigger: "signIn",
     });
 
-    // Should create a new user for the OAuth identity
-    expect(mockP.user.create).toHaveBeenCalled();
+    // Should NOT create a new user — finish-link handles splitting
+    expect(mockP.user.create).not.toHaveBeenCalled();
+    expect(mockP.account.updateMany).not.toHaveBeenCalled();
+    expect(linkUsersInGroup).not.toHaveBeenCalled();
 
-    // Should move the OAuth Account record to the new user
-    expect(mockP.account.updateMany).toHaveBeenCalledWith({
-      where: {
-        userId: "same-user-id",
-        provider: "google",
-        providerAccountId: "google-456",
-      },
-      data: { userId: "new-oauth-user-id" },
-    });
-
-    // Should link the original and new users
-    expect(linkUsersInGroup).toHaveBeenCalledWith(
-      "same-user-id",
-      "new-oauth-user-id"
-    );
-
-    // Token should remain as the ORIGINAL user
+    // Token should be set to the current user (normal population)
     expect(result.id).toBe("same-user-id");
     expect(result.username).toBe("alice");
-
-    // Cookie cleanup is handled by /api/finish-link, not the JWT callback
   });
 
   it("does NOT link when no cookie is present (regular sign-in)", async () => {
