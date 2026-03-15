@@ -1,5 +1,6 @@
 import { handlers } from "@/auth";
 import { linkCookieStore } from "@/lib/link-cookie-store";
+import { linkUsersInGroup } from "@/lib/account-linking-db";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -8,73 +9,76 @@ import { NextRequest, NextResponse } from "next/server";
  * inside callbacks via AsyncLocalStorage, even if `cookies()` from
  * `next/headers` fails in that context.
  *
- * Also intercepts OAuthAccountNotLinked errors during linking flows to clean
- * up orphaned Account+User records from previous failed attempts, then
- * redirects to /profile so the user can retry.
+ * Also handles the case where the OAuth Account already belongs to another
+ * user — either linking the two users directly (if the owner is a real user)
+ * or cleaning up orphan artifacts (if the owner has no password).
  */
-/**
- * Clean up orphaned Account+User records for a provider.
- * An orphan is an Account whose User has no passwordHash (OAuth-only artifact)
- * and is NOT the linking initiator.
- */
-async function cleanupOrphanAccounts(provider: string, currentUserId: string) {
-  const allAccounts = await prisma.account.findMany({
-    where: { provider },
-  });
-  console.log("[nextauth:cleanup] Found", allAccounts.length, provider, "accounts");
-
-  let deleted = 0;
-  for (const acct of allAccounts) {
-    if (acct.userId === currentUserId) continue;
-
-    const owner = await prisma.user.findUnique({
-      where: { id: acct.userId },
-      select: { id: true, email: true, passwordHash: true },
-    });
-    console.log(
-      "[nextauth:cleanup] Account", acct.id, "→ user:", acct.userId,
-      "email:", owner?.email ?? "null",
-      "hasPassword:", !!owner?.passwordHash
-    );
-
-    if (!owner || !owner.passwordHash) {
-      console.log("[nextauth:cleanup] Deleting orphan account:", acct.id);
-      await prisma.account.delete({ where: { id: acct.id } });
-      deleted++;
-      if (owner) {
-        const remaining = await prisma.account.count({
-          where: { userId: owner.id },
-        });
-        if (remaining === 0) {
-          await prisma.user
-            .delete({ where: { id: owner.id } })
-            .catch(() => {});
-          console.log("[nextauth:cleanup] Deleted orphan user:", owner.id);
-        }
-      }
-    }
-  }
-  return deleted;
-}
-
 export async function GET(req: NextRequest) {
   const linkCookie = req.cookies.get("linkFromUserId")?.value;
 
-  // PRE-CALLBACK CLEANUP: If this is a linking flow callback, clean up
-  // orphans BEFORE Auth.js processes the request.  This prevents
-  // OAuthAccountNotLinked from being thrown in the first place.
+  // PRE-CALLBACK: If this is a linking flow callback, check for conflicts
+  // BEFORE Auth.js processes the request.
   if (linkCookie && req.nextUrl.pathname.includes("/callback/")) {
     const pathParts = req.nextUrl.pathname.split("/");
     const callbackIdx = pathParts.indexOf("callback");
     const provider = callbackIdx >= 0 ? pathParts[callbackIdx + 1] : null;
 
     if (provider) {
-      console.log("[nextauth] Pre-callback orphan cleanup for provider:", provider, "user:", linkCookie);
+      console.log("[nextauth] Pre-callback check for provider:", provider, "linkingUser:", linkCookie);
       try {
-        const deleted = await cleanupOrphanAccounts(provider, linkCookie);
-        console.log("[nextauth] Pre-callback cleanup deleted", deleted, "orphans");
+        const allAccounts = await prisma.account.findMany({
+          where: { provider },
+        });
+        console.log("[nextauth] Found", allAccounts.length, provider, "accounts");
+
+        for (const acct of allAccounts) {
+          if (acct.userId === linkCookie) continue;
+
+          const owner = await prisma.user.findUnique({
+            where: { id: acct.userId },
+            select: { id: true, email: true, passwordHash: true },
+          });
+          console.log(
+            "[nextauth] Account", acct.id, "→ user:", acct.userId,
+            "email:", owner?.email ?? "null",
+            "hasPassword:", !!owner?.passwordHash
+          );
+
+          if (owner?.passwordHash) {
+            // ── REAL USER: link directly, skip Auth.js callback ──
+            // The Account belongs to a legitimate user (has password).
+            // Link the two users together and redirect to profile.
+            console.log("[nextauth] Account belongs to real user — linking", linkCookie, "↔", owner.id);
+            await linkUsersInGroup(linkCookie, owner.id);
+            console.log("[nextauth] linkUsersInGroup succeeded");
+
+            const profileUrl = new URL("/profile", req.url);
+            profileUrl.searchParams.set("_switchTo", linkCookie);
+            const res = NextResponse.redirect(profileUrl);
+            res.cookies.delete("linkFromUserId");
+            res.cookies.delete("linkRedirect");
+            return res;
+          } else if (!owner) {
+            // Owner doesn't exist — delete orphan Account
+            console.log("[nextauth] Deleting orphan account (no owner):", acct.id);
+            await prisma.account.delete({ where: { id: acct.id } });
+          } else {
+            // Owner has no password — OAuth-only artifact, delete it
+            console.log("[nextauth] Deleting orphan account:", acct.id, "user:", owner.id);
+            await prisma.account.delete({ where: { id: acct.id } });
+            const remaining = await prisma.account.count({
+              where: { userId: owner.id },
+            });
+            if (remaining === 0) {
+              await prisma.user
+                .delete({ where: { id: owner.id } })
+                .catch(() => {});
+              console.log("[nextauth] Deleted orphan user:", owner.id);
+            }
+          }
+        }
       } catch (err) {
-        console.error("[nextauth] Pre-callback cleanup error:", err);
+        console.error("[nextauth] Pre-callback error:", err);
       }
     }
   }
@@ -83,9 +87,8 @@ export async function GET(req: NextRequest) {
     handlers.GET!(req)
   );
 
-  // POST-CALLBACK FALLBACK: If Auth.js still errored with
-  // OAuthAccountNotLinked (shouldn't happen after pre-cleanup, but
-  // just in case), clean up again and redirect to profile for retry.
+  // POST-CALLBACK FALLBACK: If Auth.js errored with OAuthAccountNotLinked,
+  // try to link the users directly.
   if (
     linkCookie &&
     response instanceof Response &&
@@ -100,14 +103,34 @@ export async function GET(req: NextRequest) {
         callbackIdx >= 0 ? pathParts[callbackIdx + 1] : null;
 
       if (provider) {
-        console.log("[nextauth] OAuthAccountNotLinked STILL occurred — running post-callback cleanup");
+        console.log("[nextauth] OAuthAccountNotLinked — attempting direct link for provider:", provider);
         try {
-          await cleanupOrphanAccounts(provider, linkCookie);
+          const conflictAccount = await prisma.account.findFirst({
+            where: { provider, userId: { not: linkCookie } },
+          });
+          if (conflictAccount) {
+            const owner = await prisma.user.findUnique({
+              where: { id: conflictAccount.userId },
+              select: { id: true, passwordHash: true },
+            });
+            if (owner?.passwordHash) {
+              // Real user — link them
+              await linkUsersInGroup(linkCookie, owner.id);
+              console.log("[nextauth] Post-callback: linked", linkCookie, "↔", owner.id);
+              const profileUrl = new URL("/profile", req.url);
+              profileUrl.searchParams.set("_switchTo", linkCookie);
+              const res = NextResponse.redirect(profileUrl);
+              res.cookies.delete("linkFromUserId");
+              res.cookies.delete("linkRedirect");
+              return res;
+            }
+          }
         } catch (err) {
-          console.error("[nextauth] Post-callback cleanup error:", err);
+          console.error("[nextauth] Post-callback link error:", err);
         }
       }
 
+      // Fallback: redirect to profile with retry
       const profileUrl = new URL("/profile", req.url);
       profileUrl.searchParams.set("linkError", "retry");
       const res = NextResponse.redirect(profileUrl);
