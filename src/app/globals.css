@@ -119,3 +119,12 @@ h6 {
 details:hover > .collapsible-delete-btn {
   opacity: 1;
 }
+
+/* Feature showcase — reduced-motion fallback */
+@media (prefers-reduced-motion: reduce) {
+  .showcase-section {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
