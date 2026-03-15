@@ -113,7 +113,11 @@ export function NavLinks({ username }: { username?: string | null }) {
   };
 
   function isActive(link: NavLink) {
-    if (link.matchPrefix) return pathname.startsWith(link.href);
+    if (link.matchPrefix) {
+      if (pathname.startsWith(link.href)) return true;
+      // /tag/* pages should highlight the Communities nav link
+      if (link.href === "/communities" && pathname.startsWith("/tag/")) return true;
+    }
     return pathname === link.href;
   }
 
