@@ -11,6 +11,6 @@ export default defineConfig({
   },
 
   datasource: {
-    url: process.env.DIRECT_URL ?? "",
+    url: process.env.STAGING_DIRECT_URL || process.env.DIRECT_URL || "",
   },
 });
