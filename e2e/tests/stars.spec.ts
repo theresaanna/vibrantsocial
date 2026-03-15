@@ -1,6 +1,22 @@
 import { test, expect } from "@playwright/test";
 import { resetTestUserStars, getTestUserStars } from "../helpers/db";
 
+/** Poll getTestUserStars until the predicate is true (or timeout). */
+async function waitForStars(
+  predicate: (stars: number) => boolean,
+  timeoutMs = 5000,
+  intervalMs = 250
+): Promise<number> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const stars = await getTestUserStars();
+    if (predicate(stars)) return stars;
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+  // Return the last value so the assertion can produce a clear error
+  return getTestUserStars();
+}
+
 test.describe("Stars Points System", () => {
   test.beforeEach(async () => {
     await resetTestUserStars();
@@ -39,8 +55,8 @@ test.describe("Stars Points System", () => {
     await page.click('button:has-text("Post")');
     await page.waitForURL("**/feed", { timeout: 30000 });
 
-    // Verify stars incremented in DB
-    const stars = await getTestUserStars();
+    // Verify stars incremented in DB (poll in case server action is still completing)
+    const stars = await waitForStars((s) => s >= 1);
     expect(stars).toBe(1);
 
     // Navigate to profile and verify display
@@ -63,7 +79,8 @@ test.describe("Stars Points System", () => {
       page.locator('button[aria-label="Unlike"]').first()
     ).toBeVisible({ timeout: 5000 });
 
-    const stars = await getTestUserStars();
+    // Poll DB — server action may still be completing
+    const stars = await waitForStars((s) => s >= 1);
     expect(stars).toBeGreaterThanOrEqual(1);
   });
 
@@ -83,6 +100,7 @@ test.describe("Stars Points System", () => {
     await expect(
       page.locator('button[aria-label="Unlike"]').first()
     ).toBeVisible({ timeout: 5000 });
+    await waitForStars((s) => s >= 1);
 
     // Unlike
     await page.locator('button[aria-label="Unlike"]').first().click();
@@ -90,7 +108,8 @@ test.describe("Stars Points System", () => {
       page.locator('button[aria-label="Like"]').first()
     ).toBeVisible({ timeout: 5000 });
 
-    const stars = await getTestUserStars();
+    // Poll DB — wait for decrement to land
+    const stars = await waitForStars((s) => s === 0);
     expect(stars).toBe(0);
   });
 });
