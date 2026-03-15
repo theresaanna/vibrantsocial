@@ -82,8 +82,15 @@ export async function updateProfile(
   // Save current bio as a revision if it changed
   const currentUser = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { bio: true },
+    select: { bio: true, tier: true },
   });
+
+  // Strip theme colors for non-premium users
+  if (currentUser?.tier !== "premium") {
+    for (const field of THEME_COLOR_FIELDS) {
+      themeColors[field] = null;
+    }
+  }
 
   const newBio = bio || null;
   const oldBio = currentUser?.bio ?? null;

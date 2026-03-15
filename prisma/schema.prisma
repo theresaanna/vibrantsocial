@@ -48,6 +48,9 @@ model User {
   // Subscription tier
   tier String @default("free") // "free" | "premium"
 
+  // Stars (interaction points)
+  stars Int @default(0)
+
   // Phone verification
   phoneNumber   String?
   phoneVerified DateTime?

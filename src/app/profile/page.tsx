@@ -44,12 +44,15 @@ export default async function ProfilePage() {
       emailOnTagPost: true,
       pushEnabled: true,
       isProfilePublic: true,
+      tier: true,
+      stars: true,
     },
   });
 
   if (!user || isProfileIncomplete(user)) redirect("/complete-profile");
 
   const isCredentialsUser = !!user?.passwordHash;
+  const isPremium = user?.tier === "premium";
   const oauthImage = user?.image ?? session.user.image ?? null;
 
   return (
@@ -101,6 +104,8 @@ export default async function ProfilePage() {
           phoneVerified={!!user?.phoneVerified}
           phoneNumber={user?.phoneNumber ?? null}
           isCredentialsUser={isCredentialsUser}
+          isPremium={isPremium}
+          stars={user?.stars ?? 0}
         />
 
         <form
