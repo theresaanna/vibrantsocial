@@ -295,7 +295,7 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
           )}
         </div>
         {showInfoModal && <ContentFlagsInfoModal onClose={() => setShowInfoModal(false)} />}
-        <div className="flex items-center justify-between border-t border-zinc-200 px-4 py-3 dark:border-zinc-700">
+        <div className="flex flex-col gap-2 border-t border-zinc-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-700">
           <div className="flex items-center gap-2">
             {state.message && !state.success && (
               <p className="text-sm text-red-600">{state.message}</p>
@@ -326,6 +326,8 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
               checked={isLoggedInOnly}
               onChange={setIsLoggedInOnly}
             />
+          </div>
+          <div className="flex justify-end">
             <button
               type="submit"
               disabled={isPending}
