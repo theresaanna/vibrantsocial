@@ -45,9 +45,9 @@ export function Toolbar() {
       </span>
       <Divider />
       <FileUploadButton />
+      <YouTubeButton />
       <span className="hidden sm:contents">
         <HorizontalRuleButton />
-        <YouTubeButton />
         <TableButton />
         <PollButton />
         <EquationButton />
