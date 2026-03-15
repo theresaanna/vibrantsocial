@@ -36,15 +36,22 @@ function AccountAvatar({
 
 export function AccountSwitcher({
   onAddAccount,
+  initialLinkedAccounts = [],
 }: {
   onAddAccount?: () => void;
+  initialLinkedAccounts?: LinkedAccount[];
 }) {
   const { data: session, update } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [switching, setSwitching] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const linkedAccounts = session?.user?.linkedAccounts ?? [];
+  // Prefer session data (reflects real-time updates like account switches),
+  // fall back to server-loaded data so the button renders immediately.
+  const sessionLinkedAccounts = session?.user?.linkedAccounts ?? [];
+  const linkedAccounts = sessionLinkedAccounts.length > 0
+    ? sessionLinkedAccounts
+    : initialLinkedAccounts;
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -66,7 +73,7 @@ export function AccountSwitcher({
     };
   }, [isOpen]);
 
-  if (!session?.user || linkedAccounts.length === 0) return null;
+  if (linkedAccounts.length === 0) return null;
 
   async function handleSwitch(targetAccount: LinkedAccount) {
     setSwitching(targetAccount.id);
@@ -103,24 +110,26 @@ export function AccountSwitcher({
           data-testid="account-switcher-dropdown"
         >
           {/* Current account */}
-          <div className="border-b border-zinc-100 px-3 py-2 dark:border-zinc-800">
-            <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500">
-              Current account
-            </p>
-            <div className="mt-1 flex items-center gap-2">
-              <AccountAvatar account={session.user} size="md" />
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                  {session.user.displayName || session.user.username}
-                </p>
-                {session.user.username && (
-                  <p className="truncate text-xs text-zinc-500">
-                    @{session.user.username}
+          {session?.user && (
+            <div className="border-b border-zinc-100 px-3 py-2 dark:border-zinc-800">
+              <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500">
+                Current account
+              </p>
+              <div className="mt-1 flex items-center gap-2">
+                <AccountAvatar account={session.user} size="md" />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                    {session.user.displayName || session.user.username}
                   </p>
-                )}
+                  {session.user.username && (
+                    <p className="truncate text-xs text-zinc-500">
+                      @{session.user.username}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Linked accounts */}
           <div className="py-1">

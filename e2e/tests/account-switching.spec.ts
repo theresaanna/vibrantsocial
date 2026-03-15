@@ -321,6 +321,53 @@ test.describe("Account Switching", () => {
     ).not.toBeVisible({ timeout: 5000 });
   });
 
+  test("account switcher is visible on mobile when accounts are linked", async ({
+    page,
+    forceLogin,
+  }) => {
+    await forceLogin;
+
+    // Set mobile viewport (below Tailwind sm breakpoint of 640px)
+    await page.setViewportSize({ width: 375, height: 812 });
+
+    await page.goto("/profile");
+    await page.waitForLoadState("networkidle");
+
+    // Switcher should NOT be visible before linking
+    await expect(
+      page.locator('[data-testid="account-switcher-button"]')
+    ).not.toBeVisible({ timeout: 5000 });
+
+    // Link second account
+    await page.getByTestId("link-account-button").click();
+    await expect(page.getByTestId("link-account-modal")).toBeVisible({
+      timeout: 5000,
+    });
+    await page.getByTestId("link-email-input").fill(TEST_USER_2.email);
+    await page.getByTestId("link-password-input").fill(TEST_USER_2.password);
+    await page.getByTestId("link-account-submit").click();
+    await expect(page.getByTestId("link-account-modal")).not.toBeVisible({
+      timeout: 10000,
+    });
+
+    // Reload to pick up session update
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+
+    // The account switcher should be visible on mobile
+    const switcherButton = page.locator('[data-testid="account-switcher-button"]:visible');
+    await expect(switcherButton).toBeVisible({ timeout: 10000 });
+
+    // Verify it works — click to open dropdown
+    await switcherButton.click();
+    await expect(page.getByTestId("account-switcher-dropdown")).toBeVisible({
+      timeout: 5000,
+    });
+    await expect(
+      page.getByTestId(`switch-to-${TEST_USER_2.username}`)
+    ).toBeVisible();
+  });
+
   test("prevents linking to own account", async ({ page, forceLogin }) => {
     await forceLogin;
     await page.goto("/profile");
