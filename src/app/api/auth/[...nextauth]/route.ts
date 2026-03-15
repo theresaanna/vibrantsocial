@@ -45,51 +45,40 @@ export async function GET(req: NextRequest) {
           provider
         );
         try {
-          // Fetch ALL accounts for this provider and filter orphans:
-          // any Account whose User has no passwordHash (not a real
-          // credentials user) and is NOT the linking initiator.
+          // Use separate queries (no nested include/select) for PrismaPg
+          // driver adapter compatibility.
           const allAccounts = await prisma.account.findMany({
             where: { provider },
-            include: {
-              user: { select: { id: true, email: true, passwordHash: true } },
-            },
           });
-          console.log(
-            "[nextauth] All",
-            provider,
-            "accounts:",
-            JSON.stringify(
-              allAccounts.map((a) => ({
-                accountId: a.id,
-                userId: a.userId,
-                email: a.user?.email ?? null,
-                hasPassword: !!a.user?.passwordHash,
-              }))
-            )
-          );
+          console.log("[nextauth] Found", allAccounts.length, provider, "accounts");
 
-          const orphans = allAccounts.filter(
-            (a) => a.userId !== linkCookie && !a.user?.passwordHash
-          );
-          console.log("[nextauth] Orphans to delete:", orphans.length);
+          for (const acct of allAccounts) {
+            if (acct.userId === linkCookie) continue;
 
-          for (const orphan of orphans) {
-            console.log(
-              "[nextauth] Deleting orphaned account:",
-              orphan.id,
-              "user:",
-              orphan.userId,
-              "email:",
-              orphan.user?.email
-            );
-            await prisma.account.delete({ where: { id: orphan.id } });
-            const remaining = await prisma.account.count({
-              where: { userId: orphan.userId },
+            const owner = await prisma.user.findUnique({
+              where: { id: acct.userId },
+              select: { id: true, email: true, passwordHash: true },
             });
-            if (remaining === 0) {
-              await prisma.user
-                .delete({ where: { id: orphan.userId } })
-                .catch(() => {});
+            console.log(
+              "[nextauth] Account", acct.id, "→ user:", acct.userId,
+              "email:", owner?.email ?? "null",
+              "hasPassword:", !!owner?.passwordHash
+            );
+
+            if (!owner || !owner.passwordHash) {
+              console.log("[nextauth] Deleting orphan account:", acct.id);
+              await prisma.account.delete({ where: { id: acct.id } });
+              if (owner) {
+                const remaining = await prisma.account.count({
+                  where: { userId: owner.id },
+                });
+                if (remaining === 0) {
+                  await prisma.user
+                    .delete({ where: { id: owner.id } })
+                    .catch(() => {});
+                  console.log("[nextauth] Deleted orphan user:", owner.id);
+                }
+              }
             }
           }
         } catch (err) {
