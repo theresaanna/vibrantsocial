@@ -1,74 +1,145 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { linkUsersInGroup } from "@/lib/account-linking-db";
+import { prisma } from "@/lib/prisma";
+import { linkUsersInGroup, loadLinkedAccounts } from "@/lib/account-linking-db";
 
 /**
- * Fallback account-linking handler.
+ * Account-linking handler that runs AFTER the OAuth callback completes.
  *
- * After an OAuth flow the JWT callback *tries* to link accounts by reading
- * the `linkFromUserId` cookie, but `cookies()` from `next/headers` can
- * silently fail inside NextAuth callbacks on certain Next.js versions.
+ * Has guaranteed access to request cookies via `req.cookies` (unlike
+ * NextAuth callbacks where `cookies()` from `next/headers` can fail).
  *
- * This route handler runs AFTER the OAuth callback completes and has
- * guaranteed access to request cookies via `req.cookies`.  If the JWT
- * callback already linked the accounts, this is a harmless no-op.
+ * Handles two cases:
+ * 1. Different email: OAuth created a new user → link the two users
+ * 2. Same email: OAuth auto-linked Account to existing user → split into
+ *    a separate user for account switching
  */
 export async function GET(req: NextRequest) {
   const from = req.nextUrl.searchParams.get("from");
+  const provider = req.nextUrl.searchParams.get("provider");
   const linkCookie = req.cookies.get("linkFromUserId")?.value;
 
-  console.log("[finish-link] from:", from, "linkCookie:", linkCookie, "url:", req.url);
-  console.log("[finish-link] all cookies:", req.cookies.getAll().map(c => c.name).join(", "));
+  console.log("[finish-link] from:", from, "provider:", provider, "linkCookie:", linkCookie);
 
-  // Security: the URL param must match the httpOnly cookie to prove
-  // the linking was initiated by an authenticated server action.
+  // Security: the URL param must match the httpOnly cookie
   if (!from || from !== linkCookie) {
-    console.log("[finish-link] SECURITY CHECK FAILED — from/cookie mismatch. Redirecting to /profile");
-    // Can't verify linking intent — just go to profile
+    console.log("[finish-link] SECURITY CHECK FAILED — from/cookie mismatch");
     const res = NextResponse.redirect(new URL("/profile", req.url));
-    // Clean up stale cookies if present
     if (linkCookie) res.cookies.delete("linkFromUserId");
     res.cookies.delete("linkRedirect");
     return res;
   }
 
   const session = await auth();
-  console.log("[finish-link] session user:", session?.user?.id);
   if (!session?.user?.id) {
     console.log("[finish-link] No session — redirecting to /login");
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
   const oauthUserId = session.user.id;
-  let needsSwitch = false;
+  const redirectUrl = new URL("/profile", req.url);
 
   if (from !== oauthUserId) {
+    // ── Different-email case ──
+    // OAuth created a new user with a different email.
+    // Link the original user and the OAuth user.
     console.log("[finish-link] Different users — linking", from, "↔", oauthUserId);
-    // Different users (different email on Discord vs credentials).
-    // The JWT callback may have already linked — linkUsersInGroup is
-    // idempotent (returns early if they share a group).
     try {
       await linkUsersInGroup(from, oauthUserId);
       console.log("[finish-link] linkUsersInGroup succeeded");
     } catch (err) {
       console.error("[finish-link] linking error:", err);
     }
-    needsSwitch = true;
-  } else {
-    console.log("[finish-link] Same user (same-email case) — no DB linking needed here");
-  }
-  // Same-email case (from === oauthUserId): the adapter auto-linked the
-  // Account to the existing user.  The JWT callback handles the
-  // user-splitting logic which requires the `account` and `profile`
-  // objects that only the JWT callback has access to.  If the JWT
-  // callback succeeded, the session is already correct.  If it failed,
-  // the Account is still on the existing user — functional but without
-  // a separate linked identity.
-
-  const redirectUrl = new URL("/profile", req.url);
-  if (needsSwitch) {
-    // Tell the client to switch the session back to the original user
+    // Switch the session back to the original user
     redirectUrl.searchParams.set("_switchTo", from);
+  } else if (provider) {
+    // ── Same-email case ──
+    // Auth.js auto-linked the Account to the existing user.
+    // Check if the JWT callback already split it into a separate user.
+    const existingLinks = await loadLinkedAccounts(from);
+    if (existingLinks.length > 0) {
+      console.log("[finish-link] Same-email: JWT callback already handled splitting");
+      // Trigger a session refresh so the client picks up the linked accounts
+      redirectUrl.searchParams.set("_switchTo", from);
+    } else {
+      console.log("[finish-link] Same-email: splitting Account into separate user");
+      try {
+        // Find the Account that Auth.js just linked to the current user
+        const account = await prisma.account.findFirst({
+          where: { userId: from, provider },
+        });
+
+        if (account) {
+          // Fetch display info from the OAuth provider
+          let displayName: string | null = null;
+          let avatarUrl: string | null = null;
+
+          if (provider === "discord" && account.access_token) {
+            try {
+              const res = await fetch("https://discord.com/api/users/@me", {
+                headers: { Authorization: `Bearer ${account.access_token}` },
+              });
+              if (res.ok) {
+                const profile = await res.json();
+                displayName = profile.global_name ?? profile.username ?? null;
+                if (profile.avatar) {
+                  avatarUrl = `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`;
+                }
+              }
+            } catch {
+              // Fall back to generic name
+            }
+          } else if (provider === "google" && account.access_token) {
+            try {
+              const res = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+                headers: { Authorization: `Bearer ${account.access_token}` },
+              });
+              if (res.ok) {
+                const profile = await res.json();
+                displayName = profile.name ?? null;
+                avatarUrl = profile.picture ?? null;
+              }
+            } catch {
+              // Fall back to generic name
+            }
+          }
+
+          if (!displayName) {
+            displayName = `${provider.charAt(0).toUpperCase() + provider.slice(1)} Account`;
+          }
+
+          // Create a new user for this OAuth identity
+          const newUser = await prisma.user.create({
+            data: {
+              displayName,
+              name: displayName,
+              image: avatarUrl,
+              avatar: avatarUrl,
+              emailVerified: new Date(),
+            },
+          });
+          console.log("[finish-link] Created new user:", newUser.id, "displayName:", displayName);
+
+          // Move the Account from the current user to the new user
+          await prisma.account.update({
+            where: { id: account.id },
+            data: { userId: newUser.id },
+          });
+          console.log("[finish-link] Moved Account to new user");
+
+          // Link both users in a group
+          await linkUsersInGroup(from, newUser.id);
+          console.log("[finish-link] Linked users in group");
+
+          // Trigger session refresh to pick up the new linked account
+          redirectUrl.searchParams.set("_switchTo", from);
+        } else {
+          console.log("[finish-link] No Account found for provider:", provider, "user:", from);
+        }
+      } catch (err) {
+        console.error("[finish-link] Same-email splitting error:", err);
+      }
+    }
   }
 
   console.log("[finish-link] redirecting to:", redirectUrl.toString());
