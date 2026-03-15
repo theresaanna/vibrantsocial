@@ -108,40 +108,36 @@ test.describe("Theme editor gating (free tier)", () => {
     await setTestUserTier("free");
   });
 
-  test("free user sees upgrade prompt instead of theme editor", async ({
-    page,
-  }) => {
+  test("free user sees preset theme buttons", async ({ page }) => {
     await page.goto("/profile");
 
     // Scroll to bottom to ensure the section is visible
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.waitForTimeout(500);
 
-    // Upgrade prompt should be visible
+    // Preset buttons should be visible for free users
     await expect(
-      page.getByTestId("theme-upgrade-prompt")
+      page.locator("button[aria-pressed]", { hasText: "default" })
     ).toBeVisible({ timeout: 10000 });
     await expect(
-      page.getByText(/profile themes are a premium feature/i)
+      page.locator("button[aria-pressed]", { hasText: "ocean" })
     ).toBeVisible();
   });
 
-  test("free user does not see color pickers or presets", async ({
-    page,
-  }) => {
+  test("free user does not see custom color pickers", async ({ page }) => {
     await page.goto("/profile");
 
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.waitForTimeout(500);
 
-    // Theme preset buttons should not exist
-    await expect(
-      page.locator("button[aria-pressed]", { hasText: "default" })
-    ).not.toBeVisible();
-
-    // Color picker inputs should not exist
+    // Custom color picker inputs should not exist for free users
     await expect(
       page.locator('input[aria-label="Background"]')
     ).not.toBeVisible();
+
+    // Upgrade prompt for custom colors should be visible
+    await expect(
+      page.getByTestId("custom-colors-upgrade-prompt")
+    ).toBeVisible();
   });
 });

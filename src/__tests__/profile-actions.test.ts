@@ -434,7 +434,7 @@ describe("updateProfile", () => {
   });
 
   describe("theme color tier enforcement", () => {
-    it("strips theme colors for free-tier users", async () => {
+    it("strips custom (non-preset) theme colors for free-tier users", async () => {
       mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
       mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null, tier: "free" } as never);
       mockPrisma.user.update.mockResolvedValueOnce({} as never);
@@ -460,7 +460,37 @@ describe("updateProfile", () => {
       );
     });
 
-    it("preserves theme colors for premium-tier users", async () => {
+    it("allows preset theme colors for free-tier users", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+      mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null, tier: "free" } as never);
+      mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+      // Use the "ocean" preset
+      const result = await updateProfile(
+        prevState,
+        makeFormData({
+          profileBgColor: "#0c1929",
+          profileTextColor: "#e0f2fe",
+          profileLinkColor: "#38bdf8",
+          profileSecondaryColor: "#7dd3fc",
+          profileContainerColor: "#172a45",
+        })
+      );
+      expect(result.success).toBe(true);
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            profileBgColor: "#0c1929",
+            profileTextColor: "#e0f2fe",
+            profileLinkColor: "#38bdf8",
+            profileSecondaryColor: "#7dd3fc",
+            profileContainerColor: "#172a45",
+          }),
+        })
+      );
+    });
+
+    it("preserves custom theme colors for premium-tier users", async () => {
       mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
       mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null, tier: "premium" } as never);
       mockPrisma.user.update.mockResolvedValueOnce({} as never);
@@ -489,7 +519,7 @@ describe("updateProfile", () => {
       );
     });
 
-    it("strips theme colors when tier is undefined (defaults to free)", async () => {
+    it("strips custom colors when tier is undefined (defaults to free)", async () => {
       mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
       mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
       mockPrisma.user.update.mockResolvedValueOnce({} as never);

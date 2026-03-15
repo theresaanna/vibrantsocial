@@ -16,6 +16,7 @@ interface ThemeEditorProps {
   bio: string | null;
   avatarSrc: string | null;
   onChange?: () => void;
+  isPremium?: boolean;
 }
 
 const COLOR_LABELS: Record<keyof ProfileThemeColors, string> = {
@@ -33,6 +34,7 @@ export function ThemeEditor({
   bio,
   avatarSrc,
   onChange,
+  isPremium = true,
 }: ThemeEditorProps) {
   const defaultPreset = PROFILE_THEME_PRESETS.default;
   const [colors, setColors] = useState<ProfileThemeColors>({
@@ -89,42 +91,48 @@ export function ThemeEditor({
         ))}
       </div>
 
-      {/* Individual color pickers */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {THEME_COLOR_FIELDS.map((field) => (
-          <div key={field} className="flex items-center gap-2">
-            <input
-              type="color"
-              value={colors[field]}
-              onChange={(e) => handleColorChange(field, e.target.value)}
-              className="h-8 w-8 cursor-pointer rounded border border-zinc-300 dark:border-zinc-600"
-              aria-label={COLOR_LABELS[field]}
-            />
-            <div className="flex flex-col">
-              <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                {COLOR_LABELS[field]}
-              </label>
+      {/* Individual color pickers — premium only */}
+      {isPremium ? (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="custom-color-pickers">
+          {THEME_COLOR_FIELDS.map((field) => (
+            <div key={field} className="flex items-center gap-2">
               <input
-                type="text"
+                type="color"
                 value={colors[field]}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (v.length <= 7) {
-                    handleColorChange(field, v);
-                  }
-                }}
-                onBlur={(e) => {
-                  if (!isValidHexColor(e.target.value)) {
-                    handleColorChange(field, defaultPreset[field]);
-                  }
-                }}
-                className="w-20 rounded border border-zinc-300 bg-transparent px-1.5 py-0.5 text-xs dark:border-zinc-600 dark:text-zinc-100"
-                maxLength={7}
+                onChange={(e) => handleColorChange(field, e.target.value)}
+                className="h-8 w-8 cursor-pointer rounded border border-zinc-300 dark:border-zinc-600"
+                aria-label={COLOR_LABELS[field]}
               />
+              <div className="flex flex-col">
+                <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                  {COLOR_LABELS[field]}
+                </label>
+                <input
+                  type="text"
+                  value={colors[field]}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v.length <= 7) {
+                      handleColorChange(field, v);
+                    }
+                  }}
+                  onBlur={(e) => {
+                    if (!isValidHexColor(e.target.value)) {
+                      handleColorChange(field, defaultPreset[field]);
+                    }
+                  }}
+                  className="w-20 rounded border border-zinc-300 bg-transparent px-1.5 py-0.5 text-xs dark:border-zinc-600 dark:text-zinc-100"
+                  maxLength={7}
+                />
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-zinc-500 dark:text-zinc-400" data-testid="custom-colors-upgrade-prompt">
+          Upgrade to premium to customize individual colors.
+        </p>
+      )}
 
       {/* Hidden form inputs for form submission */}
       {THEME_COLOR_FIELDS.map((field) => (

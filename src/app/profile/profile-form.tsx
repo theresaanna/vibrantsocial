@@ -530,50 +530,21 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
           />
         )}
 
-        {isPremium ? (
-          <ThemeEditor
-            initialColors={{
-              profileBgColor: user.profileBgColor ?? undefined,
-              profileTextColor: user.profileTextColor ?? undefined,
-              profileLinkColor: user.profileLinkColor ?? undefined,
-              profileSecondaryColor: user.profileSecondaryColor ?? undefined,
-              profileContainerColor: user.profileContainerColor ?? undefined,
-            }}
-            username={savedUsername ?? null}
-            displayName={user.displayName}
-            bio={user.bio}
-            avatarSrc={avatarPreview || oauthImage}
-            onChange={scheduleAutosave}
-          />
-        ) : (
-          <div
-            data-testid="theme-upgrade-prompt"
-            className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700"
-          >
-            <div className="flex items-center gap-2">
-              <svg
-                className="h-5 w-5 text-zinc-400"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
-                />
-              </svg>
-              <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Profile Theme
-              </h2>
-            </div>
-            <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-              Profile themes are a premium feature. Upgrade to customize your
-              profile colors.
-            </p>
-          </div>
-        )}
+        <ThemeEditor
+          initialColors={{
+            profileBgColor: user.profileBgColor ?? undefined,
+            profileTextColor: user.profileTextColor ?? undefined,
+            profileLinkColor: user.profileLinkColor ?? undefined,
+            profileSecondaryColor: user.profileSecondaryColor ?? undefined,
+            profileContainerColor: user.profileContainerColor ?? undefined,
+          }}
+          username={savedUsername ?? null}
+          displayName={user.displayName}
+          bio={user.bio}
+          avatarSrc={avatarPreview || oauthImage}
+          onChange={scheduleAutosave}
+          isPremium={isPremium}
+        />
 
         <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
           <p className="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">

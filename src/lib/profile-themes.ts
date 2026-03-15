@@ -109,6 +109,17 @@ export function isValidHexColor(value: string): boolean {
   return HEX_COLOR_REGEX.test(value);
 }
 
+/** Returns true if the given colors exactly match one of the preset themes. */
+export function isPresetTheme(
+  colors: Record<string, string | null>
+): boolean {
+  return Object.values(PROFILE_THEME_PRESETS).some((preset) =>
+    THEME_COLOR_FIELDS.every(
+      (field) => colors[field] === preset[field]
+    )
+  );
+}
+
 // --- Color utility functions ---
 
 export function hexToRgb(hex: string): { r: number; g: number; b: number } {
