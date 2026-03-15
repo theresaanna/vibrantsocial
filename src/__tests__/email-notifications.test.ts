@@ -8,6 +8,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     comment: { create: vi.fn(), findUnique: vi.fn() },
     post: { findUnique: vi.fn() },
+    user: { update: vi.fn() },
     conversation: { update: vi.fn() },
     conversationParticipant: { findUnique: vi.fn(), update: vi.fn() },
     message: { create: vi.fn() },

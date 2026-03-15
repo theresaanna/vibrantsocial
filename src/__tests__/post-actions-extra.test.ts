@@ -49,6 +49,9 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: vi.fn(),
       count: vi.fn(),
     },
+    user: {
+      update: vi.fn(),
+    },
     tag: {
       upsert: vi.fn().mockResolvedValue({ id: "tag1", name: "test" }),
     },

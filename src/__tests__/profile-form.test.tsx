@@ -155,28 +155,14 @@ describe("ProfileForm", () => {
   });
 
   describe("theme editor gating", () => {
+    it("always renders the theme editor (presets available to all)", () => {
+      renderForm({ isPremium: false });
+      expect(screen.getByTestId("theme-editor")).toBeInTheDocument();
+    });
+
     it("renders the theme editor for premium users", () => {
       renderForm({ isPremium: true });
       expect(screen.getByTestId("theme-editor")).toBeInTheDocument();
-      expect(screen.queryByTestId("theme-upgrade-prompt")).not.toBeInTheDocument();
-    });
-
-    it("does NOT render the theme editor for free users", () => {
-      renderForm({ isPremium: false });
-      expect(screen.queryByTestId("theme-editor")).not.toBeInTheDocument();
-    });
-
-    it("shows upgrade prompt for free users", () => {
-      renderForm({ isPremium: false });
-      expect(screen.getByTestId("theme-upgrade-prompt")).toBeInTheDocument();
-      expect(
-        screen.getByText(/profile themes are a premium feature/i)
-      ).toBeInTheDocument();
-    });
-
-    it("does NOT show upgrade prompt for premium users", () => {
-      renderForm({ isPremium: true });
-      expect(screen.queryByTestId("theme-upgrade-prompt")).not.toBeInTheDocument();
     });
   });
 

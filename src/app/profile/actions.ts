@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { del } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
-import { isValidHexColor, THEME_COLOR_FIELDS } from "@/lib/profile-themes";
+import { isValidHexColor, THEME_COLOR_FIELDS, isPresetTheme } from "@/lib/profile-themes";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { sendEmailVerificationEmail } from "@/lib/email";
 import { inngest } from "@/lib/inngest";
@@ -85,8 +85,8 @@ export async function updateProfile(
     select: { bio: true, tier: true },
   });
 
-  // Strip theme colors for non-premium users
-  if (currentUser?.tier !== "premium") {
+  // Non-premium users can only use preset themes, not custom colors
+  if (currentUser?.tier !== "premium" && !isPresetTheme(themeColors)) {
     for (const field of THEME_COLOR_FIELDS) {
       themeColors[field] = null;
     }
