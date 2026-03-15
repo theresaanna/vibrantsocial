@@ -8,6 +8,7 @@ import { createContext, useContext, useEffect, useRef } from "react";
 import { ToastProvider } from "@/components/toast-provider";
 import { CookieToast } from "@/components/cookie-toast";
 import { Toaster } from "sonner";
+import { CommentCountProvider } from "@/hooks/use-comment-counts";
 
 const PRESENCE_CHANNEL = "presence:global";
 
@@ -42,9 +43,11 @@ function AblyProviderWrapper({ children }: { children: React.ReactNode }) {
   if (!session?.user?.id || !clientRef.current) {
     return (
       <AblyReadyContext.Provider value={false}>
-        <Toaster position="bottom-right" />
-        <CookieToast />
-        {children}
+        <CommentCountProvider>
+          <Toaster position="bottom-right" />
+          <CookieToast />
+          {children}
+        </CommentCountProvider>
       </AblyReadyContext.Provider>
     );
   }
@@ -52,12 +55,14 @@ function AblyProviderWrapper({ children }: { children: React.ReactNode }) {
   return (
     <AblyProvider client={clientRef.current}>
       <AblyReadyContext.Provider value={true}>
-        <ChannelProvider channelName={PRESENCE_CHANNEL}>
-          <PresenceEntry />
-          <ToastProvider />
-          <CookieToast />
-          {children}
-        </ChannelProvider>
+        <CommentCountProvider>
+          <ChannelProvider channelName={PRESENCE_CHANNEL}>
+            <PresenceEntry />
+            <ToastProvider />
+            <CookieToast />
+            {children}
+          </ChannelProvider>
+        </CommentCountProvider>
       </AblyReadyContext.Provider>
     </AblyProvider>
   );

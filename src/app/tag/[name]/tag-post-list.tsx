@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useTransition } from "react";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { PostCard } from "@/components/post-card";
 import { getPostsByTag } from "@/app/tags/actions";
 
@@ -31,12 +32,18 @@ export function TagPostList({
   const [posts, setPosts] = useState<any[]>(initialPosts);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [isPending, startTransition] = useTransition();
-  const sentinelRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
 
+  // Keep posts and hasMore in refs so loadMore stays stable
+  const postsRef = useRef(posts);
+  postsRef.current = posts;
+  const hasMoreRef = useRef(hasMore);
+  hasMoreRef.current = hasMore;
+
   const loadMore = useCallback(() => {
-    if (loadingRef.current || !hasMore) return;
-    const lastPost = posts[posts.length - 1];
+    if (loadingRef.current || !hasMoreRef.current) return;
+    const currentPosts = postsRef.current;
+    const lastPost = currentPosts[currentPosts.length - 1];
     if (!lastPost) return;
 
     loadingRef.current = true;
@@ -54,24 +61,30 @@ export function TagPostList({
         loadingRef.current = false;
       }
     });
-  }, [tagName, currentUserId, posts, hasMore, showNsfwContent]);
+  }, [tagName, currentUserId, showNsfwContent]);
 
+  // Virtualizer for window-based scrolling
+  const virtualizer = useWindowVirtualizer({
+    count: posts.length,
+    estimateSize: () => 250,
+    overscan: 5,
+    gap: 16,
+  });
+
+  const virtualItems = virtualizer.getVirtualItems();
+
+  // Trigger loadMore when nearing the end of the list
   useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          loadMore();
-        }
-      },
-      { rootMargin: "200px" }
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [loadMore]);
+    if (virtualItems.length === 0) return;
+    const lastVirtualItem = virtualItems[virtualItems.length - 1];
+    if (
+      lastVirtualItem.index >= posts.length - 3 &&
+      hasMoreRef.current &&
+      !loadingRef.current
+    ) {
+      loadMore();
+    }
+  }, [virtualItems, posts.length, loadMore]);
 
   if (posts.length === 0) {
     return (
@@ -82,20 +95,41 @@ export function TagPostList({
   }
 
   return (
-    <div className="space-y-4">
-      {posts.map((post) => (
-        <PostCard
-          key={post.id}
-          post={post}
-          currentUserId={currentUserId}
-          phoneVerified={phoneVerified}
-          ageVerified={ageVerified}
-          showGraphicByDefault={showGraphicByDefault}
-          showNsfwContent={showNsfwContent}
-        />
-      ))}
-
-      <div ref={sentinelRef} className="h-1" />
+    <div>
+      <div
+        style={{
+          height: virtualizer.getTotalSize(),
+          width: "100%",
+          position: "relative",
+        }}
+      >
+        {virtualItems.map((virtualRow) => {
+          const post = posts[virtualRow.index];
+          return (
+            <div
+              key={post.id}
+              data-index={virtualRow.index}
+              ref={virtualizer.measureElement}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                transform: `translateY(${virtualRow.start}px)`,
+              }}
+            >
+              <PostCard
+                post={post}
+                currentUserId={currentUserId}
+                phoneVerified={phoneVerified}
+                ageVerified={ageVerified}
+                showGraphicByDefault={showGraphicByDefault}
+                showNsfwContent={showNsfwContent}
+              />
+            </div>
+          );
+        })}
+      </div>
 
       {isPending && (
         <div className="flex justify-center py-4">
