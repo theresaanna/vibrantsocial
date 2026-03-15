@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useActionState } from "react";
+import { useState, useRef, useEffect, useActionState } from "react";
 import { PostContent } from "./post-content";
 import { PostActions } from "./post-actions";
 import { CommentSection } from "./comment-section";
@@ -12,8 +12,7 @@ import { useRouter } from "next/navigation";
 import { TagInput } from "./tag-input";
 import { ContentFlagsInfoModal } from "./content-flags-info-modal";
 import { timeAgo } from "@/lib/time";
-import { useAblyReady } from "@/app/providers";
-import { getAblyRealtimeClient } from "@/lib/ably";
+import { useCommentCount } from "@/hooks/use-comment-counts";
 import Link from "next/link";
 
 interface PostAuthor {
@@ -83,8 +82,7 @@ export function PostCard({
   showPinnedIndicator = false,
 }: PostCardProps) {
   const [showComments, setShowComments] = useState(defaultShowComments);
-  const [commentCount, setCommentCount] = useState(post._count.comments);
-  const ablyReady = useAblyReady();
+  const [commentCount, setCommentCount] = useCommentCount(post.id, post._count.comments);
   const [revealed, setRevealed] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -148,31 +146,6 @@ export function PostCard({
       return () => document.removeEventListener("mousedown", handleClick);
     }
   }, [showMenu]);
-
-  // Subscribe to real-time comment count updates via Ably
-  const handleCountMessage = useCallback(
-    (message: { data?: { count: number } }) => {
-      if (typeof message.data?.count === "number") {
-        setCommentCount(message.data.count);
-      }
-    },
-    []
-  );
-
-  useEffect(() => {
-    if (!ablyReady) return;
-    const client = getAblyRealtimeClient();
-    const channel = client.channels.get(`comments:${post.id}`);
-    channel.subscribe("count", handleCountMessage);
-    return () => {
-      channel.unsubscribe("count", handleCountMessage);
-    };
-  }, [ablyReady, post.id, handleCountMessage]);
-
-  // Sync comment count when server props change (e.g. after revalidation)
-  useEffect(() => {
-    setCommentCount(post._count.comments);
-  }, [post._count.comments]);
 
   if (deleted) return null;
 

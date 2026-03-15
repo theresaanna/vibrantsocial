@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useTransition } from "react";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { PostCard } from "@/components/post-card";
 import { RepostCard } from "@/components/repost-card";
 import { fetchFeedPage } from "@/app/feed/feed-actions";
@@ -46,16 +47,23 @@ export function FeedList({
       return toAdd.length > 0 ? [...toAdd, ...prev] : prev;
     });
   }, [newItems]);
+
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [isPending, startTransition] = useTransition();
-  const sentinelRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
 
+  // Keep items and hasMore in refs so loadMore stays stable
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  const hasMoreRef = useRef(hasMore);
+  hasMoreRef.current = hasMore;
+
   const loadMore = useCallback(() => {
-    if (loadingRef.current || !hasMore) return;
+    if (loadingRef.current || !hasMoreRef.current) return;
     loadingRef.current = true;
 
-    const lastItem = items[items.length - 1];
+    const currentItems = itemsRef.current;
+    const lastItem = currentItems[currentItems.length - 1];
     if (!lastItem) return;
 
     startTransition(async () => {
@@ -63,41 +71,47 @@ export function FeedList({
         const result = await fetchFeedPage(lastItem.date);
 
         const existingIds = new Set(
-          items.map((item) =>
+          itemsRef.current.map((item) =>
             item.type === "post" ? item.data.id : `repost-${item.data.id}`
           )
         );
 
-        const newItems = result.items.filter((item: FeedItem) => {
+        const freshItems = result.items.filter((item: FeedItem) => {
           const key =
             item.type === "post" ? item.data.id : `repost-${item.data.id}`;
           return !existingIds.has(key);
         });
 
-        setItems((prev) => [...prev, ...newItems]);
+        setItems((prev) => [...prev, ...freshItems]);
         setHasMore(result.hasMore);
       } finally {
         loadingRef.current = false;
       }
     });
-  }, [items, hasMore]);
+  }, []);
 
+  // Virtualizer for window-based scrolling
+  const virtualizer = useWindowVirtualizer({
+    count: items.length,
+    estimateSize: () => 250,
+    overscan: 5,
+    gap: 16,
+  });
+
+  const virtualItems = virtualizer.getVirtualItems();
+
+  // Trigger loadMore when nearing the end of the list
   useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          loadMore();
-        }
-      },
-      { rootMargin: "200px" }
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [loadMore]);
+    if (virtualItems.length === 0) return;
+    const lastVirtualItem = virtualItems[virtualItems.length - 1];
+    if (
+      lastVirtualItem.index >= items.length - 3 &&
+      hasMoreRef.current &&
+      !loadingRef.current
+    ) {
+      loadMore();
+    }
+  }, [virtualItems, items.length, loadMore]);
 
   if (items.length === 0) {
     return (
@@ -111,32 +125,56 @@ export function FeedList({
   }
 
   return (
-    <div className="mt-6 space-y-4">
-      {items.map((item) =>
-        item.type === "post" ? (
-          <PostCard
-            key={item.data.id}
-            post={item.data}
-            currentUserId={currentUserId}
-            phoneVerified={phoneVerified}
-            ageVerified={ageVerified}
-            showGraphicByDefault={showGraphicByDefault}
-            showNsfwContent={showNsfwContent}
-          />
-        ) : (
-          <RepostCard
-            key={`repost-${item.data.id}`}
-            repost={item.data}
-            currentUserId={currentUserId}
-            phoneVerified={phoneVerified}
-            ageVerified={ageVerified}
-            showGraphicByDefault={showGraphicByDefault}
-            showNsfwContent={showNsfwContent}
-          />
-        )
-      )}
-
-      <div ref={sentinelRef} className="h-1" />
+    <div className="mt-6">
+      <div
+        style={{
+          height: virtualizer.getTotalSize(),
+          width: "100%",
+          position: "relative",
+        }}
+      >
+        {virtualItems.map((virtualRow) => {
+          const item = items[virtualRow.index];
+          return (
+            <div
+              key={
+                item.type === "post"
+                  ? item.data.id
+                  : `repost-${item.data.id}`
+              }
+              data-index={virtualRow.index}
+              ref={virtualizer.measureElement}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                transform: `translateY(${virtualRow.start}px)`,
+              }}
+            >
+              {item.type === "post" ? (
+                <PostCard
+                  post={item.data}
+                  currentUserId={currentUserId}
+                  phoneVerified={phoneVerified}
+                  ageVerified={ageVerified}
+                  showGraphicByDefault={showGraphicByDefault}
+                  showNsfwContent={showNsfwContent}
+                />
+              ) : (
+                <RepostCard
+                  repost={item.data}
+                  currentUserId={currentUserId}
+                  phoneVerified={phoneVerified}
+                  ageVerified={ageVerified}
+                  showGraphicByDefault={showGraphicByDefault}
+                  showNsfwContent={showNsfwContent}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
 
       {isPending && (
         <div className="flex justify-center py-4">

@@ -13,21 +13,22 @@ vi.mock("@/components/post-card", () => ({
   ),
 }));
 
-import { TagPostList } from "@/app/tag/[name]/tag-post-list";
+// Mock @tanstack/react-virtual since jsdom doesn't support window scrolling
+vi.mock("@tanstack/react-virtual", () => ({
+  useWindowVirtualizer: (options: { count: number }) => ({
+    getVirtualItems: () =>
+      Array.from({ length: options.count }, (_, i) => ({
+        index: i,
+        start: i * 250,
+        size: 250,
+        key: i,
+      })),
+    getTotalSize: () => options.count * 250,
+    measureElement: () => {},
+  }),
+}));
 
-// Mock IntersectionObserver
-class MockIntersectionObserver {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-  constructor(private callback: IntersectionObserverCallback) {}
-  triggerIntersect() {
-    this.callback(
-      [{ isIntersecting: true } as IntersectionObserverEntry],
-      this as unknown as IntersectionObserver
-    );
-  }
-}
+import { TagPostList } from "@/app/tag/[name]/tag-post-list";
 
 const defaultProps = {
   tagName: "javascript",
@@ -40,17 +41,11 @@ const defaultProps = {
   showNsfwContent: false,
 };
 
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
 describe("TagPostList", () => {
-  let mockObserverInstance: MockIntersectionObserver;
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    global.IntersectionObserver = vi.fn((callback) => {
-      mockObserverInstance = new MockIntersectionObserver(callback);
-      return mockObserverInstance as unknown as IntersectionObserver;
-    }) as unknown as typeof IntersectionObserver;
-  });
-
   // ─── Empty state ───────────────────────────────────────────
 
   it("shows empty state when no posts", () => {
@@ -58,11 +53,6 @@ describe("TagPostList", () => {
     expect(
       screen.getByText("No posts with this tag yet.")
     ).toBeInTheDocument();
-  });
-
-  it("does not render sentinel in empty state", () => {
-    const { container } = render(<TagPostList {...defaultProps} />);
-    expect(container.querySelector(".h-1")).not.toBeInTheDocument();
   });
 
   // ─── With posts ────────────────────────────────────────────
@@ -77,14 +67,6 @@ describe("TagPostList", () => {
     expect(screen.getByTestId("post-card-p2")).toBeInTheDocument();
   });
 
-  it("renders sentinel div when there are posts", () => {
-    const posts = [{ id: "p1", postTagId: "pt1" }];
-    const { container } = render(
-      <TagPostList {...defaultProps} initialPosts={posts} />
-    );
-    expect(container.querySelector(".h-1")).toBeInTheDocument();
-  });
-
   it("does not show empty state when posts exist", () => {
     const posts = [{ id: "p1", postTagId: "pt1" }];
     render(<TagPostList {...defaultProps} initialPosts={posts} />);
@@ -93,19 +75,17 @@ describe("TagPostList", () => {
     ).not.toBeInTheDocument();
   });
 
-  // ─── Infinite scroll ──────────────────────────────────────
-
-  it("sets up IntersectionObserver when posts exist", () => {
-    const posts = [{ id: "p1", postTagId: "pt1" }];
-    render(
-      <TagPostList
-        {...defaultProps}
-        initialPosts={posts}
-        initialHasMore={true}
-      />
+  it("uses virtualization for rendering items", () => {
+    const posts = [
+      { id: "p1", postTagId: "pt1" },
+      { id: "p2", postTagId: "pt2" },
+    ];
+    const { container } = render(
+      <TagPostList {...defaultProps} initialPosts={posts} initialHasMore={true} />
     );
-    expect(global.IntersectionObserver).toHaveBeenCalled();
-    expect(mockObserverInstance.observe).toHaveBeenCalled();
+    // Virtualized items use absolute positioning with translateY
+    const positioned = container.querySelectorAll('[style*="position: absolute"]');
+    expect(positioned.length).toBe(2);
   });
 
   it("renders without currentUserId", () => {

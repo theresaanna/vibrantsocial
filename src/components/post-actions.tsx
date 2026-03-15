@@ -47,12 +47,14 @@ export function PostActions({
   const [copied, setCopied] = useState(false);
 
   // Sync state when server props change (e.g. after revalidation)
-  useEffect(() => { setLiked(isLiked); }, [isLiked]);
-  useEffect(() => { setLikes(likeCount); }, [likeCount]);
-  useEffect(() => { setReposted(isReposted); }, [isReposted]);
-  useEffect(() => { setReposts(repostCount); }, [repostCount]);
-  useEffect(() => { setBookmarked(isBookmarked); }, [isBookmarked]);
-  useEffect(() => { setBookmarks(bookmarkCount); }, [bookmarkCount]);
+  useEffect(() => {
+    setLiked(isLiked);
+    setLikes(likeCount);
+    setReposted(isReposted);
+    setReposts(repostCount);
+    setBookmarked(isBookmarked);
+    setBookmarks(bookmarkCount);
+  }, [isLiked, likeCount, isReposted, repostCount, isBookmarked, bookmarkCount]);
 
   const [, startLikeTransition] = useTransition();
   const [, startRepostTransition] = useTransition();
