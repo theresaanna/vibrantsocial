@@ -151,6 +151,46 @@ test.describe("Account Switching", () => {
     ).toBeVisible();
   });
 
+  test("switching accounts triggers a full page reload and updates profile", async ({
+    page,
+    forceLogin,
+  }) => {
+    await forceLogin;
+    await page.goto("/profile");
+    await page.waitForLoadState("networkidle");
+
+    // Link second account
+    await page.getByTestId("link-account-button").click();
+    await expect(page.getByTestId("link-account-modal")).toBeVisible({
+      timeout: 5000,
+    });
+    await page.getByTestId("link-email-input").fill(TEST_USER_2.email);
+    await page.getByTestId("link-password-input").fill(TEST_USER_2.password);
+    await page.getByTestId("link-account-submit").click();
+    await expect(page.getByTestId("link-account-modal")).not.toBeVisible({
+      timeout: 10000,
+    });
+
+    // Reload to get updated session
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+
+    // Switch to second account — this triggers a full page reload
+    await page.locator('[data-testid="account-switcher-button"]:visible').click();
+    await page.getByTestId(`switch-to-${TEST_USER_2.username}`).click();
+
+    // Wait for the full page reload (not just a soft refresh).
+    // The reload navigates the same URL, so waitForLoadState is sufficient.
+    await page.waitForLoadState("networkidle", { timeout: 15000 });
+
+    // After the full reload, we should already be on the profile page
+    // with the new user's data — NO manual page.goto needed.
+    const usernameInput = page.locator('input[name="username"]');
+    await expect(usernameInput).toHaveValue(TEST_USER_2.username, {
+      timeout: 10000,
+    });
+  });
+
   test("can switch to a linked account and back", async ({
     page,
     forceLogin,
@@ -176,19 +216,13 @@ test.describe("Account Switching", () => {
     await page.waitForLoadState("networkidle");
 
     // Switch to second account
-    // Use :visible filter because mobile + desktop instances both exist in DOM
     await page.locator('[data-testid="account-switcher-button"]:visible').click();
     await page.getByTestId(`switch-to-${TEST_USER_2.username}`).click();
 
-    // Wait for the page to reload/refresh and verify identity changed
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(1000);
+    // Wait for the full page reload to complete
+    await page.waitForLoadState("networkidle", { timeout: 15000 });
 
-    // Go to profile page and verify we're now on the second account
-    await page.goto("/profile");
-    await page.waitForLoadState("networkidle");
-
-    // The username field should show the second user's username
+    // Profile page should already show the second user (full reload updated everything)
     const usernameInput = page.locator('input[name="username"]');
     await expect(usernameInput).toHaveValue(TEST_USER_2.username, {
       timeout: 10000,
@@ -198,14 +232,52 @@ test.describe("Account Switching", () => {
     await page.locator('[data-testid="account-switcher-button"]:visible').click();
     await page.getByTestId(`switch-to-${TEST_USER.username}`).click();
 
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(1000);
+    // Wait for full reload again
+    await page.waitForLoadState("networkidle", { timeout: 15000 });
 
-    await page.goto("/profile");
-    await page.waitForLoadState("networkidle");
     await expect(usernameInput).toHaveValue(TEST_USER.username, {
       timeout: 10000,
     });
+  });
+
+  test("header identity updates after account switch without manual navigation", async ({
+    page,
+    forceLogin,
+  }) => {
+    await forceLogin;
+    await page.goto("/profile");
+    await page.waitForLoadState("networkidle");
+
+    // Link second account
+    await page.getByTestId("link-account-button").click();
+    await expect(page.getByTestId("link-account-modal")).toBeVisible({
+      timeout: 5000,
+    });
+    await page.getByTestId("link-email-input").fill(TEST_USER_2.email);
+    await page.getByTestId("link-password-input").fill(TEST_USER_2.password);
+    await page.getByTestId("link-account-submit").click();
+    await expect(page.getByTestId("link-account-modal")).not.toBeVisible({
+      timeout: 10000,
+    });
+
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+
+    // Switch to second account
+    await page.locator('[data-testid="account-switcher-button"]:visible').click();
+    await page.getByTestId(`switch-to-${TEST_USER_2.username}`).click();
+    await page.waitForLoadState("networkidle", { timeout: 15000 });
+
+    // After the full reload, the account switcher dropdown should show
+    // the NEW current user and the OLD user as a linked account
+    await page.locator('[data-testid="account-switcher-button"]:visible').click();
+    const dropdown = page.getByTestId("account-switcher-dropdown");
+    await expect(dropdown).toBeVisible({ timeout: 5000 });
+
+    // The original user should now appear as a switchable linked account
+    await expect(
+      page.getByTestId(`switch-to-${TEST_USER.username}`)
+    ).toBeVisible();
   });
 
   test("can unlink an account from profile settings", async ({

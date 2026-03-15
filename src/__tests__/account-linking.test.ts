@@ -520,7 +520,14 @@ describe("startOAuthLink", () => {
       maxAge: 300,
       path: "/",
     });
-    expect(mockSignIn).toHaveBeenCalledWith("google", { redirectTo: "/profile" });
+    expect(mockCookieSet).toHaveBeenCalledWith("linkRedirect", "/api/finish-link?from=user1&provider=google", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      maxAge: 300,
+      path: "/",
+    });
+    expect(mockSignIn).toHaveBeenCalledWith("google", { redirectTo: "/api/finish-link?from=user1&provider=google" });
   });
 
   it("sets cookie and calls signIn for discord", async () => {
@@ -533,6 +540,13 @@ describe("startOAuthLink", () => {
       maxAge: 300,
       path: "/",
     });
-    expect(mockSignIn).toHaveBeenCalledWith("discord", { redirectTo: "/profile" });
+    expect(mockCookieSet).toHaveBeenCalledWith("linkRedirect", "/api/finish-link?from=user1&provider=discord", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      maxAge: 300,
+      path: "/",
+    });
+    expect(mockSignIn).toHaveBeenCalledWith("discord", { redirectTo: "/api/finish-link?from=user1&provider=discord" });
   });
 });
