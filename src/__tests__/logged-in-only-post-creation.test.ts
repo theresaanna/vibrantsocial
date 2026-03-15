@@ -9,6 +9,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     post: {
       create: vi.fn(),
+      findFirst: vi.fn(),
     },
     tag: {
       upsert: vi.fn(),
@@ -94,11 +95,13 @@ describe("createPost with isLoggedInOnly", () => {
     mockAuth.mockResolvedValue({ user: { id: "user1" } } as never);
     mockPhoneGate.mockResolvedValue(true);
     mockAgeGate.mockResolvedValue(true);
+    mockPrisma.post.findFirst.mockResolvedValue(null as never); // no slug collision
   });
 
   it("creates a post with isLoggedInOnly=true", async () => {
     mockPrisma.post.create.mockResolvedValueOnce({
       id: "post1",
+      slug: "test",
       content: validContent,
       authorId: "user1",
       isLoggedInOnly: true,
@@ -131,6 +134,7 @@ describe("createPost with isLoggedInOnly", () => {
   it("creates a post with isLoggedInOnly=false by default", async () => {
     mockPrisma.post.create.mockResolvedValueOnce({
       id: "post2",
+      slug: "test",
       content: validContent,
       authorId: "user1",
       isLoggedInOnly: false,
@@ -163,6 +167,7 @@ describe("createPost with isLoggedInOnly", () => {
   it("treats missing isLoggedInOnly as false", async () => {
     mockPrisma.post.create.mockResolvedValueOnce({
       id: "post3",
+      slug: "test",
       content: validContent,
       authorId: "user1",
       isLoggedInOnly: false,
@@ -197,6 +202,7 @@ describe("createPost with isLoggedInOnly", () => {
   it("can combine isLoggedInOnly with isCloseFriendsOnly", async () => {
     mockPrisma.post.create.mockResolvedValueOnce({
       id: "post4",
+      slug: "test",
       content: validContent,
       authorId: "user1",
       isLoggedInOnly: true,

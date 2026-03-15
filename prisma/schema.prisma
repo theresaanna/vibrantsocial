@@ -160,6 +160,7 @@ model VerificationToken {
 
 model Post {
   id                 String    @id @default(cuid())
+  slug               String?
   content            String    @db.Text
   authorId           String?
   isAuthorDeleted    Boolean   @default(false)
@@ -182,6 +183,7 @@ model Post {
   revisions     PostRevision[]
   tags          PostTag[]
 
+  @@unique([authorId, slug])
   @@index([authorId])
   @@index([createdAt])
 }

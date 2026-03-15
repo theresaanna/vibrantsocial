@@ -35,6 +35,7 @@ interface CommentData {
 interface PostCardProps {
   post: {
     id: string;
+    slug?: string | null;
     content: string;
     createdAt: Date;
     editedAt?: Date | null;
@@ -96,6 +97,7 @@ export function PostCard({
   const [editTags, setEditTags] = useState<string[]>(
     post.tags?.map((pt) => pt.tag.name) ?? []
   );
+  const [editSlug, setEditSlug] = useState(post.slug ?? "");
   const [editIsSensitive, setEditIsSensitive] = useState(post.isSensitive);
   const [editIsNsfw, setEditIsNsfw] = useState(post.isNsfw);
   const [editIsGraphicNudity, setEditIsGraphicNudity] = useState(post.isGraphicNudity);
@@ -310,7 +312,11 @@ export function PostCard({
           </div>
           <div className="flex items-center gap-2">
             <Link
-              href={`/post/${post.id}`}
+              href={
+                post.slug && post.author?.username
+                  ? `/${post.author.username}/post/${post.slug}`
+                  : `/post/${post.id}`
+              }
               className="text-xs text-zinc-400 hover:underline"
             >
               {timeAgo(new Date(post.createdAt))}
@@ -437,6 +443,7 @@ export function PostCard({
             {isEditing ? (
               <form action={handleEditSubmit}>
                 <input type="hidden" name="postId" value={post.id} />
+                <input type="hidden" name="slug" value={editSlug} />
                 <input type="hidden" name="isSensitive" value={editIsSensitive ? "true" : "false"} />
                 <input type="hidden" name="isNsfw" value={editIsNsfw ? "true" : "false"} />
                 <input type="hidden" name="isGraphicNudity" value={editIsGraphicNudity ? "true" : "false"} />
@@ -456,6 +463,19 @@ export function PostCard({
                     onChange={setEditTags}
                     disabled={editIsSensitive || editIsGraphicNudity}
                     includeNsfw={editIsNsfw}
+                  />
+                </div>
+                <div className="mt-2">
+                  <label className="mb-1 block text-xs text-zinc-500 dark:text-zinc-400">
+                    URL slug
+                  </label>
+                  <input
+                    type="text"
+                    value={editSlug}
+                    onChange={(e) => setEditSlug(e.target.value)}
+                    className="w-full rounded-md border border-zinc-200 px-3 py-1.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-500"
+                    maxLength={60}
+                    data-testid="post-edit-slug"
                   />
                 </div>
                 <div className="mt-2">
@@ -564,6 +584,8 @@ export function PostCard({
           <div className="border-t border-zinc-100 px-2 py-1 dark:border-zinc-800">
             <PostActions
               postId={post.id}
+              postSlug={post.slug}
+              authorUsername={post.author?.username}
               likeCount={post._count.likes}
               commentCount={commentCount}
               repostCount={post._count.reposts}

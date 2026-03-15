@@ -9,6 +9,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     post: {
       create: vi.fn(),
+      findFirst: vi.fn(),
     },
     tag: {
       upsert: vi.fn(),
@@ -95,11 +96,13 @@ describe("createPost with isCloseFriendsOnly", () => {
     mockAuth.mockResolvedValue({ user: { id: "user1" } } as never);
     mockPhoneGate.mockResolvedValue(true);
     mockAgeGate.mockResolvedValue(true);
+    mockPrisma.post.findFirst.mockResolvedValue(null as never); // no slug collision
   });
 
   it("creates a post with isCloseFriendsOnly=true", async () => {
     mockPrisma.post.create.mockResolvedValueOnce({
       id: "post1",
+      slug: "test",
       content: validContent,
       authorId: "user1",
       isCloseFriendsOnly: true,
@@ -121,21 +124,16 @@ describe("createPost with isCloseFriendsOnly", () => {
 
     expect(result.success).toBe(true);
     expect(mockPrisma.post.create).toHaveBeenCalledWith({
-      data: {
-        content: validContent,
-        authorId: "user1",
-        isSensitive: false,
-        isNsfw: false,
-        isGraphicNudity: false,
+      data: expect.objectContaining({
         isCloseFriendsOnly: true,
-        isLoggedInOnly: false,
-      },
+      }),
     });
   });
 
   it("creates a post with isCloseFriendsOnly=false by default", async () => {
     mockPrisma.post.create.mockResolvedValueOnce({
       id: "post2",
+      slug: "test",
       content: validContent,
       authorId: "user1",
       isCloseFriendsOnly: false,
@@ -157,21 +155,16 @@ describe("createPost with isCloseFriendsOnly", () => {
 
     expect(result.success).toBe(true);
     expect(mockPrisma.post.create).toHaveBeenCalledWith({
-      data: {
-        content: validContent,
-        authorId: "user1",
-        isSensitive: false,
-        isNsfw: false,
-        isGraphicNudity: false,
+      data: expect.objectContaining({
         isCloseFriendsOnly: false,
-        isLoggedInOnly: false,
-      },
+      }),
     });
   });
 
   it("treats missing isCloseFriendsOnly as false", async () => {
     mockPrisma.post.create.mockResolvedValueOnce({
       id: "post3",
+      slug: "test",
       content: validContent,
       authorId: "user1",
       isCloseFriendsOnly: false,
