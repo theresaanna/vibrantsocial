@@ -104,30 +104,32 @@ export function AccountSwitcher({
         </svg>
       </button>
 
-      {isOpen && session?.user && (
+      {isOpen && (
         <div
           className="absolute right-0 top-full z-50 mt-1 w-64 rounded-xl border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
           data-testid="account-switcher-dropdown"
         >
           {/* Current account */}
-          <div className="border-b border-zinc-100 px-3 py-2 dark:border-zinc-800">
-            <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500">
-              Current account
-            </p>
-            <div className="mt-1 flex items-center gap-2">
-              <AccountAvatar account={session.user} size="md" />
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                  {session.user.displayName || session.user.username}
-                </p>
-                {session.user.username && (
-                  <p className="truncate text-xs text-zinc-500">
-                    @{session.user.username}
+          {session?.user && (
+            <div className="border-b border-zinc-100 px-3 py-2 dark:border-zinc-800">
+              <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500">
+                Current account
+              </p>
+              <div className="mt-1 flex items-center gap-2">
+                <AccountAvatar account={session.user} size="md" />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                    {session.user.displayName || session.user.username}
                   </p>
-                )}
+                  {session.user.username && (
+                    <p className="truncate text-xs text-zinc-500">
+                      @{session.user.username}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Linked accounts */}
           <div className="py-1">
