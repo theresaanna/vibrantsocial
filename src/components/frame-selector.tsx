@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { PROFILE_FRAMES, type FrameDefinition } from "@/lib/profile-frames";
 import { FramedAvatar } from "./framed-avatar";
+import { PremiumComingSoon } from "./premium-coming-soon";
 
 interface FrameSelectorProps {
   currentFrameId: string | null;
   avatarSrc: string | null;
   initial: string;
   isPremium: boolean;
+  userEmail?: string | null;
   onSelect: (frameId: string | null) => void;
   onClose: () => void;
 }
@@ -49,6 +51,7 @@ export function FrameSelector({
   avatarSrc,
   initial,
   isPremium,
+  userEmail,
   onSelect,
   onClose,
 }: FrameSelectorProps) {
@@ -98,10 +101,8 @@ export function FrameSelector({
         </div>
 
         {!isPremium ? (
-          <div className="text-center" data-testid="frame-upgrade-prompt">
-            <p className="mb-3 text-sm text-zinc-500 dark:text-zinc-400">
-              Upgrade to premium to select a profile frame.
-            </p>
+          <div data-testid="frame-upgrade-prompt">
+            <PremiumComingSoon defaultEmail={userEmail} />
           </div>
         ) : (
           <div className="space-y-4">

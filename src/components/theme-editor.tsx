@@ -8,6 +8,7 @@ import {
   isValidHexColor,
 } from "@/lib/profile-themes";
 import { ThemePreview } from "./theme-preview";
+import { PremiumComingSoon } from "./premium-coming-soon";
 
 interface ThemeEditorProps {
   initialColors: Partial<ProfileThemeColors>;
@@ -17,6 +18,7 @@ interface ThemeEditorProps {
   avatarSrc: string | null;
   onChange?: () => void;
   isPremium?: boolean;
+  userEmail?: string | null;
 }
 
 const COLOR_LABELS: Record<keyof ProfileThemeColors, string> = {
@@ -35,6 +37,7 @@ export function ThemeEditor({
   avatarSrc,
   onChange,
   isPremium = true,
+  userEmail,
 }: ThemeEditorProps) {
   const defaultPreset = PROFILE_THEME_PRESETS.default;
   const [colors, setColors] = useState<ProfileThemeColors>({
@@ -129,9 +132,9 @@ export function ThemeEditor({
           ))}
         </div>
       ) : (
-        <p className="text-xs text-zinc-500 dark:text-zinc-400" data-testid="custom-colors-upgrade-prompt">
-          Upgrade to premium to customize individual colors.
-        </p>
+        <div data-testid="custom-colors-upgrade-prompt">
+          <PremiumComingSoon defaultEmail={userEmail} />
+        </div>
       )}
 
       {/* Hidden form inputs for form submission */}
