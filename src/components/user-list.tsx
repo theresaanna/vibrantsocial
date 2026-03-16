@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { FramedAvatar } from "@/components/framed-avatar";
 import { FollowButton } from "@/components/follow-button";
 import type { FollowUser } from "@/app/feed/follow-actions";
 
@@ -32,18 +33,7 @@ export function UserList({ users, currentUserId, emptyMessage }: UserListProps) 
             className="flex items-center gap-3 px-4 py-3"
           >
             <Link href={`/${user.username}`} className="flex-shrink-0">
-              {avatarSrc ? (
-                <img
-                  src={avatarSrc}
-                  alt=""
-                  referrerPolicy="no-referrer"
-                  className="h-11 w-11 rounded-full object-cover"
-                />
-              ) : (
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-zinc-200 text-sm font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-                  {initial}
-                </div>
-              )}
+              <FramedAvatar src={avatarSrc} initial={initial} size={44} frameId={user.profileFrameId} referrerPolicy="no-referrer" />
             </Link>
 
             <div className="min-w-0 flex-1">

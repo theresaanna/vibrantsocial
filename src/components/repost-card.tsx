@@ -22,6 +22,7 @@ interface RepostUser {
   name: string | null;
   image: string | null;
   avatar: string | null;
+  profileFrameId: string | null;
 }
 
 interface RepostCardProps {

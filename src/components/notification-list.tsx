@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { FramedAvatar } from "@/components/framed-avatar";
 import { timeAgo } from "@/lib/time";
 import {
   markNotificationRead,
@@ -16,6 +17,7 @@ interface NotificationActor {
   name: string | null;
   image: string | null;
   avatar: string | null;
+  profileFrameId: string | null;
 }
 
 interface NotificationItem {
@@ -139,16 +141,8 @@ export function NotificationList({
             href = "/notifications";
           }
 
-          const avatarImg = avatar ? (
-            <img
-              src={avatar}
-              alt={name}
-              className="h-10 w-10 rounded-full object-cover"
-            />
-          ) : (
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-200 text-sm font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-              {name[0]?.toUpperCase()}
-            </div>
+          const avatarImg = (
+            <FramedAvatar src={avatar} alt={name} initial={name[0]?.toUpperCase()} size={40} frameId={notification.actor.profileFrameId} />
           );
 
           return (

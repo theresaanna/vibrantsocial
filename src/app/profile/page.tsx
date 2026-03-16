@@ -28,6 +28,7 @@ export default async function ProfilePage() {
       passwordHash: true,
       avatar: true,
       image: true,
+      profileFrameId: true,
       profileBgColor: true,
       profileTextColor: true,
       profileLinkColor: true,
@@ -85,6 +86,7 @@ export default async function ProfilePage() {
             profileLinkColor: user?.profileLinkColor ?? null,
             profileSecondaryColor: user?.profileSecondaryColor ?? null,
             profileContainerColor: user?.profileContainerColor ?? null,
+            profileFrameId: user?.profileFrameId ?? null,
           }}
           currentAvatar={user?.avatar ?? null}
           oauthImage={oauthImage}

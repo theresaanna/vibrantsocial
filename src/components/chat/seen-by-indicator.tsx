@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { FramedAvatar } from "@/components/framed-avatar";
 import type { ChatUserProfile } from "@/types/chat";
 
 interface SeenByIndicatorProps {
@@ -48,20 +49,16 @@ export function SeenByIndicator({ seenBy }: SeenByIndicatorProps) {
         {visible.map((user) => {
           const avatar = user.avatar ?? user.image;
           const name = getDisplayName(user);
-          return avatar ? (
-            <img
+          return (
+            <FramedAvatar
               key={user.id}
               src={avatar}
               alt={name}
-              className="h-4 w-4 rounded-full border border-white object-cover dark:border-zinc-900"
+              initial={name[0]?.toUpperCase()}
+              size={16}
+              frameId={user.profileFrameId}
+              className="border border-white dark:border-zinc-900"
             />
-          ) : (
-            <div
-              key={user.id}
-              className="flex h-4 w-4 items-center justify-center rounded-full border border-white bg-zinc-200 text-[8px] font-medium text-zinc-600 dark:border-zinc-900 dark:bg-zinc-700 dark:text-zinc-300"
-            >
-              {name[0]?.toUpperCase()}
-            </div>
           );
         })}
         {overflow > 0 && (

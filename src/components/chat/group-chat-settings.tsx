@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { UserSearch } from "./user-search";
+import { FramedAvatar } from "@/components/framed-avatar";
 import {
   updateGroupName,
   addGroupMembers,
@@ -176,12 +177,14 @@ export function GroupChatSettings({
               const isMe = p.userId === currentUserId;
               const canRemove = isAdmin && !isMe && !p.isAdmin;
 
-              const avatarEl = avatar ? (
-                <img src={avatar} alt={name} className="h-8 w-8 rounded-full object-cover" />
-              ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-                  {name[0]?.toUpperCase()}
-                </div>
+              const avatarEl = (
+                <FramedAvatar
+                  src={avatar}
+                  alt={name}
+                  initial={name[0]?.toUpperCase()}
+                  size={32}
+                  frameId={user.profileFrameId}
+                />
               );
 
               const nameEl = (

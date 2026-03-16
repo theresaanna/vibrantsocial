@@ -25,6 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           displayName: true,
           name: true,
           avatar: true,
+          profileFrameId: true,
           image: true,
         },
       },
@@ -92,6 +93,7 @@ export default async function QuotePage({ params }: Props) {
           name: true,
           image: true,
           avatar: true,
+          profileFrameId: true,
         },
       },
       post: {

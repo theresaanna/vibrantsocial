@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FramedAvatar } from "@/components/framed-avatar";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
 
 interface SearchUserCardProps {
@@ -9,6 +10,7 @@ interface SearchUserCardProps {
     name: string | null;
     avatar: string | null;
     image: string | null;
+    profileFrameId: string | null;
     bio: string | null;
     _count: { followers: number; posts: number };
   };
@@ -24,17 +26,7 @@ export function SearchUserCard({ user }: SearchUserCardProps) {
       href={href}
       className="flex items-start gap-3 rounded-lg border border-zinc-200 p-4 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
     >
-      {avatarSrc ? (
-        <img
-          src={avatarSrc}
-          alt={displayName}
-          className="h-12 w-12 shrink-0 rounded-full object-cover"
-        />
-      ) : (
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-lg font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-          {displayName[0]?.toUpperCase()}
-        </div>
-      )}
+      <FramedAvatar src={avatarSrc} alt={displayName} initial={displayName[0]?.toUpperCase()} size={48} frameId={user.profileFrameId} />
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
           <span className="truncate font-medium text-zinc-900 dark:text-zinc-100">

@@ -12,6 +12,7 @@ import { getFriendshipStatus, getFriendsCount } from "@/app/feed/friend-actions"
 import type { FriendshipStatus } from "@/app/feed/friend-actions";
 import { isSubscribedToUser } from "@/app/feed/subscription-actions";
 import { ProfileShareButton } from "@/components/profile-share-button";
+import { FramedAvatar } from "@/components/framed-avatar";
 import { BioContent } from "@/components/bio-content";
 import { ProfileTabs } from "@/components/profile-tabs";
 import { RepostCard } from "@/components/repost-card";
@@ -31,6 +32,7 @@ const profileSelect = {
   name: true,
   image: true,
   avatar: true,
+  profileFrameId: true,
   bio: true,
   profileBgColor: true,
   profileTextColor: true,
@@ -161,6 +163,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
         name: true,
         image: true,
         avatar: true,
+        profileFrameId: true,
       },
     },
     _count: {
@@ -203,6 +206,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             name: true,
             image: true,
             avatar: true,
+            profileFrameId: true,
           },
         },
         replies: {
@@ -216,6 +220,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                 name: true,
                 image: true,
                 avatar: true,
+                profileFrameId: true,
               },
             },
           },
@@ -233,6 +238,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
         name: true,
         image: true,
         avatar: true,
+        profileFrameId: true,
       },
     },
     post: { include: postInclude },
@@ -395,18 +401,14 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
         {/* Profile header */}
         <div className={`rounded-2xl p-6 shadow-lg ${hasCustomTheme ? "profile-container" : "bg-white dark:bg-zinc-900"}`}>
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start sm:gap-4">
-            {avatarSrc ? (
-              <img
-                src={avatarSrc}
-                alt=""
-                referrerPolicy="no-referrer"
-                className="h-16 w-16 shrink-0 rounded-full"
-              />
-            ) : (
-              <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-bold ${hasCustomTheme ? "profile-container" : "bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300"}`}>
-                {initial}
-              </div>
-            )}
+            <FramedAvatar
+              src={avatarSrc}
+              alt=""
+              initial={initial}
+              size={64}
+              frameId={user.profileFrameId}
+              referrerPolicy="no-referrer"
+            />
 
             <div className="min-w-0 w-full sm:flex-1">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">

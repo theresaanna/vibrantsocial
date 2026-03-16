@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { del } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { isValidHexColor, THEME_COLOR_FIELDS, isPresetTheme } from "@/lib/profile-themes";
+import { isValidFrameId } from "@/lib/profile-frames";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { sendEmailVerificationEmail } from "@/lib/email";
 import { inngest } from "@/lib/inngest";
@@ -82,13 +83,26 @@ export async function updateProfile(
   // Save current bio as a revision if it changed
   const currentUser = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { bio: true, tier: true },
+    select: { bio: true, tier: true, profileFrameId: true },
   });
 
   // Non-premium users can only use preset themes, not custom colors
   if (currentUser?.tier !== "premium" && !isPresetTheme(themeColors)) {
     for (const field of THEME_COLOR_FIELDS) {
       themeColors[field] = null;
+    }
+  }
+
+  // Validate profile frame (premium only)
+  const rawFrameId = formData.get("profileFrameId") as string | null;
+  let profileFrameId: string | null = null;
+  if (rawFrameId && rawFrameId.trim()) {
+    if (currentUser?.tier !== "premium") {
+      profileFrameId = null;
+    } else if (!isValidFrameId(rawFrameId.trim())) {
+      return { success: false, message: "Invalid frame selection." };
+    } else {
+      profileFrameId = rawFrameId.trim();
     }
   }
 
@@ -129,6 +143,7 @@ export async function updateProfile(
       emailOnTagPost,
       pushEnabled,
       isProfilePublic,
+      profileFrameId,
       ...themeColors,
     },
   });

@@ -15,6 +15,10 @@ vi.mock("@/app/notifications/actions", () => ({
   getRecentNotifications: vi.fn().mockResolvedValue([]),
 }));
 
+vi.mock("@/lib/account-linking-db", () => ({
+  loadLinkedAccounts: vi.fn().mockResolvedValue([]),
+}));
+
 vi.mock("next/link", () => ({
   default: ({
     href,

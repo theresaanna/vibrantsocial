@@ -9,6 +9,8 @@ import { unlinkAccount, getLinkedAccounts } from "./account-linking-actions";
 import { BioEditor } from "@/components/bio-editor";
 import { BioRevisionHistory } from "@/components/bio-revision-history";
 import { ThemeEditor } from "@/components/theme-editor";
+import { FrameSelector } from "@/components/frame-selector";
+import { FramedAvatar } from "@/components/framed-avatar";
 import { PushNotificationToggle } from "@/components/push-notification-toggle";
 import { LinkAccountModal } from "@/components/link-account-modal";
 import type { LinkedAccount } from "@/types/next-auth";
@@ -24,6 +26,7 @@ interface ProfileFormProps {
     profileLinkColor: string | null;
     profileSecondaryColor: string | null;
     profileContainerColor: string | null;
+    profileFrameId: string | null;
   };
   email: string | null;
   pendingEmail: string | null;
@@ -78,6 +81,8 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
+  const [frameId, setFrameId] = useState<string | null>(user.profileFrameId);
+  const [showFrameSelector, setShowFrameSelector] = useState(false);
   const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
 
   const displayedAvatar = avatarPreview || oauthImage;
@@ -272,21 +277,16 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
     <div className="space-y-6">
       {/* Avatar upload */}
       <div className="flex items-center gap-4">
-        {displayedAvatar ? (
-          <img
-            src={displayedAvatar}
-            alt=""
-            referrerPolicy="no-referrer"
-            className="h-16 w-16 rounded-full object-cover"
-          />
-        ) : (
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-200 text-xl font-bold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-            {initial}
-          </div>
-        )}
+        <FramedAvatar
+          src={displayedAvatar}
+          initial={initial}
+          size={64}
+          frameId={frameId}
+          referrerPolicy="no-referrer"
+        />
 
         <div className="flex flex-col gap-1.5">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <label
               className={`cursor-pointer rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 ${
                 avatarUploading ? "pointer-events-none opacity-50" : ""
@@ -313,6 +313,14 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
                 Remove
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => setShowFrameSelector(true)}
+              className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              data-testid="choose-frame-button"
+            >
+              {frameId ? "Change Frame" : "Add Frame"}
+            </button>
           </div>
 
           {avatarError && (
@@ -321,6 +329,19 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
           <p className="text-xs text-zinc-400">JPEG, PNG, GIF, or WebP. Max 10MB.</p>
         </div>
       </div>
+
+      <input type="hidden" name="profileFrameId" value={frameId ?? ""} />
+
+      {showFrameSelector && (
+        <FrameSelector
+          currentFrameId={frameId}
+          avatarSrc={displayedAvatar}
+          initial={initial}
+          isPremium={isPremium}
+          onSelect={(id) => { setFrameId(id); scheduleAutosave(); }}
+          onClose={() => setShowFrameSelector(false)}
+        />
+      )}
 
       {/* Email address */}
       <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">

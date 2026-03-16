@@ -70,6 +70,7 @@ describe("notification actions", () => {
               name: true,
               image: true,
               avatar: true,
+              profileFrameId: true,
             },
           },
           post: { select: { id: true, content: true } },

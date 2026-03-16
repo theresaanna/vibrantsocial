@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { addCloseFriend, removeCloseFriend } from "@/app/feed/close-friends-actions";
 import Link from "next/link";
+import { FramedAvatar } from "@/components/framed-avatar";
 
 interface FriendUser {
   id: string;
@@ -11,6 +12,7 @@ interface FriendUser {
   name: string | null;
   avatar: string | null;
   image: string | null;
+  profileFrameId: string | null;
 }
 
 interface CloseFriendEntry {
@@ -28,21 +30,8 @@ function UserAvatar({ user }: { user: FriendUser }) {
   const src = user.avatar || user.image;
   const initial = (user.displayName || user.username || "?")[0]?.toUpperCase();
 
-  if (src) {
-    return (
-      <img
-        src={src}
-        alt=""
-        referrerPolicy="no-referrer"
-        className="h-10 w-10 rounded-full"
-      />
-    );
-  }
-
   return (
-    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-200 text-sm font-bold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-      {initial}
-    </div>
+    <FramedAvatar src={src} initial={initial} size={40} frameId={user.profileFrameId} referrerPolicy="no-referrer" />
   );
 }
 

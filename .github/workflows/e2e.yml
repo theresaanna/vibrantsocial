@@ -28,6 +28,8 @@ jobs:
       DATABASE_URL: postgresql://test:test@localhost:5432/vibrantsocial_test
       DIRECT_URL: postgresql://test:test@localhost:5432/vibrantsocial_test
       AUTH_SECRET: e2e-test-secret-at-least-32-chars-long
+      NEXTAUTH_URL: http://localhost:3000
+      AUTH_TRUST_HOST: "true"
       CI: true
 
     steps:
@@ -43,6 +45,9 @@ jobs:
 
       - name: Run database migrations
         run: npx prisma migrate deploy
+
+      - name: Build application
+        run: npm run build
 
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
