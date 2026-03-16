@@ -337,6 +337,72 @@ export async function sendTagDigestEmail(params: {
   });
 }
 
+export async function sendReportEmail(params: {
+  reporterUsername: string;
+  reporterEmail: string;
+  contentType: "post" | "comment" | "profile";
+  contentId: string;
+  contentPreview: string;
+  description: string;
+}) {
+  const { reporterUsername, reporterEmail, contentType, contentId, contentPreview, description } = params;
+  const baseUrl = getBaseUrl();
+
+  let contentUrl = baseUrl;
+  if (contentType === "post") {
+    contentUrl = `${baseUrl}/post/${contentId}`;
+  } else if (contentType === "comment") {
+    contentUrl = `${baseUrl}/post/${contentId}`;
+  } else if (contentType === "profile") {
+    contentUrl = `${baseUrl}/${contentPreview}`;
+  }
+
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: "vibrantsocial@proton.me",
+      subject: `Content Report: ${contentType} — ${contentId}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #18181b; margin-bottom: 16px;">Content Report</h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; color: #71717a; font-size: 14px; vertical-align: top; width: 120px;">Reporter</td>
+              <td style="padding: 8px 0; color: #18181b; font-size: 14px;">${escapeHtml(reporterUsername)} (${escapeHtml(reporterEmail)})</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #71717a; font-size: 14px; vertical-align: top;">Content Type</td>
+              <td style="padding: 8px 0; color: #18181b; font-size: 14px;">${escapeHtml(contentType)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #71717a; font-size: 14px; vertical-align: top;">Content ID</td>
+              <td style="padding: 8px 0; color: #18181b; font-size: 14px;">${escapeHtml(contentId)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #71717a; font-size: 14px; vertical-align: top;">Preview</td>
+              <td style="padding: 8px 0; color: #18181b; font-size: 14px;">${escapeHtml(contentPreview)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #71717a; font-size: 14px; vertical-align: top;">Description</td>
+              <td style="padding: 8px 0; color: #18181b; font-size: 14px;">${escapeHtml(description)}</td>
+            </tr>
+          </table>
+          <a href="${contentUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
+            View Reported Content
+          </a>
+          <p style="color: #a1a1aa; font-size: 12px; margin-top: 32px;">
+            Reported at ${new Date().toISOString()}
+          </p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    Sentry.captureException(error, {
+      extra: { emailType: "report", contentType, contentId, reporterUsername },
+    });
+  }
+}
+
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, "&amp;")
