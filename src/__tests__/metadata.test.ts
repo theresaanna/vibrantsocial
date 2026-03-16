@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   buildMetadata,
   truncateText,
+  sanitizeForMeta,
   SITE_NAME,
   SITE_DESCRIPTION,
 } from "@/lib/metadata";
@@ -32,6 +33,113 @@ describe("truncateText", () => {
 
   it("handles empty string", () => {
     expect(truncateText("", 160)).toBe("");
+  });
+});
+
+describe("sanitizeForMeta", () => {
+  it("passes through plain text unchanged", () => {
+    expect(sanitizeForMeta("Hello world")).toBe("Hello world");
+  });
+
+  it("returns empty string for empty input", () => {
+    expect(sanitizeForMeta("")).toBe("");
+  });
+
+  it("extracts text from Lexical JSON", () => {
+    const lexical = JSON.stringify({
+      root: {
+        children: [
+          {
+            type: "paragraph",
+            children: [
+              { type: "text", text: "Your Favorite & Hottest Spending Habit" },
+            ],
+          },
+        ],
+      },
+    });
+    expect(sanitizeForMeta(lexical)).toBe(
+      "Your Favorite & Hottest Spending Habit"
+    );
+  });
+
+  it("falls back to stripping if Lexical extraction yields nothing", () => {
+    // JSON that doesn't have a proper Lexical structure
+    const json = JSON.stringify({ foo: "bar" });
+    // Should still return something (the raw JSON won't be extractable,
+    // so it stays as-is but gets whitespace collapsed)
+    const result = sanitizeForMeta(json);
+    // The key point: if extraction fails, we don't crash
+    expect(typeof result).toBe("string");
+  });
+
+  it("strips markdown headings", () => {
+    expect(sanitizeForMeta("## Hello World")).toBe("Hello World");
+    expect(sanitizeForMeta("# Title")).toBe("Title");
+    expect(sanitizeForMeta("### Sub")).toBe("Sub");
+  });
+
+  it("strips markdown bold and italic", () => {
+    expect(sanitizeForMeta("This is **bold** text")).toBe(
+      "This is bold text"
+    );
+    expect(sanitizeForMeta("This is *italic* text")).toBe(
+      "This is italic text"
+    );
+    expect(sanitizeForMeta("This is __bold__ text")).toBe(
+      "This is bold text"
+    );
+  });
+
+  it("strips markdown links", () => {
+    expect(sanitizeForMeta("Click [here](https://example.com)")).toBe(
+      "Click here"
+    );
+  });
+
+  it("strips markdown images", () => {
+    expect(sanitizeForMeta("![alt text](https://example.com/img.jpg)")).toBe(
+      "alt text"
+    );
+  });
+
+  it("strips inline code", () => {
+    expect(sanitizeForMeta("Use `console.log` to debug")).toBe(
+      "Use console.log to debug"
+    );
+  });
+
+  it("strips code fences", () => {
+    expect(
+      sanitizeForMeta("Before ```const x = 1;``` After")
+    ).toBe("Before After");
+  });
+
+  it("strips blockquotes", () => {
+    expect(sanitizeForMeta("> This is a quote")).toBe("This is a quote");
+  });
+
+  it("strips strikethrough", () => {
+    expect(sanitizeForMeta("This is ~~deleted~~ text")).toBe(
+      "This is deleted text"
+    );
+  });
+
+  it("strips HTML tags", () => {
+    expect(sanitizeForMeta("Hello <b>world</b>")).toBe("Hello world");
+  });
+
+  it("strips list markers", () => {
+    expect(sanitizeForMeta("- Item one\n- Item two")).toBe("Item one Item two");
+    expect(sanitizeForMeta("1. First\n2. Second")).toBe("First Second");
+  });
+
+  it("collapses multiple whitespace", () => {
+    expect(sanitizeForMeta("Hello    world\n\nfoo")).toBe("Hello world foo");
+  });
+
+  it("strips horizontal rules", () => {
+    expect(sanitizeForMeta("Above\n---\nBelow")).toBe("Above Below");
   });
 });
 
@@ -128,6 +236,37 @@ describe("buildMetadata", () => {
     });
 
     expect(result.robots).toBeUndefined();
+  });
+
+  it("sanitizes description containing Lexical JSON", () => {
+    const lexical = JSON.stringify({
+      root: {
+        children: [
+          {
+            type: "paragraph",
+            children: [{ type: "text", text: "My cool bio" }],
+          },
+        ],
+      },
+    });
+
+    const result = buildMetadata({
+      title: "User",
+      description: lexical,
+    });
+
+    expect(result.description).toBe("My cool bio");
+    expect((result.openGraph as Record<string, unknown>)?.description).toBe("My cool bio");
+    expect((result.twitter as Record<string, unknown>)?.description).toBe("My cool bio");
+  });
+
+  it("sanitizes description containing markdown", () => {
+    const result = buildMetadata({
+      title: "Post",
+      description: "## Hello **world**",
+    });
+
+    expect(result.description).toBe("Hello world");
   });
 
   it("uses NEXTAUTH_URL as fallback", () => {

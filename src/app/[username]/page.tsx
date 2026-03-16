@@ -19,6 +19,7 @@ import { RepostCard } from "@/components/repost-card";
 import { ReportButton } from "@/components/report-button";
 import { generateAdaptiveTheme } from "@/lib/profile-themes";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
+import { extractTextFromLexicalJson } from "@/lib/lexical-text";
 import { buildProfilePostsContentFilter } from "./profile-queries";
 
 interface ProfilePageProps {
@@ -64,8 +65,9 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
   if (!user) return { title: "User Not Found" };
 
   const displayName = user.displayName || user.name || user.username;
-  const description = user.bio
-    ? truncateText(user.bio, 160)
+  const bioText = user.bio ? extractTextFromLexicalJson(user.bio) || user.bio : "";
+  const description = bioText
+    ? truncateText(bioText, 160)
     : `${displayName} (@${user.username}) on ${SITE_NAME}. ${user._count.posts} posts, ${user._count.followers} followers.`;
   const avatarUrl = user.avatar || user.image || undefined;
 
