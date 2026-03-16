@@ -88,14 +88,15 @@ describe("FramedAvatar", () => {
     expect(wrapper.style.width).toBe("64px");
     expect(wrapper.style.height).toBe("64px");
 
+    // Avatar shrinks when framed: 64 * 0.72 = 46.08
     const avatarImg = container.querySelector('img:not([aria-hidden])') as HTMLElement;
-    expect(avatarImg.style.width).toBe("64px");
-    expect(avatarImg.style.height).toBe("64px");
+    expect(parseFloat(avatarImg.style.width)).toBeCloseTo(46.08);
+    expect(parseFloat(avatarImg.style.height)).toBeCloseTo(46.08);
 
+    // Frame matches container size (64px)
     const frameImg = container.querySelector('img[aria-hidden="true"]') as HTMLElement;
-    // Frame scale is 1.55: 64 * 1.55 = 99.2
-    expect(parseFloat(frameImg.style.width)).toBeCloseTo(99.2);
-    expect(parseFloat(frameImg.style.height)).toBeCloseTo(99.2);
+    expect(frameImg.style.width).toBe("64px");
+    expect(frameImg.style.height).toBe("64px");
     // Centered via transform
     expect(frameImg.style.top).toBe("50%");
     expect(frameImg.style.left).toBe("50%");
