@@ -1,15 +1,17 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import type { BackgroundDefinition } from "@/lib/profile-backgrounds";
 import {
-  PROFILE_BACKGROUNDS,
   VALID_BG_REPEAT,
   VALID_BG_ATTACHMENT,
   VALID_BG_SIZE,
   VALID_BG_POSITION,
 } from "@/lib/profile-backgrounds";
+import { PremiumComingSoon } from "./premium-coming-soon";
 
 interface BackgroundEditorProps {
+  backgrounds: BackgroundDefinition[];
   initialBackground: {
     profileBgImage: string | null;
     profileBgRepeat: string | null;
@@ -18,12 +20,15 @@ interface BackgroundEditorProps {
     profileBgPosition: string | null;
   };
   isPremium: boolean;
+  userEmail?: string | null;
   onChange: () => void;
 }
 
 export function BackgroundEditor({
+  backgrounds,
   initialBackground,
   isPremium,
+  userEmail,
   onChange,
 }: BackgroundEditorProps) {
   const [bgImage, setBgImage] = useState(initialBackground.profileBgImage);
@@ -121,7 +126,7 @@ export function BackgroundEditor({
         >
           None
         </button>
-        {PROFILE_BACKGROUNDS.map((bg) => (
+        {backgrounds.map((bg) => (
           <button
             key={bg.id}
             type="button"
@@ -177,9 +182,7 @@ export function BackgroundEditor({
           )}
         </div>
       ) : (
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          Upgrade to premium to upload a custom background.
-        </p>
+        <PremiumComingSoon defaultEmail={userEmail} />
       )}
 
       {/* Display settings — shown when a background is selected */}

@@ -10,6 +10,7 @@ import { BioEditor } from "@/components/bio-editor";
 import { BioRevisionHistory } from "@/components/bio-revision-history";
 import { ThemeEditor } from "@/components/theme-editor";
 import { BackgroundEditor } from "@/components/background-editor";
+import type { BackgroundDefinition } from "@/lib/profile-backgrounds";
 import { FrameSelector } from "@/components/frame-selector";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { PushNotificationToggle } from "@/components/push-notification-toggle";
@@ -55,6 +56,8 @@ interface ProfileFormProps {
   isCredentialsUser: boolean;
   isPremium: boolean;
   stars: number;
+  backgrounds: BackgroundDefinition[];
+  userEmail: string | null;
 }
 
 interface ProfileState {
@@ -64,7 +67,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, phoneVerified, phoneNumber, isCredentialsUser, isPremium, stars }: ProfileFormProps) {
+export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, phoneVerified, phoneNumber, isCredentialsUser, isPremium, stars, backgrounds, userEmail }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [displayNameValue, setDisplayNameValue] = useState(user.displayName ?? "");
@@ -346,6 +349,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
           avatarSrc={displayedAvatar}
           initial={initial}
           isPremium={isPremium}
+          userEmail={userEmail}
           onSelect={(id) => { setFrameId(id); scheduleAutosave(); }}
           onClose={() => setShowFrameSelector(false)}
         />
@@ -574,9 +578,11 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
           avatarSrc={avatarPreview || oauthImage}
           onChange={scheduleAutosave}
           isPremium={isPremium}
+          userEmail={userEmail}
         />
 
         <BackgroundEditor
+          backgrounds={backgrounds}
           initialBackground={{
             profileBgImage: user.profileBgImage,
             profileBgRepeat: user.profileBgRepeat,
@@ -585,6 +591,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
             profileBgPosition: user.profileBgPosition,
           }}
           isPremium={isPremium}
+          userEmail={userEmail}
           onChange={scheduleAutosave}
         />
 

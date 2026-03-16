@@ -6,6 +6,7 @@ import { isProfileIncomplete } from "@/lib/require-profile";
 import { ProfileForm } from "./profile-form";
 import { Suspense } from "react";
 import { AutoAccountSwitch } from "@/components/auto-account-switch";
+import { getProfileBackgrounds } from "@/lib/profile-backgrounds.server";
 
 export const metadata: Metadata = {
   title: "Edit Profile",
@@ -60,6 +61,7 @@ export default async function ProfilePage() {
   const isCredentialsUser = !!user?.passwordHash;
   const isPremium = user?.tier === "premium";
   const oauthImage = user?.image ?? session.user.image ?? null;
+  const backgrounds = getProfileBackgrounds();
 
   return (
     <div className="flex min-h-[calc(100vh-57px)] items-center justify-center">
@@ -118,6 +120,8 @@ export default async function ProfilePage() {
           isCredentialsUser={isCredentialsUser}
           isPremium={isPremium}
           stars={user?.stars ?? 0}
+          backgrounds={backgrounds}
+          userEmail={user?.email ?? null}
         />
 
         <form

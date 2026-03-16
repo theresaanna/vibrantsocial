@@ -4,16 +4,6 @@ export interface BackgroundDefinition {
   src: string;
 }
 
-export const PROFILE_BACKGROUNDS: BackgroundDefinition[] = [
-  { id: "pattern-1", name: "Retro Pattern", src: "/backgrounds/pattern-1.svg" },
-];
-
-const BACKGROUND_SRC_SET = new Set(PROFILE_BACKGROUNDS.map((b) => b.src));
-
-export function isPresetBackgroundSrc(src: string): boolean {
-  return BACKGROUND_SRC_SET.has(src);
-}
-
 export const VALID_BG_REPEAT = ["repeat", "repeat-x", "repeat-y", "no-repeat"] as const;
 export const VALID_BG_ATTACHMENT = ["scroll", "fixed"] as const;
 export const VALID_BG_SIZE = ["cover", "contain", "auto"] as const;

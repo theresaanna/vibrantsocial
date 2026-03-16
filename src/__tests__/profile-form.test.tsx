@@ -140,6 +140,8 @@ function renderForm(options: RenderFormOptions = {}) {
       isCredentialsUser={isCredentialsUser}
       isPremium={isPremium}
       stars={stars}
+      backgrounds={[{ id: "test-bg", name: "Test Background", src: "/backgrounds/test.jpg" }]}
+      userEmail="test@example.com"
     />
   );
 }
