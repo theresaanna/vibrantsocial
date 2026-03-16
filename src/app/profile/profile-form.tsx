@@ -330,8 +330,6 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
         </div>
       </div>
 
-      <input type="hidden" name="profileFrameId" value={frameId ?? ""} />
-
       {showFrameSelector && (
         <FrameSelector
           currentFrameId={frameId}
@@ -479,6 +477,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
         }}
         className="space-y-4"
       >
+        <input type="hidden" name="profileFrameId" value={frameId ?? ""} />
         <div>
           <label
             htmlFor="username"
