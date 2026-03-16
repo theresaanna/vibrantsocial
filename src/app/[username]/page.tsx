@@ -427,7 +427,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
               src={avatarSrc}
               alt=""
               initial={initial}
-              size={64}
+              size={80}
               frameId={user.profileFrameId}
               referrerPolicy="no-referrer"
             />

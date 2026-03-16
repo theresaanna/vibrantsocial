@@ -31,7 +31,7 @@ function UserAvatar({ user }: { user: FriendUser }) {
   const initial = (user.displayName || user.username || "?")[0]?.toUpperCase();
 
   return (
-    <FramedAvatar src={src} initial={initial} size={40} frameId={user.profileFrameId} referrerPolicy="no-referrer" />
+    <FramedAvatar src={src} initial={initial} size={50} frameId={user.profileFrameId} referrerPolicy="no-referrer" />
   );
 }
 

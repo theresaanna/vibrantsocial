@@ -142,7 +142,7 @@ export function NotificationList({
           }
 
           const avatarImg = (
-            <FramedAvatar src={avatar} alt={name} initial={name[0]?.toUpperCase()} size={40} frameId={notification.actor.profileFrameId} />
+            <FramedAvatar src={avatar} alt={name} initial={name[0]?.toUpperCase()} size={50} frameId={notification.actor.profileFrameId} />
           );
 
           return (

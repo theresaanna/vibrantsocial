@@ -46,7 +46,7 @@ export function SearchPostCard({ post }: SearchPostCardProps) {
       className="block rounded-lg border border-zinc-200 p-4 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
     >
       <div className="flex items-center gap-2">
-        <FramedAvatar src={avatarSrc} alt={displayName} initial={displayName[0]?.toUpperCase()} size={32} frameId={post.author.profileFrameId} />
+        <FramedAvatar src={avatarSrc} alt={displayName} initial={displayName[0]?.toUpperCase()} size={40} frameId={post.author.profileFrameId} />
         <div className="flex items-baseline gap-1.5 text-sm">
           <span className="font-medium text-zinc-900 dark:text-zinc-100">
             {displayName}

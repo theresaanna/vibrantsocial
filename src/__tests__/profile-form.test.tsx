@@ -65,6 +65,12 @@ const defaultUser = {
   profileLinkColor: null as string | null,
   profileSecondaryColor: null as string | null,
   profileContainerColor: null as string | null,
+  profileFrameId: null as string | null,
+  profileBgImage: null as string | null,
+  profileBgRepeat: null as string | null,
+  profileBgAttachment: null as string | null,
+  profileBgSize: null as string | null,
+  profileBgPosition: null as string | null,
 };
 
 interface RenderFormOptions {

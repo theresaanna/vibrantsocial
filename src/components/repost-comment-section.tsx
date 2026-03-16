@@ -233,7 +233,7 @@ function RepostCommentItem({
 
   return (
     <div className="flex gap-2">
-      <FramedAvatar src={avatarSrc} initial={authorName[0].toUpperCase()} size={24} frameId={comment.author.profileFrameId} referrerPolicy="no-referrer" />
+      <FramedAvatar src={avatarSrc} initial={authorName[0].toUpperCase()} size={30} frameId={comment.author.profileFrameId} referrerPolicy="no-referrer" />
       <div className="min-w-0">
         <div className="flex items-baseline gap-1.5">
           <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">

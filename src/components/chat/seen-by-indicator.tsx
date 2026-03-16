@@ -55,7 +55,7 @@ export function SeenByIndicator({ seenBy }: SeenByIndicatorProps) {
               src={avatar}
               alt={name}
               initial={name[0]?.toUpperCase()}
-              size={16}
+              size={20}
               frameId={user.profileFrameId}
               className="border border-white dark:border-zinc-900"
             />

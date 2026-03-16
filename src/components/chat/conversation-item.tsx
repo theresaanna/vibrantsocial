@@ -49,7 +49,7 @@ export function ConversationItem({
           src={avatar}
           alt={displayName}
           initial={isGroup ? "#" : displayName[0]?.toUpperCase()}
-          size={44}
+          size={56}
           frameId={isGroup ? null : participants[0]?.profileFrameId}
         />
         {!isGroup && (

@@ -26,7 +26,7 @@ export function FramedAvatar({
   referrerPolicy,
 }: FramedAvatarProps) {
   const frame = getFrameById(frameId);
-  const showFrame = frame && size >= 20;
+  const showFrame = frame && size >= 24;
   const avatarSize = showFrame ? size * AVATAR_INSET : size;
 
   return (
@@ -48,7 +48,7 @@ export function FramedAvatar({
           style={{
             width: avatarSize,
             height: avatarSize,
-            fontSize: size < 20 ? 8 : size < 32 ? 10 : size < 48 ? 14 : 20,
+            fontSize: size < 24 ? 8 : size < 40 ? 10 : size < 60 ? 14 : 20,
           }}
         >
           {initial || "?"}
