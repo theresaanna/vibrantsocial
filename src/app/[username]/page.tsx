@@ -16,6 +16,7 @@ import { FramedAvatar } from "@/components/framed-avatar";
 import { BioContent } from "@/components/bio-content";
 import { ProfileTabs } from "@/components/profile-tabs";
 import { RepostCard } from "@/components/repost-card";
+import { ReportButton } from "@/components/report-button";
 import { generateAdaptiveTheme } from "@/lib/profile-themes";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
 import { buildProfilePostsContentFilter } from "./profile-queries";
@@ -447,6 +448,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                       <FollowButton userId={user.id} isFollowing={isFollowing} />
                       <FriendButton userId={user.id} friendshipStatus={friendshipStatus} requestId={friendRequestId} />
                       <SubscribeButton userId={user.id} isSubscribed={isSubscribed} />
+                      <ReportButton contentType="profile" contentId={user.id} label="Report" />
                     </>
                   )}
                   <ProfileShareButton username={user.username!} hasCustomTheme={hasCustomTheme} />

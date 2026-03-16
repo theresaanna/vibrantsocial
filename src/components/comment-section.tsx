@@ -8,6 +8,7 @@ import { useComments, type CommentData, type ReactionGroup } from "@/hooks/use-c
 import Link from "next/link";
 import { LinkifyText } from "@/components/chat/linkify-text";
 import { FramedAvatar } from "@/components/framed-avatar";
+import { ReportModal } from "@/components/report-modal";
 
 const LazyEmojiPicker = lazy(() => import("emoji-picker-react"));
 
@@ -354,6 +355,7 @@ function CommentItem({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const editInputRef = useRef<HTMLInputElement>(null);
 
+  const [showReportModal, setShowReportModal] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
@@ -601,8 +603,24 @@ function CommentItem({
               )}
             </div>
           )}
+          {!isOwner && currentUserId && (
+            <button
+              type="button"
+              onClick={() => setShowReportModal(true)}
+              className="text-xs font-medium text-zinc-500 opacity-0 transition-opacity hover:text-red-600 group-hover/comment:opacity-100 dark:hover:text-red-400"
+              data-testid="comment-report-button"
+            >
+              Report
+            </button>
+          )}
         </div>
       </div>
+      <ReportModal
+        contentType="comment"
+        contentId={comment.id}
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+      />
     </div>
   );
 }

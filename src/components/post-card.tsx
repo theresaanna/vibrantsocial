@@ -15,6 +15,7 @@ import { timeAgo } from "@/lib/time";
 import { useCommentCount } from "@/hooks/use-comment-counts";
 import Link from "next/link";
 import { FramedAvatar } from "@/components/framed-avatar";
+import { ReportModal } from "@/components/report-modal";
 
 interface PostAuthor {
   id: string;
@@ -108,6 +109,7 @@ export function PostCard({
     post.isSensitive || post.isNsfw || post.isGraphicNudity
   );
   const menuRef = useRef<HTMLDivElement>(null);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const isAuthor = currentUserId === post.author?.id;
   const isAuthenticated = !!currentUserId;
@@ -376,6 +378,19 @@ export function PostCard({
             )}
           </div>
         )}
+        {!isAuthor && isAuthenticated && (
+          <button
+            type="button"
+            onClick={() => setShowReportModal(true)}
+            className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+            title="Report post"
+            data-testid="post-report-button"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {showOverlay ? (
@@ -629,6 +644,13 @@ export function PostCard({
       {showInfoModal && (
         <ContentFlagsInfoModal onClose={() => setShowInfoModal(false)} />
       )}
+
+      <ReportModal
+        contentType="post"
+        contentId={post.id}
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+      />
     </div>
   );
 }
