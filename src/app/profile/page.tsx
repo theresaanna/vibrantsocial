@@ -6,7 +6,7 @@ import { isProfileIncomplete } from "@/lib/require-profile";
 import { ProfileForm } from "./profile-form";
 import { Suspense } from "react";
 import { AutoAccountSwitch } from "@/components/auto-account-switch";
-import { getProfileBackgrounds } from "@/lib/profile-backgrounds";
+import { getProfileBackgrounds } from "@/lib/profile-backgrounds.server";
 
 export const metadata: Metadata = {
   title: "Edit Profile",
