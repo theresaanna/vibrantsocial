@@ -96,6 +96,10 @@ describe("FramedAvatar", () => {
     // Frame scale is 1.35: 64 * 1.35 = 86.4
     expect(parseFloat(frameImg.style.width)).toBeCloseTo(86.4);
     expect(parseFloat(frameImg.style.height)).toBeCloseTo(86.4);
+    // Centered via transform
+    expect(frameImg.style.top).toBe("50%");
+    expect(frameImg.style.left).toBe("50%");
+    expect(frameImg.style.transform).toBe("translate(-50%, -50%)");
   });
 
   it("applies custom className", () => {

@@ -26,7 +26,6 @@ export function FramedAvatar({
   const frame = getFrameById(frameId);
   const showFrame = frame && size >= 20;
   const frameSize = size * FRAME_SCALE;
-  const frameOffset = (frameSize - size) / 2;
 
   return (
     <div
@@ -62,8 +61,9 @@ export function FramedAvatar({
           style={{
             width: frameSize,
             height: frameSize,
-            top: -frameOffset,
-            left: -frameOffset,
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
           }}
         />
       )}
