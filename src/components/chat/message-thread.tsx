@@ -229,6 +229,7 @@ export function MessageThread({
           name: null,
           avatar: null,
           image: null,
+          profileFrameId: null,
         },
       };
       setMessages((prev) => {

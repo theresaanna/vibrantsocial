@@ -115,6 +115,18 @@ export async function resetTestUserStars() {
   }
 }
 
+export async function setTestUserFrame(frameId: string | null) {
+  const pool = createPool();
+  try {
+    await pool.query(
+      'UPDATE "User" SET "profileFrameId" = $1 WHERE email = $2',
+      [frameId, TEST_USER.email]
+    );
+  } finally {
+    await pool.end();
+  }
+}
+
 export async function cleanupLinkedAccountGroups() {
   const pool = createPool();
   try {

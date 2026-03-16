@@ -7,6 +7,7 @@ import { timeAgo } from "@/lib/time";
 import { useComments, type CommentData, type ReactionGroup } from "@/hooks/use-comments";
 import Link from "next/link";
 import { LinkifyText } from "@/components/chat/linkify-text";
+import { FramedAvatar } from "@/components/framed-avatar";
 
 const LazyEmojiPicker = lazy(() => import("emoji-picker-react"));
 
@@ -417,18 +418,7 @@ function CommentItem({
           : ""
       }`}
     >
-      {avatarSrc ? (
-        <img
-          src={avatarSrc}
-          alt=""
-          referrerPolicy="no-referrer"
-          className="h-6 w-6 shrink-0 rounded-full"
-        />
-      ) : (
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-          {authorName[0].toUpperCase()}
-        </div>
-      )}
+      <FramedAvatar src={avatarSrc} initial={authorName[0].toUpperCase()} size={24} frameId={comment.author.profileFrameId} referrerPolicy="no-referrer" />
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-1.5">
           <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">

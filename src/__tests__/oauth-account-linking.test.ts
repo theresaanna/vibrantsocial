@@ -77,7 +77,7 @@ describe("loadLinkedAccounts", () => {
         linkedAccountGroupId: "group1",
         id: { not: "user1" },
       },
-      select: { id: true, username: true, displayName: true, avatar: true },
+      select: { id: true, username: true, displayName: true, avatar: true, profileFrameId: true },
     });
   });
 });

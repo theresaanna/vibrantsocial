@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { FramedAvatar } from "@/components/framed-avatar";
 import type { InboundMessage } from "ably";
 import { useAblyReady } from "@/app/providers";
 import { getAblyRealtimeClient } from "@/lib/ably";
@@ -23,6 +24,7 @@ interface NotificationActor {
   name: string | null;
   image: string | null;
   avatar: string | null;
+  profileFrameId: string | null;
 }
 
 interface NotificationItem {
@@ -264,16 +266,8 @@ export function NotificationBell({
               const isUnread = !notification.readAt;
               const href = getNotificationHref(notification);
 
-              const avatarImg = avatar ? (
-                <img
-                  src={avatar}
-                  alt={name}
-                  className="h-8 w-8 rounded-full object-cover"
-                />
-              ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-                  {name[0]?.toUpperCase()}
-                </div>
+              const avatarImg = (
+                <FramedAvatar src={avatar} alt={name} initial={name[0]?.toUpperCase()} size={32} frameId={notification.actor.profileFrameId} />
               );
 
               return (

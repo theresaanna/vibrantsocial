@@ -23,6 +23,7 @@ const userSelect = {
   displayName: true,
   name: true,
   avatar: true,
+  profileFrameId: true,
   image: true,
 } as const;
 

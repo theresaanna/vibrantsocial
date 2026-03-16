@@ -49,6 +49,7 @@ export default async function ConversationPage({ params }: Props) {
                   displayName: true,
                   name: true,
                   avatar: true,
+                  profileFrameId: true,
                   image: true,
                 },
               },

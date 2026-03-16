@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { acceptMessageRequest, declineMessageRequest } from "@/app/chat/actions";
 import { useRouter } from "next/navigation";
+import { FramedAvatar } from "@/components/framed-avatar";
 import type { MessageRequestData, ActionState } from "@/types/chat";
 
 interface MessageRequestCardProps {
@@ -65,17 +66,13 @@ export function MessageRequestCard({
           className="h-4 w-4 shrink-0 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 dark:border-zinc-600"
         />
       )}
-      {avatar ? (
-        <img
-          src={avatar}
-          alt={displayName}
-          className="h-10 w-10 rounded-full object-cover"
-        />
-      ) : (
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-200 text-sm font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-          {displayName[0]?.toUpperCase()}
-        </div>
-      )}
+      <FramedAvatar
+        src={avatar}
+        alt={displayName}
+        initial={displayName[0]?.toUpperCase()}
+        size={40}
+        frameId={sender.profileFrameId}
+      />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
           {displayName}

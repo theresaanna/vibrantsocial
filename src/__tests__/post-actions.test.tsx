@@ -205,12 +205,8 @@ describe("PostActions", () => {
     const user = userEvent.setup();
     render(<PostActions {...defaultProps} onToggleComments={onToggleComments} />);
 
-    // Comment button has no aria-label, find by the svg path
-    const buttons = screen.getAllByRole("button");
-    const commentBtn = buttons.find(
-      (b) => !b.getAttribute("aria-label") && b.querySelector("svg")
-    );
-    await user.click(commentBtn!);
+    const commentBtn = screen.getByLabelText("Toggle comments");
+    await user.click(commentBtn);
 
     expect(onToggleComments).toHaveBeenCalledTimes(1);
   });

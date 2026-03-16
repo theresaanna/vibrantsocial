@@ -5,6 +5,7 @@ import { createRepostComment, fetchRepostComments } from "@/app/feed/post-action
 import { timeAgo } from "@/lib/time";
 import Link from "next/link";
 import { LinkifyText } from "@/components/chat/linkify-text";
+import { FramedAvatar } from "@/components/framed-avatar";
 
 interface CommentAuthor {
   id: string;
@@ -13,6 +14,7 @@ interface CommentAuthor {
   name: string | null;
   image: string | null;
   avatar: string | null;
+  profileFrameId: string | null;
 }
 
 interface RepostCommentData {
@@ -231,18 +233,7 @@ function RepostCommentItem({
 
   return (
     <div className="flex gap-2">
-      {avatarSrc ? (
-        <img
-          src={avatarSrc}
-          alt=""
-          referrerPolicy="no-referrer"
-          className="h-6 w-6 shrink-0 rounded-full"
-        />
-      ) : (
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-          {authorName[0].toUpperCase()}
-        </div>
-      )}
+      <FramedAvatar src={avatarSrc} initial={authorName[0].toUpperCase()} size={24} frameId={comment.author.profileFrameId} referrerPolicy="no-referrer" />
       <div className="min-w-0">
         <div className="flex items-baseline gap-1.5">
           <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">

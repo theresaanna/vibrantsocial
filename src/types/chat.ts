@@ -5,6 +5,7 @@ export interface ChatUserProfile {
   name: string | null;
   avatar: string | null;
   image: string | null;
+  profileFrameId: string | null;
 }
 
 export type MediaType = "image" | "video" | "audio" | "document";
