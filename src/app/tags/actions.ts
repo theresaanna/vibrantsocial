@@ -4,7 +4,8 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { normalizeTag } from "@/lib/tags";
 import { PAGE_SIZE, getPostInclude } from "@/app/feed/feed-queries";
-import { cached, cacheKeys } from "@/lib/cache";
+import { cached, cacheKeys, invalidate } from "@/lib/cache";
+import { isAdmin } from "@/lib/admin";
 
 /**
  * Search for existing tags matching a query prefix.
@@ -22,6 +23,7 @@ export async function searchTags(query: string, includeNsfw?: boolean) {
   const tags = await prisma.tag.findMany({
     where: {
       name: { startsWith: normalized },
+      ...(!includeNsfw ? { isNsfw: false } : {}),
       posts: {
         some: {
           post: postFilter,
@@ -61,6 +63,7 @@ export async function getTagCloudData() {
     cacheKeys.tagCloud(),
     async () => {
       const tags = await prisma.tag.findMany({
+        where: { isNsfw: false },
         select: {
           name: true,
           _count: {
@@ -91,7 +94,7 @@ export async function getTagCloudData() {
 }
 
 /**
- * Get NSFW tag cloud data: tags with counts from NSFW posts only.
+ * Get NSFW tag cloud data: tags marked NSFW or with NSFW posts.
  * Only for opted-in users. Only counts posts from public profiles.
  */
 export async function getNsfwTagCloudData() {
@@ -99,6 +102,23 @@ export async function getNsfwTagCloudData() {
     cacheKeys.nsfwTagCloud(),
     async () => {
       const tags = await prisma.tag.findMany({
+        where: {
+          OR: [
+            { isNsfw: true },
+            {
+              posts: {
+                some: {
+                  post: {
+                    isNsfw: true,
+                    isSensitive: false,
+                    isGraphicNudity: false,
+                    author: { isProfilePublic: true },
+                  },
+                },
+              },
+            },
+          ],
+        },
         select: {
           name: true,
           _count: {
@@ -106,7 +126,6 @@ export async function getNsfwTagCloudData() {
               posts: {
                 where: {
                   post: {
-                    isNsfw: true,
                     isSensitive: false,
                     isGraphicNudity: false,
                     author: { isProfilePublic: true },
@@ -193,4 +212,27 @@ export async function getPostsByTag(
     hasMore,
     totalCount,
   };
+}
+
+/**
+ * Toggle the isNsfw flag on a tag. Admin only.
+ */
+export async function toggleTagNsfw(tagId: string) {
+  const session = await auth();
+  if (!isAdmin(session?.user?.id)) {
+    return { success: false, isNsfw: false };
+  }
+
+  const tag = await prisma.tag.findUnique({ where: { id: tagId } });
+  if (!tag) return { success: false, isNsfw: false };
+
+  const updated = await prisma.tag.update({
+    where: { id: tagId },
+    data: { isNsfw: !tag.isNsfw },
+  });
+
+  await invalidate(cacheKeys.tagCloud());
+  await invalidate(cacheKeys.nsfwTagCloud());
+
+  return { success: true, isNsfw: updated.isNsfw };
 }

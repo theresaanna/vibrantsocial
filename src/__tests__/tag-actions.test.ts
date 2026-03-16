@@ -197,15 +197,29 @@ describe("getNsfwTagCloudData", () => {
     vi.clearAllMocks();
   });
 
-  it("filters by isNsfw: true and public profile", async () => {
+  it("filters by NSFW tags or posts with isNsfw: true", async () => {
     mockFindMany.mockResolvedValue([]);
 
     await getNsfwTagCloudData();
 
     const call = mockFindMany.mock.calls[0][0];
+    // Should use OR to match tags flagged as NSFW or tags with NSFW posts
+    expect(call.where.OR).toBeDefined();
+    expect(call.where.OR).toEqual(
+      expect.arrayContaining([
+        { isNsfw: true },
+        expect.objectContaining({
+          posts: expect.objectContaining({
+            some: expect.objectContaining({
+              post: expect.objectContaining({ isNsfw: true }),
+            }),
+          }),
+        }),
+      ])
+    );
+    // Post count filter should exclude sensitive/graphic but include all others
     const postFilter = call.select._count.select.posts.where.post;
     expect(postFilter).toMatchObject({
-      isNsfw: true,
       isSensitive: false,
       isGraphicNudity: false,
       ...PUBLIC_AUTHOR,
