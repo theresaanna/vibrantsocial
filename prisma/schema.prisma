@@ -34,6 +34,13 @@ model User {
   profileSecondaryColor String?
   profileContainerColor String?
 
+  // Profile background image
+  profileBgImage      String?
+  profileBgRepeat     String?
+  profileBgAttachment String?
+  profileBgSize       String?
+  profileBgPosition   String?
+
   // Credentials auth
   passwordHash String?
   dateOfBirth  DateTime?

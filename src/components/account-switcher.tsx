@@ -98,15 +98,22 @@ export function AccountSwitcher({
     const subscriptions: Array<{ channel: ReturnType<typeof client.channels.get>; event: string }> = [];
 
     for (const account of linkedAccounts) {
-      const channel = client.channels.get(`notifications:${account.id}`);
       const handler = () => {
         setNotificationCounts((prev) => ({
           ...prev,
           [account.id]: (prev[account.id] ?? 0) + 1,
         }));
       };
-      channel.subscribe("new", handler);
-      subscriptions.push({ channel, event: "new" });
+
+      // Post/social notifications
+      const notifChannel = client.channels.get(`notifications:${account.id}`);
+      notifChannel.subscribe("new", handler);
+      subscriptions.push({ channel: notifChannel, event: "new" });
+
+      // Chat message notifications
+      const chatChannel = client.channels.get(`chat-notify:${account.id}`);
+      chatChannel.subscribe("new", handler);
+      subscriptions.push({ channel: chatChannel, event: "new" });
     }
 
     return () => {

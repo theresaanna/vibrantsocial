@@ -123,20 +123,51 @@ export async function getLinkedAccountNotificationCounts(): Promise<
 
   if (linkedUsers.length === 0) return {};
 
-  const linkedIds = linkedUsers.map((u) => u.id);
+  const linkedIds = linkedUsers.map((u: { id: string }) => u.id);
 
-  const counts = await prisma.notification.groupBy({
-    by: ["targetUserId"],
-    where: { targetUserId: { in: linkedIds }, readAt: null },
-    _count: { id: true },
-  });
+  const [notifCounts, chatParticipants] = await Promise.all([
+    prisma.notification.groupBy({
+      by: ["targetUserId"],
+      where: { targetUserId: { in: linkedIds }, readAt: null },
+      _count: { id: true },
+    }),
+    // Get unread chat counts: conversations where lastReadAt < last message time
+    prisma.conversationParticipant.findMany({
+      where: { userId: { in: linkedIds } },
+      select: {
+        userId: true,
+        lastReadAt: true,
+        conversation: {
+          select: {
+            messages: {
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              select: { createdAt: true },
+            },
+          },
+        },
+      },
+    }),
+  ]);
 
   const result: Record<string, number> = {};
   for (const id of linkedIds) {
     result[id] = 0;
   }
-  for (const row of counts) {
+  for (const row of notifCounts) {
     result[row.targetUserId] = row._count.id;
   }
+
+  // Add unread chat message counts
+  for (const cp of chatParticipants) {
+    const lastMessage = cp.conversation.messages[0];
+    if (lastMessage) {
+      const hasUnread = !cp.lastReadAt || lastMessage.createdAt > cp.lastReadAt;
+      if (hasUnread) {
+        result[cp.userId] = (result[cp.userId] ?? 0) + 1;
+      }
+    }
+  }
+
   return result;
 }

@@ -7,6 +7,7 @@ import { del } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { isValidHexColor, THEME_COLOR_FIELDS, isPresetTheme } from "@/lib/profile-themes";
 import { isValidFrameId } from "@/lib/profile-frames";
+import { isPresetBackgroundSrc, isValidBgRepeat, isValidBgAttachment, isValidBgSize, isValidBgPosition } from "@/lib/profile-backgrounds";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { sendEmailVerificationEmail } from "@/lib/email";
 import { inngest } from "@/lib/inngest";
@@ -106,6 +107,54 @@ export async function updateProfile(
     }
   }
 
+  // Validate profile background
+  const rawBgImage = (formData.get("profileBgImage") as string)?.trim() || null;
+  const rawBgRepeat = (formData.get("profileBgRepeat") as string)?.trim() || null;
+  const rawBgAttachment = (formData.get("profileBgAttachment") as string)?.trim() || null;
+  const rawBgSize = (formData.get("profileBgSize") as string)?.trim() || null;
+  const rawBgPosition = (formData.get("profileBgPosition") as string)?.trim() || null;
+
+  const bgData: Record<string, string | null> = {
+    profileBgImage: null,
+    profileBgRepeat: null,
+    profileBgAttachment: null,
+    profileBgSize: null,
+    profileBgPosition: null,
+  };
+
+  if (rawBgImage) {
+    const isPreset = isPresetBackgroundSrc(rawBgImage);
+    const isBlobUrl = rawBgImage.includes("blob.vercel-storage.com");
+
+    if (!isPreset && !isBlobUrl) {
+      return { success: false, message: "Invalid background image." };
+    }
+
+    if (currentUser?.tier !== "premium" && !isPreset) {
+      bgData.profileBgImage = null;
+    } else {
+      bgData.profileBgImage = rawBgImage;
+
+      if (rawBgRepeat && !isValidBgRepeat(rawBgRepeat)) {
+        return { success: false, message: "Invalid background repeat value." };
+      }
+      if (rawBgAttachment && !isValidBgAttachment(rawBgAttachment)) {
+        return { success: false, message: "Invalid background attachment value." };
+      }
+      if (rawBgSize && !isValidBgSize(rawBgSize)) {
+        return { success: false, message: "Invalid background size value." };
+      }
+      if (rawBgPosition && !isValidBgPosition(rawBgPosition)) {
+        return { success: false, message: "Invalid background position value." };
+      }
+
+      bgData.profileBgRepeat = rawBgRepeat;
+      bgData.profileBgAttachment = rawBgAttachment;
+      bgData.profileBgSize = rawBgSize;
+      bgData.profileBgPosition = rawBgPosition;
+    }
+  }
+
   const newBio = bio || null;
   const oldBio = currentUser?.bio ?? null;
 
@@ -145,6 +194,7 @@ export async function updateProfile(
       isProfilePublic,
       profileFrameId,
       ...themeColors,
+      ...bgData,
     },
   });
 
@@ -439,7 +489,7 @@ export async function deleteAccount(
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, email: true, username: true, displayName: true, avatar: true },
+    select: { id: true, email: true, username: true, displayName: true, avatar: true, profileBgImage: true },
   });
 
   if (!user || !user.username) {
@@ -456,6 +506,10 @@ export async function deleteAccount(
 
   if (user.avatar?.includes("blob.vercel-storage.com")) {
     blobUrls.push(user.avatar);
+  }
+
+  if (user.profileBgImage?.includes("blob.vercel-storage.com")) {
+    blobUrls.push(user.profileBgImage);
   }
 
   const userPosts = await prisma.post.findMany({
