@@ -659,3 +659,9 @@ model LinkedAccountGroup {
   createdAt DateTime @default(now())
   members   User[]
 }
+
+model PremiumWaitlist {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
