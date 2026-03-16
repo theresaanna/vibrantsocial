@@ -230,4 +230,148 @@ describe("ImageComponent resize handles", () => {
 
     expect(mockSetWidthAndHeight).toHaveBeenCalledWith(100, "inherit");
   });
+
+  it("renders the action toolbar when selected and editable", () => {
+    render(
+      <ImageComponent
+        src="https://example.com/img.png"
+        altText="test"
+        width={400}
+        height="inherit"
+        nodeKey="test-key"
+      />
+    );
+
+    expect(screen.getByTestId("image-action-toolbar")).toBeInTheDocument();
+    expect(screen.getByTestId("toolbar-resize-button")).toBeInTheDocument();
+    expect(screen.getByTestId("toolbar-alt-text-button")).toBeInTheDocument();
+  });
+
+  it("does not render action toolbar when not editable", () => {
+    mockEditor.isEditable.mockReturnValue(false);
+
+    render(
+      <ImageComponent
+        src="https://example.com/img.png"
+        altText="test"
+        width={400}
+        height="inherit"
+        nodeKey="test-key"
+      />
+    );
+
+    expect(screen.queryByTestId("image-action-toolbar")).not.toBeInTheDocument();
+  });
+});
+
+describe("ImageComponent touch resize", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockEditor.isEditable.mockReturnValue(true);
+  });
+
+  it("persists the final dragged width on touchend", () => {
+    render(
+      <ImageComponent
+        src="https://example.com/img.png"
+        altText="test"
+        width={400}
+        height="inherit"
+        nodeKey="test-key"
+      />
+    );
+
+    const handle = screen.getByTestId("resize-handle-se");
+
+    act(() => {
+      fireEvent.touchStart(handle, { touches: [{ clientX: 500 }] });
+    });
+
+    act(() => {
+      fireEvent.touchMove(document, { touches: [{ clientX: 700 }] });
+    });
+
+    act(() => {
+      fireEvent.touchEnd(document);
+    });
+
+    expect(mockSetWidthAndHeight).toHaveBeenCalledWith(600, "inherit");
+  });
+
+  it("clamps touch-dragged width to a minimum of 100", () => {
+    render(
+      <ImageComponent
+        src="https://example.com/img.png"
+        altText="test"
+        width={400}
+        height="inherit"
+        nodeKey="test-key"
+      />
+    );
+
+    const handle = screen.getByTestId("resize-handle-se");
+
+    act(() => {
+      fireEvent.touchStart(handle, { touches: [{ clientX: 500 }] });
+    });
+
+    act(() => {
+      fireEvent.touchMove(document, { touches: [{ clientX: 0 }] });
+    });
+
+    act(() => {
+      fireEvent.touchEnd(document);
+    });
+
+    expect(mockSetWidthAndHeight).toHaveBeenCalledWith(100, "inherit");
+  });
+
+  it("persists the correct width after multiple touchmove events", () => {
+    render(
+      <ImageComponent
+        src="https://example.com/img.png"
+        altText="test"
+        width={400}
+        height="inherit"
+        nodeKey="test-key"
+      />
+    );
+
+    const handle = screen.getByTestId("resize-handle-se");
+
+    act(() => {
+      fireEvent.touchStart(handle, { touches: [{ clientX: 500 }] });
+    });
+
+    act(() => {
+      fireEvent.touchMove(document, { touches: [{ clientX: 600 }] });
+    });
+    act(() => {
+      fireEvent.touchMove(document, { touches: [{ clientX: 700 }] });
+    });
+    act(() => {
+      fireEvent.touchMove(document, { touches: [{ clientX: 650 }] });
+    });
+
+    act(() => {
+      fireEvent.touchEnd(document);
+    });
+
+    expect(mockSetWidthAndHeight).toHaveBeenCalledWith(550, "inherit");
+  });
+
+  it("resize handles have touch-action: none style", () => {
+    render(
+      <ImageComponent
+        src="https://example.com/img.png"
+        altText="test"
+        width={400}
+        height="inherit"
+        nodeKey="test-key"
+      />
+    );
+
+    const handle = screen.getByTestId("resize-handle-se");
+    expect(handle.style.touchAction).toBe("none");
+  });
 });

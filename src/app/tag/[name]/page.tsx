@@ -5,7 +5,9 @@ import { notFound } from "next/navigation";
 import { getPostsByTag } from "@/app/tags/actions";
 import { TagPostList } from "./tag-post-list";
 import { TagSubscribeButton } from "./tag-subscribe-button";
+import { NsfwTagToggle } from "./nsfw-tag-toggle";
 import { buildMetadata, SITE_NAME } from "@/lib/metadata";
+import { isAdmin } from "@/lib/admin";
 
 interface TagPageProps {
   params: Promise<{ name: string }>;
@@ -75,28 +77,39 @@ export default async function TagPage({ params }: TagPageProps) {
   }
 
   const initialData = await getPostsByTag(decodedName, currentUserId, undefined, showNsfwContent);
+  const userIsAdmin = isAdmin(currentUserId);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
       <div className="mb-6">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+            <h1 className="flex items-center gap-2 text-2xl font-bold text-zinc-900 dark:text-zinc-100">
               #{decodedName}
+              {tag.isNsfw && (
+                <span className="rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                  NSFW
+                </span>
+              )}
             </h1>
             <p className="mt-1 text-sm text-zinc-500">
               {initialData.totalCount}{" "}
               {initialData.totalCount === 1 ? "post" : "posts"}
             </p>
           </div>
-          {currentUserId && subscriptionStatus && (
-            <TagSubscribeButton
-              tagId={tag.id}
-              tagName={decodedName}
-              initialSubscribed={subscriptionStatus.subscribed}
-              initialFrequency={subscriptionStatus.frequency}
-            />
-          )}
+          <div className="flex items-center gap-2">
+            {userIsAdmin && (
+              <NsfwTagToggle tagId={tag.id} initialIsNsfw={tag.isNsfw} />
+            )}
+            {currentUserId && subscriptionStatus && (
+              <TagSubscribeButton
+                tagId={tag.id}
+                tagName={decodedName}
+                initialSubscribed={subscriptionStatus.subscribed}
+                initialFrequency={subscriptionStatus.frequency}
+              />
+            )}
+          </div>
         </div>
       </div>
 
