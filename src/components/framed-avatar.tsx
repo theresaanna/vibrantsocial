@@ -12,7 +12,9 @@ interface FramedAvatarProps {
   referrerPolicy?: React.HTMLAttributeReferrerPolicy;
 }
 
-const FRAME_SCALE = 1.55;
+// When a frame is shown, the avatar shrinks to this ratio of the
+// container so the frame ring sits outside the photo circle.
+const AVATAR_INSET = 0.72;
 
 export function FramedAvatar({
   src,
@@ -25,7 +27,7 @@ export function FramedAvatar({
 }: FramedAvatarProps) {
   const frame = getFrameById(frameId);
   const showFrame = frame && size >= 20;
-  const frameSize = size * FRAME_SCALE;
+  const avatarSize = showFrame ? size * AVATAR_INSET : size;
 
   return (
     <div
@@ -38,14 +40,14 @@ export function FramedAvatar({
           alt={alt}
           referrerPolicy={referrerPolicy}
           className="rounded-full object-cover"
-          style={{ width: size, height: size }}
+          style={{ width: avatarSize, height: avatarSize }}
         />
       ) : (
         <div
           className="flex items-center justify-center rounded-full bg-zinc-200 font-bold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300"
           style={{
-            width: size,
-            height: size,
+            width: avatarSize,
+            height: avatarSize,
             fontSize: size < 20 ? 8 : size < 32 ? 10 : size < 48 ? 14 : 20,
           }}
         >
@@ -59,8 +61,8 @@ export function FramedAvatar({
           aria-hidden="true"
           className="pointer-events-none absolute"
           style={{
-            width: frameSize,
-            height: frameSize,
+            width: size,
+            height: size,
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
