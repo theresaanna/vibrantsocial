@@ -33,7 +33,7 @@ export function UserList({ users, currentUserId, emptyMessage }: UserListProps) 
             className="flex items-center gap-3 px-4 py-3"
           >
             <Link href={`/${user.username}`} className="flex-shrink-0">
-              <FramedAvatar src={avatarSrc} initial={initial} size={44} frameId={user.profileFrameId} referrerPolicy="no-referrer" />
+              <FramedAvatar src={avatarSrc} initial={initial} size={56} frameId={user.profileFrameId} referrerPolicy="no-referrer" />
             </Link>
 
             <div className="min-w-0 flex-1">

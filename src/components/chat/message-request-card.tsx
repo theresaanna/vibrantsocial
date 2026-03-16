@@ -70,7 +70,7 @@ export function MessageRequestCard({
         src={avatar}
         alt={displayName}
         initial={displayName[0]?.toUpperCase()}
-        size={40}
+        size={50}
         frameId={sender.profileFrameId}
       />
       <div className="min-w-0 flex-1">

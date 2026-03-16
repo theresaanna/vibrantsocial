@@ -267,7 +267,7 @@ export function NotificationBell({
               const href = getNotificationHref(notification);
 
               const avatarImg = (
-                <FramedAvatar src={avatar} alt={name} initial={name[0]?.toUpperCase()} size={32} frameId={notification.actor.profileFrameId} />
+                <FramedAvatar src={avatar} alt={name} initial={name[0]?.toUpperCase()} size={40} frameId={notification.actor.profileFrameId} />
               );
 
               return (

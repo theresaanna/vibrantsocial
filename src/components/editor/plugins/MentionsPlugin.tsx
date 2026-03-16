@@ -145,7 +145,7 @@ function MentionDropdown({
               src={avatarSrc}
               alt=""
               initial={displayName[0]?.toUpperCase()}
-              size={28}
+              size={36}
               frameId={user.profileFrameId}
             />
             <div className="min-w-0 flex-1">

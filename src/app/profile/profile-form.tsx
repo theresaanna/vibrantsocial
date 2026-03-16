@@ -14,6 +14,7 @@ import { FrameSelector } from "@/components/frame-selector";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { PushNotificationToggle } from "@/components/push-notification-toggle";
 import { LinkAccountModal } from "@/components/link-account-modal";
+import { AvatarCropperModal } from "@/components/avatar-cropper-modal";
 import type { LinkedAccount } from "@/types/next-auth";
 
 interface ProfileFormProps {
@@ -79,6 +80,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
   const [avatarPreview, setAvatarPreview] = useState<string | null>(currentAvatar);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const [showRevisions, setShowRevisions] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [pushEnabled, setPushEnabled] = useState(initialPushEnabled);
@@ -222,7 +224,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
     };
   }, [usernameValue, savedUsername, scheduleAutosave]);
 
-  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -239,28 +241,30 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
       return;
     }
 
-    setAvatarUploading(true);
+    setCropFile(file);
+    // Reset file input so re-selecting the same file triggers onChange
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
 
+  async function handleCroppedAvatar(blob: Blob) {
+    setAvatarUploading(true);
+    setAvatarError(null);
     try {
       const formData = new FormData();
-      formData.append("file", file);
-
+      formData.append("file", blob, "avatar.jpg");
       const res = await fetch("/api/avatar", { method: "POST", body: formData });
       const data = await res.json();
-
       if (!res.ok) {
         setAvatarError(data.error || "Upload failed");
         return;
       }
-
       setAvatarPreview(data.url);
       await update({ user: { avatar: data.url } });
     } catch {
       setAvatarError("Upload failed. Please try again.");
     } finally {
       setAvatarUploading(false);
-      // Reset file input so re-selecting the same file triggers onChange
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      setCropFile(null);
     }
   }
 
@@ -286,7 +290,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
         <FramedAvatar
           src={displayedAvatar}
           initial={initial}
-          size={64}
+          size={80}
           frameId={frameId}
           referrerPolicy="no-referrer"
         />
@@ -886,6 +890,15 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
           onLinked={() => {
             getLinkedAccounts().then(setLinkedAccounts);
           }}
+        />
+      )}
+
+      {cropFile && (
+        <AvatarCropperModal
+          file={cropFile}
+          onSave={handleCroppedAvatar}
+          onCancel={() => setCropFile(null)}
+          uploading={avatarUploading}
         />
       )}
 

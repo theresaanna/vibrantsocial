@@ -88,7 +88,7 @@ export function UserSearch({
                     src={avatar}
                     alt={name}
                     initial={name[0]?.toUpperCase()}
-                    size={32}
+                    size={40}
                     frameId={user.profileFrameId}
                   />
                   <div className="min-w-0">

@@ -254,7 +254,7 @@ export function PostCard({
       )}
       {/* Author header — always visible */}
       <div className="flex items-center gap-3 px-4 pt-4">
-        <FramedAvatar src={avatarSrc} initial={authorInitial} size={40} frameId={post.author?.profileFrameId} referrerPolicy="no-referrer" />
+        <FramedAvatar src={avatarSrc} initial={authorInitial} size={50} frameId={post.author?.profileFrameId} referrerPolicy="no-referrer" />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-1.5">
             <span className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">

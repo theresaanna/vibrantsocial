@@ -420,7 +420,7 @@ function CommentItem({
           : ""
       }`}
     >
-      <FramedAvatar src={avatarSrc} initial={authorName[0].toUpperCase()} size={24} frameId={comment.author.profileFrameId} referrerPolicy="no-referrer" />
+      <FramedAvatar src={avatarSrc} initial={authorName[0].toUpperCase()} size={30} frameId={comment.author.profileFrameId} referrerPolicy="no-referrer" />
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-1.5">
           <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">

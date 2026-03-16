@@ -210,7 +210,7 @@ export function MessageBubble({
                   src={avatar}
                   alt={displayName}
                   initial={displayName[0]?.toUpperCase()}
-                  size={28}
+                  size={36}
                   frameId={senderProfile.profileFrameId}
                 />
               </Link>

@@ -38,7 +38,7 @@ function FrameOption({
       aria-pressed={isSelected}
       data-testid={`frame-option-${frame.id}`}
     >
-      <FramedAvatar src={avatarSrc} initial={initial} size={56} frameId={frame.id} />
+      <FramedAvatar src={avatarSrc} initial={initial} size={70} frameId={frame.id} />
       <span className="text-xs text-zinc-500 dark:text-zinc-400">{frame.name}</span>
     </button>
   );
@@ -92,7 +92,7 @@ export function FrameSelector({
           <FramedAvatar
             src={avatarSrc}
             initial={initial}
-            size={96}
+            size={120}
             frameId={selectedFrameId}
           />
         </div>
