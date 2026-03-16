@@ -33,6 +33,7 @@ export async function createNotification(params: CreateNotificationParams) {
           name: true,
           image: true,
           avatar: true,
+          profileFrameId: true,
         },
       },
     },

@@ -14,6 +14,7 @@ import { ContentFlagsInfoModal } from "./content-flags-info-modal";
 import { timeAgo } from "@/lib/time";
 import { useCommentCount } from "@/hooks/use-comment-counts";
 import Link from "next/link";
+import { FramedAvatar } from "@/components/framed-avatar";
 
 interface PostAuthor {
   id: string;
@@ -22,6 +23,7 @@ interface PostAuthor {
   name: string | null;
   image: string | null;
   avatar: string | null;
+  profileFrameId: string | null;
 }
 
 interface CommentData {
@@ -250,18 +252,7 @@ export function PostCard({
       )}
       {/* Author header — always visible */}
       <div className="flex items-center gap-3 px-4 pt-4">
-        {avatarSrc ? (
-          <img
-            src={avatarSrc}
-            alt=""
-            referrerPolicy="no-referrer"
-            className="h-10 w-10 rounded-full"
-          />
-        ) : (
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-200 text-sm font-bold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-            {authorInitial}
-          </div>
-        )}
+        <FramedAvatar src={avatarSrc} initial={authorInitial} size={40} frameId={post.author?.profileFrameId} referrerPolicy="no-referrer" />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-1.5">
             <span className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">

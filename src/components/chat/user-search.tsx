@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { searchUsers } from "@/app/chat/actions";
+import { FramedAvatar } from "@/components/framed-avatar";
 import type { ChatUserProfile } from "@/types/chat";
 
 interface UserSearchProps {
@@ -83,13 +84,13 @@ export function UserSearch({
                   }}
                   className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-zinc-50 dark:hover:bg-zinc-700"
                 >
-                  {avatar ? (
-                    <img src={avatar} alt={name} className="h-8 w-8 rounded-full object-cover" />
-                  ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-                      {name[0]?.toUpperCase()}
-                    </div>
-                  )}
+                  <FramedAvatar
+                    src={avatar}
+                    alt={name}
+                    initial={name[0]?.toUpperCase()}
+                    size={32}
+                    frameId={user.profileFrameId}
+                  />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
                       {name}

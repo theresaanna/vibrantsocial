@@ -225,6 +225,7 @@ describe("createComment", () => {
         name: true,
         image: true,
         avatar: true,
+        profileFrameId: true,
       },
     },
   };
@@ -236,7 +237,7 @@ describe("createComment", () => {
     authorId: "user1",
     parentId: null,
     createdAt: new Date(),
-    author: { id: "user1", username: "u1", displayName: null, name: "User", image: null, avatar: null },
+    author: { id: "user1", username: "u1", displayName: null, name: "User", image: null, avatar: null, profileFrameId: null },
   };
 
   it("creates comment successfully", async () => {

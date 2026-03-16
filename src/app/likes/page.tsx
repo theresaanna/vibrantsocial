@@ -52,6 +52,7 @@ export default async function LikesPage() {
               name: true,
               image: true,
               avatar: true,
+              profileFrameId: true,
             },
           },
           _count: {
@@ -92,6 +93,7 @@ export default async function LikesPage() {
                   name: true,
                   image: true,
                   avatar: true,
+                  profileFrameId: true,
                 },
               },
               replies: {
@@ -105,6 +107,7 @@ export default async function LikesPage() {
                       name: true,
                       image: true,
                       avatar: true,
+                      profileFrameId: true,
                     },
                   },
                 },

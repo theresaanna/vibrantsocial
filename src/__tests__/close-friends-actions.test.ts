@@ -179,7 +179,7 @@ describe("getCloseFriends", () => {
         userId: "user1",
         friendId: "user2",
         createdAt: new Date(),
-        friend: { id: "user2", username: "alice", displayName: "Alice", name: null, avatar: null, image: null },
+        friend: { id: "user2", username: "alice", displayName: "Alice", name: null, avatar: null, image: null, profileFrameId: null },
       },
     ];
     mockPrisma.closeFriend.findMany.mockResolvedValueOnce(mockFriends as never);
@@ -197,6 +197,7 @@ describe("getCloseFriends", () => {
             name: true,
             avatar: true,
             image: true,
+            profileFrameId: true,
           },
         },
       },
@@ -261,8 +262,8 @@ describe("getAcceptedFriends", () => {
         status: "ACCEPTED",
         createdAt: new Date(),
         updatedAt: new Date(),
-        sender: { id: "user1", username: "me", displayName: "Me", name: null, avatar: null, image: null },
-        receiver: { id: "user2", username: "alice", displayName: "Alice", name: null, avatar: null, image: null },
+        sender: { id: "user1", username: "me", displayName: "Me", name: null, avatar: null, image: null, profileFrameId: null },
+        receiver: { id: "user2", username: "alice", displayName: "Alice", name: null, avatar: null, image: null, profileFrameId: null },
       },
       {
         id: "fr2",
@@ -271,8 +272,8 @@ describe("getAcceptedFriends", () => {
         status: "ACCEPTED",
         createdAt: new Date(),
         updatedAt: new Date(),
-        sender: { id: "user3", username: "bob", displayName: "Bob", name: null, avatar: null, image: null },
-        receiver: { id: "user1", username: "me", displayName: "Me", name: null, avatar: null, image: null },
+        sender: { id: "user3", username: "bob", displayName: "Bob", name: null, avatar: null, image: null, profileFrameId: null },
+        receiver: { id: "user1", username: "me", displayName: "Me", name: null, avatar: null, image: null, profileFrameId: null },
       },
     ];
     mockPrisma.friendRequest.findMany.mockResolvedValueOnce(mockFriendships as never);

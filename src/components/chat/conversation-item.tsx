@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { timeAgo } from "@/lib/time";
 import { PresenceIndicator } from "./presence-indicator";
+import { FramedAvatar } from "@/components/framed-avatar";
 import type { ConversationListItem, ChatThemeColors } from "@/types/chat";
 
 interface ConversationItemProps {
@@ -44,17 +45,13 @@ export function ConversationItem({
       style={hasThemedActive ? { backgroundColor: "color-mix(in srgb, var(--chat-active-bg) 20%, transparent)", color: "var(--chat-active-text)" } : undefined}
     >
       <div className="relative flex-shrink-0">
-        {avatar ? (
-          <img
-            src={avatar}
-            alt={displayName}
-            className="h-11 w-11 rounded-full object-cover"
-          />
-        ) : (
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-zinc-200 text-sm font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-            {isGroup ? "#" : displayName[0]?.toUpperCase()}
-          </div>
-        )}
+        <FramedAvatar
+          src={avatar}
+          alt={displayName}
+          initial={isGroup ? "#" : displayName[0]?.toUpperCase()}
+          size={44}
+          frameId={isGroup ? null : participants[0]?.profileFrameId}
+        />
         {!isGroup && (
           <span className="absolute -bottom-0.5 -right-0.5">
             <PresenceIndicator isOnline={isOnline} size="sm" />

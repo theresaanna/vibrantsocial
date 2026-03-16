@@ -236,6 +236,7 @@ export async function getPendingFriendRequests() {
           displayName: true,
           name: true,
           avatar: true,
+          profileFrameId: true,
           image: true,
         },
       },
@@ -250,6 +251,7 @@ const friendUserSelect = {
   displayName: true,
   name: true,
   avatar: true,
+  profileFrameId: true,
   image: true,
 } as const;
 

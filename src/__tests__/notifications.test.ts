@@ -43,7 +43,7 @@ describe("createNotification", () => {
       commentId: null,
       readAt: null,
       createdAt: new Date(),
-      actor: { id: "actor1", username: "alice", displayName: "Alice", name: null, image: null, avatar: null },
+      actor: { id: "actor1", username: "alice", displayName: "Alice", name: null, image: null, avatar: null, profileFrameId: null },
     };
     mockPrisma.notification.create.mockResolvedValueOnce(notification as never);
     mockPrisma.notification.count.mockResolvedValueOnce(1 as never);
@@ -72,6 +72,7 @@ describe("createNotification", () => {
             name: true,
             image: true,
             avatar: true,
+            profileFrameId: true,
           },
         },
       },
@@ -100,7 +101,7 @@ describe("createNotification", () => {
       commentId: null,
       readAt: null,
       createdAt: new Date(),
-      actor: { id: "actor1", username: "alice", displayName: "Alice", name: null, image: null, avatar: null },
+      actor: { id: "actor1", username: "alice", displayName: "Alice", name: null, image: null, avatar: null, profileFrameId: null },
     };
     mockPrisma.notification.create.mockResolvedValueOnce(notification as never);
     mockPrisma.notification.count.mockResolvedValueOnce(52 as never);
@@ -138,7 +139,7 @@ describe("createNotification", () => {
       commentId: "c1",
       readAt: null,
       createdAt: new Date(),
-      actor: { id: "actor1", username: "alice", displayName: "Alice", name: null, image: null, avatar: null },
+      actor: { id: "actor1", username: "alice", displayName: "Alice", name: null, image: null, avatar: null, profileFrameId: null },
     };
     mockPrisma.notification.create.mockResolvedValueOnce(notification as never);
     mockPrisma.notification.count.mockResolvedValueOnce(30 as never);
@@ -166,7 +167,7 @@ describe("createNotification", () => {
       commentId: null,
       readAt: null,
       createdAt,
-      actor: { id: "actor1", username: "bob", displayName: "Bob", name: null, image: null, avatar: null },
+      actor: { id: "actor1", username: "bob", displayName: "Bob", name: null, image: null, avatar: null, profileFrameId: null },
     };
     mockPrisma.notification.create.mockResolvedValueOnce(notification as never);
     mockPrisma.notification.count.mockResolvedValueOnce(1 as never);
@@ -199,7 +200,7 @@ describe("createNotification", () => {
       commentId: null,
       readAt: null,
       createdAt: new Date(),
-      actor: { id: "actor1", username: "alice", displayName: "Alice", name: null, image: null, avatar: null },
+      actor: { id: "actor1", username: "alice", displayName: "Alice", name: null, image: null, avatar: null, profileFrameId: null },
     };
     mockPrisma.notification.create.mockResolvedValueOnce(notification as never);
     mockPrisma.notification.count.mockResolvedValueOnce(1 as never);

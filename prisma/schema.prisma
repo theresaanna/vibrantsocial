@@ -24,6 +24,9 @@ model User {
   bio         String?
   avatar      String?
 
+  // Profile picture frame (premium feature)
+  profileFrameId String?
+
   // Profile theme colors
   profileBgColor        String?
   profileTextColor      String?

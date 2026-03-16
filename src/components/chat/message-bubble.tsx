@@ -7,6 +7,7 @@ import { timeAgo } from "@/lib/time";
 import { ReadReceiptIndicator } from "./read-receipt-indicator";
 import { SeenByIndicator } from "./seen-by-indicator";
 import { MediaRenderer } from "./media-renderer";
+import { FramedAvatar } from "@/components/framed-avatar";
 import type { MessageData, ChatUserProfile, MediaType, ChatThemeColors } from "@/types/chat";
 import { LinkifyText } from "./linkify-text";
 
@@ -205,28 +206,22 @@ export function MessageBubble({
           <div className="mt-auto flex-shrink-0">
             {senderProfile.username ? (
               <Link href={`/${senderProfile.username}`}>
-                {avatar ? (
-                  <img
-                    src={avatar}
-                    alt={displayName}
-                    className="h-7 w-7 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-                    {displayName[0]?.toUpperCase()}
-                  </div>
-                )}
+                <FramedAvatar
+                  src={avatar}
+                  alt={displayName}
+                  initial={displayName[0]?.toUpperCase()}
+                  size={28}
+                  frameId={senderProfile.profileFrameId}
+                />
               </Link>
-            ) : avatar ? (
-              <img
+            ) : (
+              <FramedAvatar
                 src={avatar}
                 alt={displayName}
-                className="h-7 w-7 rounded-full object-cover"
+                initial={displayName[0]?.toUpperCase()}
+                size={28}
+                frameId={senderProfile.profileFrameId}
               />
-            ) : (
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-                {displayName[0]?.toUpperCase()}
-              </div>
             )}
           </div>
         )}

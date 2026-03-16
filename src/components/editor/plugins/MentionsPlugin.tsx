@@ -17,6 +17,7 @@ import {
 } from "lexical";
 import { createPortal } from "react-dom";
 import { searchUsers } from "@/app/chat/actions";
+import { FramedAvatar } from "@/components/framed-avatar";
 import type { ChatUserProfile } from "@/types/chat";
 import { $createMentionNode } from "../nodes/MentionNode";
 
@@ -140,17 +141,13 @@ function MentionDropdown({
                 : "hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
             }`}
           >
-            {avatarSrc ? (
-              <img
-                src={avatarSrc}
-                alt=""
-                className="h-7 w-7 rounded-full object-cover"
-              />
-            ) : (
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 dark:bg-zinc-600 dark:text-zinc-300">
-                {displayName[0]?.toUpperCase()}
-              </div>
-            )}
+            <FramedAvatar
+              src={avatarSrc}
+              alt=""
+              initial={displayName[0]?.toUpperCase()}
+              size={28}
+              frameId={user.profileFrameId}
+            />
             <div className="min-w-0 flex-1">
               <div className="truncate font-medium text-zinc-900 dark:text-zinc-100">
                 {displayName}

@@ -28,6 +28,7 @@ const commentAuthorSelect = {
   name: true,
   image: true,
   avatar: true,
+  profileFrameId: true,
 } as const;
 
 function groupReactions(
@@ -550,6 +551,7 @@ export async function createComment(
           name: true,
           image: true,
           avatar: true,
+          profileFrameId: true,
         },
       },
     },

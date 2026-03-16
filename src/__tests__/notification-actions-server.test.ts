@@ -53,7 +53,7 @@ describe("notification server actions", () => {
           type: "LIKE",
           actorId: "a1",
           createdAt: new Date(),
-          actor: { id: "a1", username: "alice", displayName: "Alice", name: null, image: null, avatar: null },
+          actor: { id: "a1", username: "alice", displayName: "Alice", name: null, image: null, avatar: null, profileFrameId: null },
           post: { id: "p1", content: "content" },
           message: null,
           tag: null,
@@ -69,7 +69,7 @@ describe("notification server actions", () => {
         take: 50,
         include: {
           actor: {
-            select: { id: true, username: true, displayName: true, name: true, image: true, avatar: true },
+            select: { id: true, username: true, displayName: true, name: true, image: true, avatar: true, profileFrameId: true },
           },
           post: { select: { id: true, content: true } },
           message: { select: { id: true, conversationId: true } },
@@ -144,7 +144,7 @@ describe("notification server actions", () => {
           id: "n1",
           type: "COMMENT",
           createdAt: now,
-          actor: { id: "a1", username: "bob", displayName: "Bob", name: null, image: null, avatar: null },
+          actor: { id: "a1", username: "bob", displayName: "Bob", name: null, image: null, avatar: null, profileFrameId: null },
           post: { id: "p1", content: "test" },
           message: null,
           tag: null,
@@ -161,7 +161,7 @@ describe("notification server actions", () => {
         take: 8,
         include: {
           actor: {
-            select: { id: true, username: true, displayName: true, name: true, image: true, avatar: true },
+            select: { id: true, username: true, displayName: true, name: true, image: true, avatar: true, profileFrameId: true },
           },
           post: { select: { id: true, content: true } },
           message: { select: { id: true, conversationId: true } },
