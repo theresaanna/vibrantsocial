@@ -2,6 +2,7 @@ export interface BackgroundDefinition {
   id: string;
   name: string;
   src: string;
+  thumbSrc: string;
 }
 
 export const VALID_BG_REPEAT = ["repeat", "repeat-x", "repeat-y", "no-repeat"] as const;

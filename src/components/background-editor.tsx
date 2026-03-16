@@ -161,7 +161,7 @@ export function BackgroundEditor({
             }`}
           >
             <img
-              src={bg.src}
+              src={bg.thumbSrc}
               alt={bg.name}
               className="h-full w-full object-cover"
             />
