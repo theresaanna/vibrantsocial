@@ -12,7 +12,7 @@ interface FramedAvatarProps {
   referrerPolicy?: React.HTMLAttributeReferrerPolicy;
 }
 
-const FRAME_SCALE = 1.35;
+const FRAME_SCALE = 1.55;
 
 export function FramedAvatar({
   src,

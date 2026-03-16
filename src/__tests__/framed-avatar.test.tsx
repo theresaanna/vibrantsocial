@@ -93,9 +93,9 @@ describe("FramedAvatar", () => {
     expect(avatarImg.style.height).toBe("64px");
 
     const frameImg = container.querySelector('img[aria-hidden="true"]') as HTMLElement;
-    // Frame scale is 1.35: 64 * 1.35 = 86.4
-    expect(parseFloat(frameImg.style.width)).toBeCloseTo(86.4);
-    expect(parseFloat(frameImg.style.height)).toBeCloseTo(86.4);
+    // Frame scale is 1.55: 64 * 1.55 = 99.2
+    expect(parseFloat(frameImg.style.width)).toBeCloseTo(99.2);
+    expect(parseFloat(frameImg.style.height)).toBeCloseTo(99.2);
     // Centered via transform
     expect(frameImg.style.top).toBe("50%");
     expect(frameImg.style.left).toBe("50%");
