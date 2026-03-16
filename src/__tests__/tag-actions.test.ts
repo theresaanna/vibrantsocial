@@ -31,6 +31,7 @@ vi.mock("@/lib/cache", () => ({
   cacheKeys: {
     tagCloud: () => "tagCloud",
     nsfwTagCloud: () => "nsfwTagCloud",
+    allTagCloud: () => "allTagCloud",
     tagPostCount: (name: string) => `tagPostCount:${name}`,
   },
 }));
@@ -39,6 +40,7 @@ import {
   searchTags,
   getTagCloudData,
   getNsfwTagCloudData,
+  getAllTagCloudData,
   getPostsByTag,
 } from "@/app/tags/actions";
 
@@ -245,6 +247,73 @@ describe("getNsfwTagCloudData", () => {
 
     const result = await getNsfwTagCloudData();
     expect(result.map((t) => t.name)).toEqual(["big", "small"]);
+  });
+});
+
+describe("getAllTagCloudData", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns all tags including NSFW sorted by count descending", async () => {
+    mockFindMany.mockResolvedValue([
+      { name: "sfw-tag", _count: { posts: 3 } },
+      { name: "nsfw-tag", _count: { posts: 7 } },
+      { name: "another", _count: { posts: 1 } },
+    ]);
+
+    const result = await getAllTagCloudData();
+    expect(result).toEqual([
+      { name: "nsfw-tag", count: 7 },
+      { name: "sfw-tag", count: 3 },
+      { name: "another", count: 1 },
+    ]);
+  });
+
+  it("excludes tags with 0 posts", async () => {
+    mockFindMany.mockResolvedValue([
+      { name: "empty", _count: { posts: 0 } },
+      { name: "has-posts", _count: { posts: 2 } },
+    ]);
+
+    const result = await getAllTagCloudData();
+    expect(result).toEqual([{ name: "has-posts", count: 2 }]);
+  });
+
+  it("does not filter by isNsfw on the tag level", async () => {
+    mockFindMany.mockResolvedValue([]);
+
+    await getAllTagCloudData();
+
+    const call = mockFindMany.mock.calls[0][0];
+    // Should not have isNsfw filter at the tag level
+    expect(call.where).toBeUndefined();
+  });
+
+  it("excludes sensitive and graphic posts but includes NSFW posts", async () => {
+    mockFindMany.mockResolvedValue([]);
+
+    await getAllTagCloudData();
+
+    const call = mockFindMany.mock.calls[0][0];
+    const postFilter = call.select._count.select.posts.where.post;
+    expect(postFilter).toMatchObject({
+      isSensitive: false,
+      isGraphicNudity: false,
+      ...PUBLIC_AUTHOR,
+    });
+    // Should NOT have isNsfw: false — NSFW posts are included
+    expect(postFilter.isNsfw).toBeUndefined();
+  });
+
+  it("filters by public profiles", async () => {
+    mockFindMany.mockResolvedValue([]);
+
+    await getAllTagCloudData();
+
+    const call = mockFindMany.mock.calls[0][0];
+    const postFilter = call.select._count.select.posts.where.post;
+    expect(postFilter.author).toEqual({ isProfilePublic: true });
   });
 });
 

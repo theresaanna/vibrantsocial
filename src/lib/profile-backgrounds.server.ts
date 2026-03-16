@@ -22,11 +22,17 @@ export function getProfileBackgrounds(): BackgroundDefinition[] {
     return files
       .filter((f) => SUPPORTED_EXTENSIONS.has(path.extname(f).toLowerCase()))
       .sort((a, b) => a.localeCompare(b))
-      .map((f) => ({
-        id: path.parse(f).name,
-        name: fileNameToDisplayName(f),
-        src: `/backgrounds/${f}`,
-      }));
+      .map((f) => {
+        const id = path.parse(f).name;
+        const thumbPath = path.join(bgDir, "thumbs", `${id}.webp`);
+        const hasThumb = fs.existsSync(thumbPath);
+        return {
+          id,
+          name: fileNameToDisplayName(f),
+          src: `/backgrounds/${f}`,
+          thumbSrc: hasThumb ? `/backgrounds/thumbs/${id}.webp` : `/backgrounds/${f}`,
+        };
+      });
   } catch {
     return [];
   }

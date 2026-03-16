@@ -21,13 +21,27 @@ const defaultProps = {
   avatarSrc: null,
 };
 
+async function expandSection() {
+  await userEvent.click(screen.getByRole("button", { name: /profile theme/i }));
+}
+
 describe("ThemeEditor", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("renders all preset buttons", () => {
+  it("starts collapsed and expands on click", async () => {
     render(<ThemeEditor {...defaultProps} />);
+    const toggle = screen.getByRole("button", { name: /profile theme/i });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("renders all preset buttons", async () => {
+    render(<ThemeEditor {...defaultProps} />);
+    await expandSection();
     for (const name of Object.keys(PROFILE_THEME_PRESETS)) {
       expect(
         screen.getByRole("button", { name: new RegExp(name, "i") })
@@ -35,8 +49,9 @@ describe("ThemeEditor", () => {
     }
   });
 
-  it("renders 5 color picker inputs", () => {
+  it("renders 5 color picker inputs", async () => {
     render(<ThemeEditor {...defaultProps} />);
+    await expandSection();
     expect(screen.getByLabelText("Background")).toBeInTheDocument();
     expect(screen.getByLabelText("Text")).toBeInTheDocument();
     expect(screen.getByLabelText("Links")).toBeInTheDocument();
@@ -46,6 +61,7 @@ describe("ThemeEditor", () => {
 
   it("selecting a preset updates hidden form inputs", async () => {
     const { container } = render(<ThemeEditor {...defaultProps} />);
+    await expandSection();
     const oceanButton = screen.getByRole("button", { name: /ocean/i });
     await userEvent.click(oceanButton);
 
@@ -58,6 +74,7 @@ describe("ThemeEditor", () => {
 
   it("marks selected preset as pressed", async () => {
     render(<ThemeEditor {...defaultProps} />);
+    await expandSection();
     const oceanButton = screen.getByRole("button", { name: /ocean/i });
 
     expect(oceanButton).toHaveAttribute("aria-pressed", "false");
@@ -65,8 +82,9 @@ describe("ThemeEditor", () => {
     expect(oceanButton).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("clears active preset when no preset is initially selected", () => {
+  it("clears active preset when no preset is initially selected", async () => {
     render(<ThemeEditor {...defaultProps} />);
+    await expandSection();
     for (const name of Object.keys(PROFILE_THEME_PRESETS)) {
       const button = screen.getByRole("button", {
         name: new RegExp(name, "i"),
@@ -96,6 +114,7 @@ describe("ThemeEditor", () => {
 
   it("shows preview modal when preview button is clicked", async () => {
     render(<ThemeEditor {...defaultProps} />);
+    await expandSection();
     expect(screen.queryByTestId("theme-preview")).not.toBeInTheDocument();
 
     const previewBtn = screen.getByRole("button", { name: /preview/i });
@@ -106,6 +125,7 @@ describe("ThemeEditor", () => {
 
   it("closes preview modal when close is clicked", async () => {
     render(<ThemeEditor {...defaultProps} />);
+    await expandSection();
     await userEvent.click(screen.getByRole("button", { name: /preview/i }));
     expect(screen.getByTestId("theme-preview")).toBeInTheDocument();
 

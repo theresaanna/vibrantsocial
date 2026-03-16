@@ -7,6 +7,23 @@ import { PAGE_SIZE, getPostInclude } from "@/app/feed/feed-queries";
 import { cached, cacheKeys, invalidate } from "@/lib/cache";
 import { isAdmin } from "@/lib/admin";
 
+interface TagCloudEntry {
+  name: string;
+  count: number;
+}
+
+interface TagWithCount {
+  name: string;
+  _count: { posts: number };
+}
+
+function toSortedTagCloud(tags: TagWithCount[]): TagCloudEntry[] {
+  return tags
+    .filter((t) => t._count.posts > 0)
+    .map((t) => ({ name: t.name, count: t._count.posts }))
+    .sort((a, b) => b.count - a.count);
+}
+
 /**
  * Search for existing tags matching a query prefix.
  * When includeNsfw is true, also searches tags used on NSFW posts.
@@ -48,7 +65,7 @@ export async function searchTags(query: string, includeNsfw?: boolean) {
   });
 
   // Only return tags used on 2+ posts
-  return tags
+  return (tags as (TagWithCount & { id: string })[])
     .filter((t) => t._count.posts >= 2)
     .slice(0, 10)
     .map((t) => ({ id: t.id, name: t.name, count: t._count.posts }));
@@ -84,10 +101,7 @@ export async function getTagCloudData() {
         orderBy: { name: "asc" },
       });
 
-      return tags
-        .filter((t) => t._count.posts > 0)
-        .map((t) => ({ name: t.name, count: t._count.posts }))
-        .sort((a, b) => b.count - a.count);
+      return toSortedTagCloud(tags as TagWithCount[]);
     },
     300 // cache for 5 minutes
   );
@@ -138,10 +152,41 @@ export async function getNsfwTagCloudData() {
         orderBy: { name: "asc" },
       });
 
-      return tags
-        .filter((t) => t._count.posts > 0)
-        .map((t) => ({ name: t.name, count: t._count.posts }))
-        .sort((a, b) => b.count - a.count);
+      return toSortedTagCloud(tags as TagWithCount[]);
+    },
+    300 // cache for 5 minutes
+  );
+}
+
+/**
+ * Get all tag cloud data (SFW + NSFW combined) for users who opted into NSFW.
+ * Excludes sensitive/graphic posts. Only counts posts from public profiles.
+ */
+export async function getAllTagCloudData() {
+  return cached(
+    cacheKeys.allTagCloud(),
+    async () => {
+      const tags = await prisma.tag.findMany({
+        select: {
+          name: true,
+          _count: {
+            select: {
+              posts: {
+                where: {
+                  post: {
+                    isSensitive: false,
+                    isGraphicNudity: false,
+                    author: { isProfilePublic: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: { name: "asc" },
+      });
+
+      return toSortedTagCloud(tags as TagWithCount[]);
     },
     300 // cache for 5 minutes
   );
@@ -205,7 +250,7 @@ export async function getPostsByTag(
   const items = postTags.slice(0, PAGE_SIZE);
 
   return {
-    posts: items.map((pt) => ({
+    posts: items.map((pt: { id: string; post: Record<string, unknown> }) => ({
       ...pt.post,
       postTagId: pt.id,
     })),
@@ -233,6 +278,7 @@ export async function toggleTagNsfw(tagId: string) {
 
   await invalidate(cacheKeys.tagCloud());
   await invalidate(cacheKeys.nsfwTagCloud());
+  await invalidate(cacheKeys.allTagCloud());
 
   return { success: true, isNsfw: updated.isNsfw };
 }

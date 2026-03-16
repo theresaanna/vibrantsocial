@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/notifications";
 import { inngest } from "@/lib/inngest";
+import { invalidate, cacheKeys } from "@/lib/cache";
 import type { FollowUser } from "@/app/feed/follow-actions";
 
 interface FriendActionState {
@@ -74,6 +75,36 @@ export async function sendFriendRequest(
   await prisma.friendRequest.create({
     data: { senderId: session.user.id, receiverId: targetUserId },
   });
+
+  // Auto-follow the target user when sending a friend request
+  try {
+    await prisma.follow.upsert({
+      where: {
+        followerId_followingId: {
+          followerId: session.user.id,
+          followingId: targetUserId,
+        },
+      },
+      create: { followerId: session.user.id, followingId: targetUserId },
+      update: {},
+    });
+
+    const [currentUserData, targetUserData] = await Promise.all([
+      prisma.user.findUnique({ where: { id: session.user.id }, select: { username: true } }),
+      prisma.user.findUnique({ where: { id: targetUserId }, select: { username: true } }),
+    ]);
+
+    const invalidations = [invalidate(cacheKeys.userFollowing(session.user.id))];
+    if (currentUserData?.username) {
+      invalidations.push(invalidate(cacheKeys.userProfile(currentUserData.username)));
+    }
+    if (targetUserData?.username) {
+      invalidations.push(invalidate(cacheKeys.userProfile(targetUserData.username)));
+    }
+    await Promise.all(invalidations);
+  } catch {
+    // Non-critical: friend request was still created
+  }
 
   try {
     await createNotification({
@@ -286,8 +317,11 @@ export async function getFriends(username: string): Promise<FollowUser[]> {
     orderBy: { createdAt: "desc" },
   });
 
+  type FriendUser = Omit<FollowUser, "isFollowing">;
+  type Friendship = (typeof friendships)[number];
+
   // For each friendship, return the "other" user
-  const friends = friendships.map((f) =>
+  const friends: FriendUser[] = friendships.map((f: Friendship) =>
     f.senderId === user.id ? f.receiver : f.sender
   );
 
@@ -297,10 +331,10 @@ export async function getFriends(username: string): Promise<FollowUser[]> {
       where: { followerId: currentUserId },
       select: { followingId: true },
     });
-    currentUserFollowingIds = new Set(myFollows.map((f) => f.followingId));
+    currentUserFollowingIds = new Set(myFollows.map((f: { followingId: string }) => f.followingId));
   }
 
-  return friends.map((friend) => ({
+  return friends.map((friend: FriendUser) => ({
     ...friend,
     isFollowing: currentUserFollowingIds.has(friend.id),
   }));
