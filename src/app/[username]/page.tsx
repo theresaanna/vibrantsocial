@@ -41,6 +41,11 @@ const profileSelect = {
   profileLinkColor: true,
   profileSecondaryColor: true,
   profileContainerColor: true,
+  profileBgImage: true,
+  profileBgRepeat: true,
+  profileBgAttachment: true,
+  profileBgSize: true,
+  profileBgPosition: true,
   isProfilePublic: true,
   _count: {
     select: {
@@ -398,8 +403,22 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       })()
     : undefined;
 
+  const bgImageStyle: React.CSSProperties | undefined = user.profileBgImage
+    ? {
+        backgroundImage: `url(${user.profileBgImage})`,
+        backgroundRepeat: user.profileBgRepeat ?? "no-repeat",
+        backgroundAttachment: user.profileBgAttachment ?? "scroll",
+        backgroundSize: user.profileBgSize ?? "cover",
+        backgroundPosition: user.profileBgPosition ?? "center",
+        minHeight: "calc(100vh - 57px)",
+      }
+    : undefined;
+
   return (
-    <div className={hasCustomTheme ? "profile-themed" : ""} style={themeStyle}>
+    <div
+      className={hasCustomTheme ? "profile-themed" : ""}
+      style={{ ...themeStyle, ...bgImageStyle }}
+    >
       <main className="mx-auto max-w-3xl px-4 py-6">
         {/* Profile header */}
         <div className={`rounded-2xl p-6 shadow-lg ${hasCustomTheme ? "profile-container" : "bg-white dark:bg-zinc-900"}`}>

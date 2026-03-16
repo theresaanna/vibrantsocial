@@ -34,6 +34,11 @@ export default async function ProfilePage() {
       profileLinkColor: true,
       profileSecondaryColor: true,
       profileContainerColor: true,
+      profileBgImage: true,
+      profileBgRepeat: true,
+      profileBgAttachment: true,
+      profileBgSize: true,
+      profileBgPosition: true,
       ageVerified: true,
       showGraphicByDefault: true,
       showNsfwContent: true,
@@ -87,6 +92,11 @@ export default async function ProfilePage() {
             profileSecondaryColor: user?.profileSecondaryColor ?? null,
             profileContainerColor: user?.profileContainerColor ?? null,
             profileFrameId: user?.profileFrameId ?? null,
+            profileBgImage: user?.profileBgImage ?? null,
+            profileBgRepeat: user?.profileBgRepeat ?? null,
+            profileBgAttachment: user?.profileBgAttachment ?? null,
+            profileBgSize: user?.profileBgSize ?? null,
+            profileBgPosition: user?.profileBgPosition ?? null,
           }}
           currentAvatar={user?.avatar ?? null}
           oauthImage={oauthImage}

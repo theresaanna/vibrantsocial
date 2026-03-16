@@ -9,6 +9,7 @@ import { unlinkAccount, getLinkedAccounts } from "./account-linking-actions";
 import { BioEditor } from "@/components/bio-editor";
 import { BioRevisionHistory } from "@/components/bio-revision-history";
 import { ThemeEditor } from "@/components/theme-editor";
+import { BackgroundEditor } from "@/components/background-editor";
 import { FrameSelector } from "@/components/frame-selector";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { PushNotificationToggle } from "@/components/push-notification-toggle";
@@ -27,6 +28,11 @@ interface ProfileFormProps {
     profileSecondaryColor: string | null;
     profileContainerColor: string | null;
     profileFrameId: string | null;
+    profileBgImage: string | null;
+    profileBgRepeat: string | null;
+    profileBgAttachment: string | null;
+    profileBgSize: string | null;
+    profileBgPosition: string | null;
   };
   email: string | null;
   pendingEmail: string | null;
@@ -564,6 +570,18 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
           avatarSrc={avatarPreview || oauthImage}
           onChange={scheduleAutosave}
           isPremium={isPremium}
+        />
+
+        <BackgroundEditor
+          initialBackground={{
+            profileBgImage: user.profileBgImage,
+            profileBgRepeat: user.profileBgRepeat,
+            profileBgAttachment: user.profileBgAttachment,
+            profileBgSize: user.profileBgSize,
+            profileBgPosition: user.profileBgPosition,
+          }}
+          isPremium={isPremium}
+          onChange={scheduleAutosave}
         />
 
         <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
