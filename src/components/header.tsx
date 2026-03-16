@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import Link from "next/link";
 import { getConversations } from "@/app/chat/actions";
-import { getUnreadNotificationCount, getRecentNotifications } from "@/app/notifications/actions";
+import { getUnreadNotificationCount, getRecentNotifications, getLinkedAccountNotificationCounts } from "@/app/notifications/actions";
 import { ChatNav } from "@/components/chat-nav";
 import { DynamicFavicon } from "@/components/dynamic-favicon";
 import { NotificationBell } from "@/components/notification-bell";
@@ -12,11 +12,12 @@ import { loadLinkedAccounts } from "@/lib/account-linking-db";
 
 export async function Header() {
   const session = await auth();
-  const [conversations, unreadNotifications, recentNotifications, linkedAccounts] = await Promise.all([
+  const [conversations, unreadNotifications, recentNotifications, linkedAccounts, linkedAccountNotifCounts] = await Promise.all([
     session?.user ? getConversations() : Promise.resolve([]),
     session?.user ? getUnreadNotificationCount() : Promise.resolve(0),
     session?.user ? getRecentNotifications() : Promise.resolve([]),
     session?.user?.id ? loadLinkedAccounts(session.user.id) : Promise.resolve([]),
+    session?.user ? getLinkedAccountNotificationCounts() : Promise.resolve({}),
   ]);
 
   return (
@@ -33,7 +34,7 @@ export async function Header() {
         {/* Mobile-only profile link + theme toggle next to logo */}
         {session?.user && (
           <div className="order-2 flex items-center gap-1 sm:hidden">
-            <AccountSwitcherWrapper initialLinkedAccounts={linkedAccounts} />
+            <AccountSwitcherWrapper initialLinkedAccounts={linkedAccounts} initialNotificationCounts={linkedAccountNotifCounts} />
             <ThemeToggle />
             <MobileProfileLink username={session.user.username} />
           </div>
@@ -50,7 +51,7 @@ export async function Header() {
                 }
               />
               <NavLinks username={session.user.username} />
-              <div className="hidden sm:block"><AccountSwitcherWrapper initialLinkedAccounts={linkedAccounts} /></div>
+              <div className="hidden sm:block"><AccountSwitcherWrapper initialLinkedAccounts={linkedAccounts} initialNotificationCounts={linkedAccountNotifCounts} /></div>
               <NotificationBell initialUnreadCount={unreadNotifications} initialNotifications={recentNotifications} />
               <ChatNav initialConversations={conversations} />
             </>

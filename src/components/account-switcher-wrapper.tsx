@@ -7,8 +7,10 @@ import type { LinkedAccount } from "@/types/next-auth";
 
 export function AccountSwitcherWrapper({
   initialLinkedAccounts = [],
+  initialNotificationCounts = {},
 }: {
   initialLinkedAccounts?: LinkedAccount[];
+  initialNotificationCounts?: Record<string, number>;
 }) {
   const [showLinkModal, setShowLinkModal] = useState(false);
 
@@ -17,6 +19,7 @@ export function AccountSwitcherWrapper({
       <AccountSwitcher
         onAddAccount={() => setShowLinkModal(true)}
         initialLinkedAccounts={initialLinkedAccounts}
+        initialNotificationCounts={initialNotificationCounts}
       />
       {showLinkModal && (
         <LinkAccountModal

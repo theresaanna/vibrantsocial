@@ -145,6 +145,84 @@ export async function cleanupLinkedAccountGroups() {
   }
 }
 
+export async function linkTestAccounts() {
+  const pool = createPool();
+  try {
+    // Get both test user IDs
+    const users = await pool.query(
+      `SELECT id, email FROM "User" WHERE email IN ($1, $2)`,
+      [TEST_USER.email, TEST_USER_2.email]
+    );
+    if (users.rows.length < 2) throw new Error("Both test users must exist");
+
+    // Create a linked account group
+    const group = await pool.query(
+      `INSERT INTO "LinkedAccountGroup" (id) VALUES (gen_random_uuid()) RETURNING id`
+    );
+    const groupId = group.rows[0].id;
+
+    // Link both users to the group
+    const ids = users.rows.map((r: { id: string }) => r.id);
+    await pool.query(
+      `UPDATE "User" SET "linkedAccountGroupId" = $1 WHERE id = ANY($2)`,
+      [groupId, ids]
+    );
+  } finally {
+    await pool.end();
+  }
+}
+
+export async function createTestNotifications(
+  targetEmail: string,
+  actorEmail: string,
+  count: number
+) {
+  const pool = createPool();
+  try {
+    const target = await pool.query(
+      'SELECT id FROM "User" WHERE email = $1',
+      [targetEmail]
+    );
+    const actor = await pool.query(
+      'SELECT id FROM "User" WHERE email = $1',
+      [actorEmail]
+    );
+    if (!target.rows[0] || !actor.rows[0])
+      throw new Error("Users must exist");
+
+    const targetId = target.rows[0].id;
+    const actorId = actor.rows[0].id;
+
+    for (let i = 0; i < count; i++) {
+      await pool.query(
+        `INSERT INTO "Notification" (id, type, "actorId", "targetUserId", "createdAt")
+         VALUES (gen_random_uuid(), 'FOLLOW', $1, $2, NOW())`,
+        [actorId, targetId]
+      );
+    }
+  } finally {
+    await pool.end();
+  }
+}
+
+export async function cleanupTestNotifications() {
+  const pool = createPool();
+  try {
+    const users = await pool.query(
+      `SELECT id FROM "User" WHERE email LIKE 'e2e-%'`
+    );
+    const ids = users.rows.map((r: { id: string }) => r.id);
+    if (ids.length === 0) return;
+
+    await pool.query(
+      `DELETE FROM "Notification" WHERE "targetUserId" = ANY($1) OR "actorId" = ANY($1)`,
+      [ids]
+    );
+  } finally {
+    await pool.end();
+  }
+}
+
 export async function cleanupTestData() {
   const pool = createPool();
   try {
