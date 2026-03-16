@@ -1,9 +1,6 @@
 "use server";
 
-import fs from "fs";
-import path from "path";
-
-const WAITLIST_PATH = path.join(process.cwd(), "premium-waitlist.txt");
+import { prisma } from "@/lib/prisma";
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -19,20 +16,18 @@ export async function subscribeToPremiumNotify(
   }
 
   try {
-    // Read existing emails to deduplicate
-    let existing = new Set<string>();
-    if (fs.existsSync(WAITLIST_PATH)) {
-      const content = fs.readFileSync(WAITLIST_PATH, "utf-8");
-      existing = new Set(
-        content.split("\n").map((l) => l.trim().toLowerCase()).filter(Boolean)
-      );
-    }
+    const existing = await prisma.premiumWaitlist.findUnique({
+      where: { email: trimmed },
+    });
 
-    if (existing.has(trimmed)) {
+    if (existing) {
       return { success: true, message: "You're already on the list! We'll email you when premium launches." };
     }
 
-    fs.appendFileSync(WAITLIST_PATH, trimmed + "\n", "utf-8");
+    await prisma.premiumWaitlist.create({
+      data: { email: trimmed },
+    });
+
     return { success: true, message: "You're on the list! We'll send you one email when premium launches." };
   } catch {
     return { success: false, message: "Something went wrong. Please try again." };
