@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useId } from "react";
 import type { BackgroundDefinition } from "@/lib/profile-backgrounds";
 import {
   VALID_BG_REPEAT,
@@ -38,7 +38,9 @@ export function BackgroundEditor({
   const [bgPosition, setBgPosition] = useState(initialBackground.profileBgPosition ?? "center");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const contentId = useId();
 
   const isCustomUpload = bgImage?.includes("blob.vercel-storage.com") ?? false;
 
@@ -108,10 +110,30 @@ export function BackgroundEditor({
   );
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-        Profile Background
-      </h2>
+    <div className="rounded-lg border border-zinc-200 dark:border-zinc-700">
+      <button
+        type="button"
+        onClick={() => setIsOpen((o) => !o)}
+        aria-expanded={isOpen}
+        aria-controls={contentId}
+        className="flex w-full items-center justify-between p-4 text-left"
+      >
+        <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          Profile Background
+        </h2>
+        <svg
+          className={`h-4 w-4 text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+      <div id={contentId} className="space-y-4 px-4 pb-4">
 
       {/* Preset backgrounds */}
       <div className="flex flex-wrap gap-2">
@@ -239,7 +261,10 @@ export function BackgroundEditor({
         </div>
       )}
 
-      {/* Hidden form inputs */}
+      </div>
+      )}
+
+      {/* Hidden form inputs — always rendered for form submission */}
       <input type="hidden" name="profileBgImage" value={bgImage ?? ""} />
       <input type="hidden" name="profileBgRepeat" value={bgImage ? bgRepeat : ""} />
       <input type="hidden" name="profileBgAttachment" value={bgImage ? bgAttachment : ""} />

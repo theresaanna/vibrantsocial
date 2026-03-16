@@ -21,6 +21,20 @@ vi.mock("@/lib/prisma", () => ({
       update: vi.fn(),
       delete: vi.fn(),
     },
+    follow: {
+      upsert: vi.fn(),
+    },
+    user: {
+      findUnique: vi.fn(),
+    },
+  },
+}));
+
+vi.mock("@/lib/cache", () => ({
+  invalidate: vi.fn(),
+  cacheKeys: {
+    userFollowing: (id: string) => `user:${id}:following`,
+    userProfile: (username: string) => `profile:${username}`,
   },
 }));
 
@@ -116,6 +130,10 @@ describe("sendFriendRequest", () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPrisma.friendRequest.findFirst.mockResolvedValueOnce(null as never);
     mockPrisma.friendRequest.create.mockResolvedValueOnce({} as never);
+    (mockPrisma.follow.upsert as ReturnType<typeof vi.fn>).mockResolvedValueOnce({} as never);
+    (mockPrisma.user.findUnique as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ username: "sender" } as never)
+      .mockResolvedValueOnce({ username: "receiver" } as never);
 
     const result = await sendFriendRequest(prevState, makeFormData({ userId: "user2" }));
     expect(result.success).toBe(true);
@@ -128,6 +146,40 @@ describe("sendFriendRequest", () => {
       actorId: "user1",
       targetUserId: "user2",
     });
+  });
+
+  it("auto-follows target user when sending friend request", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.friendRequest.findFirst.mockResolvedValueOnce(null as never);
+    mockPrisma.friendRequest.create.mockResolvedValueOnce({} as never);
+    (mockPrisma.follow.upsert as ReturnType<typeof vi.fn>).mockResolvedValueOnce({} as never);
+    (mockPrisma.user.findUnique as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ username: "sender" } as never)
+      .mockResolvedValueOnce({ username: "receiver" } as never);
+
+    const result = await sendFriendRequest(prevState, makeFormData({ userId: "user2" }));
+    expect(result.success).toBe(true);
+    expect(mockPrisma.follow.upsert).toHaveBeenCalledWith({
+      where: {
+        followerId_followingId: {
+          followerId: "user1",
+          followingId: "user2",
+        },
+      },
+      create: { followerId: "user1", followingId: "user2" },
+      update: {},
+    });
+  });
+
+  it("still succeeds even if auto-follow fails", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.friendRequest.findFirst.mockResolvedValueOnce(null as never);
+    mockPrisma.friendRequest.create.mockResolvedValueOnce({} as never);
+    (mockPrisma.follow.upsert as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("DB error"));
+
+    const result = await sendFriendRequest(prevState, makeFormData({ userId: "user2" }));
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("Friend request sent");
   });
 });
 
