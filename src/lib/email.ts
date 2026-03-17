@@ -209,20 +209,20 @@ export async function sendFriendRequestEmail(params: {
   senderName: string;
 }) {
   const { toEmail, senderName } = params;
-  const notificationsUrl = `${getBaseUrl()}/notifications`;
+  const friendRequestsUrl = `${getBaseUrl()}/friend-requests`;
 
   await getResend().emails.send({
     from: FROM_EMAIL,
     to: toEmail,
-    subject: "You have a new friend request!",
+    subject: `${escapeHtml(senderName)} sent you a friend request!`,
     html: `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
-        <h2 style="color: #18181b; margin-bottom: 16px;">Hey, friend!</h2>
+        <h2 style="color: #18181b; margin-bottom: 16px;">New Friend Request</h2>
         <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
-          <strong>${escapeHtml(senderName)}</strong> sent you a friend request. You might wanna check that out!
+          <strong>${escapeHtml(senderName)}</strong> sent you a friend request! Head over to VibrantSocial to accept or decline.
         </p>
-        <a href="${notificationsUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
-          View Request
+        <a href="${friendRequestsUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #d946ef; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">
+          View Friend Requests
         </a>
         <p style="color: #a1a1aa; font-size: 12px; margin-top: 32px;">
           You can turn off email notifications in your <a href="${getBaseUrl()}/profile" style="color: #a1a1aa;">profile settings</a>.

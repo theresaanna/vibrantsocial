@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { getFollowers } from "@/app/feed/follow-actions";
+import { getBatchFriendshipStatuses } from "@/app/feed/friend-actions";
 import { UserList } from "@/components/user-list";
 import Link from "next/link";
 
@@ -25,6 +26,8 @@ export default async function FollowersPage({ params }: FollowersPageProps) {
   const currentUserId = session.user.id;
 
   const followers = await getFollowers(username);
+  const otherUserIds = followers.filter(u => u.id !== currentUserId).map(u => u.id);
+  const friendshipStatuses = await getBatchFriendshipStatuses(otherUserIds);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
@@ -48,6 +51,7 @@ export default async function FollowersPage({ params }: FollowersPageProps) {
           users={followers}
           currentUserId={currentUserId}
           emptyMessage="No followers yet."
+          friendshipStatuses={friendshipStatuses}
         />
       </div>
     </main>

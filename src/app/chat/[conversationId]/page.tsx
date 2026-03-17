@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requirePhoneVerification } from "@/lib/phone-gate";
-import { getConversations, getMessages, getMessageRequests } from "../actions";
+import { getConversations, getMessages, getMessageRequests, getFriendsForChat } from "../actions";
 import { ConversationPageClient } from "./conversation-page-client";
 import { generateAdaptiveTheme } from "@/lib/profile-themes";
 
@@ -32,11 +32,12 @@ export default async function ConversationPage({ params }: Props) {
   });
   if (!participant) redirect("/chat");
 
-  const [conversations, { messages }, messageRequests, conversation, phoneVerified, currentUser] =
+  const [conversations, { messages }, messageRequests, friends, conversation, phoneVerified, currentUser] =
     await Promise.all([
       getConversations(),
       getMessages(conversationId),
       getMessageRequests(),
+      getFriendsForChat(),
       prisma.conversation.findUnique({
         where: { id: conversationId },
         include: {
@@ -115,6 +116,7 @@ export default async function ConversationPage({ params }: Props) {
       conversationId={conversationId}
       conversations={conversations}
       messageRequests={messageRequests}
+      friends={friends}
       initialMessages={messages}
       conversation={conversation}
       currentUserId={session.user.id}

@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getFollowing } from "@/app/feed/follow-actions";
+import { getBatchFriendshipStatuses } from "@/app/feed/friend-actions";
 import { UserList } from "@/components/user-list";
 import Link from "next/link";
 
@@ -34,6 +35,8 @@ export default async function FollowingPage({ params }: FollowingPageProps) {
   if (profileUser.id !== currentUserId) redirect(`/${username}`);
 
   const following = await getFollowing(username);
+  const otherUserIds = following.filter(u => u.id !== currentUserId).map(u => u.id);
+  const friendshipStatuses = await getBatchFriendshipStatuses(otherUserIds);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
@@ -57,6 +60,7 @@ export default async function FollowingPage({ params }: FollowingPageProps) {
           users={following}
           currentUserId={currentUserId}
           emptyMessage="Not following anyone yet."
+          friendshipStatuses={friendshipStatuses}
         />
       </div>
     </main>

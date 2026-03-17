@@ -812,6 +812,29 @@ export async function toggleReaction(data: {
   return { success: true, message: existing ? "Reaction removed" : "Reaction added" };
 }
 
+export async function getFriendsForChat(): Promise<ChatUserProfile[]> {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  const friendships = await prisma.friendRequest.findMany({
+    where: {
+      status: "ACCEPTED",
+      OR: [
+        { senderId: session.user.id },
+        { receiverId: session.user.id },
+      ],
+    },
+    include: {
+      sender: { select: userSelect },
+      receiver: { select: userSelect },
+    },
+  });
+
+  return friendships.map((f) =>
+    f.senderId === session.user!.id ? f.receiver : f.sender
+  );
+}
+
 export async function searchUsers(
   query: string
 ): Promise<ChatUserProfile[]> {

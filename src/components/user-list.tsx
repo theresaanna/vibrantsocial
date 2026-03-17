@@ -3,15 +3,23 @@
 import Link from "next/link";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { FollowButton } from "@/components/follow-button";
+import { FriendButton } from "@/components/friend-button";
 import type { FollowUser } from "@/app/feed/follow-actions";
+import type { FriendshipStatus } from "@/app/feed/friend-actions";
+
+export interface UserFriendshipInfo {
+  status: FriendshipStatus;
+  requestId?: string;
+}
 
 interface UserListProps {
   users: FollowUser[];
   currentUserId: string | null;
   emptyMessage: string;
+  friendshipStatuses?: Record<string, UserFriendshipInfo>;
 }
 
-export function UserList({ users, currentUserId, emptyMessage }: UserListProps) {
+export function UserList({ users, currentUserId, emptyMessage, friendshipStatuses }: UserListProps) {
   if (users.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
@@ -26,6 +34,7 @@ export function UserList({ users, currentUserId, emptyMessage }: UserListProps) 
         const displayName = user.displayName || user.name || user.username || "User";
         const avatarSrc = user.avatar || user.image;
         const initial = displayName[0]?.toUpperCase() || "?";
+        const friendship = friendshipStatuses?.[user.id];
 
         return (
           <div
@@ -51,7 +60,16 @@ export function UserList({ users, currentUserId, emptyMessage }: UserListProps) 
             </div>
 
             {currentUserId && user.id !== currentUserId && (
-              <FollowButton userId={user.id} isFollowing={user.isFollowing} />
+              <div className="flex items-center gap-2">
+                <FollowButton userId={user.id} isFollowing={user.isFollowing} />
+                {friendship && (
+                  <FriendButton
+                    userId={user.id}
+                    friendshipStatus={friendship.status}
+                    requestId={friendship.requestId}
+                  />
+                )}
+              </div>
             )}
           </div>
         );
