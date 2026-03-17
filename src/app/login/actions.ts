@@ -14,7 +14,7 @@ export async function loginWithCredentials(
 ): Promise<LoginState> {
   try {
     await signIn("credentials", {
-      email: formData.get("email") as string,
+      email: (formData.get("email") as string)?.trim().toLowerCase(),
       password: formData.get("password") as string,
       redirectTo: "/complete-profile",
     });

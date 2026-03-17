@@ -1,23 +1,23 @@
 import { handlers } from "@/auth";
-import { linkCookieStore } from "@/lib/link-cookie-store";
 import { linkUsersInGroup } from "@/lib/account-linking-db";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * Wrap the NextAuth handlers so the `linkFromUserId` cookie value is available
- * inside callbacks via AsyncLocalStorage, even if `cookies()` from
- * `next/headers` fails in that context.
+ * NextAuth route handlers with account-linking support.
  *
- * Also handles the case where the OAuth Account already belongs to another
- * user by linking the two users directly.
+ * Pre-callback: when both linkFromUserId AND linkRedirect cookies are present
+ * (set atomically by startOAuthLink), handles OAuthAccountNotLinked by linking
+ * users directly. Both cookies are required to prevent stale-cookie attacks.
  */
 export async function GET(req: NextRequest) {
   const linkCookie = req.cookies.get("linkFromUserId")?.value;
+  const linkRedirect = req.cookies.get("linkRedirect")?.value;
 
-  // PRE-CALLBACK: If this is a linking flow callback, check for conflicts
-  // BEFORE Auth.js processes the request.
-  if (linkCookie && req.nextUrl.pathname.includes("/callback/")) {
+  // PRE-CALLBACK: Only run linking logic when BOTH cookies are present,
+  // confirming this is an intentional account-linking flow started by
+  // startOAuthLink — not a stale cookie from an abandoned attempt.
+  if (linkCookie && linkRedirect && req.nextUrl.pathname.includes("/callback/")) {
     const pathParts = req.nextUrl.pathname.split("/");
     const callbackIdx = pathParts.indexOf("callback");
     const provider = callbackIdx >= 0 ? pathParts[callbackIdx + 1] : null;
@@ -65,14 +65,13 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const response = await linkCookieStore.run(linkCookie, () =>
-    handlers.GET!(req)
-  );
+  const response = await handlers.GET!(req);
 
   // POST-CALLBACK FALLBACK: If Auth.js errored with OAuthAccountNotLinked,
-  // try to link the users directly.
+  // try to link the users directly. Only when both cookies confirm intent.
   if (
     linkCookie &&
+    linkRedirect &&
     response instanceof Response &&
     response.status >= 300 &&
     response.status < 400
@@ -126,6 +125,5 @@ export async function GET(req: NextRequest) {
 }
 
 export function POST(req: NextRequest) {
-  const linkCookie = req.cookies.get("linkFromUserId")?.value;
-  return linkCookieStore.run(linkCookie, () => handlers.POST!(req));
+  return handlers.POST!(req);
 }

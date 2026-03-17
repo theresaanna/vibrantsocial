@@ -8,8 +8,7 @@ import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { autoFriendNewUser } from "@/lib/auto-friend";
 import { inngest } from "@/lib/inngest";
-import { linkUsersInGroup, loadLinkedAccounts } from "@/lib/account-linking-db";
-import { linkCookieStore } from "@/lib/link-cookie-store";
+import { loadLinkedAccounts } from "@/lib/account-linking-db";
 import type { LinkedAccount } from "@/types/next-auth";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -25,7 +24,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const email = credentials.email as string;
+        const email = (credentials.email as string).trim().toLowerCase();
         const password = credentials.password as string;
 
         const user = await prisma.user.findUnique({
@@ -79,33 +78,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return result;
       }
 
-      // When the linkFromUserId cookie is present, this is an account-linking
-      // flow — redirect to finish-link so the route handler can reliably
-      // read cookies and link accounts (the JWT callback may have failed to
-      // read cookies in this context).
+      // Only redirect to finish-link when BOTH linkFromUserId AND linkRedirect
+      // cookies are present. Both are set atomically by startOAuthLink, so
+      // having both confirms this is an intentional account-linking flow —
+      // not a stale cookie from an abandoned linking attempt.
+      let linkRedirectUrl: string | undefined;
       let linkFromUserId: string | undefined;
       try {
         const cookieStore = await cookies();
         linkFromUserId = cookieStore.get("linkFromUserId")?.value;
-        console.log("[auth:redirect] cookies() linkFromUserId:", linkFromUserId);
+        linkRedirectUrl = cookieStore.get("linkRedirect")?.value;
       } catch (err) {
         console.log("[auth:redirect] cookies() threw:", (err as Error).message);
       }
-      if (!linkFromUserId) {
-        linkFromUserId = linkCookieStore.getStore();
-        console.log("[auth:redirect] AsyncLocalStorage fallback:", linkFromUserId);
-      }
-      if (linkFromUserId) {
-        // Try to use the full finish-link URL from the linkRedirect cookie
-        // (includes the provider param).  Fall back to a basic URL.
-        let linkRedirectUrl: string | undefined;
-        try {
-          const cookieStore = await cookies();
-          linkRedirectUrl = cookieStore.get("linkRedirect")?.value;
-        } catch {}
-        const result = linkRedirectUrl
-          ? `${baseUrl}${linkRedirectUrl}`
-          : `${baseUrl}/api/finish-link?from=${linkFromUserId}`;
+      if (linkFromUserId && linkRedirectUrl) {
+        const result = `${baseUrl}${linkRedirectUrl}`;
         console.log("[auth:redirect] linking flow →", result);
         return result;
       }
@@ -120,98 +107,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async jwt({ token, user, trigger, session, account, profile }) {
       if (user) {
-        // Check for OAuth account-linking flow (cookie set by startOAuthLink)
-        let isLinkingFlow = false;
-        let linkCookieValue: string | undefined;
-        try {
-          const cookieStore = await cookies();
-          linkCookieValue = cookieStore.get("linkFromUserId")?.value;
-          console.log("[auth:jwt] cookies() linkFromUserId:", linkCookieValue);
-        } catch (err) {
-          console.log("[auth:jwt] cookies() threw:", (err as Error).message);
-        }
-        // Fallback: the route handler stores the cookie in AsyncLocalStorage
-        if (!linkCookieValue) {
-          linkCookieValue = linkCookieStore.getStore();
-          console.log("[auth:jwt] AsyncLocalStorage fallback:", linkCookieValue);
-        }
-        console.log("[auth:jwt] user.id:", user.id, "linkCookieValue:", linkCookieValue, "provider:", account?.provider);
-
-        if (linkCookieValue && linkCookieValue !== user.id) {
-          // Different-email OAuth linking: link the two users and keep the
-          // original session.  finish-link also handles this as a fallback.
-          try {
-            const originalUser = await prisma.user.findUnique({
-              where: { id: linkCookieValue },
-              select: {
-                id: true,
-                username: true,
-                displayName: true,
-                bio: true,
-                avatar: true,
-                tier: true,
-                emailVerified: true,
-              },
-            });
-
-            if (originalUser) {
-              await linkUsersInGroup(linkCookieValue, user.id!);
-
-              // Set token to the ORIGINAL user, not the OAuth user
-              token.id = originalUser.id;
-              token.username = originalUser.username;
-              token.displayName = originalUser.displayName;
-              token.bio = originalUser.bio;
-              token.avatar = originalUser.avatar;
-              token.tier = originalUser.tier ?? "free";
-              token.isEmailVerified = !!originalUser.emailVerified;
-              token.authProvider = account?.provider ?? null;
-              token.linkedAccounts = await loadLinkedAccounts(originalUser.id);
-              isLinkingFlow = true;
-            }
-          } catch (err) {
-            console.error("[auth] OAuth linking flow error:", err);
+        // Never link accounts in the JWT callback — linking is handled
+        // exclusively by /api/finish-link which has proper cookie access
+        // and explicit user intent verification.
+        token.id = user.id;
+        token.username = user.username;
+        token.displayName = user.displayName;
+        token.bio = user.bio;
+        token.avatar = user.avatar;
+        token.tier = user.tier ?? "free";
+        token.authProvider = account?.provider ?? null;
+        // OAuth providers (Google, Discord) verify email themselves
+        if (account?.provider && account.provider !== "credentials") {
+          token.isEmailVerified = true;
+          // Backfill emailVerified in DB for linked accounts
+          if (user.id && !("emailVerified" in user && user.emailVerified)) {
+            prisma.user
+              .update({
+                where: { id: user.id },
+                data: { emailVerified: new Date() },
+              })
+              .catch(() => {});
           }
-
-          // Cookie cleanup is handled by /api/finish-link
-        } else if (linkCookieValue) {
-          // Same-email case: the adapter auto-linked the Account to the
-          // existing user.  Do NOT split here — finish-link handles the
-          // splitting with guaranteed cookie access and provider API calls.
-          // Just keep the session on the current user.
-          console.log("[auth:jwt] Same-email linking flow — deferring to finish-link");
-          isLinkingFlow = false; // let the normal token population run below
+        } else {
+          token.isEmailVerified =
+            user.isEmailVerified ??
+            !!("emailVerified" in user && user.emailVerified);
         }
 
-        if (!isLinkingFlow) {
-          token.id = user.id;
-          token.username = user.username;
-          token.displayName = user.displayName;
-          token.bio = user.bio;
-          token.avatar = user.avatar;
-          token.tier = user.tier ?? "free";
-          token.authProvider = account?.provider ?? null;
-          // OAuth providers (Google, Discord) verify email themselves
-          if (account?.provider && account.provider !== "credentials") {
-            token.isEmailVerified = true;
-            // Backfill emailVerified in DB for linked accounts
-            if (user.id && !("emailVerified" in user && user.emailVerified)) {
-              prisma.user
-                .update({
-                  where: { id: user.id },
-                  data: { emailVerified: new Date() },
-                })
-                .catch(() => {});
-            }
-          } else {
-            token.isEmailVerified =
-              user.isEmailVerified ??
-              !!("emailVerified" in user && user.emailVerified);
-          }
-
-          // Load linked accounts on sign-in
-          token.linkedAccounts = await loadLinkedAccounts(user.id!);
-        }
+        // Load linked accounts on sign-in
+        token.linkedAccounts = await loadLinkedAccounts(user.id!);
       }
 
       if (trigger === "update" && session) {
