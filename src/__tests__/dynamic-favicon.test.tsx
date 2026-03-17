@@ -33,13 +33,13 @@ describe("DynamicFavicon", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(usePathname).mockReturnValue("/feed");
-    // Clean up any favicon links
     document.querySelectorAll("link[rel='icon']").forEach((el) => el.remove());
+    document.title = "VibrantSocial";
   });
 
   it("renders nothing visually (returns null)", () => {
     const { container } = render(
-      <DynamicFavicon initialHasUnread={false} />
+      <DynamicFavicon initialHasUnread={false} />,
     );
     expect(container.innerHTML).toBe("");
   });
@@ -50,21 +50,47 @@ describe("DynamicFavicon", () => {
     expect(link).toBeTruthy();
   });
 
-  it("sets default favicon when no unread", () => {
+  it("sets favicon to static PNG", () => {
     render(<DynamicFavicon initialHasUnread={false} />);
-    const link = document.querySelector("link[rel='icon']") as HTMLLinkElement;
-    expect(link?.href).toContain("svg");
-    expect(link?.href).not.toContain("bell");
+    const link = document.querySelector(
+      "link[rel='icon']",
+    ) as HTMLLinkElement;
+    expect(link?.href).toContain("icon-32.png");
+    expect(link?.type).toBe("image/png");
   });
 
-  it("sets alert favicon when there are unread notifications", () => {
+  it("prepends unread count to page title when there are unreads", async () => {
+    mockGetUnreadNotificationCount.mockResolvedValue(3);
+    mockGetConversations.mockResolvedValue([
+      { unreadCount: 2 },
+    ]);
     render(<DynamicFavicon initialHasUnread={true} />);
-    const link = document.querySelector("link[rel='icon']") as HTMLLinkElement;
-    expect(link?.href).toContain("svg");
+    // Wait for async fetch
+    await vi.waitFor(() => {
+      expect(document.title).toBe("(5) VibrantSocial");
+    });
+  });
+
+  it("does not prepend count when there are no unreads", async () => {
+    mockGetUnreadNotificationCount.mockResolvedValue(0);
+    mockGetConversations.mockResolvedValue([]);
+    render(<DynamicFavicon initialHasUnread={false} />);
+    await vi.waitFor(() => {
+      expect(document.title).toBe("VibrantSocial");
+    });
+  });
+
+  it("strips existing count prefix before updating", async () => {
+    document.title = "(2) VibrantSocial";
+    mockGetUnreadNotificationCount.mockResolvedValue(7);
+    mockGetConversations.mockResolvedValue([]);
+    render(<DynamicFavicon initialHasUnread={true} />);
+    await vi.waitFor(() => {
+      expect(document.title).toBe("(7) VibrantSocial");
+    });
   });
 
   it("updates existing favicon links instead of creating new ones", () => {
-    // Pre-create a favicon link
     const existingLink = document.createElement("link");
     existingLink.rel = "icon";
     existingLink.href = "old-favicon.ico";
@@ -72,14 +98,7 @@ describe("DynamicFavicon", () => {
 
     render(<DynamicFavicon initialHasUnread={false} />);
     const links = document.querySelectorAll("link[rel='icon']");
-    // Should update the existing one, not create a new one
     expect(links).toHaveLength(1);
-    expect((links[0] as HTMLLinkElement).type).toBe("image/svg+xml");
-  });
-
-  it("sets favicon type to image/svg+xml", () => {
-    render(<DynamicFavicon initialHasUnread={false} />);
-    const link = document.querySelector("link[rel='icon']") as HTMLLinkElement;
-    expect(link?.type).toBe("image/svg+xml");
+    expect((links[0] as HTMLLinkElement).type).toBe("image/png");
   });
 });
