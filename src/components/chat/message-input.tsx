@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { VoiceRecorder } from "./voice-recorder";
-import { getChatFileLimitsHint } from "@/lib/limits";
+import { getChatFileLimitsHint, getLimitsForTier, type UserTier } from "@/lib/limits";
 import type { MessageData } from "@/types/chat";
 
 export interface MediaAttachment {
@@ -45,6 +46,9 @@ export function MessageInput({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { data: session } = useSession();
+  const tier = (session?.user?.tier as UserTier) ?? "free";
+  const limits = useMemo(() => getLimitsForTier(tier), [tier]);
 
   const hasMedia = selectedFiles.length > 0 || !!voiceBlob;
 
@@ -187,6 +191,7 @@ export function MessageInput({
             setIsRecording(false);
           }}
           onCancel={() => setIsRecording(false)}
+          maxDuration={limits.maxVoiceNoteDuration}
         />
       </div>
     );
@@ -388,7 +393,7 @@ export function MessageInput({
           className="px-4 pb-2 text-center text-[11px] text-zinc-400 dark:text-zinc-500"
           data-testid="chat-file-limits"
         >
-          {getChatFileLimitsHint()}
+          {getChatFileLimitsHint(limits)}
         </p>
       )}
     </div>

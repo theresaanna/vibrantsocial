@@ -7,7 +7,8 @@ import {
   INSERT_TABLE_COMMAND,
   type InsertTableCommandPayload,
 } from "@lexical/table";
-import { useState, useRef, type ChangeEvent } from "react";
+import { useState, useRef, useMemo, type ChangeEvent } from "react";
+import { useSession } from "next-auth/react";
 import { DropdownMenu, DropdownItem } from "../ui/DropdownMenu";
 import { Modal } from "../ui/Modal";
 import { $createImageNode } from "../nodes/ImageNode";
@@ -20,6 +21,7 @@ import { $createStickyNoteNode } from "../nodes/StickyNoteNode";
 import { $createPollNode, type PollOption } from "../nodes/PollNode";
 import { extractYouTubeVideoID } from "../utils/url";
 import { upload } from "@vercel/blob/client";
+import { getLimitsForTier, formatSizeLimit, type TierLimits, type UserTier } from "@/lib/limits";
 
 type ModalType =
   | "image"
@@ -34,6 +36,9 @@ type ModalType =
 export function InsertDropdown() {
   const [editor] = useLexicalComposerContext();
   const [modal, setModal] = useState<ModalType>(null);
+  const { data: session } = useSession();
+  const tier = (session?.user?.tier as UserTier) ?? "free";
+  const limits = useMemo(() => getLimitsForTier(tier), [tier]);
 
   function insertHorizontalRule() {
     editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined);
@@ -74,6 +79,7 @@ export function InsertDropdown() {
 
       {modal === "image" && (
         <ImageInsertModal
+          limits={limits}
           onClose={() => setModal(null)}
           onInsert={(src, alt) => {
             editor.update(() => {
@@ -87,6 +93,7 @@ export function InsertDropdown() {
 
       {modal === "video" && (
         <VideoInsertModal
+          limits={limits}
           onClose={() => setModal(null)}
           onInsert={(src, fileName, mimeType) => {
             editor.update(() => {
@@ -100,6 +107,7 @@ export function InsertDropdown() {
 
       {modal === "file" && (
         <FileInsertModal
+          limits={limits}
           onClose={() => setModal(null)}
           onInsert={(src, fileName, fileSize, mimeType) => {
             editor.update(() => {
@@ -169,9 +177,11 @@ export function InsertDropdown() {
 
 /* ── Image Insert Modal ───────────────────────────── */
 function ImageInsertModal({
+  limits,
   onClose,
   onInsert,
 }: {
+  limits: TierLimits;
   onClose: () => void;
   onInsert: (src: string, alt: string) => void;
 }) {
@@ -187,8 +197,8 @@ function ImageInsertModal({
       setError("Please select an image file");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Image must be under 5MB");
+    if (file.size > limits.maxImageSize) {
+      setError(`Image must be under ${formatSizeLimit(limits.maxImageSize)}`);
       return;
     }
 
@@ -242,7 +252,7 @@ function ImageInsertModal({
         {mode === "upload" ? (
           <FilePickerArea
             accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,image/heic,image/heif,.heic,.heif"
-            hint="JPEG, PNG, GIF, WebP, SVG, HEIC, HEIF (max 5MB)"
+            hint={`JPEG, PNG, GIF, WebP, SVG, HEIC, HEIF (max ${formatSizeLimit(limits.maxImageSize)})`}
             icon="image"
             uploading={uploading}
             onFileSelect={(file) => handleFileUpload(file)}
@@ -284,9 +294,11 @@ function ImageInsertModal({
 
 /* ── Video Insert Modal ───────────────────────────── */
 function VideoInsertModal({
+  limits,
   onClose,
   onInsert,
 }: {
+  limits: TierLimits;
   onClose: () => void;
   onInsert: (src: string, fileName: string, mimeType: string) => void;
 }) {
@@ -299,8 +311,8 @@ function VideoInsertModal({
       setError("Please select a video file");
       return;
     }
-    if (file.size > 50 * 1024 * 1024) {
-      setError("Video must be under 50MB");
+    if (file.size > limits.maxVideoSize) {
+      setError(`Video must be under ${formatSizeLimit(limits.maxVideoSize)}`);
       return;
     }
 
@@ -324,7 +336,7 @@ function VideoInsertModal({
       <div className="space-y-3">
         <FilePickerArea
           accept="video/mp4,video/webm,video/quicktime,video/ogg,.mp4,.webm,.mov,.ogv"
-          hint="MP4, WebM, MOV, OGG (max 50MB)"
+          hint={`MP4, WebM, MOV, OGG (max ${formatSizeLimit(limits.maxVideoSize)})`}
           icon="video"
           uploading={uploading}
           onFileSelect={(file) => handleFileUpload(file)}
@@ -337,9 +349,11 @@ function VideoInsertModal({
 
 /* ── File Insert Modal ────────────────────────────── */
 function FileInsertModal({
+  limits,
   onClose,
   onInsert,
 }: {
+  limits: TierLimits;
   onClose: () => void;
   onInsert: (src: string, fileName: string, fileSize: number, mimeType: string) => void;
 }) {
@@ -352,8 +366,8 @@ function FileInsertModal({
       setError("Please select a PDF file");
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      setError("File must be under 10MB");
+    if (file.size > limits.maxDocumentSize) {
+      setError(`File must be under ${formatSizeLimit(limits.maxDocumentSize)}`);
       return;
     }
 
@@ -377,7 +391,7 @@ function FileInsertModal({
       <div className="space-y-3">
         <FilePickerArea
           accept="application/pdf,.pdf"
-          hint="PDF (max 10MB)"
+          hint={`PDF (max ${formatSizeLimit(limits.maxDocumentSize)})`}
           icon="file"
           uploading={uploading}
           onFileSelect={(file) => handleFileUpload(file)}

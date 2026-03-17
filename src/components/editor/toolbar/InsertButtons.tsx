@@ -7,7 +7,8 @@ import {
   INSERT_TABLE_COMMAND,
   type InsertTableCommandPayload,
 } from "@lexical/table";
-import { useState, useRef, type ChangeEvent } from "react";
+import { useState, useRef, useMemo, type ChangeEvent } from "react";
+import { useSession } from "next-auth/react";
 import { Modal } from "../ui/Modal";
 import { $createImageNode } from "../nodes/ImageNode";
 import { $createVideoNode } from "../nodes/VideoNode";
@@ -19,6 +20,7 @@ import { $createStickyNoteNode } from "../nodes/StickyNoteNode";
 import { $createPollNode, type PollOption } from "../nodes/PollNode";
 import { extractYouTubeVideoID } from "../utils/url";
 import { upload } from "@vercel/blob/client";
+import { getLimitsForTier, formatSizeLimit, getEditorFileLimitsHint, type UserTier } from "@/lib/limits";
 
 const btnClass =
   "rounded p-1.5 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-700";
@@ -227,6 +229,9 @@ function UnifiedUploadModal({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const { data: session } = useSession();
+  const tier = (session?.user?.tier as UserTier) ?? "free";
+  const limits = useMemo(() => getLimitsForTier(tier), [tier]);
 
   const acceptTypes = [
     "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml", "image/heic", "image/heif",
@@ -242,8 +247,8 @@ function UnifiedUploadModal({
 
     try {
       if (file.type.startsWith("image/") || file.name.match(/\.(heic|heif)$/i)) {
-        if (file.size > 5 * 1024 * 1024) {
-          setError("Image must be under 5MB");
+        if (file.size > limits.maxImageSize) {
+          setError(`Image must be under ${formatSizeLimit(limits.maxImageSize)}`);
           setUploading(false);
           return false;
         }
@@ -259,8 +264,8 @@ function UnifiedUploadModal({
           $insertNodes([$createImageNode({ src: url, altText: file.name }), $createParagraphNode()]);
         });
       } else if (file.type.startsWith("video/")) {
-        if (file.size > 50 * 1024 * 1024) {
-          setError("Video must be under 50MB");
+        if (file.size > limits.maxVideoSize) {
+          setError(`Video must be under ${formatSizeLimit(limits.maxVideoSize)}`);
           setUploading(false);
           return false;
         }
@@ -273,8 +278,8 @@ function UnifiedUploadModal({
           $insertNodes([$createVideoNode({ src: blob.url, fileName: file.name, mimeType: file.type }), $createParagraphNode()]);
         });
       } else if (file.type === "application/pdf") {
-        if (file.size > 10 * 1024 * 1024) {
-          setError("File must be under 10MB");
+        if (file.size > limits.maxDocumentSize) {
+          setError(`File must be under ${formatSizeLimit(limits.maxDocumentSize)}`);
           setUploading(false);
           return false;
         }
@@ -340,8 +345,8 @@ function UnifiedUploadModal({
               {uploading ? "Uploading..." : "Choose a file"}
             </span>
           </button>
-          <p className="mt-2 text-center text-xs text-zinc-400">
-            Images (5MB), Videos (50MB), PDF (10MB)
+          <p className="mt-2 text-center text-xs text-zinc-400" data-testid="editor-file-limits">
+            {getEditorFileLimitsHint(limits)}
           </p>
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
