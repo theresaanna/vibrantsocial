@@ -4,6 +4,7 @@ import {
   DEFAULT_LIMITS,
   formatSizeLimit,
   getChatFileLimitsHint,
+  getEditorFileLimitsHint,
 } from "@/lib/limits";
 
 describe("limits config", () => {
@@ -77,6 +78,31 @@ describe("getChatFileLimitsHint", () => {
   it("shows premium tier sizes when provided", () => {
     const premiumLimits = getLimitsForTier("premium");
     const hint = getChatFileLimitsHint(premiumLimits);
+    expect(hint).toContain("20MB");
+    expect(hint).toContain("200MB");
+    expect(hint).toContain("50MB");
+  });
+});
+
+describe("getEditorFileLimitsHint", () => {
+  it("includes image, video, and PDF categories", () => {
+    const hint = getEditorFileLimitsHint();
+    expect(hint).toContain("Images");
+    expect(hint).toContain("Videos");
+    expect(hint).toContain("PDF");
+    expect(hint).not.toContain("Audio");
+  });
+
+  it("shows free tier sizes by default", () => {
+    const hint = getEditorFileLimitsHint();
+    expect(hint).toContain("5MB");
+    expect(hint).toContain("50MB");
+    expect(hint).toContain("10MB");
+  });
+
+  it("shows premium tier sizes when provided", () => {
+    const premiumLimits = getLimitsForTier("premium");
+    const hint = getEditorFileLimitsHint(premiumLimits);
     expect(hint).toContain("20MB");
     expect(hint).toContain("200MB");
     expect(hint).toContain("50MB");

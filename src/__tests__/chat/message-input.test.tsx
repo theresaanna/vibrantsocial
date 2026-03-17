@@ -8,9 +8,14 @@ import type { MessageData, ChatUserProfile } from "@/types/chat";
 URL.createObjectURL = vi.fn(() => "blob:mock-url");
 URL.revokeObjectURL = vi.fn();
 
+const mockUseSession = vi.fn().mockReturnValue({ data: null, status: "unauthenticated" });
+vi.mock("next-auth/react", () => ({
+  useSession: () => mockUseSession(),
+}));
+
 vi.mock("@/components/chat/voice-recorder", () => ({
-  VoiceRecorder: ({ onRecordingComplete, onCancel }: { onRecordingComplete: (blob: Blob) => void; onCancel: () => void }) => (
-    <div data-testid="voice-recorder">
+  VoiceRecorder: ({ onRecordingComplete, onCancel, maxDuration }: { onRecordingComplete: (blob: Blob) => void; onCancel: () => void; maxDuration?: number }) => (
+    <div data-testid="voice-recorder" data-max-duration={maxDuration}>
       <button data-testid="mock-voice-stop" onClick={() => onRecordingComplete(new Blob(["audio"], { type: "audio/webm" }))}>Stop</button>
       <button data-testid="mock-voice-cancel" onClick={() => onCancel()}>Cancel</button>
     </div>
@@ -602,6 +607,70 @@ describe("MessageInput", () => {
 
     // Restore fetch
     vi.restoreAllMocks();
+  });
+
+  it("shows premium tier sizes in file limits hint for premium users", async () => {
+    mockUseSession.mockReturnValue({
+      data: { user: { id: "u1", tier: "premium" } },
+      status: "authenticated",
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+      />
+    );
+
+    const fileInput = screen.getByTestId("file-input");
+    const file = new File(["content"], "test.pdf", { type: "application/pdf" });
+    await user.upload(fileInput, file);
+
+    const hint = screen.getByTestId("chat-file-limits");
+    expect(hint.textContent).toContain("20MB");
+    expect(hint.textContent).toContain("200MB");
+    expect(hint.textContent).toContain("50MB");
+
+    mockUseSession.mockReturnValue({ data: null, status: "unauthenticated" });
+  });
+
+  it("passes premium maxDuration to VoiceRecorder for premium users", async () => {
+    mockUseSession.mockReturnValue({
+      data: { user: { id: "u1", tier: "premium" } },
+      status: "authenticated",
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByTestId("voice-record-button"));
+    const recorder = screen.getByTestId("voice-recorder");
+    expect(recorder).toHaveAttribute("data-max-duration", "120");
+
+    mockUseSession.mockReturnValue({ data: null, status: "unauthenticated" });
+  });
+
+  it("passes free tier maxDuration to VoiceRecorder by default", async () => {
+    const user = userEvent.setup();
+    render(
+      <MessageInput
+        onSendMessage={vi.fn()}
+        onKeystroke={vi.fn()}
+        onStopTyping={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByTestId("voice-record-button"));
+    const recorder = screen.getByTestId("voice-recorder");
+    expect(recorder).toHaveAttribute("data-max-duration", "20");
   });
 
   it("sends multiple media attachments as array", async () => {

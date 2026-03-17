@@ -48,3 +48,9 @@ export function getChatFileLimitsHint(
 ): string {
   return `Images ${formatSizeLimit(limits.maxImageSize)} · Videos ${formatSizeLimit(limits.maxVideoSize)} · Audio ${formatSizeLimit(limits.maxAudioSize)} · PDF ${formatSizeLimit(limits.maxDocumentSize)}`;
 }
+
+export function getEditorFileLimitsHint(
+  limits: TierLimits = DEFAULT_LIMITS
+): string {
+  return `Images ${formatSizeLimit(limits.maxImageSize)} · Videos ${formatSizeLimit(limits.maxVideoSize)} · PDF ${formatSizeLimit(limits.maxDocumentSize)}`;
+}
