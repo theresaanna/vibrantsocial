@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { ChannelProvider, usePresenceListener } from "ably/react";
 import { ConversationList } from "@/components/chat/conversation-list";
 import { MessageRequestList } from "@/components/chat/message-request-list";
+import { ChatFriendsList } from "@/components/chat/chat-friends-list";
 import { MessageThread } from "@/components/chat/message-thread";
 import { useAblyReady } from "@/app/providers";
 import { getConversations } from "@/app/chat/actions";
@@ -13,6 +14,7 @@ import type {
   MessageData,
   ConversationWithParticipants,
   ChatThemeColors,
+  ChatUserProfile,
 } from "@/types/chat";
 
 const PRESENCE_CHANNEL = "presence:global";
@@ -21,6 +23,7 @@ interface ConversationPageClientProps {
   conversationId: string;
   conversations: ConversationListItem[];
   messageRequests: MessageRequestData[];
+  friends?: ChatUserProfile[];
   initialMessages: MessageData[];
   conversation: ConversationWithParticipants;
   currentUserId: string;
@@ -34,17 +37,36 @@ function PresenceAwareSidebar({
   conversations,
   activeId,
   messageRequests,
+  friends,
   themeColors,
 }: {
   conversations: ConversationListItem[];
   activeId: string;
   messageRequests: MessageRequestData[];
+  friends?: ChatUserProfile[];
   themeColors?: ChatThemeColors;
 }) {
   const { presenceData } = usePresenceListener(PRESENCE_CHANNEL);
   const onlineUserIds = useMemo(
     () => new Set(presenceData.map((m) => m.clientId)),
     [presenceData]
+  );
+
+  const existingConversationUserIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const conv of conversations) {
+      if (!conv.isGroup) {
+        for (const p of conv.participants) {
+          ids.add(p.id);
+        }
+      }
+    }
+    return ids;
+  }, [conversations]);
+
+  const friendsWithoutConversation = useMemo(
+    () => (friends ?? []).filter((f) => !existingConversationUserIds.has(f.id)),
+    [friends, existingConversationUserIds]
   );
 
   return (
@@ -55,6 +77,9 @@ function PresenceAwareSidebar({
         onlineUserIds={onlineUserIds}
         themeColors={themeColors}
       />
+      {friendsWithoutConversation.length > 0 && (
+        <ChatFriendsList friends={friendsWithoutConversation} onlineUserIds={onlineUserIds} />
+      )}
       <MessageRequestList requests={messageRequests} />
     </>
   );
@@ -104,6 +129,7 @@ export function ConversationPageClient({
   conversationId,
   conversations,
   messageRequests,
+  friends,
   initialMessages,
   conversation,
   currentUserId,
@@ -139,6 +165,7 @@ export function ConversationPageClient({
             conversations={liveConversations}
             activeId={conversationId}
             messageRequests={messageRequests}
+            friends={friends}
             themeColors={themeColors}
           />
         ) : (
@@ -148,6 +175,7 @@ export function ConversationPageClient({
               activeId={conversationId}
               themeColors={themeColors}
             />
+            {friends && friends.length > 0 && <ChatFriendsList friends={friends} />}
             <MessageRequestList requests={messageRequests} />
           </>
         )}

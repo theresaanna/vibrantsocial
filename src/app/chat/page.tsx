@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { getConversations, getMessageRequests } from "./actions";
+import { getConversations, getMessageRequests, getFriendsForChat } from "./actions";
 import { ChatPageClient } from "./chat-page-client";
 import { generateAdaptiveTheme } from "@/lib/profile-themes";
 import { isProfileIncomplete } from "@/lib/require-profile";
@@ -31,8 +31,11 @@ export default async function ChatPage() {
   });
   if (!user || isProfileIncomplete(user)) redirect("/complete-profile");
 
-  const conversations = await getConversations();
-  const messageRequests = await getMessageRequests();
+  const [conversations, messageRequests, friends] = await Promise.all([
+    getConversations(),
+    getMessageRequests(),
+    getFriendsForChat(),
+  ]);
 
   const hasCustomTheme = !!(
     user.profileBgColor ||
@@ -76,6 +79,7 @@ export default async function ChatPage() {
     <ChatPageClient
       conversations={conversations}
       messageRequests={messageRequests}
+      friends={friends}
       themeColors={themeColors}
       hasCustomTheme={hasCustomTheme}
       themeStyle={themeStyle}

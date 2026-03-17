@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getFriends } from "@/app/feed/friend-actions";
+import { getFriends, getBatchFriendshipStatuses } from "@/app/feed/friend-actions";
 import { UserList } from "@/components/user-list";
 import Link from "next/link";
 
@@ -34,6 +34,8 @@ export default async function FriendsPage({ params }: FriendsPageProps) {
   if (profileUser.id !== currentUserId) redirect(`/${username}`);
 
   const friends = await getFriends(username);
+  const otherUserIds = friends.filter(u => u.id !== currentUserId).map(u => u.id);
+  const friendshipStatuses = await getBatchFriendshipStatuses(otherUserIds);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
@@ -57,6 +59,7 @@ export default async function FriendsPage({ params }: FriendsPageProps) {
           users={friends}
           currentUserId={currentUserId}
           emptyMessage="No friends yet."
+          friendshipStatuses={friendshipStatuses}
         />
       </div>
     </main>

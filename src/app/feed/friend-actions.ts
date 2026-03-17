@@ -286,6 +286,44 @@ const friendUserSelect = {
   image: true,
 } as const;
 
+export async function getBatchFriendshipStatuses(
+  userIds: string[]
+): Promise<Record<string, { status: FriendshipStatus; requestId?: string }>> {
+  const session = await auth();
+  if (!session?.user?.id || userIds.length === 0) return {};
+
+  const requests = await prisma.friendRequest.findMany({
+    where: {
+      OR: [
+        { senderId: session.user.id, receiverId: { in: userIds } },
+        { senderId: { in: userIds }, receiverId: session.user.id },
+      ],
+    },
+    select: { id: true, senderId: true, receiverId: true, status: true },
+  });
+
+  const result: Record<string, { status: FriendshipStatus; requestId?: string }> = {};
+  for (const req of requests) {
+    const otherUserId = req.senderId === session.user.id ? req.receiverId : req.senderId;
+    if (req.status === "ACCEPTED") {
+      result[otherUserId] = { status: "friends", requestId: req.id };
+    } else if (req.senderId === session.user.id) {
+      result[otherUserId] = { status: "pending_sent", requestId: req.id };
+    } else {
+      result[otherUserId] = { status: "pending_received", requestId: req.id };
+    }
+  }
+
+  // Fill in "none" for users with no relationship
+  for (const id of userIds) {
+    if (!result[id]) {
+      result[id] = { status: "none" };
+    }
+  }
+
+  return result;
+}
+
 export async function getFriendsCount(userId: string): Promise<number> {
   return prisma.friendRequest.count({
     where: {
