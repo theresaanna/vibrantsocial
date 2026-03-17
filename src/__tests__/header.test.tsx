@@ -89,7 +89,7 @@ describe("Header", () => {
     const jsx = await Header();
     render(jsx);
 
-    const logo = screen.getByText("Vibrant");
+    const logo = screen.getByAltText("VibrantSocial");
     expect(logo.closest("a")).toHaveAttribute("href", "/");
   });
 

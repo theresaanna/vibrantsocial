@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import Image from "next/image";
 import Link from "next/link";
 import { getConversations } from "@/app/chat/actions";
 import { getUnreadNotificationCount, getRecentNotifications, getLinkedAccountNotificationCounts } from "@/app/notifications/actions";
@@ -25,10 +26,14 @@ export async function Header() {
       <nav className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-2 px-2 py-3 sm:px-4">
         <Link
           href="/"
-          className="text-lg font-bold"
         >
-          <span className="text-fuchsia-600 dark:text-fuchsia-400">Vibrant</span>
-          <span className="text-blue-600 dark:text-blue-400">Social</span>
+          <Image
+            src="/vibrantsocial-logo.png"
+            alt="VibrantSocial"
+            width={160}
+            height={40}
+            priority
+          />
         </Link>
 
         {/* Mobile-only profile link + theme toggle next to logo */}
