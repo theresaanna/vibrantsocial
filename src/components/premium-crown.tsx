@@ -21,7 +21,7 @@ export function PremiumCrown({ className = "", color = "amber", href }: PremiumC
     >
       <svg
         className={`h-2.5 w-2.5 ${icon}`}
-        viewBox="0 0 24 24"
+        viewBox="1 0 22 24"
         fill="currentColor"
       >
         <path d="M2 19h20v3H2v-3zm1-1L12 4l4.5 7L22 5v13H2V18z" />

@@ -25,7 +25,12 @@ const features = [
   {
     title: "Custom Audience",
     description:
-      "Control exactly who sees your posts with custom audience lists. Coming soon.",
+      "Control exactly who sees your posts with custom audience lists.",
+  },
+  {
+    title: "And More",
+    description:
+      "Discover delightful surprises and exclusive features waiting for you as a premium member.",
   },
 ];
 
@@ -38,7 +43,7 @@ export default function PremiumPage() {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 shadow-lg">
             <svg
               className="h-8 w-8 text-white"
-              viewBox="0 0 24 24"
+              viewBox="1 0 22 24"
               fill="currentColor"
             >
               <path d="M2 19h20v3H2v-3zm1-1L12 4l4.5 7L22 5v13H2V18z" />

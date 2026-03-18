@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { del } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { isValidHexColor, THEME_COLOR_FIELDS, isPresetTheme } from "@/lib/profile-themes";
+import { isValidPreset, parseJsonArray, clamp } from "@/lib/sparklefall-presets";
 import { isValidFrameId } from "@/lib/profile-frames";
 import { isValidBgRepeat, isValidBgAttachment, isValidBgSize, isValidBgPosition } from "@/lib/profile-backgrounds";
 import { isPresetBackgroundSrc } from "@/lib/profile-backgrounds.server";
@@ -156,6 +157,64 @@ export async function updateProfile(
     }
   }
 
+  // Parse sparklefall settings (premium only)
+  const sparklefallEnabled = formData.get("sparklefallEnabled") === "true";
+  const sparklefallData: Record<string, boolean | string | number | null> = {
+    sparklefallEnabled: false,
+    sparklefallPreset: null,
+    sparklefallSparkles: null,
+    sparklefallColors: null,
+    sparklefallInterval: null,
+    sparklefallWind: null,
+    sparklefallMaxSparkles: null,
+    sparklefallMinSize: null,
+    sparklefallMaxSize: null,
+  };
+
+  if (currentUser?.tier === "premium" && sparklefallEnabled) {
+    sparklefallData.sparklefallEnabled = true;
+
+    const rawPreset = (formData.get("sparklefallPreset") as string)?.trim() || null;
+    if (rawPreset && isValidPreset(rawPreset)) {
+      sparklefallData.sparklefallPreset = rawPreset;
+    }
+
+    const rawSparkles = (formData.get("sparklefallSparkles") as string)?.trim() || null;
+    if (rawSparkles && parseJsonArray(rawSparkles)) {
+      sparklefallData.sparklefallSparkles = rawSparkles;
+    }
+
+    const rawColors = (formData.get("sparklefallColors") as string)?.trim() || null;
+    if (rawColors && parseJsonArray(rawColors)) {
+      sparklefallData.sparklefallColors = rawColors;
+    }
+
+    const rawInterval = Number(formData.get("sparklefallInterval"));
+    if (!isNaN(rawInterval)) {
+      sparklefallData.sparklefallInterval = clamp(rawInterval, 100, 3000);
+    }
+
+    const rawWind = Number(formData.get("sparklefallWind"));
+    if (!isNaN(rawWind)) {
+      sparklefallData.sparklefallWind = clamp(rawWind, -1, 1);
+    }
+
+    const rawMaxSparkles = Number(formData.get("sparklefallMaxSparkles"));
+    if (!isNaN(rawMaxSparkles)) {
+      sparklefallData.sparklefallMaxSparkles = clamp(rawMaxSparkles, 5, 200);
+    }
+
+    const rawMinSize = Number(formData.get("sparklefallMinSize"));
+    if (!isNaN(rawMinSize)) {
+      sparklefallData.sparklefallMinSize = clamp(rawMinSize, 5, 100);
+    }
+
+    const rawMaxSize = Number(formData.get("sparklefallMaxSize"));
+    if (!isNaN(rawMaxSize)) {
+      sparklefallData.sparklefallMaxSize = clamp(rawMaxSize, 5, 100);
+    }
+  }
+
   const newBio = bio || null;
   const oldBio = currentUser?.bio ?? null;
 
@@ -201,6 +260,7 @@ export async function updateProfile(
       profileFrameId,
       ...themeColors,
       ...bgData,
+      ...sparklefallData,
     },
   });
 

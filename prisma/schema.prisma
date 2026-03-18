@@ -41,6 +41,17 @@ model User {
   profileBgSize       String?
   profileBgPosition   String?
 
+  // Sparklefall (raining emoji) settings
+  sparklefallEnabled     Boolean @default(false)
+  sparklefallPreset      String?
+  sparklefallSparkles    String?
+  sparklefallColors      String?
+  sparklefallInterval    Int?
+  sparklefallWind        Float?
+  sparklefallMaxSparkles Int?
+  sparklefallMinSize     Int?
+  sparklefallMaxSize     Int?
+
   // Credentials auth
   passwordHash String?
   dateOfBirth  DateTime?
