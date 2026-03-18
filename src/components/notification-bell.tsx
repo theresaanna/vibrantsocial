@@ -197,7 +197,7 @@ export function NotificationBell({
   const hasUnread = notifications.some((n) => !n.readAt);
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative inline-flex" ref={containerRef}>
       <Tooltip label="Notifications">
       <button
         onClick={() => setIsOpen((prev) => !prev)}
