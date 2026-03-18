@@ -16,11 +16,11 @@ export function PremiumCrown({ className = "", color = "amber", href }: PremiumC
 
   const crown = (
     <span
-      className={`absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full ${bg} shadow-sm ${className}`}
+      className={`absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full ${bg} shadow-sm ${className}`}
       title="Premium member"
     >
       <svg
-        className={`h-2.5 w-2.5 ${icon}`}
+        className={`h-2 w-2 ${icon}`}
         viewBox="1 0 22 24"
         fill="currentColor"
       >
