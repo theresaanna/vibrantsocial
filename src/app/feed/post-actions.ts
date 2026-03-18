@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { requirePhoneVerification } from "@/lib/phone-gate";
+import { requireNotSuspended } from "@/lib/suspension-gate";
 import { revalidatePath } from "next/cache";
 import { getAblyRestClient } from "@/lib/ably";
 import { createNotification } from "@/lib/notifications";
@@ -529,6 +530,11 @@ export async function createComment(
     return { success: false, message: "Not authenticated" };
   }
 
+  const isNotSuspended = await requireNotSuspended(session.user.id);
+  if (!isNotSuspended) {
+    return { success: false, message: "Your account is suspended" };
+  }
+
   const isVerified = await requirePhoneVerification(session.user.id);
   if (!isVerified) {
     return {
@@ -784,6 +790,11 @@ export async function createRepostComment(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  const isNotSuspended = await requireNotSuspended(session.user.id);
+  if (!isNotSuspended) {
+    return { success: false, message: "Your account is suspended" };
   }
 
   const isVerified = await requirePhoneVerification(session.user.id);

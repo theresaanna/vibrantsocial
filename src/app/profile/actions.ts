@@ -85,7 +85,7 @@ export async function updateProfile(
   // Save current bio as a revision if it changed
   const currentUser = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { bio: true, tier: true, profileFrameId: true },
+    select: { bio: true, tier: true, profileFrameId: true, suspended: true },
   });
 
   // Non-premium users can only use preset themes, not custom colors
@@ -175,7 +175,12 @@ export async function updateProfile(
   const emailOnSubscribedPost = formData.get("emailOnSubscribedPost") === "true";
   const emailOnTagPost = formData.get("emailOnTagPost") === "true";
   const pushEnabled = formData.get("pushEnabled") === "true";
-  const isProfilePublic = formData.get("isProfilePublic") === "true";
+  let isProfilePublic = formData.get("isProfilePublic") === "true";
+
+  // Suspended users cannot make their profile public
+  if (isProfilePublic && currentUser?.suspended) {
+    isProfilePublic = false;
+  }
 
   await prisma.user.update({
     where: { id: session.user.id },

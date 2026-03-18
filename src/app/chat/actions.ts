@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { requirePhoneVerification } from "@/lib/phone-gate";
+import { requireNotSuspended } from "@/lib/suspension-gate";
 import { getAblyRestClient } from "@/lib/ably";
 import { createNotification } from "@/lib/notifications";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
@@ -226,6 +227,11 @@ export async function startConversation(
     return { success: false, message: "Not authenticated" };
   }
 
+  const isNotSuspended = await requireNotSuspended(session.user.id);
+  if (!isNotSuspended) {
+    return { success: false, message: "Your account is suspended" };
+  }
+
   const isVerified = await requirePhoneVerification(session.user.id);
   if (!isVerified) {
     return { success: false, message: "Phone verification required to start conversations" };
@@ -310,6 +316,11 @@ export async function createGroupConversation(data: {
     return { success: false, message: "Not authenticated" };
   }
 
+  const isNotSuspended2 = await requireNotSuspended(session.user.id);
+  if (!isNotSuspended2) {
+    return { success: false, message: "Your account is suspended" };
+  }
+
   const isVerified = await requirePhoneVerification(session.user.id);
   if (!isVerified) {
     return { success: false, message: "Phone verification required to create groups" };
@@ -372,6 +383,11 @@ export async function sendMessage(data: {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  const isNotSuspended3 = await requireNotSuspended(session.user.id);
+  if (!isNotSuspended3) {
+    return { success: false, message: "Your account is suspended" };
   }
 
   const isVerified = await requirePhoneVerification(session.user.id);

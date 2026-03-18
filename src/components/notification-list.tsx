@@ -60,6 +60,8 @@ function getNotificationText(type: NotificationType): string {
       return "published a new post";
     case "TAG_POST":
       return "posted in a tag you follow";
+    case "CONTENT_MODERATION":
+      return "Your post was flagged for unmarked adult content. A strike has been recorded.";
   }
 }
 
@@ -174,10 +176,16 @@ export function NotificationList({
                 className="static min-w-0 flex-1 after:absolute after:inset-0 after:content-['']"
               >
                 <p className="text-sm text-zinc-700 dark:text-zinc-300">
-                  <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                    {name}
-                  </span>{" "}
-                  {text}
+                  {notification.type === "CONTENT_MODERATION" ? (
+                    <span>{text}</span>
+                  ) : (
+                    <>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                        {name}
+                      </span>{" "}
+                      {text}
+                    </>
+                  )}
                 </p>
                 <p className="mt-0.5 text-xs text-zinc-400">
                   {timeAgo(new Date(notification.createdAt))}

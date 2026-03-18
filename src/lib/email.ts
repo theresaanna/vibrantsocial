@@ -403,6 +403,192 @@ export async function sendReportEmail(params: {
   }
 }
 
+export async function sendContentWarningEmail(params: {
+  toEmail: string;
+  postId: string;
+  violationType: string;
+  strikeCount: number;
+}) {
+  const { toEmail, postId, strikeCount } = params;
+  const baseUrl = getBaseUrl();
+  const postUrl = `${baseUrl}/post/${postId}`;
+  const appealUrl = `${baseUrl}/settings/appeals`;
+
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: toEmail,
+      subject: `Content flag notice — Strike ${strikeCount} of 5`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #18181b; margin-bottom: 16px;">Content Flag Notice</h2>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            Your post was detected as containing adult content that was not properly marked. It has been automatically flagged as NSFW.
+          </p>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            This is <strong>strike ${strikeCount} of 5</strong>. ${strikeCount >= 4 ? "Your account will be suspended if you receive one more strike." : "Please remember to mark your content appropriately when posting."}
+          </p>
+          <a href="${postUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
+            View Post
+          </a>
+          <p style="color: #3f3f46; font-size: 14px; margin-top: 16px;">
+            If you believe this flag was made in error, you can <a href="${appealUrl}" style="color: #18181b; font-weight: 500;">contest this strike</a>.
+          </p>
+          <p style="color: #a1a1aa; font-size: 12px; margin-top: 32px;">
+            Please review the <a href="${baseUrl}" style="color: #a1a1aa;">content guidelines</a> for more information.
+          </p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    Sentry.captureException(error, {
+      extra: { emailType: "content-warning", toEmail, postId },
+    });
+  }
+}
+
+export async function sendSuspensionEmail(params: {
+  toEmail: string;
+  strikeCount: number;
+}) {
+  const { toEmail, strikeCount } = params;
+  const baseUrl = getBaseUrl();
+  const appealUrl = `${baseUrl}/settings/appeals`;
+
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: toEmail,
+      subject: "Your account has been suspended",
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #18181b; margin-bottom: 16px;">Account Suspended</h2>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            Your account has been suspended after receiving ${strikeCount} content violation strikes. You will not be able to post or interact until this is resolved.
+          </p>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            If you believe this suspension was made in error, you can submit an appeal.
+          </p>
+          <a href="${appealUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
+            Submit Appeal
+          </a>
+        </div>
+      `,
+    });
+  } catch (error) {
+    Sentry.captureException(error, {
+      extra: { emailType: "suspension", toEmail },
+    });
+  }
+}
+
+export async function sendModerationAlertEmail(params: {
+  postId: string;
+  authorUsername: string;
+  violationType: string;
+  confidence: number;
+  contentPreview: string;
+}) {
+  const { postId, authorUsername, violationType, confidence, contentPreview } = params;
+  const baseUrl = getBaseUrl();
+  const postUrl = `${baseUrl}/post/${postId}`;
+
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: "vibrantsocial@proton.me",
+      subject: `Moderation Alert: ${violationType} detected — @${authorUsername}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #18181b; margin-bottom: 16px;">Moderation Alert</h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; color: #71717a; font-size: 14px; vertical-align: top; width: 120px;">Type</td>
+              <td style="padding: 8px 0; color: #18181b; font-size: 14px;">${escapeHtml(violationType)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #71717a; font-size: 14px; vertical-align: top;">Author</td>
+              <td style="padding: 8px 0; color: #18181b; font-size: 14px;">@${escapeHtml(authorUsername)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #71717a; font-size: 14px; vertical-align: top;">Confidence</td>
+              <td style="padding: 8px 0; color: #18181b; font-size: 14px;">${(confidence * 100).toFixed(1)}%</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #71717a; font-size: 14px; vertical-align: top;">Preview</td>
+              <td style="padding: 8px 0; color: #18181b; font-size: 14px;">${escapeHtml(contentPreview)}</td>
+            </tr>
+          </table>
+          <a href="${postUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
+            Review Post
+          </a>
+          <p style="color: #a1a1aa; font-size: 12px; margin-top: 32px;">
+            Detected at ${new Date().toISOString()}
+          </p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    Sentry.captureException(error, {
+      extra: { emailType: "moderation-alert", postId, violationType },
+    });
+  }
+}
+
+export async function sendStrikeAppealEmail(params: {
+  username: string;
+  userEmail: string;
+  violationId: string;
+  violationType: string;
+  postId: string;
+  reason: string;
+}) {
+  const { username, userEmail, violationId, violationType, postId, reason } = params;
+  const baseUrl = getBaseUrl();
+  const postUrl = `${baseUrl}/post/${postId}`;
+
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: "vibrantsocial@proton.me",
+      subject: `Strike Appeal from @${username}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #18181b; margin-bottom: 16px;">Strike Appeal</h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; color: #71717a; font-size: 14px; vertical-align: top; width: 120px;">User</td>
+              <td style="padding: 8px 0; color: #18181b; font-size: 14px;">@${escapeHtml(username)} (${escapeHtml(userEmail)})</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #71717a; font-size: 14px; vertical-align: top;">Violation ID</td>
+              <td style="padding: 8px 0; color: #18181b; font-size: 14px;">${escapeHtml(violationId)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #71717a; font-size: 14px; vertical-align: top;">Violation Type</td>
+              <td style="padding: 8px 0; color: #18181b; font-size: 14px;">${escapeHtml(violationType)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #71717a; font-size: 14px; vertical-align: top;">Reason</td>
+              <td style="padding: 8px 0; color: #18181b; font-size: 14px;">${escapeHtml(reason)}</td>
+            </tr>
+          </table>
+          <a href="${postUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
+            View Post
+          </a>
+          <p style="color: #a1a1aa; font-size: 12px; margin-top: 32px;">
+            Appeal submitted at ${new Date().toISOString()}
+          </p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    Sentry.captureException(error, {
+      extra: { emailType: "strike-appeal", username, violationId },
+    });
+  }
+}
+
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, "&amp;")
