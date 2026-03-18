@@ -2,6 +2,7 @@
 
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { Tooltip } from "@/components/tooltip";
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -12,6 +13,7 @@ export function ThemeToggle() {
   if (!mounted) return <div className="h-8 w-8" />;
 
   return (
+    <Tooltip label="Theme">
     <button
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
       className="rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
@@ -55,5 +57,6 @@ export function ThemeToggle() {
         </svg>
       )}
     </button>
+    </Tooltip>
   );
 }

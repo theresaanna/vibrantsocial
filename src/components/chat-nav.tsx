@@ -8,6 +8,7 @@ import { getConversations } from "@/app/chat/actions";
 import { useAblyReady } from "@/app/providers";
 import { PresenceIndicator } from "@/components/chat/presence-indicator";
 import { timeAgo } from "@/lib/time";
+import { Tooltip } from "@/components/tooltip";
 import type { ConversationListItem } from "@/types/chat";
 
 const PRESENCE_CHANNEL = "presence:global";
@@ -101,6 +102,7 @@ export function ChatNav({ initialConversations }: ChatNavProps) {
 
   return (
     <div className="relative" ref={containerRef}>
+      <Tooltip label="Chat">
       <button
         onClick={() => setIsOpen((prev) => !prev)}
         className={`relative rounded-lg p-1.5 transition-colors ${
@@ -129,6 +131,7 @@ export function ChatNav({ initialConversations }: ChatNavProps) {
           </span>
         )}
       </button>
+      </Tooltip>
 
       {/* Slide-out pane */}
       <div

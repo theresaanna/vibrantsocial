@@ -7,6 +7,7 @@ import { getLinkedAccountNotificationCounts } from "@/app/notifications/actions"
 import { useAblyReady } from "@/app/providers";
 import { getAblyRealtimeClient } from "@/lib/ably";
 import type { LinkedAccount } from "@/types/next-auth";
+import { Tooltip } from "@/components/tooltip";
 
 function AccountAvatar({
   account,
@@ -176,6 +177,7 @@ export function AccountSwitcher({
 
   return (
     <div className="relative" ref={dropdownRef}>
+      <Tooltip label="Switch Account">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative flex items-center gap-1 rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-indigo-50 hover:text-indigo-500 dark:text-zinc-400 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-500"
@@ -195,6 +197,7 @@ export function AccountSwitcher({
           </span>
         )}
       </button>
+      </Tooltip>
 
       {isOpen && (
         <div

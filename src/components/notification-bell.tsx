@@ -15,6 +15,7 @@ import {
   markAllNotificationsRead,
 } from "@/app/notifications/actions";
 import { timeAgo } from "@/lib/time";
+import { Tooltip } from "@/components/tooltip";
 import type { NotificationType } from "@/generated/prisma/client";
 
 interface NotificationActor {
@@ -197,6 +198,7 @@ export function NotificationBell({
 
   return (
     <div className="relative" ref={containerRef}>
+      <Tooltip label="Notifications">
       <button
         onClick={() => setIsOpen((prev) => !prev)}
         className={`relative rounded-lg p-1.5 transition-colors ${
@@ -225,6 +227,7 @@ export function NotificationBell({
           </span>
         )}
       </button>
+      </Tooltip>
 
       {/* Dropdown pane */}
       <div

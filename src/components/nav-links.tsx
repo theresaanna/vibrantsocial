@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Tooltip } from "@/components/tooltip";
 
 interface NavLink {
   href: string;
@@ -32,7 +33,7 @@ export function NavLinks({ username }: { username?: string | null }) {
     },
     {
       href: "/feed",
-      label: "Feed",
+      label: "Home",
       color: "hover:bg-purple-50 hover:text-purple-500 dark:hover:bg-purple-900/20 dark:hover:text-purple-500",
       activeColor: "bg-purple-50 text-purple-500 dark:bg-purple-900/20 dark:text-purple-500",
       icon: (
@@ -127,17 +128,20 @@ export function NavLinks({ username }: { username?: string | null }) {
   return (
     <>
       {links.map((link) => (
-        <Link
-          key={link.href}
-          href={link.href}
-          className={`${baseClass} ${isActive(link) ? link.activeColor : `${inactiveText} ${link.color}`}`}
-          aria-label={link.label}
-        >
-          {link.icon}
-        </Link>
+        <Tooltip key={link.href} label={link.label}>
+          <Link
+            href={link.href}
+            className={`${baseClass} ${isActive(link) ? link.activeColor : `${inactiveText} ${link.color}`}`}
+            aria-label={link.label}
+          >
+            {link.icon}
+          </Link>
+        </Tooltip>
       ))}
       {/* Desktop-only profile link */}
-      <ProfileLink link={profileLink} isActive={isActive(profileLink)} className="hidden sm:inline-flex" />
+      <Tooltip label={profileLink.label}>
+        <ProfileLink link={profileLink} isActive={isActive(profileLink)} className="hidden sm:inline-flex" />
+      </Tooltip>
       {/* Mobile-only profile link (rendered in header row) is separate */}
     </>
   );
