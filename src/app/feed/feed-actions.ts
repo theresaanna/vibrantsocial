@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getPostInclude, getRepostInclude, PAGE_SIZE } from "./feed-queries";
 import { cached, cacheKeys } from "@/lib/cache";
+import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 
 export async function fetchSinglePost(postId: string) {
   const session = await auth();
@@ -30,17 +31,23 @@ export async function fetchFeedPage(cursor?: string) {
 
   const userId = session.user.id;
 
-  const followingIds = await cached(
-    cacheKeys.userFollowing(userId),
-    async () => {
-      const rows = await prisma.follow.findMany({
-        where: { followerId: userId },
-        select: { followingId: true },
-      });
-      return rows.map((f: { followingId: string }) => f.followingId);
-    },
-    60 // cache for 60 seconds
-  );
+  const [allFollowingIds, blockedIds] = await Promise.all([
+    cached(
+      cacheKeys.userFollowing(userId),
+      async () => {
+        const rows = await prisma.follow.findMany({
+          where: { followerId: userId },
+          select: { followingId: true },
+        });
+        return rows.map((f: { followingId: string }) => f.followingId);
+      },
+      60 // cache for 60 seconds
+    ),
+    getAllBlockRelatedIds(userId),
+  ]);
+
+  const blockedSet = new Set(blockedIds);
+  const followingIds = allFollowingIds.filter((id: string) => !blockedSet.has(id));
 
   // Fetch user preferences and close-friend-of data in parallel
   const [currentUser, closeFriendOfRows] = await Promise.all([
@@ -132,17 +139,23 @@ export async function fetchNewFeedItems(sinceDate: string) {
 
   const userId = session.user.id;
 
-  const followingIds = await cached(
-    cacheKeys.userFollowing(userId),
-    async () => {
-      const rows = await prisma.follow.findMany({
-        where: { followerId: userId },
-        select: { followingId: true },
-      });
-      return rows.map((f: { followingId: string }) => f.followingId);
-    },
-    60
-  );
+  const [allFollowingIds, blockedIds] = await Promise.all([
+    cached(
+      cacheKeys.userFollowing(userId),
+      async () => {
+        const rows = await prisma.follow.findMany({
+          where: { followerId: userId },
+          select: { followingId: true },
+        });
+        return rows.map((f: { followingId: string }) => f.followingId);
+      },
+      60
+    ),
+    getAllBlockRelatedIds(userId),
+  ]);
+
+  const blockedSet = new Set(blockedIds);
+  const followingIds = allFollowingIds.filter((id: string) => !blockedSet.has(id));
 
   const [currentUser, closeFriendOfRows] = await Promise.all([
     prisma.user.findUnique({

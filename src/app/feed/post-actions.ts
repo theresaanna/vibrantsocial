@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { getAblyRestClient } from "@/lib/ably";
 import { createNotification } from "@/lib/notifications";
 import { inngest } from "@/lib/inngest";
+import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 import {
   extractMentionsFromPlainText,
   extractMentionsFromLexicalJson,
@@ -86,9 +87,17 @@ function buildCommentTree(
 }
 
 export async function fetchComments(postId: string) {
+  const session = await auth();
+  const blockedIds = session?.user?.id
+    ? await getAllBlockRelatedIds(session.user.id)
+    : [];
+
   // Fetch ALL comments flat, then build tree in JS to support unlimited nesting
   const allComments = await prisma.comment.findMany({
-    where: { postId },
+    where: {
+      postId,
+      ...(blockedIds.length > 0 ? { authorId: { notIn: blockedIds } } : {}),
+    },
     orderBy: { createdAt: "asc" },
     include: {
       author: { select: commentAuthorSelect },
@@ -540,6 +549,25 @@ export async function createComment(
     return { success: false, message: "Comment too long (max 1000 characters)" };
   }
 
+  // Check if a block exists between the commenter and post author
+  const post_ = await prisma.post.findUnique({
+    where: { id: postId },
+    select: { authorId: true },
+  });
+  if (post_?.authorId) {
+    const block = await prisma.block.findFirst({
+      where: {
+        OR: [
+          { blockerId: session.user.id, blockedId: post_.authorId },
+          { blockerId: post_.authorId, blockedId: session.user.id },
+        ],
+      },
+    });
+    if (block) {
+      return { success: false, message: "Cannot comment on this post" };
+    }
+  }
+
   const comment = await prisma.comment.create({
     data: { content, postId, authorId: session.user.id, parentId },
     include: {
@@ -647,8 +675,16 @@ export async function createComment(
 // ── Quote post interactions ───────────────────────────────────────
 
 export async function fetchRepostComments(repostId: string) {
+  const session = await auth();
+  const blockedIds = session?.user?.id
+    ? await getAllBlockRelatedIds(session.user.id)
+    : [];
+
   const allComments = await prisma.repostComment.findMany({
-    where: { repostId },
+    where: {
+      repostId,
+      ...(blockedIds.length > 0 ? { authorId: { notIn: blockedIds } } : {}),
+    },
     orderBy: { createdAt: "asc" },
     include: {
       author: { select: commentAuthorSelect },

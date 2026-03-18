@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { requirePhoneVerification } from "@/lib/phone-gate";
 import { getAblyRestClient } from "@/lib/ably";
 import { createNotification } from "@/lib/notifications";
+import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 import type {
   ActionState,
   ConversationListItem,
@@ -234,6 +235,19 @@ export async function startConversation(
 
   if (userId === targetUserId) {
     return { success: false, message: "Cannot message yourself" };
+  }
+
+  // Check for block between the two users
+  const block = await prisma.block.findFirst({
+    where: {
+      OR: [
+        { blockerId: userId, blockedId: targetUserId },
+        { blockerId: targetUserId, blockedId: userId },
+      ],
+    },
+  });
+  if (block) {
+    return { success: false, message: "Cannot start conversation with this user" };
   }
 
   // Check if target user exists
@@ -844,9 +858,11 @@ export async function searchUsers(
   const trimmed = query.trim();
   if (!trimmed || trimmed.length < 2) return [];
 
+  const blockedIds = await getAllBlockRelatedIds(session.user.id);
+
   return prisma.user.findMany({
     where: {
-      id: { not: session.user.id },
+      id: { notIn: [session.user.id, ...blockedIds] },
       OR: [
         { username: { contains: trimmed, mode: "insensitive" } },
         { displayName: { contains: trimmed, mode: "insensitive" } },

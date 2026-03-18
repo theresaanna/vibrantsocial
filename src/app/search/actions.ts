@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { PAGE_SIZE } from "@/app/feed/feed-queries";
+import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 
 export async function searchUsers(query: string, cursor?: string) {
   const session = await auth();
@@ -11,10 +12,12 @@ export async function searchUsers(query: string, cursor?: string) {
   const trimmed = query.trim();
   if (!trimmed || trimmed.length < 2) return { users: [], hasMore: false };
 
+  const blockedIds = await getAllBlockRelatedIds(session.user.id);
   const fetchCount = PAGE_SIZE + 1;
 
   const users = await prisma.user.findMany({
     where: {
+      ...(blockedIds.length > 0 ? { id: { notIn: blockedIds } } : {}),
       OR: [
         { username: { contains: trimmed, mode: "insensitive" } },
         { displayName: { contains: trimmed, mode: "insensitive" } },
@@ -56,6 +59,8 @@ export async function searchPosts(query: string, cursor?: string) {
   const trimmed = query.trim();
   if (!trimmed || trimmed.length < 2) return { posts: [], hasMore: false };
 
+  const blockedIds = await getAllBlockRelatedIds(session.user.id);
+
   // Build content flag filters based on user verification/preferences
   const contentFilters: Record<string, boolean>[] = [];
   if (!currentUser?.ageVerified) {
@@ -71,6 +76,7 @@ export async function searchPosts(query: string, cursor?: string) {
   const posts = await prisma.post.findMany({
     where: {
       content: { contains: trimmed, mode: "insensitive" },
+      ...(blockedIds.length > 0 ? { authorId: { notIn: blockedIds } } : {}),
       ...(cursor ? { createdAt: { lt: new Date(cursor) } } : {}),
       ...(contentFilters.length > 0 ? { AND: contentFilters } : {}),
     },

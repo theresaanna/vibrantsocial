@@ -6,9 +6,10 @@ import { togglePostSubscription } from "@/app/feed/subscription-actions";
 interface SubscribeButtonProps {
   userId: string;
   isSubscribed: boolean;
+  size?: "default" | "sm";
 }
 
-export function SubscribeButton({ userId, isSubscribed }: SubscribeButtonProps) {
+export function SubscribeButton({ userId, isSubscribed, size = "default" }: SubscribeButtonProps) {
   const [, formAction, isPending] = useActionState(togglePostSubscription, {
     success: false,
     message: "",
@@ -21,10 +22,12 @@ export function SubscribeButton({ userId, isSubscribed }: SubscribeButtonProps) 
         type="submit"
         disabled={isPending}
         title={isSubscribed ? "Unsubscribe from new posts" : "Get notified of new posts"}
-        className={`rounded-lg px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors disabled:opacity-50 ${
+        className={`rounded-lg whitespace-nowrap transition-colors disabled:opacity-50 ${
+          size === "sm" ? "px-2 py-1 text-xs font-medium" : "px-3 py-1.5 text-sm font-medium"
+        } ${
           isSubscribed
             ? "border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50"
-            : "border border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            : "border border-zinc-200 text-zinc-500 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
         }`}
       >
         {isPending ? "..." : isSubscribed ? (

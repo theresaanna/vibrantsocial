@@ -17,6 +17,8 @@ import { BioContent } from "@/components/bio-content";
 import { ProfileTabs } from "@/components/profile-tabs";
 import { RepostCard } from "@/components/repost-card";
 import { ReportButton } from "@/components/report-button";
+import { BlockButton } from "@/components/block-button";
+import { getBlockStatus } from "@/app/feed/block-actions";
 import { generateAdaptiveTheme } from "@/lib/profile-themes";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
@@ -119,8 +121,14 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
 
   const isOwnProfile = currentUserId === user.id;
 
+  // Check block status
+  let blockStatus: "none" | "blocked_by_me" | "blocked_by_them" = "none";
+  if (currentUserId && !isOwnProfile) {
+    blockStatus = await getBlockStatus(user.id);
+  }
+
   // Fetch friends count for all profiles
-  const friendsCount = await getFriendsCount(user.id);
+  const friendsCount = blockStatus === "none" ? await getFriendsCount(user.id) : 0;
 
   // Check if current user follows this profile
   let isFollowing = false;
@@ -421,7 +429,15 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
     >
       <main className="mx-auto max-w-3xl px-4 py-6">
         {/* Profile header */}
-        <div className={`rounded-2xl p-6 shadow-lg ${hasCustomTheme ? "profile-container" : "bg-white dark:bg-zinc-900"}`}>
+        <div className={`relative rounded-2xl p-6 shadow-lg ${hasCustomTheme ? "profile-container" : "bg-white dark:bg-zinc-900"}`}>
+          {/* Block & Report flags — top-right corner, icon only */}
+          {currentUserId && !isOwnProfile && blockStatus !== "blocked_by_them" && (
+            <div className="absolute top-3 right-3 flex items-center gap-1">
+              <BlockButton userId={user.id} isBlocked={blockStatus === "blocked_by_me"} />
+              <ReportButton contentType="profile" contentId={user.id} label="" />
+            </div>
+          )}
+
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start sm:gap-4">
             <FramedAvatar
               src={avatarSrc}
@@ -464,25 +480,42 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                       Edit Profile
                     </Link>
                   )}
-                  {currentUserId && !isOwnProfile && (
+                  {currentUserId && !isOwnProfile && blockStatus === "none" && (
                     <>
+                      {/* Primary actions — prominent */}
                       <FollowButton userId={user.id} isFollowing={isFollowing} />
                       <FriendButton userId={user.id} friendshipStatus={friendshipStatus} requestId={friendRequestId} />
-                      <SubscribeButton userId={user.id} isSubscribed={isSubscribed} />
-                      <ReportButton contentType="profile" contentId={user.id} label="Report" />
+                      {/* Secondary actions — smaller, subtler */}
+                      <SubscribeButton userId={user.id} isSubscribed={isSubscribed} size="sm" />
                     </>
                   )}
-                  <ProfileShareButton username={user.username!} hasCustomTheme={hasCustomTheme} />
+                  <ProfileShareButton username={user.username!} hasCustomTheme={hasCustomTheme} size="sm" />
                 </div>
               </div>
 
-              {user.bio && (
+              {blockStatus === "blocked_by_me" && (
+                <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-center dark:border-zinc-700 dark:bg-zinc-800">
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    You have blocked this user.
+                  </p>
+                </div>
+              )}
+
+              {blockStatus === "blocked_by_them" && (
+                <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-center dark:border-zinc-700 dark:bg-zinc-800">
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    This content is unavailable.
+                  </p>
+                </div>
+              )}
+
+              {blockStatus === "none" && user.bio && (
                 <div className="mt-2">
                   <BioContent content={user.bio} />
                 </div>
               )}
 
-              <div className="mt-3 flex gap-4 text-sm">
+              {blockStatus === "none" && <div className="mt-3 flex gap-4 text-sm">
                 <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
                   <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
                     {user._count.posts}
@@ -527,11 +560,13 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                     friends
                   </span>
                 )}
-              </div>
+              </div>}
             </div>
           </div>
         </div>
 
+        {blockStatus === "none" && (
+          <>
         <ProfileTabs username={user.username!} activeTab={activeTab} hasCustomTheme={hasCustomTheme} showSensitiveTab={hasSensitivePosts} showNsfwTab={hasNsfwPosts} showGraphicTab={hasGraphicPosts} />
 
         {/* Tab content */}
@@ -627,6 +662,8 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
               ))}
             </div>
           )
+        )}
+          </>
         )}
       </main>
     </div>
