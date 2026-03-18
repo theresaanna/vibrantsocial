@@ -25,7 +25,12 @@ const features = [
   {
     title: "Custom Audience",
     description:
-      "Control exactly who sees your posts with custom audience lists. Coming soon.",
+      "Control exactly who sees your posts with custom audience lists.",
+  },
+  {
+    title: "And More",
+    description:
+      "Discover delightful surprises and exclusive features waiting for you as a premium member.",
   },
 ];
 
