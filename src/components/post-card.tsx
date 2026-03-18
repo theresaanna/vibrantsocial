@@ -16,6 +16,7 @@ import { useCommentCount } from "@/hooks/use-comment-counts";
 import Link from "next/link";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { ReportModal } from "@/components/report-modal";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 interface PostAuthor {
   id: string;
@@ -110,6 +111,8 @@ export function PostCard({
   );
   const menuRef = useRef<HTMLDivElement>(null);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const deleteFormRef = useRef<HTMLFormElement>(null);
 
   const isAuthor = currentUserId === post.author?.id;
   const isAuthenticated = !!currentUserId;
@@ -363,11 +366,12 @@ export function PostCard({
                     {isPinned ? "Unpin" : "Pin to profile"}
                   </button>
                 </form>
-                <form action={deleteAction}>
+                <form action={deleteAction} ref={deleteFormRef}>
                   <input type="hidden" name="postId" value={post.id} />
                   <button
-                    type="submit"
+                    type="button"
                     disabled={deletePending}
+                    onClick={() => setShowDeleteConfirm(true)}
                     className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-zinc-100 disabled:opacity-50 dark:text-red-400 dark:hover:bg-zinc-700"
                     data-testid="post-delete-button"
                   >
@@ -650,6 +654,19 @@ export function PostCard({
         contentId={post.id}
         isOpen={showReportModal}
         onClose={() => setShowReportModal(false)}
+      />
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        title="Delete post"
+        message="Are you sure you want to delete this post? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={() => {
+          setShowDeleteConfirm(false);
+          deleteFormRef.current?.requestSubmit();
+        }}
+        onCancel={() => setShowDeleteConfirm(false)}
       />
     </div>
   );

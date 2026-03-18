@@ -88,7 +88,7 @@ export async function fetchFeedPage(cursor?: string) {
     }),
     prisma.repost.findMany({
       where: {
-        userId: { in: followingIds },
+        userId: { in: [...followingIds, userId] },
         ...(dateFilter ? { createdAt: dateFilter } : {}),
         OR: [
           { isCloseFriendsOnly: false },
@@ -194,7 +194,7 @@ export async function fetchNewFeedItems(sinceDate: string) {
     }),
     prisma.repost.findMany({
       where: {
-        userId: { in: followingIds },
+        userId: { in: [...followingIds, userId] },
         createdAt: { gt: since },
         OR: [
           { isCloseFriendsOnly: false },

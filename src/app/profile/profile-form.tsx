@@ -12,6 +12,7 @@ import { ThemeEditor } from "@/components/theme-editor";
 import { BackgroundEditor } from "@/components/background-editor";
 import type { BackgroundDefinition } from "@/lib/profile-backgrounds";
 import { FrameSelector } from "@/components/frame-selector";
+import { PremiumCrown } from "@/components/premium-crown";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { PushNotificationToggle } from "@/components/push-notification-toggle";
 import { LinkAccountModal } from "@/components/link-account-modal";
@@ -336,14 +337,18 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
                 Remove
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => setShowFrameSelector(true)}
-              className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-              data-testid="choose-frame-button"
-            >
-              {frameId ? "Change Frame" : "Add Frame"}
-            </button>
+            <span className="relative">
+              <button
+                type="button"
+                onClick={() => setShowFrameSelector(true)}
+                disabled={!isPremium}
+                className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                data-testid="choose-frame-button"
+              >
+                {frameId ? "Change Frame" : "Add Frame"}
+              </button>
+              {!isPremium && <PremiumCrown />}
+            </span>
           </div>
 
           {avatarError && (

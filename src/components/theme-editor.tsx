@@ -8,7 +8,7 @@ import {
   isValidHexColor,
 } from "@/lib/profile-themes";
 import { ThemePreview } from "./theme-preview";
-import { PremiumComingSoon } from "./premium-coming-soon";
+import { PremiumCrown } from "./premium-crown";
 
 interface ThemeEditorProps {
   initialColors: Partial<ProfileThemeColors>;
@@ -117,14 +117,16 @@ export function ThemeEditor({
       </div>
 
       {/* Individual color pickers — premium only */}
-      {isPremium ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="custom-color-pickers">
+      <div className="relative" data-testid={isPremium ? "custom-color-pickers" : "custom-colors-upgrade-prompt"}>
+        {!isPremium && <PremiumCrown />}
+        <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${!isPremium ? "pointer-events-none opacity-50" : ""}`}>
           {THEME_COLOR_FIELDS.map((field) => (
             <div key={field} className="flex items-center gap-2">
               <input
                 type="color"
                 value={colors[field]}
                 onChange={(e) => handleColorChange(field, e.target.value)}
+                disabled={!isPremium}
                 className="h-8 w-8 cursor-pointer rounded border border-zinc-300 dark:border-zinc-600"
                 aria-label={COLOR_LABELS[field]}
               />
@@ -146,6 +148,7 @@ export function ThemeEditor({
                       handleColorChange(field, defaultPreset[field]);
                     }
                   }}
+                  disabled={!isPremium}
                   className="w-20 rounded border border-zinc-300 bg-transparent px-1.5 py-0.5 text-xs dark:border-zinc-600 dark:text-zinc-100"
                   maxLength={7}
                 />
@@ -153,11 +156,7 @@ export function ThemeEditor({
             </div>
           ))}
         </div>
-      ) : (
-        <div data-testid="custom-colors-upgrade-prompt">
-          <PremiumComingSoon defaultEmail={userEmail} />
-        </div>
-      )}
+      </div>
 
       {/* Preview button */}
       <button

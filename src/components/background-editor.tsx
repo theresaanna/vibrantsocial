@@ -8,7 +8,7 @@ import {
   VALID_BG_SIZE,
   VALID_BG_POSITION,
 } from "@/lib/profile-backgrounds";
-import { PremiumComingSoon } from "./premium-coming-soon";
+import { PremiumCrown } from "./premium-crown";
 
 interface BackgroundEditorProps {
   backgrounds: BackgroundDefinition[];
@@ -170,42 +170,39 @@ export function BackgroundEditor({
       </div>
 
       {/* Custom upload — premium only */}
-      {isPremium ? (
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
+      <div className="relative space-y-2">
+        {!isPremium && <PremiumCrown />}
+        <div className={`flex flex-wrap items-center gap-2 ${!isPremium ? "pointer-events-none opacity-50" : ""}`}>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading || !isPremium}
+            className="rounded-lg bg-fuchsia-50 px-3 py-1.5 text-sm font-medium text-fuchsia-600 transition-colors hover:bg-fuchsia-100 disabled:opacity-50 dark:bg-fuchsia-900/20 dark:text-fuchsia-400 dark:hover:bg-fuchsia-900/30"
+          >
+            {uploading ? "Uploading..." : "Upload Custom Background"}
+          </button>
+          {isCustomUpload && (
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={handleRemoveCustom}
               disabled={uploading}
-              className="rounded-lg bg-fuchsia-50 px-3 py-1.5 text-sm font-medium text-fuchsia-600 transition-colors hover:bg-fuchsia-100 disabled:opacity-50 dark:bg-fuchsia-900/20 dark:text-fuchsia-400 dark:hover:bg-fuchsia-900/30"
+              className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-200 disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
             >
-              {uploading ? "Uploading..." : "Upload Custom Background"}
+              Remove Custom
             </button>
-            {isCustomUpload && (
-              <button
-                type="button"
-                onClick={handleRemoveCustom}
-                disabled={uploading}
-                className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-200 disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
-              >
-                Remove Custom
-              </button>
-            )}
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
-            onChange={handleUpload}
-            className="hidden"
-          />
-          {error && (
-            <p className="text-xs text-red-500">{error}</p>
           )}
         </div>
-      ) : (
-        <PremiumComingSoon defaultEmail={userEmail} />
-      )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+          onChange={handleUpload}
+          className="hidden"
+        />
+        {error && (
+          <p className="text-xs text-red-500">{error}</p>
+        )}
+      </div>
 
       {/* Display settings — shown when a background is selected */}
       {bgImage && (

@@ -23,6 +23,7 @@ import { generateAdaptiveTheme } from "@/lib/profile-themes";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
 import { buildProfilePostsContentFilter } from "./profile-queries";
+import { PremiumCrown } from "@/components/premium-crown";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
@@ -49,6 +50,7 @@ const profileSelect = {
   profileBgSize: true,
   profileBgPosition: true,
   isProfilePublic: true,
+  tier: true,
   _count: {
     select: {
       posts: true,
@@ -465,7 +467,16 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                 <div className="min-w-0">
                   <h1 className={`text-xl font-bold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
-                    {displayName}
+                    <span className="inline-flex items-center gap-1.5">
+                      {displayName}
+                      {user.tier === "premium" && (
+                        <Link href="/premium" title="Premium member" className="relative inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 shadow-sm">
+                          <svg className="h-3 w-3 text-white" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M2 19h20v3H2v-3zm1-1L12 4l4.5 7L22 5v13H2V18z" />
+                          </svg>
+                        </Link>
+                      )}
+                    </span>
                   </h1>
                   <p className={`text-sm ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
                     @{user.username}
