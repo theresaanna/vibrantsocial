@@ -5,9 +5,10 @@ import { useState } from "react";
 interface ProfileShareButtonProps {
   username: string;
   hasCustomTheme?: boolean;
+  size?: "default" | "sm";
 }
 
-export function ProfileShareButton({ username, hasCustomTheme }: ProfileShareButtonProps) {
+export function ProfileShareButton({ username, hasCustomTheme, size = "default" }: ProfileShareButtonProps) {
   const [copied, setCopied] = useState(false);
 
   async function handleShare() {
@@ -34,10 +35,12 @@ export function ProfileShareButton({ username, hasCustomTheme }: ProfileShareBut
   return (
     <button
       onClick={handleShare}
-      className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+      className={`rounded-lg border font-medium transition-colors ${
+        size === "sm" ? "px-2 py-1 text-xs" : "px-3 py-1.5 text-sm"
+      } ${
         hasCustomTheme
           ? "profile-share-btn"
-          : "border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          : "border-zinc-200 text-zinc-500 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
       }`}
       style={
         hasCustomTheme

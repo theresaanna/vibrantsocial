@@ -421,7 +421,14 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
     >
       <main className="mx-auto max-w-3xl px-4 py-6">
         {/* Profile header */}
-        <div className={`rounded-2xl p-6 shadow-lg ${hasCustomTheme ? "profile-container" : "bg-white dark:bg-zinc-900"}`}>
+        <div className={`relative rounded-2xl p-6 shadow-lg ${hasCustomTheme ? "profile-container" : "bg-white dark:bg-zinc-900"}`}>
+          {/* Report flag — top-right corner, icon only */}
+          {currentUserId && !isOwnProfile && (
+            <div className="absolute top-3 right-3">
+              <ReportButton contentType="profile" contentId={user.id} label="" />
+            </div>
+          )}
+
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start sm:gap-4">
             <FramedAvatar
               src={avatarSrc}
@@ -466,13 +473,14 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                   )}
                   {currentUserId && !isOwnProfile && (
                     <>
+                      {/* Primary actions — prominent */}
                       <FollowButton userId={user.id} isFollowing={isFollowing} />
                       <FriendButton userId={user.id} friendshipStatus={friendshipStatus} requestId={friendRequestId} />
-                      <SubscribeButton userId={user.id} isSubscribed={isSubscribed} />
-                      <ReportButton contentType="profile" contentId={user.id} label="Report" />
+                      {/* Secondary actions — smaller, subtler */}
+                      <SubscribeButton userId={user.id} isSubscribed={isSubscribed} size="sm" />
                     </>
                   )}
-                  <ProfileShareButton username={user.username!} hasCustomTheme={hasCustomTheme} />
+                  <ProfileShareButton username={user.username!} hasCustomTheme={hasCustomTheme} size="sm" />
                 </div>
               </div>
 
