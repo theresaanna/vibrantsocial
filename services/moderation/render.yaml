@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: vibrantsocial-moderation
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: MODERATION_API_KEY
+        sync: false
+      - key: NSFW_THRESHOLD
+        value: "0.7"
+      - key: TOXICITY_THRESHOLD
+        value: "0.7"
+      - key: IDENTITY_ATTACK_THRESHOLD
+        value: "0.5"
+      - key: INSULT_THRESHOLD
+        value: "0.7"
+    healthCheckPath: /health

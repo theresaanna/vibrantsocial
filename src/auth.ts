@@ -36,6 +36,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const isValid = await bcrypt.compare(password, user.passwordHash);
         if (!isValid) return null;
 
+        if (user.suspended) return null;
+
         return {
           id: user.id,
           email: user.email,
@@ -70,6 +72,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   callbacks: {
+    async signIn({ user }) {
+      if (user?.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { suspended: true },
+        });
+        if (dbUser?.suspended) return false;
+      }
+      return true;
+    },
     async redirect({ url, baseUrl }) {
       // If the URL already points to finish-link, let it through unchanged.
       if (url.includes("/api/finish-link")) {

@@ -116,7 +116,11 @@ model User {
   pushSubscriptions PushSubscription[]
 
   // Content moderation
-  quarantinedUploads QuarantinedUpload[]
+  quarantinedUploads    QuarantinedUpload[]
+  contentViolations     ContentViolation[]
+  contentStrikes        Int       @default(0)
+  suspended             Boolean   @default(false)
+  suspendedAt           DateTime?
 
   // Close friends
   closeFriends  CloseFriend[] @relation("closeFriendOwner")
@@ -200,10 +204,11 @@ model Post {
   likes         Like[]
   bookmarks     Bookmark[]
   reposts       Repost[]
-  notifications Notification[]
-  revisions     PostRevision[]
-  tags          PostTag[]
-  audience      PostAudience[]
+  notifications     Notification[]
+  revisions         PostRevision[]
+  tags              PostTag[]
+  audience          PostAudience[]
+  contentViolations ContentViolation[]
 
   @@unique([authorId, slug])
   @@index([authorId])
@@ -603,6 +608,7 @@ enum NotificationType {
   FRIEND_REQUEST
   NEW_POST
   TAG_POST
+  CONTENT_MODERATION
 }
 
 model Notification {
@@ -631,6 +637,23 @@ model Notification {
 }
 
 // Content moderation
+
+model ContentViolation {
+  id         String    @id @default(cuid())
+  userId     String
+  postId     String
+  type       String    // "nsfw_unmarked", "hate_speech", "bullying"
+  confidence Float
+  action     String    // "auto_flagged", "pending_review"
+  reviewedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([postId])
+}
 
 model QuarantinedUpload {
   id             String   @id @default(cuid())

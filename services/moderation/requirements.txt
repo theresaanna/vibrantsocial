@@ -1,0 +1,7 @@
+fastapi==0.115.6
+uvicorn==0.34.0
+detoxify==0.5.2
+transformers==4.47.1
+torch==2.5.1
+pillow==11.1.0
+requests==2.32.3

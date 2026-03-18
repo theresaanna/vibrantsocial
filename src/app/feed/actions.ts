@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { requirePhoneVerification } from "@/lib/phone-gate";
 import { requireMinimumAge } from "@/lib/age-gate";
+import { requireNotSuspended } from "@/lib/suspension-gate";
 import { revalidatePath } from "next/cache";
 import {
   extractMentionsFromLexicalJson,
@@ -14,6 +15,7 @@ import { invalidate, cacheKeys } from "@/lib/cache";
 import { notifyPostSubscribers } from "@/lib/subscription-notifications";
 import { notifyTagSubscribers } from "@/lib/tag-subscription-notifications";
 import { generateSlugFromContent, validateSlug } from "@/lib/slugs";
+import { inngest } from "@/lib/inngest";
 
 interface PostState {
   success: boolean;
@@ -54,6 +56,11 @@ export async function createPost(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  const isNotSuspended = await requireNotSuspended(session.user.id);
+  if (!isNotSuspended) {
+    return { success: false, message: "Your account is suspended" };
   }
 
   const isVerified = await requirePhoneVerification(session.user.id);
@@ -215,6 +222,12 @@ export async function createPost(
       isCloseFriendsOnly,
     });
   }
+
+  // Trigger content moderation scan
+  await inngest.send({
+    name: "moderation/scan-post",
+    data: { postId: post.id, userId: session.user.id },
+  });
 
   revalidatePath("/feed");
   return { success: true, message: "Post created", postId: post.id, slug: post.slug ?? undefined };

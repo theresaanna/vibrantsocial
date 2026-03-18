@@ -17,6 +17,7 @@ import {
 import { timeAgo } from "@/lib/time";
 import { Tooltip } from "@/components/tooltip";
 import type { NotificationType } from "@/generated/prisma/client";
+import { getNotificationText } from "@/lib/notification-text";
 
 interface NotificationActor {
   id: string;
@@ -42,33 +43,6 @@ interface NotificationItem {
   post: { id: string; content: string } | null;
   message: { id: string; conversationId: string } | null;
   tag: { id: string; name: string } | null;
-}
-
-function getNotificationText(type: NotificationType): string {
-  switch (type) {
-    case "LIKE":
-      return "liked your post";
-    case "COMMENT":
-      return "commented on your post";
-    case "REPLY":
-      return "replied to your comment";
-    case "REPOST":
-      return "reposted your post";
-    case "BOOKMARK":
-      return "bookmarked your post";
-    case "FOLLOW":
-      return "followed you";
-    case "REACTION":
-      return "reacted to your message";
-    case "MENTION":
-      return "mentioned you";
-    case "FRIEND_REQUEST":
-      return "sent you a friend request";
-    case "NEW_POST":
-      return "published a new post";
-    case "TAG_POST":
-      return "posted in a tag you follow";
-  }
 }
 
 function getNotificationHref(notification: NotificationItem): string {

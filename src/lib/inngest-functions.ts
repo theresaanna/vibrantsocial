@@ -10,6 +10,9 @@ import {
   sendNewPostEmail,
   sendTagPostEmail,
   sendTagDigestEmail,
+  sendContentWarningEmail,
+  sendSuspensionEmail,
+  sendModerationAlertEmail,
 } from "./email";
 
 function onFunctionFailure(functionId: string) {
@@ -364,6 +367,250 @@ export const pollChatEmailNotificationsFn = inngest.createFunction(
   async () => pollChatEmailNotifications()
 );
 
+// Content moderation scanning
+
+const MODERATION_API_URL = process.env.MODERATION_API_URL;
+const MODERATION_API_KEY = process.env.MODERATION_API_KEY;
+const MAX_STRIKES = 5;
+
+function extractPlainText(lexicalJson: string): string {
+  try {
+    const parsed = JSON.parse(lexicalJson);
+    const texts: string[] = [];
+    function walk(node: { text?: string; children?: unknown[] }) {
+      if (node.text) texts.push(node.text);
+      if (node.children && Array.isArray(node.children)) {
+        for (const child of node.children) {
+          walk(child as { text?: string; children?: unknown[] });
+        }
+      }
+    }
+    walk(parsed.root ?? parsed);
+    return texts.join(" ");
+  } catch {
+    return lexicalJson;
+  }
+}
+
+function extractImageUrls(lexicalJson: string): string[] {
+  const urls: string[] = [];
+  try {
+    const parsed = JSON.parse(lexicalJson);
+    function walk(node: { type?: string; src?: string; children?: unknown[] }) {
+      if (node.type === "image" && node.src) {
+        urls.push(node.src);
+      }
+      if (node.children && Array.isArray(node.children)) {
+        for (const child of node.children) {
+          walk(child as { type?: string; src?: string; children?: unknown[] });
+        }
+      }
+    }
+    walk(parsed.root ?? parsed);
+  } catch {
+    // Not parseable, no images to extract
+  }
+  return urls;
+}
+
+export const scanPostContentFn = inngest.createFunction(
+  {
+    id: "scan-post-content",
+    retries: 3,
+    onFailure: onFunctionFailure("scan-post-content"),
+  },
+  { event: "moderation/scan-post" },
+  async ({ event }) => {
+    const { postId, userId } = event.data as { postId: string; userId: string };
+
+    if (!MODERATION_API_URL || !MODERATION_API_KEY) {
+      console.warn("Moderation service not configured, skipping scan");
+      return { skipped: true };
+    }
+
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: {
+        id: true,
+        content: true,
+        isNsfw: true,
+        isGraphicNudity: true,
+        isSensitive: true,
+        authorId: true,
+      },
+    });
+
+    if (!post || !post.authorId) return { skipped: true, reason: "post not found" };
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, username: true, contentStrikes: true },
+    });
+
+    if (!user) return { skipped: true, reason: "user not found" };
+
+    const headers = {
+      "Content-Type": "application/json",
+      "X-API-Key": MODERATION_API_KEY,
+    };
+
+    // Scan images for NSFW content
+    const imageUrls = extractImageUrls(post.content);
+    let nsfwDetected = false;
+    let nsfwScore = 0;
+
+    for (const url of imageUrls) {
+      try {
+        const resp = await fetch(`${MODERATION_API_URL}/scan/image`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ url }),
+        });
+        if (resp.ok) {
+          const result = await resp.json() as { nsfw: boolean; score: number };
+          if (result.nsfw) {
+            nsfwDetected = true;
+            nsfwScore = Math.max(nsfwScore, result.score);
+          }
+        }
+      } catch (error) {
+        Sentry.captureException(error, {
+          extra: { context: "moderation-image-scan", postId, url },
+        });
+      }
+    }
+
+    // Scan text for hate speech / bullying
+    const plainText = extractPlainText(post.content);
+    let hateSpeechDetected = false;
+    let bullyingDetected = false;
+    let textConfidence = 0;
+    let textViolationType = "";
+
+    if (plainText.trim().length > 0) {
+      try {
+        const resp = await fetch(`${MODERATION_API_URL}/scan/text`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ text: plainText }),
+        });
+        if (resp.ok) {
+          const result = await resp.json() as {
+            toxicity: number;
+            identity_attack: number;
+            insult: number;
+            is_hate_speech: boolean;
+            is_bullying: boolean;
+          };
+          hateSpeechDetected = result.is_hate_speech;
+          bullyingDetected = result.is_bullying;
+          if (hateSpeechDetected) {
+            textConfidence = result.identity_attack;
+            textViolationType = "hate_speech";
+          } else if (bullyingDetected) {
+            textConfidence = result.insult;
+            textViolationType = "bullying";
+          }
+        }
+      } catch (error) {
+        Sentry.captureException(error, {
+          extra: { context: "moderation-text-scan", postId },
+        });
+      }
+    }
+
+    // Handle NSFW detection: auto-flag if not already marked
+    if (nsfwDetected && !post.isNsfw && !post.isGraphicNudity) {
+      // Auto-flag the post
+      await prisma.post.update({
+        where: { id: postId },
+        data: { isNsfw: true },
+      });
+
+      // Create violation record
+      await prisma.contentViolation.create({
+        data: {
+          userId: user.id,
+          postId,
+          type: "nsfw_unmarked",
+          confidence: nsfwScore,
+          action: "auto_flagged",
+        },
+      });
+
+      // Increment strikes
+      const updatedUser = await prisma.user.update({
+        where: { id: user.id },
+        data: { contentStrikes: { increment: 1 } },
+        select: { contentStrikes: true },
+      });
+
+      // Create in-app notification
+      await prisma.notification.create({
+        data: {
+          type: "CONTENT_MODERATION",
+          actorId: user.id,
+          targetUserId: user.id,
+          postId,
+        },
+      });
+
+      // Send warning email
+      if (user.email) {
+        await sendContentWarningEmail({
+          toEmail: user.email,
+          postId,
+          violationType: "nsfw_unmarked",
+          strikeCount: updatedUser.contentStrikes,
+        });
+      }
+
+      // Check for suspension
+      if (updatedUser.contentStrikes >= MAX_STRIKES) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { suspended: true, suspendedAt: new Date(), isProfilePublic: false },
+        });
+
+        if (user.email) {
+          await sendSuspensionEmail({
+            toEmail: user.email,
+            strikeCount: updatedUser.contentStrikes,
+          });
+        }
+      }
+    }
+
+    // Handle hate speech / bullying: notify admin for human review
+    if (hateSpeechDetected || bullyingDetected) {
+      await prisma.contentViolation.create({
+        data: {
+          userId: user.id,
+          postId,
+          type: textViolationType,
+          confidence: textConfidence,
+          action: "pending_review",
+        },
+      });
+
+      await sendModerationAlertEmail({
+        postId,
+        authorUsername: user.username ?? "unknown",
+        violationType: textViolationType,
+        confidence: textConfidence,
+        contentPreview: plainText.slice(0, 200),
+      });
+    }
+
+    return {
+      postId,
+      nsfwDetected,
+      hateSpeechDetected,
+      bullyingDetected,
+    };
+  }
+);
+
 export const allFunctions = [
   sendCommentEmailFn,
   sendMentionEmailFn,
@@ -374,4 +621,5 @@ export const allFunctions = [
   deleteUserMediaFn,
   pollChatEmailNotificationsFn,
   sendTagDigestFn,
+  scanPostContentFn,
 ];
