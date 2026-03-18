@@ -85,7 +85,7 @@ export async function FeedContent({ userId }: { userId: string }) {
     }),
     prisma.repost.findMany({
       where: {
-        userId: { in: followingIds },
+        userId: { in: [...followingIds, userId] },
         OR: [
           { isCloseFriendsOnly: false },
           { isCloseFriendsOnly: true, userId: { in: closeFriendAuthors } },

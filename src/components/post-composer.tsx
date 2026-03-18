@@ -26,6 +26,7 @@ import { TagInput } from "@/components/tag-input";
 import { AutoTagButton } from "@/components/auto-tag-button";
 import { ContentFlagsInfoModal } from "@/components/content-flags-info-modal";
 import { AudiencePicker } from "@/components/audience-picker";
+import { PremiumCrown } from "@/components/premium-crown";
 import { DraftPlugin, ClearDraftButton, clearDraft, type DraftSaveStatus } from "@/components/editor/plugins/DraftPlugin";
 
 function ClearOnSuccess({
@@ -340,9 +341,10 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, onPostCrea
                 Close Friends
               </span>
             </label>
-            {isPremium && (
+            <span className="relative">
               <button
                 type="button"
+                disabled={!isPremium}
                 onClick={() => {
                   if (customAudienceIds.length > 0) {
                     setCustomAudienceIds([]);
@@ -351,7 +353,7 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, onPostCrea
                     setShowAudiencePicker(true);
                   }
                 }}
-                className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${customAudienceIds.length > 0 ? "border-violet-300 bg-violet-50 text-violet-700 dark:border-violet-700 dark:bg-violet-900/30 dark:text-violet-400" : "border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-500 dark:border-zinc-700 dark:text-zinc-500 dark:hover:border-zinc-600 dark:hover:text-zinc-400"}`}
+                className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${customAudienceIds.length > 0 ? "border-violet-300 bg-violet-50 text-violet-700 dark:border-violet-700 dark:bg-violet-900/30 dark:text-violet-400" : "border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-500 dark:border-zinc-700 dark:text-zinc-500 dark:hover:border-zinc-600 dark:hover:text-zinc-400"} disabled:cursor-not-allowed disabled:opacity-50`}
                 data-testid="custom-audience-button"
               >
                 <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
@@ -361,7 +363,8 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, onPostCrea
                   ? `Custom Audience (${customAudienceIds.length})`
                   : "Custom Audience"}
               </button>
-            )}
+              {!isPremium && <PremiumCrown />}
+            </span>
             <LoggedInOnlyToggle
               checked={isLoggedInOnly}
               onChange={setIsLoggedInOnly}

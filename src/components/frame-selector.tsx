@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PROFILE_FRAMES, type FrameDefinition } from "@/lib/profile-frames";
 import { FramedAvatar } from "./framed-avatar";
-import { PremiumComingSoon } from "./premium-coming-soon";
+import { PremiumCrown } from "./premium-crown";
 
 interface FrameSelectorProps {
   currentFrameId: string | null;
@@ -100,66 +100,62 @@ export function FrameSelector({
           />
         </div>
 
-        {!isPremium ? (
-          <div data-testid="frame-upgrade-prompt">
-            <PremiumComingSoon defaultEmail={userEmail} />
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {/* None option */}
-            <button
-              type="button"
-              onClick={() => handleSelect(null)}
-              className={`w-full rounded-lg border px-3 py-2 text-sm font-medium transition-all ${
-                selectedFrameId === null
-                  ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
-                  : "border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
-              }`}
-              aria-pressed={selectedFrameId === null}
-              data-testid="frame-option-none"
-            >
-              No Frame
-            </button>
+        <div className={`relative space-y-4 ${!isPremium ? "pointer-events-none opacity-50" : ""}`} data-testid={!isPremium ? "frame-upgrade-prompt" : undefined}>
+          {!isPremium && <PremiumCrown />}
+          {/* None option */}
+          <button
+            type="button"
+            onClick={() => handleSelect(null)}
+            disabled={!isPremium}
+            className={`w-full rounded-lg border px-3 py-2 text-sm font-medium transition-all ${
+              selectedFrameId === null
+                ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
+                : "border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+            }`}
+            aria-pressed={selectedFrameId === null}
+            data-testid="frame-option-none"
+          >
+            No Frame
+          </button>
 
-            {/* Spring frames */}
-            <div>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-                Spring
-              </h3>
-              <div className="grid grid-cols-3 gap-2">
-                {springFrames.map((frame) => (
-                  <FrameOption
-                    key={frame.id}
-                    frame={frame}
-                    isSelected={selectedFrameId === frame.id}
-                    avatarSrc={avatarSrc}
-                    initial={initial}
-                    onSelect={(id) => handleSelect(id)}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Neon frames */}
-            <div>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-                Neon
-              </h3>
-              <div className="grid grid-cols-3 gap-2">
-                {neonFrames.map((frame) => (
-                  <FrameOption
-                    key={frame.id}
-                    frame={frame}
-                    isSelected={selectedFrameId === frame.id}
-                    avatarSrc={avatarSrc}
-                    initial={initial}
-                    onSelect={(id) => handleSelect(id)}
-                  />
-                ))}
-              </div>
+          {/* Spring frames */}
+          <div>
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+              Spring
+            </h3>
+            <div className="grid grid-cols-3 gap-2">
+              {springFrames.map((frame) => (
+                <FrameOption
+                  key={frame.id}
+                  frame={frame}
+                  isSelected={selectedFrameId === frame.id}
+                  avatarSrc={avatarSrc}
+                  initial={initial}
+                  onSelect={(id) => handleSelect(id)}
+                />
+              ))}
             </div>
           </div>
-        )}
+
+          {/* Neon frames */}
+          <div>
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+              Neon
+            </h3>
+            <div className="grid grid-cols-3 gap-2">
+              {neonFrames.map((frame) => (
+                <FrameOption
+                  key={frame.id}
+                  frame={frame}
+                  isSelected={selectedFrameId === frame.id}
+                  avatarSrc={avatarSrc}
+                  initial={initial}
+                  onSelect={(id) => handleSelect(id)}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
