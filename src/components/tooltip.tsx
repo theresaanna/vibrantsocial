@@ -21,16 +21,16 @@ export function Tooltip({ label, children }: TooltipProps) {
   }, []);
 
   return (
-    <div className="relative" onMouseEnter={show} onMouseLeave={hide} onFocus={show} onBlur={hide}>
+    <span className="relative inline-flex" onMouseEnter={show} onMouseLeave={hide} onFocus={show} onBlur={hide}>
       {children}
       {visible && (
-        <div
+        <span
           role="tooltip"
           className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-zinc-800 px-2 py-1 text-xs font-medium text-white shadow-lg dark:bg-zinc-700"
         >
           {label}
-        </div>
+        </span>
       )}
-    </div>
+    </span>
   );
 }
