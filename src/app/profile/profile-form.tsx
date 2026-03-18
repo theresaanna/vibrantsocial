@@ -17,6 +17,7 @@ import { PushNotificationToggle } from "@/components/push-notification-toggle";
 import { LinkAccountModal } from "@/components/link-account-modal";
 import { AvatarCropperModal } from "@/components/avatar-cropper-modal";
 import type { LinkedAccount } from "@/types/next-auth";
+import { toast } from "sonner";
 
 interface ProfileFormProps {
   user: {
@@ -146,11 +147,20 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
     } else if (state.message) {
       setSaveStatus(state.success ? "saved" : "error");
       if (state.success) {
+        const username = savedUsername || user.username;
+        toast.success(
+          <span>
+            Changes saved.{" "}
+            <a href={`/${username}`} className="underline font-medium">
+              View your profile
+            </a>
+          </span>
+        );
         const timer = setTimeout(() => setSaveStatus("idle"), 2000);
         return () => clearTimeout(timer);
       }
     }
-  }, [isPending, state]);
+  }, [isPending, state]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cancelAutosave = useCallback(() => {
     if (autosaveRef.current) {
