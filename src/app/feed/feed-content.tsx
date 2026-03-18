@@ -25,6 +25,7 @@ export async function FeedContent({ userId }: { userId: string }) {
         ageVerified: true,
         showGraphicByDefault: true,
         showNsfwContent: true,
+      tier: true,
       },
     }),
     cached(
@@ -73,8 +74,9 @@ export async function FeedContent({ userId }: { userId: string }) {
         ...(!showNsfwContent ? { isNsfw: false } : {}),
         ...(!ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
         OR: [
-          { isCloseFriendsOnly: false },
+          { isCloseFriendsOnly: false, hasCustomAudience: false },
           { isCloseFriendsOnly: true, authorId: { in: closeFriendAuthors } },
+          { hasCustomAudience: true, audience: { some: { userId } } },
         ],
       },
       orderBy: { createdAt: "desc" },
@@ -131,6 +133,7 @@ export async function FeedContent({ userId }: { userId: string }) {
       showGraphicByDefault={showGraphicByDefault}
       showNsfwContent={showNsfwContent}
       hasEmail={!!currentUser.email}
+      isPremium={currentUser.tier === "premium"}
     />
   );
 }

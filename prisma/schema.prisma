@@ -122,6 +122,9 @@ model User {
   closeFriends  CloseFriend[] @relation("closeFriendOwner")
   closeFriendOf CloseFriend[] @relation("closeFriendTarget")
 
+  // Custom post audiences
+  postAudiences PostAudience[]
+
   // Post subscriptions
   postSubscriptions PostSubscription[] @relation("postSubscriber")
   postSubscribers   PostSubscription[] @relation("postSubscribedTo")
@@ -185,6 +188,7 @@ model Post {
   isNsfw             Boolean   @default(false)
   isGraphicNudity    Boolean   @default(false)
   isCloseFriendsOnly Boolean   @default(false)
+  hasCustomAudience  Boolean   @default(false)
   isLoggedInOnly     Boolean   @default(false)
   isPinned           Boolean   @default(false)
   editedAt           DateTime?
@@ -199,6 +203,7 @@ model Post {
   notifications Notification[]
   revisions     PostRevision[]
   tags          PostTag[]
+  audience      PostAudience[]
 
   @@unique([authorId, slug])
   @@index([authorId])
@@ -684,4 +689,17 @@ model PremiumWaitlist {
   id        String   @id @default(cuid())
   email     String   @unique
   createdAt DateTime @default(now())
+}
+
+model PostAudience {
+  id     String @id @default(cuid())
+  postId String
+  userId String
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
 }

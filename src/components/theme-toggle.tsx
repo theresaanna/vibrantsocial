@@ -5,21 +5,50 @@ import { useEffect, useState } from "react";
 import { Tooltip } from "@/components/tooltip";
 
 export function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
   if (!mounted) return <div className="h-8 w-8" />;
 
+  const cycleTheme = () => {
+    if (theme === "system") setTheme("light");
+    else if (theme === "light") setTheme("dark");
+    else setTheme("system");
+  };
+
+  const label =
+    theme === "system"
+      ? "System theme"
+      : theme === "dark"
+        ? "Dark mode"
+        : "Light mode";
+
   return (
-    <Tooltip label="Theme">
+    <Tooltip label={label}>
     <button
-      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+      onClick={cycleTheme}
       className="rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
-      aria-label={`Switch to ${resolvedTheme === "dark" ? "light" : "dark"} mode`}
+      aria-label={label}
     >
-      {resolvedTheme === "dark" ? (
+      {theme === "system" ? (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect x="2" y="3" width="20" height="14" rx="2" />
+          <line x1="8" y1="21" x2="16" y2="21" />
+          <line x1="12" y1="17" x2="12" y2="21" />
+        </svg>
+      ) : resolvedTheme === "dark" ? (
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="18"

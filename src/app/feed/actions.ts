@@ -92,7 +92,40 @@ export async function createPost(
   const isNsfw = formData.get("isNsfw") === "true";
   const isGraphicNudity = formData.get("isGraphicNudity") === "true";
   const isCloseFriendsOnly = formData.get("isCloseFriendsOnly") === "true";
+  const hasCustomAudience = formData.get("hasCustomAudience") === "true";
   const isLoggedInOnly = formData.get("isLoggedInOnly") === "true";
+
+  // Custom audience: premium-only feature
+  const rawAudienceIds = formData.get("customAudienceIds") as string;
+  const customAudienceIds = hasCustomAudience && rawAudienceIds
+    ? rawAudienceIds.split(",").filter(Boolean)
+    : [];
+
+  if (hasCustomAudience) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { tier: true },
+    });
+    if (user?.tier !== "premium") {
+      return { success: false, message: "Custom audience is a premium feature" };
+    }
+
+    // Validate all audience IDs are accepted friends
+    if (customAudienceIds.length > 0) {
+      const friendships = await prisma.friendRequest.count({
+        where: {
+          status: "ACCEPTED",
+          OR: customAudienceIds.flatMap((friendId) => [
+            { senderId: session.user.id, receiverId: friendId },
+            { senderId: friendId, receiverId: session.user.id },
+          ]),
+        },
+      });
+      if (friendships < customAudienceIds.length) {
+        return { success: false, message: "All audience members must be accepted friends" };
+      }
+    }
+  }
 
   // Slug: use user-provided slug or auto-generate from content
   const rawSlug = formData.get("slug") as string;
@@ -108,8 +141,16 @@ export async function createPost(
   slug = await resolveUniqueSlug(session.user.id, slug);
 
   const post = await prisma.post.create({
-    data: { content, slug, authorId: session.user.id, isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly, isLoggedInOnly },
+    data: { content, slug, authorId: session.user.id, isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly, hasCustomAudience, isLoggedInOnly },
   });
+
+  // Create custom audience records
+  if (hasCustomAudience && customAudienceIds.length > 0) {
+    await prisma.postAudience.createMany({
+      data: customAudienceIds.map((userId) => ({ postId: post.id, userId })),
+    });
+  }
+
   await prisma.user.update({ where: { id: session.user.id }, data: { stars: { increment: 1 } } });
 
   // Attach tags (skip for sensitive/graphic posts; NSFW posts can have tags)
@@ -226,7 +267,24 @@ export async function editPost(
   const isNsfw = formData.get("isNsfw") === "true";
   const isGraphicNudity = formData.get("isGraphicNudity") === "true";
   const isCloseFriendsOnly = formData.get("isCloseFriendsOnly") === "true";
+  const hasCustomAudience = formData.get("hasCustomAudience") === "true";
   const isLoggedInOnly = formData.get("isLoggedInOnly") === "true";
+
+  // Custom audience: premium-only feature
+  const rawEditAudienceIds = formData.get("customAudienceIds") as string;
+  const editAudienceIds = hasCustomAudience && rawEditAudienceIds
+    ? rawEditAudienceIds.split(",").filter(Boolean)
+    : [];
+
+  if (hasCustomAudience) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { tier: true },
+    });
+    if (user?.tier !== "premium") {
+      return { success: false, message: "Custom audience is a premium feature" };
+    }
+  }
 
   // Only update slug if user explicitly changed it
   let slugUpdate: { slug?: string } = {};
@@ -240,8 +298,16 @@ export async function editPost(
 
   await prisma.post.update({
     where: { id: postId },
-    data: { content, editedAt: new Date(), isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly, isLoggedInOnly, ...slugUpdate },
+    data: { content, editedAt: new Date(), isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly, hasCustomAudience, isLoggedInOnly, ...slugUpdate },
   });
+
+  // Update custom audience records
+  await prisma.postAudience.deleteMany({ where: { postId } });
+  if (hasCustomAudience && editAudienceIds.length > 0) {
+    await prisma.postAudience.createMany({
+      data: editAudienceIds.map((userId) => ({ postId, userId })),
+    });
+  }
 
   // Update tags
   const rawTags = formData.get("tags") as string;
