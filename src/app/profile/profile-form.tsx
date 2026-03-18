@@ -10,6 +10,7 @@ import { BioEditor } from "@/components/bio-editor";
 import { BioRevisionHistory } from "@/components/bio-revision-history";
 import { ThemeEditor } from "@/components/theme-editor";
 import { BackgroundEditor } from "@/components/background-editor";
+import { SparkleEditor } from "@/components/sparkle-editor";
 import type { BackgroundDefinition } from "@/lib/profile-backgrounds";
 import { FrameSelector } from "@/components/frame-selector";
 import { PremiumCrown } from "@/components/premium-crown";
@@ -37,6 +38,15 @@ interface ProfileFormProps {
     profileBgAttachment: string | null;
     profileBgSize: string | null;
     profileBgPosition: string | null;
+    sparklefallEnabled: boolean;
+    sparklefallPreset: string | null;
+    sparklefallSparkles: string | null;
+    sparklefallColors: string | null;
+    sparklefallInterval: number | null;
+    sparklefallWind: number | null;
+    sparklefallMaxSparkles: number | null;
+    sparklefallMinSize: number | null;
+    sparklefallMaxSize: number | null;
   };
   email: string | null;
   pendingEmail: string | null;
@@ -604,6 +614,23 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
             profileBgAttachment: user.profileBgAttachment,
             profileBgSize: user.profileBgSize,
             profileBgPosition: user.profileBgPosition,
+          }}
+          isPremium={isPremium}
+          userEmail={userEmail}
+          onChange={scheduleAutosave}
+        />
+
+        <SparkleEditor
+          initialConfig={{
+            sparklefallEnabled: user.sparklefallEnabled,
+            sparklefallPreset: user.sparklefallPreset,
+            sparklefallSparkles: user.sparklefallSparkles,
+            sparklefallColors: user.sparklefallColors,
+            sparklefallInterval: user.sparklefallInterval,
+            sparklefallWind: user.sparklefallWind,
+            sparklefallMaxSparkles: user.sparklefallMaxSparkles,
+            sparklefallMinSize: user.sparklefallMinSize,
+            sparklefallMaxSize: user.sparklefallMaxSize,
           }}
           isPremium={isPremium}
           userEmail={userEmail}

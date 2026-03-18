@@ -24,6 +24,7 @@ import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
 import { buildProfilePostsContentFilter } from "./profile-queries";
 import { PremiumCrown } from "@/components/premium-crown";
+import { ProfileSparklefall } from "@/components/profile-sparklefall";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
@@ -49,6 +50,14 @@ const profileSelect = {
   profileBgAttachment: true,
   profileBgSize: true,
   profileBgPosition: true,
+  sparklefallEnabled: true,
+  sparklefallSparkles: true,
+  sparklefallColors: true,
+  sparklefallInterval: true,
+  sparklefallWind: true,
+  sparklefallMaxSparkles: true,
+  sparklefallMinSize: true,
+  sparklefallMaxSize: true,
   isProfilePublic: true,
   tier: true,
   _count: {
@@ -442,6 +451,17 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       className={hasCustomTheme ? "profile-themed" : ""}
       style={{ ...themeStyle, ...bgImageStyle }}
     >
+      {user.sparklefallEnabled && user.tier === "premium" && (
+        <ProfileSparklefall
+          sparkles={user.sparklefallSparkles}
+          colors={user.sparklefallColors}
+          interval={user.sparklefallInterval}
+          wind={user.sparklefallWind}
+          maxSparkles={user.sparklefallMaxSparkles}
+          minSize={user.sparklefallMinSize}
+          maxSize={user.sparklefallMaxSize}
+        />
+      )}
       <main className="mx-auto max-w-3xl px-4 py-6">
         {/* Profile header */}
         <div className={`relative rounded-2xl p-6 shadow-lg ${hasCustomTheme ? "profile-container" : "bg-white dark:bg-zinc-900"}`}>
