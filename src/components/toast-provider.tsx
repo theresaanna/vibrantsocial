@@ -9,33 +9,7 @@ import type { InboundMessage } from "ably";
 import { useAblyReady } from "@/app/providers";
 import { getAblyRealtimeClient } from "@/lib/ably";
 import type { NotificationType } from "@/generated/prisma/client";
-
-function getToastText(type: NotificationType): string {
-  switch (type) {
-    case "LIKE":
-      return "liked your post";
-    case "COMMENT":
-      return "commented on your post";
-    case "REPLY":
-      return "replied to your comment";
-    case "REPOST":
-      return "reposted your post";
-    case "BOOKMARK":
-      return "bookmarked your post";
-    case "FOLLOW":
-      return "followed you";
-    case "REACTION":
-      return "reacted to your message";
-    case "MENTION":
-      return "mentioned you";
-    case "FRIEND_REQUEST":
-      return "sent you a friend request";
-    case "NEW_POST":
-      return "published a new post";
-    case "TAG_POST":
-      return "posted in a tag you follow";
-  }
-}
+import { getNotificationText } from "@/lib/notification-text";
 
 function NotificationToastListener() {
   const { data: session } = useSession();
@@ -51,7 +25,7 @@ function NotificationToastListener() {
       const actor = JSON.parse(data.actor);
       const name =
         actor.displayName ?? actor.username ?? actor.name ?? "Someone";
-      const text = getToastText(data.type);
+      const text = getNotificationText(data.type);
       toast(`${name} ${text}`);
     },
     [pathname]
