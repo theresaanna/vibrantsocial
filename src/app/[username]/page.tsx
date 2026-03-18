@@ -119,8 +119,8 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
 
   const isOwnProfile = currentUserId === user.id;
 
-  // Fetch friends count (only for profile owner)
-  const friendsCount = isOwnProfile ? await getFriendsCount(user.id) : 0;
+  // Fetch friends count for all profiles
+  const friendsCount = await getFriendsCount(user.id);
 
   // Check if current user follows this profile
   let isFollowing = false;
@@ -512,13 +512,20 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                     following
                   </Link>
                 )}
-                {isOwnProfile && (
+                {currentUserId ? (
                   <Link href={`/${user.username}/friends`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
                     <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
                       {friendsCount}
                     </span>{" "}
                     friends
                   </Link>
+                ) : (
+                  <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                    <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                      {friendsCount}
+                    </span>{" "}
+                    friends
+                  </span>
                 )}
               </div>
             </div>
