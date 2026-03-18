@@ -101,7 +101,7 @@ export function ChatNav({ initialConversations }: ChatNavProps) {
   const isChatActive = pathname.startsWith("/chat");
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative inline-flex" ref={containerRef}>
       <Tooltip label="Chat">
       <button
         onClick={() => setIsOpen((prev) => !prev)}

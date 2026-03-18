@@ -46,7 +46,7 @@ export async function Header() {
         )}
 
         <div className="order-3 flex w-full items-center justify-between border-t border-zinc-100 pt-2 sm:order-2 sm:w-auto sm:justify-start sm:gap-4 sm:border-0 sm:pt-0 dark:border-zinc-800">
-          <div className="hidden sm:block"><ThemeToggle /></div>
+          <div className="hidden sm:inline-flex"><ThemeToggle /></div>
           {session?.user ? (
             <>
               <DynamicFavicon
@@ -56,7 +56,7 @@ export async function Header() {
                 }
               />
               <NavLinks username={session.user.username} />
-              <div className="hidden sm:block"><AccountSwitcherWrapper initialLinkedAccounts={linkedAccounts} initialNotificationCounts={linkedAccountNotifCounts} /></div>
+              <div className="hidden sm:inline-flex"><AccountSwitcherWrapper initialLinkedAccounts={linkedAccounts} initialNotificationCounts={linkedAccountNotifCounts} /></div>
               <NotificationBell initialUnreadCount={unreadNotifications} initialNotifications={recentNotifications} />
               <ChatNav initialConversations={conversations} />
             </>
