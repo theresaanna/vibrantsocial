@@ -491,7 +491,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                       {displayName}
                       {user.tier === "premium" && (
                         <Link href="/premium" title="Premium member" className="relative inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 shadow-sm">
-                          <svg className="h-3 w-3 text-white" viewBox="0 0 24 24" fill="currentColor">
+                          <svg className="h-3 w-3 text-white" viewBox="1 0 22 24" fill="currentColor">
                             <path d="M2 19h20v3H2v-3zm1-1L12 4l4.5 7L22 5v13H2V18z" />
                           </svg>
                         </Link>
