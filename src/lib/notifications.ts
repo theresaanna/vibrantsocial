@@ -22,6 +22,17 @@ export async function createNotification(params: CreateNotificationParams) {
   // Don't notify yourself
   if (actorId === targetUserId) return;
 
+  // Don't notify if a block exists between the two users
+  const block = await prisma.block.findFirst({
+    where: {
+      OR: [
+        { blockerId: actorId, blockedId: targetUserId },
+        { blockerId: targetUserId, blockedId: actorId },
+      ],
+    },
+  });
+  if (block) return;
+
   const notification = await prisma.notification.create({
     data: { type, actorId, targetUserId, postId, commentId, messageId, repostId, tagId },
     include: {

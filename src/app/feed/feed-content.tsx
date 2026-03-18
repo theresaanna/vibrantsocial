@@ -6,14 +6,15 @@ import { getPostInclude, getRepostInclude, PAGE_SIZE } from "./feed-queries";
 import { cached, cacheKeys } from "@/lib/cache";
 import { getCloseFriendIds } from "@/app/feed/close-friends-actions";
 import { isProfileIncomplete } from "@/lib/require-profile";
+import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 
 /**
  * Async server component that fetches all feed data.
  * Designed to be wrapped in <Suspense> so the page shell streams immediately.
  */
 export async function FeedContent({ userId }: { userId: string }) {
-  // Phase 1: currentUser + cached followingIds + closeFriendOf in parallel
-  const [currentUser, followingIds, closeFriendOfIds] = await Promise.all([
+  // Phase 1: currentUser + cached followingIds + closeFriendOf + blockedIds in parallel
+  const [currentUser, allFollowingIds, closeFriendOfIds, blockedIds] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -42,7 +43,11 @@ export async function FeedContent({ userId }: { userId: string }) {
       where: { friendId: userId },
       select: { userId: true },
     }).then((rows) => rows.map((r) => r.userId)),
+    getAllBlockRelatedIds(userId),
   ]);
+
+  const blockedSet = new Set(blockedIds);
+  const followingIds = allFollowingIds.filter((id: string) => !blockedSet.has(id));
 
   if (!currentUser || isProfileIncomplete(currentUser)) redirect("/complete-profile");
 

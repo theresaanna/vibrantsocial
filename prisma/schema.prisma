@@ -126,6 +126,10 @@ model User {
   postSubscriptions PostSubscription[] @relation("postSubscriber")
   postSubscribers   PostSubscription[] @relation("postSubscribedTo")
 
+  // Blocks
+  blockedUsers Block[] @relation("blocker")
+  blockedBy    Block[] @relation("blocked")
+
   // Tag subscriptions
   tagSubscriptions TagSubscription[]
 
@@ -449,6 +453,22 @@ model PostSubscription {
   @@unique([subscriberId, subscribedToId])
   @@index([subscriberId])
   @@index([subscribedToId])
+}
+
+// User blocks
+
+model Block {
+  id        String   @id @default(cuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker User @relation("blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
 }
 
 // Tag subscriptions (subscribe to new posts in a tag)

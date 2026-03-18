@@ -58,4 +58,5 @@ export const cacheKeys = {
   nsfwTagCloud: () => `tags:nsfw-cloud`,
   allTagCloud: () => `tags:all-cloud`,
   tagPostCount: (tagName: string) => `tag:${tagName}:count`,
+  userBlockedIds: (userId: string) => `user:${userId}:blocked`,
 } as const;

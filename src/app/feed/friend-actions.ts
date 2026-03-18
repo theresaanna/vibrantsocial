@@ -56,6 +56,19 @@ export async function sendFriendRequest(
     return { success: false, message: "Cannot friend yourself" };
   }
 
+  // Check if a block exists between the two users
+  const block = await prisma.block.findFirst({
+    where: {
+      OR: [
+        { blockerId: session.user.id, blockedId: targetUserId },
+        { blockerId: targetUserId, blockedId: session.user.id },
+      ],
+    },
+  });
+  if (block) {
+    return { success: false, message: "Cannot send friend request to this user" };
+  }
+
   const existing = await prisma.friendRequest.findFirst({
     where: {
       OR: [
