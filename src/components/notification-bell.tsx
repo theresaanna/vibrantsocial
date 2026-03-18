@@ -64,6 +64,9 @@ function getNotificationHref(notification: NotificationItem): string {
   if (notification.type === "FRIEND_REQUEST") {
     return `/${notification.actor.username}`;
   }
+  if (notification.type === "MENTION" && notification.repostId) {
+    return `/quote/${notification.repostId}`;
+  }
   if (notification.postId) {
     return `/post/${notification.postId}`;
   }

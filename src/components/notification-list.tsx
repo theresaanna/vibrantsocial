@@ -107,6 +107,8 @@ export function NotificationList({
             href = `/chat/${notification.message.conversationId}`;
           } else if (notification.type === "FRIEND_REQUEST") {
             href = `/${notification.actor.username}`;
+          } else if (notification.type === "MENTION" && notification.repostId) {
+            href = `/quote/${notification.repostId}`;
           } else if (notification.postId) {
             href = `/post/${notification.postId}`;
           } else if (notification.repostId) {

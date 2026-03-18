@@ -75,6 +75,7 @@ export async function createMentionNotifications(params: {
         targetUserId: user.id,
         postId: params.postId,
         commentId: params.commentId,
+        repostId: params.repostId,
       });
 
       // Send email if the user has an email and mention notifications enabled
