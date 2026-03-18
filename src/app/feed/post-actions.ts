@@ -327,7 +327,7 @@ export async function createQuoteRepost(
     await createMentionNotifications({
       usernames: mentionedUsernames,
       actorId: session.user.id,
-      postId,
+      repostId: repost.id,
     });
   }
 
@@ -417,7 +417,7 @@ export async function editRepost(
       await createMentionNotifications({
         usernames: newMentions,
         actorId: session.user.id,
-        postId: repost.postId,
+        repostId: repostId,
       });
     }
   }
