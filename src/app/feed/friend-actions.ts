@@ -246,6 +246,32 @@ export async function removeFriend(
 
   await prisma.friendRequest.delete({ where: { id: friendship.id } });
 
+  // Also unfollow the target user when unfriending
+  try {
+    await prisma.follow.deleteMany({
+      where: {
+        followerId: session.user.id,
+        followingId: targetUserId,
+      },
+    });
+
+    const [currentUserData, targetUserData] = await Promise.all([
+      prisma.user.findUnique({ where: { id: session.user.id }, select: { username: true } }),
+      prisma.user.findUnique({ where: { id: targetUserId }, select: { username: true } }),
+    ]);
+
+    const invalidations = [invalidate(cacheKeys.userFollowing(session.user.id))];
+    if (currentUserData?.username) {
+      invalidations.push(invalidate(cacheKeys.userProfile(currentUserData.username)));
+    }
+    if (targetUserData?.username) {
+      invalidations.push(invalidate(cacheKeys.userProfile(targetUserData.username)));
+    }
+    await Promise.all(invalidations);
+  } catch {
+    // Non-critical: friendship was still removed
+  }
+
   revalidatePath("/");
   return { success: true, message: "Friend removed" };
 }

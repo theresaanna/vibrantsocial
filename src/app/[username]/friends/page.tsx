@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { auth } from "@/auth";
-import { redirect, notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
 import { getFriends, getBatchFriendshipStatuses } from "@/app/feed/friend-actions";
 import { UserList } from "@/components/user-list";
 import Link from "next/link";
@@ -24,14 +23,6 @@ export default async function FriendsPage({ params }: FriendsPageProps) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   const currentUserId = session.user.id;
-
-  // Only the profile owner can view their friends list
-  const profileUser = await prisma.user.findUnique({
-    where: { username },
-    select: { id: true },
-  });
-  if (!profileUser) notFound();
-  if (profileUser.id !== currentUserId) redirect(`/${username}`);
 
   const friends = await getFriends(username);
   const otherUserIds = friends.filter(u => u.id !== currentUserId).map(u => u.id);
