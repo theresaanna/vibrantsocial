@@ -459,7 +459,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                   </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className={`flex flex-wrap items-center gap-2${currentUserId && !isOwnProfile && blockStatus !== "blocked_by_them" ? " sm:pr-14" : ""}`}>
                   {isOwnProfile && (
                     <Link
                       href="/profile"
