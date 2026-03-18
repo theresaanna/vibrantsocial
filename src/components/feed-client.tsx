@@ -22,6 +22,7 @@ interface FeedClientProps {
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
   hasEmail: boolean;
+  isPremium: boolean;
 }
 
 export function FeedClient({
@@ -34,6 +35,7 @@ export function FeedClient({
   showGraphicByDefault,
   showNsfwContent,
   hasEmail,
+  isPremium,
 }: FeedClientProps) {
   const [newItems, setNewItems] = useState<FeedItem[]>([]);
   const newestDateRef = useRef<string>(
@@ -95,6 +97,7 @@ export function FeedClient({
       <PostComposer
         phoneVerified={phoneVerified}
         isOldEnough={isOldEnough}
+        isPremium={isPremium}
         onPostCreated={handlePostCreated}
       />
       <FeedList

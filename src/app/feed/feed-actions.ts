@@ -77,8 +77,9 @@ export async function fetchFeedPage(cursor?: string) {
         ...(!showNsfwContent ? { isNsfw: false } : {}),
         ...(!ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
         OR: [
-          { isCloseFriendsOnly: false },
+          { isCloseFriendsOnly: false, hasCustomAudience: false },
           { isCloseFriendsOnly: true, authorId: { in: closeFriendAuthors } },
+          { hasCustomAudience: true, audience: { some: { userId } } },
         ],
       },
       orderBy: { createdAt: "desc" },
@@ -182,8 +183,9 @@ export async function fetchNewFeedItems(sinceDate: string) {
         ...(!showNsfwContent ? { isNsfw: false } : {}),
         ...(!ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
         OR: [
-          { isCloseFriendsOnly: false },
+          { isCloseFriendsOnly: false, hasCustomAudience: false },
           { isCloseFriendsOnly: true, authorId: { in: closeFriendAuthors } },
+          { hasCustomAudience: true, audience: { some: { userId } } },
         ],
       },
       orderBy: { createdAt: "desc" },

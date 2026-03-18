@@ -7,9 +7,10 @@ import { PostComposer } from "@/components/post-composer";
 interface ComposeClientProps {
   phoneVerified: boolean;
   isOldEnough: boolean;
+  isPremium: boolean;
 }
 
-export function ComposeClient({ phoneVerified, isOldEnough }: ComposeClientProps) {
+export function ComposeClient({ phoneVerified, isOldEnough, isPremium }: ComposeClientProps) {
   const router = useRouter();
 
   const handlePostCreated = useCallback(() => {
@@ -20,6 +21,7 @@ export function ComposeClient({ phoneVerified, isOldEnough }: ComposeClientProps
     <PostComposer
       phoneVerified={phoneVerified}
       isOldEnough={isOldEnough}
+      isPremium={isPremium}
       onPostCreated={handlePostCreated}
     />
   );

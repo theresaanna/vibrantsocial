@@ -223,6 +223,42 @@ export async function cleanupTestNotifications() {
   }
 }
 
+export async function createFriendship(email1: string, email2: string) {
+  const pool = createPool();
+  try {
+    const user1 = await pool.query(
+      'SELECT id FROM "User" WHERE email = $1',
+      [email1]
+    );
+    const user2 = await pool.query(
+      'SELECT id FROM "User" WHERE email = $1',
+      [email2]
+    );
+    if (!user1.rows[0] || !user2.rows[0])
+      throw new Error("Both users must exist");
+
+    const senderId = user1.rows[0].id;
+    const receiverId = user2.rows[0].id;
+
+    // Check if friendship already exists
+    const existing = await pool.query(
+      `SELECT id FROM "FriendRequest" WHERE
+        (("senderId" = $1 AND "receiverId" = $2) OR ("senderId" = $2 AND "receiverId" = $1))
+        AND status = 'ACCEPTED'`,
+      [senderId, receiverId]
+    );
+    if (existing.rows.length > 0) return;
+
+    await pool.query(
+      `INSERT INTO "FriendRequest" (id, "senderId", "receiverId", status, "createdAt", "updatedAt")
+       VALUES (gen_random_uuid(), $1, $2, 'ACCEPTED', NOW(), NOW())`,
+      [senderId, receiverId]
+    );
+  } finally {
+    await pool.end();
+  }
+}
+
 export async function cleanupTestData() {
   const pool = createPool();
   try {
@@ -245,7 +281,9 @@ export async function cleanupTestData() {
       { table: "Like", column: "userId" },
       { table: "Bookmark", column: "userId" },
       { table: "Comment", column: "authorId" },
+      { table: "PostAudience", column: "userId" },
       { table: "Repost", column: "userId" },
+      { table: "CloseFriend", column: "userId" },
       { table: "Post", column: "authorId" },
       { table: "Notification", column: "targetUserId" },
       { table: "Notification", column: "actorId" },

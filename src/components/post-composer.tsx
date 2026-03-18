@@ -25,6 +25,7 @@ import { MentionsPlugin } from "@/components/editor/plugins/MentionsPlugin";
 import { TagInput } from "@/components/tag-input";
 import { AutoTagButton } from "@/components/auto-tag-button";
 import { ContentFlagsInfoModal } from "@/components/content-flags-info-modal";
+import { AudiencePicker } from "@/components/audience-picker";
 import { DraftPlugin, ClearDraftButton, clearDraft, type DraftSaveStatus } from "@/components/editor/plugins/DraftPlugin";
 
 function ClearOnSuccess({
@@ -51,10 +52,11 @@ function ClearOnSuccess({
 interface PostComposerProps {
   phoneVerified: boolean;
   isOldEnough: boolean;
+  isPremium?: boolean;
   onPostCreated?: (postId: string) => void;
 }
 
-export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: PostComposerProps) {
+export function PostComposer({ phoneVerified, isOldEnough, isPremium, onPostCreated }: PostComposerProps) {
   const [editorJson, setEditorJson] = useState("");
   const [shouldClear, setShouldClear] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
@@ -63,6 +65,8 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
   const [isGraphicNudity, setIsGraphicNudity] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [isCloseFriendsOnly, setIsCloseFriendsOnly] = useState(false);
+  const [customAudienceIds, setCustomAudienceIds] = useState<string[]>([]);
+  const [showAudiencePicker, setShowAudiencePicker] = useState(false);
   const [isLoggedInOnly, setIsLoggedInOnly] = useState(false);
   const [showContentWarnings, setShowContentWarnings] = useState(false);
   const [slug, setSlug] = useState("");
@@ -83,6 +87,7 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
         setIsNsfw(false);
         setIsGraphicNudity(false);
         setIsCloseFriendsOnly(false);
+        setCustomAudienceIds([]);
         setIsLoggedInOnly(false);
         setSlug("");
         setShowSlugInput(false);
@@ -198,6 +203,8 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
         </div>
         <input type="hidden" name="isGraphicNudity" value={isGraphicNudity ? "true" : "false"} />
         <input type="hidden" name="isCloseFriendsOnly" value={isCloseFriendsOnly ? "true" : "false"} />
+        <input type="hidden" name="hasCustomAudience" value={customAudienceIds.length > 0 ? "true" : "false"} />
+        <input type="hidden" name="customAudienceIds" value={customAudienceIds.join(",")} />
         <input type="hidden" name="isLoggedInOnly" value={isLoggedInOnly ? "true" : "false"} />
         {!showSlugInput && <input type="hidden" name="slug" value={slug} />}
         <div className="border-t border-zinc-200 px-4 py-2 dark:border-zinc-700">
@@ -295,6 +302,14 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
           )}
         </div>
         {showInfoModal && <ContentFlagsInfoModal onClose={() => setShowInfoModal(false)} />}
+        {showAudiencePicker && (
+          <AudiencePicker
+            isOpen={showAudiencePicker}
+            onClose={() => setShowAudiencePicker(false)}
+            selectedIds={customAudienceIds}
+            onSelectionChange={setCustomAudienceIds}
+          />
+        )}
         <div className="flex flex-col gap-2 border-t border-zinc-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-700">
           <div className="flex items-center gap-2">
             {state.message && !state.success && (
@@ -304,7 +319,7 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
               <p className="text-sm text-green-600">{state.message}</p>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <label
               className="flex cursor-pointer items-center gap-1.5"
               title="Only visible to your close friends"
@@ -312,7 +327,10 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
               <input
                 type="checkbox"
                 checked={isCloseFriendsOnly}
-                onChange={(e) => setIsCloseFriendsOnly(e.target.checked)}
+                onChange={(e) => {
+                  setIsCloseFriendsOnly(e.target.checked);
+                  if (e.target.checked) setCustomAudienceIds([]);
+                }}
                 className="sr-only peer"
               />
               <span className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${isCloseFriendsOnly ? "border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-900/30 dark:text-green-400" : "border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-500 dark:border-zinc-700 dark:text-zinc-500 dark:hover:border-zinc-600 dark:hover:text-zinc-400"}`}>
@@ -322,6 +340,28 @@ export function PostComposer({ phoneVerified, isOldEnough, onPostCreated }: Post
                 Close Friends
               </span>
             </label>
+            {isPremium && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (customAudienceIds.length > 0) {
+                    setCustomAudienceIds([]);
+                  } else {
+                    setIsCloseFriendsOnly(false);
+                    setShowAudiencePicker(true);
+                  }
+                }}
+                className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${customAudienceIds.length > 0 ? "border-violet-300 bg-violet-50 text-violet-700 dark:border-violet-700 dark:bg-violet-900/30 dark:text-violet-400" : "border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-500 dark:border-zinc-700 dark:text-zinc-500 dark:hover:border-zinc-600 dark:hover:text-zinc-400"}`}
+                data-testid="custom-audience-button"
+              >
+                <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M7 8a3 3 0 100-6 3 3 0 000 6zm7.5 1a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM1.615 16.428a1.224 1.224 0 01-.569-1.175 6.002 6.002 0 0111.908 0c.058.467-.172.92-.57 1.174A9.953 9.953 0 017 18a9.953 9.953 0 01-5.385-1.572zM14.5 16h-.106c.07-.297.088-.611.048-.933a7.47 7.47 0 00-1.588-3.755 4.502 4.502 0 015.874 2.636.818.818 0 01-.36.98A7.465 7.465 0 0114.5 16z" />
+                </svg>
+                {customAudienceIds.length > 0
+                  ? `Custom Audience (${customAudienceIds.length})`
+                  : "Custom Audience"}
+              </button>
+            )}
             <LoggedInOnlyToggle
               checked={isLoggedInOnly}
               onChange={setIsLoggedInOnly}

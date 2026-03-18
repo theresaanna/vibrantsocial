@@ -161,6 +161,17 @@ export default async function PostPage({ params, searchParams }: Props) {
     }
   }
 
+  // Custom audience posts: only the author and selected audience can view
+  if (post.hasCustomAudience && post.author) {
+    if (!userId) redirect("/login");
+    if (userId !== post.author.id) {
+      const inAudience = await prisma.postAudience.findUnique({
+        where: { postId_userId: { postId: post.id, userId } },
+      });
+      if (!inAudience) notFound();
+    }
+  }
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
       <PostPageClient
