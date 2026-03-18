@@ -68,6 +68,10 @@ function getNotificationText(type: NotificationType): string {
       return "published a new post";
     case "TAG_POST":
       return "posted in a tag you follow";
+    case "CONTENT_MODERATION":
+      return "Your post was flagged for unmarked adult content. A strike has been recorded.";
+    default:
+      return "";
   }
 }
 
