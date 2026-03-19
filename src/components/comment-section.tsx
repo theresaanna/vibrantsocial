@@ -10,6 +10,7 @@ import { LinkifyText } from "@/components/chat/linkify-text";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { ReportModal } from "@/components/report-modal";
 import { StyledName } from "@/components/styled-name";
+import { MentionInput, type MentionInputHandle } from "@/components/mention-input";
 
 const LazyEmojiPicker = lazy(() => import("emoji-picker-react"));
 
@@ -68,7 +69,7 @@ export function CommentSection({
     id: string;
     name: string;
   } | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<MentionInputHandle>(null);
   const hasScrolled = useRef(false);
 
   const [state, formAction, isPending] = useActionState(
@@ -199,10 +200,9 @@ export function CommentSection({
             {replyingTo && (
               <input type="hidden" name="parentId" value={replyingTo.id} />
             )}
-            <input
+            <MentionInput
               ref={inputRef}
               name="content"
-              type="text"
               placeholder={replyingTo ? `Reply to ${replyingTo.name}...` : "Write a comment..."}
               required
               maxLength={1000}

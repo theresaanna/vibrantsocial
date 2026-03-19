@@ -160,6 +160,7 @@ export function FeedList({
                   ageVerified={ageVerified}
                   showGraphicByDefault={showGraphicByDefault}
                   showNsfwContent={showNsfwContent}
+                  onDelete={() => setItems((prev) => prev.filter((i) => !(i.type === "post" && i.data.id === item.data.id)))}
                 />
               ) : (
                 <RepostCard
@@ -169,6 +170,7 @@ export function FeedList({
                   ageVerified={ageVerified}
                   showGraphicByDefault={showGraphicByDefault}
                   showNsfwContent={showNsfwContent}
+                  onDelete={() => setItems((prev) => prev.filter((i) => !(i.type === "repost" && i.data.id === item.data.id)))}
                 />
               )}
             </div>

@@ -565,6 +565,15 @@ export const scanPostContentFn = inngest.createFunction(
         });
       }
 
+      // Alert admin about unmarked NSFW
+      await sendModerationAlertEmail({
+        postId,
+        authorUsername: user.username ?? "unknown",
+        violationType: "nsfw_unmarked",
+        confidence: nsfwScore,
+        contentPreview: plainText.slice(0, 200),
+      });
+
       // Check for suspension
       if (updatedUser.contentStrikes >= MAX_STRIKES) {
         await prisma.user.update({

@@ -73,6 +73,7 @@ interface PostCardProps {
   defaultExpanded?: boolean;
   highlightCommentId?: string | null;
   showPinnedIndicator?: boolean;
+  onDelete?: () => void;
 }
 
 export function PostCard({
@@ -86,6 +87,7 @@ export function PostCard({
   defaultExpanded = false,
   highlightCommentId,
   showPinnedIndicator = false,
+  onDelete,
 }: PostCardProps) {
   const [showComments, setShowComments] = useState(defaultShowComments);
   const [commentCount, setCommentCount] = useCommentCount(post.id, post._count.comments);
@@ -127,7 +129,10 @@ export function PostCard({
   const [, deleteAction, deletePending] = useActionState(
     async (prevState: { success: boolean; message: string }, formData: FormData) => {
       const result = await deletePost(prevState, formData);
-      if (result.success) setDeleted(true);
+      if (result.success) {
+        setDeleted(true);
+        onDelete?.();
+      }
       return result;
     },
     { success: false, message: "" }

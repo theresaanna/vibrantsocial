@@ -83,6 +83,7 @@ interface RepostCardProps {
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
   showPinnedIndicator?: boolean;
+  onDelete?: () => void;
 }
 
 export function RepostCard({
@@ -93,6 +94,7 @@ export function RepostCard({
   showGraphicByDefault,
   showNsfwContent,
   showPinnedIndicator = false,
+  onDelete,
 }: RepostCardProps) {
   const router = useRouter();
   const reposterName = repost.user.displayName || repost.user.name || repost.user.username;
@@ -131,7 +133,10 @@ export function RepostCard({
   const [, deleteAction, deletePending] = useActionState(
     async (prevState: { success: boolean; message: string }, formData: FormData) => {
       const result = await deleteRepost(prevState, formData);
-      if (result.success) setDeleted(true);
+      if (result.success) {
+        setDeleted(true);
+        onDelete?.();
+      }
       return result;
     },
     { success: false, message: "" }
