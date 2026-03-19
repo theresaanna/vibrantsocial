@@ -20,7 +20,7 @@ export function PremiumCrown({ className = "", color = "amber", href }: PremiumC
       title="Premium member"
     >
       <svg
-        className={`h-2.5 w-2.5 ${icon}`}
+        className={`h-2 w-2 ${icon}`}
         viewBox="1 0 22 24"
         fill="currentColor"
       >

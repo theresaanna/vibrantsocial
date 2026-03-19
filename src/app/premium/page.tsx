@@ -42,7 +42,7 @@ export default function PremiumPage() {
         <div className="text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 shadow-lg">
             <svg
-              className="h-8 w-8 text-white"
+              className="h-7 w-7 text-white"
               viewBox="1 0 22 24"
               fill="currentColor"
             >
