@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { constructWebhookEvent } from "@/lib/stripe";
 
+const GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
 /**
  * Stripe webhook handler.
  * Receives POST requests when payment events occur.
@@ -29,41 +31,162 @@ export async function POST(request: NextRequest) {
   }
 
   if (event.type === "checkout.session.completed") {
-    const session = event.data.object;
-
-    // Only process age verification payments
-    if (session.metadata?.purpose !== "age_verification") {
-      return NextResponse.json({ received: true });
-    }
-
-    const userId =
-      session.client_reference_id ?? session.metadata?.userId;
-    if (!userId) {
-      return NextResponse.json({ received: true });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { ageVerificationPaid: true },
-    });
-
-    if (!user) {
-      return NextResponse.json({ received: true });
-    }
-
-    // Idempotent: skip if already paid
-    if (user.ageVerificationPaid) {
-      return NextResponse.json({ received: true });
-    }
-
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        ageVerificationPaid: new Date(),
-        stripeCheckoutSessionId: session.id,
-      },
-    });
+    await handleCheckoutCompleted(event.data.object);
+  } else if (event.type === "invoice.payment_succeeded") {
+    await handleInvoicePaymentSucceeded(event.data.object);
+  } else if (event.type === "invoice.payment_failed") {
+    await handleInvoicePaymentFailed(event.data.object);
+  } else if (event.type === "customer.subscription.deleted") {
+    await handleSubscriptionDeleted(event.data.object);
   }
 
   return NextResponse.json({ received: true });
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function handleCheckoutCompleted(session: any) {
+  const purpose = session.metadata?.purpose;
+
+  if (purpose === "age_verification") {
+    return handleAgeVerificationCheckout(session);
+  }
+
+  if (purpose === "premium_subscription") {
+    return handlePremiumCheckoutCompleted(session);
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function handleAgeVerificationCheckout(session: any) {
+  const userId =
+    session.client_reference_id ?? session.metadata?.userId;
+  if (!userId) return;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { ageVerificationPaid: true },
+  });
+
+  if (!user || user.ageVerificationPaid) return;
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      ageVerificationPaid: new Date(),
+      stripeCheckoutSessionId: session.id,
+    },
+  });
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function handlePremiumCheckoutCompleted(session: any) {
+  const userId =
+    session.client_reference_id ?? session.metadata?.userId;
+  if (!userId) return;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { stripeSubscriptionId: true },
+  });
+
+  if (!user) return;
+
+  // Idempotent: skip if already has this subscription
+  const subscriptionId =
+    typeof session.subscription === "string"
+      ? session.subscription
+      : session.subscription?.id;
+
+  if (user.stripeSubscriptionId === subscriptionId) return;
+
+  const customerId =
+    typeof session.customer === "string"
+      ? session.customer
+      : session.customer?.id;
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      tier: "premium",
+      stripeCustomerId: customerId ?? null,
+      stripeSubscriptionId: subscriptionId ?? null,
+      premiumExpiresAt: null,
+    },
+  });
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function handleInvoicePaymentSucceeded(invoice: any) {
+  const customerId =
+    typeof invoice.customer === "string"
+      ? invoice.customer
+      : invoice.customer?.id;
+  if (!customerId) return;
+
+  const user = await prisma.user.findUnique({
+    where: { stripeCustomerId: customerId },
+    select: { id: true, tier: true, premiumExpiresAt: true },
+  });
+
+  if (!user) return;
+
+  // Clear any grace period and ensure premium is active
+  if (user.premiumExpiresAt || user.tier !== "premium") {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        tier: "premium",
+        premiumExpiresAt: null,
+      },
+    });
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function handleInvoicePaymentFailed(invoice: any) {
+  const customerId =
+    typeof invoice.customer === "string"
+      ? invoice.customer
+      : invoice.customer?.id;
+  if (!customerId) return;
+
+  const user = await prisma.user.findUnique({
+    where: { stripeCustomerId: customerId },
+    select: { id: true, tier: true },
+  });
+
+  if (!user || user.tier !== "premium") return;
+
+  // Set 7-day grace period
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      premiumExpiresAt: new Date(Date.now() + GRACE_PERIOD_MS),
+    },
+  });
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function handleSubscriptionDeleted(subscription: any) {
+  const customerId =
+    typeof subscription.customer === "string"
+      ? subscription.customer
+      : subscription.customer?.id;
+  if (!customerId) return;
+
+  const user = await prisma.user.findUnique({
+    where: { stripeCustomerId: customerId },
+    select: { id: true },
+  });
+
+  if (!user) return;
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      tier: "free",
+      stripeSubscriptionId: null,
+      premiumExpiresAt: null,
+    },
+  });
 }

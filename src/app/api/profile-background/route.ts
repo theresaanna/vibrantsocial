@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { scanImageBuffer, quarantineUpload } from "@/lib/arachnid-shield";
 import { uploadLimiter, checkRateLimit } from "@/lib/rate-limit";
 import { invalidate, cacheKeys } from "@/lib/cache";
+import { checkAndExpirePremium } from "@/lib/premium";
 
 const ALLOWED_TYPES = [
   "image/jpeg",
@@ -31,7 +32,8 @@ export async function POST(request: NextRequest) {
     select: { tier: true, profileBgImage: true, username: true },
   });
 
-  if (user?.tier !== "premium") {
+  const isPremium = await checkAndExpirePremium(session.user.id);
+  if (!isPremium) {
     return NextResponse.json(
       { error: "Premium subscription required" },
       { status: 403 }

@@ -37,6 +37,12 @@ vi.mock("@/lib/cache", () => ({
   },
 }));
 
+const mockCheckAndExpirePremium = vi.fn();
+vi.mock("@/lib/premium", () => ({
+  checkAndExpirePremium: (...args: unknown[]) =>
+    mockCheckAndExpirePremium(...args),
+}));
+
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { del } from "@vercel/blob";
@@ -67,6 +73,8 @@ describe("updateProfile", () => {
     vi.clearAllMocks();
     // Default: no revisions to prune
     mockPrisma.bioRevision.count.mockResolvedValue(0 as never);
+    // Default: free user (non-premium)
+    mockCheckAndExpirePremium.mockResolvedValue(false);
   });
 
   it("returns error if not authenticated", async () => {
@@ -340,6 +348,7 @@ describe("updateProfile", () => {
       mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
       // bio + tier fetch
       mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null, tier: "premium" } as never);
+      mockCheckAndExpirePremium.mockResolvedValueOnce(true);
       mockPrisma.user.update.mockResolvedValueOnce({} as never);
 
       const result = await updateProfile(
@@ -389,6 +398,7 @@ describe("updateProfile", () => {
     it("accepts 3-digit hex colors", async () => {
       mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
       mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null, tier: "premium" } as never);
+      mockCheckAndExpirePremium.mockResolvedValueOnce(true);
       mockPrisma.user.update.mockResolvedValueOnce({} as never);
 
       const result = await updateProfile(
@@ -493,6 +503,7 @@ describe("updateProfile", () => {
     it("preserves custom theme colors for premium-tier users", async () => {
       mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
       mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null, tier: "premium" } as never);
+      mockCheckAndExpirePremium.mockResolvedValueOnce(true);
       mockPrisma.user.update.mockResolvedValueOnce({} as never);
 
       const result = await updateProfile(

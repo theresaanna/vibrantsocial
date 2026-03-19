@@ -60,6 +60,59 @@ export async function getCheckoutSession(
 }
 
 /**
+ * Creates a Stripe Checkout Session for premium subscription.
+ */
+export async function createPremiumCheckoutSession(params: {
+  userId: string;
+  userEmail?: string | null;
+  stripeCustomerId?: string | null;
+  successUrl: string;
+  cancelUrl: string;
+}): Promise<Stripe.Checkout.Session> {
+  const stripe = getStripe();
+  const priceId = process.env.STRIPE_PREMIUM_PRICE_ID;
+
+  if (!priceId) {
+    throw new Error("STRIPE_PREMIUM_PRICE_ID must be set");
+  }
+
+  return stripe.checkout.sessions.create({
+    mode: "subscription",
+    payment_method_types: ["card"],
+    line_items: [
+      {
+        price: priceId,
+        quantity: 1,
+      },
+    ],
+    success_url: params.successUrl,
+    cancel_url: params.cancelUrl,
+    ...(params.stripeCustomerId
+      ? { customer: params.stripeCustomerId }
+      : { customer_email: params.userEmail ?? undefined }),
+    client_reference_id: params.userId,
+    metadata: {
+      userId: params.userId,
+      purpose: "premium_subscription",
+    },
+  });
+}
+
+/**
+ * Creates a Stripe Billing Portal session for managing subscriptions.
+ */
+export async function createBillingPortalSession(params: {
+  stripeCustomerId: string;
+  returnUrl: string;
+}): Promise<Stripe.BillingPortal.Session> {
+  const stripe = getStripe();
+  return stripe.billingPortal.sessions.create({
+    customer: params.stripeCustomerId,
+    return_url: params.returnUrl,
+  });
+}
+
+/**
  * Constructs and verifies a Stripe webhook event from the raw body and signature.
  */
 export function constructWebhookEvent(
