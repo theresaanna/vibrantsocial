@@ -373,20 +373,20 @@ export function PostCard({
                     {isPinned ? "Unpin" : "Pin to profile"}
                   </button>
                 </form>
-                <form action={deleteAction} ref={deleteFormRef}>
-                  <input type="hidden" name="postId" value={post.id} />
-                  <button
+                <button
                     type="button"
                     disabled={deletePending}
-                    onClick={() => setShowDeleteConfirm(true)}
+                    onClick={() => { setShowDeleteConfirm(true); setShowMenu(false); }}
                     className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-zinc-100 disabled:opacity-50 dark:text-red-400 dark:hover:bg-zinc-700"
                     data-testid="post-delete-button"
                   >
                     Delete
                   </button>
-                </form>
               </div>
             )}
+            <form action={deleteAction} ref={deleteFormRef} className="hidden">
+              <input type="hidden" name="postId" value={post.id} />
+            </form>
           </div>
         )}
         {!isAuthor && isAuthenticated && (
