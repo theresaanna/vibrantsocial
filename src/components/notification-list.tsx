@@ -10,6 +10,7 @@ import {
 } from "@/app/notifications/actions";
 import type { NotificationType } from "@/generated/prisma/client";
 import { getNotificationText } from "@/lib/notification-text";
+import { StyledName } from "@/components/styled-name";
 
 interface NotificationActor {
   id: string;
@@ -19,6 +20,7 @@ interface NotificationActor {
   image: string | null;
   avatar: string | null;
   profileFrameId: string | null;
+  usernameFont?: string | null;
 }
 
 interface NotificationItem {
@@ -155,7 +157,7 @@ export function NotificationList({
                   ) : (
                     <>
                       <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                        {name}
+                        <StyledName fontId={notification.actor.usernameFont}>{name}</StyledName>
                       </span>{" "}
                       {text}
                     </>

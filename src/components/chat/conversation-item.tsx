@@ -5,6 +5,7 @@ import { timeAgo } from "@/lib/time";
 import { PresenceIndicator } from "./presence-indicator";
 import { FramedAvatar } from "@/components/framed-avatar";
 import type { ConversationListItem, ChatThemeColors } from "@/types/chat";
+import { StyledName } from "@/components/styled-name";
 
 interface ConversationItemProps {
   conversation: ConversationListItem;
@@ -62,7 +63,7 @@ export function ConversationItem({
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between">
           <span className={`truncate text-sm ${unreadCount > 0 ? "font-semibold text-zinc-900 dark:text-zinc-100" : "font-medium text-zinc-700 dark:text-zinc-300"}`}>
-            {displayName}
+            <StyledName fontId={!isGroup ? participants[0]?.usernameFont : undefined}>{displayName}</StyledName>
           </span>
           {lastMessage && (
             <span className="ml-2 flex-shrink-0 text-[10px] text-zinc-400">

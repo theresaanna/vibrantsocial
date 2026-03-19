@@ -198,6 +198,7 @@ describe("getCloseFriends", () => {
             avatar: true,
             image: true,
             profileFrameId: true,
+            usernameFont: true,
           },
         },
       },

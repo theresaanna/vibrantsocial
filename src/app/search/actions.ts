@@ -32,6 +32,7 @@ export async function searchUsers(query: string, cursor?: string) {
       avatar: true,
       profileFrameId: true,
       image: true,
+      usernameFont: true,
       bio: true,
       _count: { select: { followers: true, posts: true } },
     },
@@ -92,6 +93,7 @@ export async function searchPosts(query: string, cursor?: string) {
           avatar: true,
           profileFrameId: true,
           image: true,
+          usernameFont: true,
         },
       },
       _count: {

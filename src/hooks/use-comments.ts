@@ -13,6 +13,7 @@ interface CommentAuthor {
   image: string | null;
   avatar: string | null;
   profileFrameId: string | null;
+  usernameFont?: string | null;
 }
 
 export interface ReactionGroup {

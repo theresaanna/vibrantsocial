@@ -9,6 +9,7 @@ import Link from "next/link";
 import { LinkifyText } from "@/components/chat/linkify-text";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { ReportModal } from "@/components/report-modal";
+import { StyledName } from "@/components/styled-name";
 
 const LazyEmojiPicker = lazy(() => import("emoji-picker-react"));
 
@@ -429,10 +430,10 @@ function CommentItem({
                 href={`/${comment.author.username}`}
                 className="hover:underline"
               >
-                {authorName}
+                <StyledName fontId={comment.author.usernameFont}>{authorName}</StyledName>
               </Link>
             ) : (
-              authorName
+              <StyledName fontId={comment.author.usernameFont}>{authorName}</StyledName>
             )}
           </span>
           <span className="text-xs text-zinc-400">

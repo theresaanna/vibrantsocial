@@ -5,6 +5,7 @@ import { acceptMessageRequest, declineMessageRequest } from "@/app/chat/actions"
 import { useRouter } from "next/navigation";
 import { FramedAvatar } from "@/components/framed-avatar";
 import type { MessageRequestData, ActionState } from "@/types/chat";
+import { StyledName } from "@/components/styled-name";
 
 interface MessageRequestCardProps {
   request: MessageRequestData;
@@ -75,7 +76,7 @@ export function MessageRequestCard({
       />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
-          {displayName}
+          <StyledName fontId={sender.usernameFont}>{displayName}</StyledName>
         </p>
         {sender.username && (
           <p className="text-xs text-zinc-500">@{sender.username}</p>

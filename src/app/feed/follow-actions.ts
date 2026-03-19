@@ -14,6 +14,7 @@ export interface FollowUser {
   avatar: string | null;
   image: string | null;
   profileFrameId: string | null;
+  usernameFont: string | null;
   isFollowing: boolean;
 }
 
@@ -25,6 +26,7 @@ const userSelect = {
   avatar: true,
   image: true,
   profileFrameId: true,
+  usernameFont: true,
 } as const;
 
 export async function getFollowers(username: string): Promise<FollowUser[]> {

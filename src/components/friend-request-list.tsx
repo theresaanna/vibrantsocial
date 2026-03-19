@@ -7,6 +7,7 @@ import {
   acceptFriendRequest,
   declineFriendRequest,
 } from "@/app/feed/friend-actions";
+import { StyledName } from "@/components/styled-name";
 
 interface FriendRequest {
   id: string;
@@ -17,6 +18,7 @@ interface FriendRequest {
     name: string | null;
     avatar: string | null;
     profileFrameId: string | null;
+    usernameFont?: string | null;
     image: string | null;
   };
 }
@@ -65,7 +67,7 @@ function FriendRequestCard({ request }: { request: FriendRequest }) {
           href={`/${sender.username}`}
           className="block truncate text-sm font-semibold text-zinc-900 hover:underline dark:text-zinc-100"
         >
-          {displayName}
+          <StyledName fontId={sender.usernameFont}>{displayName}</StyledName>
         </Link>
         {sender.username && (
           <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">

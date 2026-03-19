@@ -71,6 +71,7 @@ describe("notification actions", () => {
               image: true,
               avatar: true,
               profileFrameId: true,
+              usernameFont: true,
             },
           },
           post: { select: { id: true, content: true } },

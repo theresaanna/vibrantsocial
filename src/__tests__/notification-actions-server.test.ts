@@ -69,7 +69,7 @@ describe("notification server actions", () => {
         take: 50,
         include: {
           actor: {
-            select: { id: true, username: true, displayName: true, name: true, image: true, avatar: true, profileFrameId: true },
+            select: { id: true, username: true, displayName: true, name: true, image: true, avatar: true, profileFrameId: true, usernameFont: true },
           },
           post: { select: { id: true, content: true } },
           message: { select: { id: true, conversationId: true } },
@@ -161,7 +161,7 @@ describe("notification server actions", () => {
         take: 8,
         include: {
           actor: {
-            select: { id: true, username: true, displayName: true, name: true, image: true, avatar: true, profileFrameId: true },
+            select: { id: true, username: true, displayName: true, name: true, image: true, avatar: true, profileFrameId: true, usernameFont: true },
           },
           post: { select: { id: true, content: true } },
           message: { select: { id: true, conversationId: true } },

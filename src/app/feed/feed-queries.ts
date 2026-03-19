@@ -11,6 +11,7 @@ export function getPostInclude(userId: string) {
         image: true,
         avatar: true,
         profileFrameId: true,
+        usernameFont: true,
       },
     },
     _count: {
@@ -52,6 +53,7 @@ export const repostUserSelect = {
   image: true,
   avatar: true,
   profileFrameId: true,
+  usernameFont: true,
 } as const;
 
 export function getRepostInclude(userId: string) {
