@@ -1,5 +1,6 @@
 import os
 import io
+import logging
 from contextlib import asynccontextmanager
 
 import requests
@@ -9,6 +10,11 @@ from PIL import Image
 from transformers import pipeline
 from detoxify import Detoxify
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+logger = logging.getLogger("moderation")
 
 MODERATION_API_KEY = os.environ.get("MODERATION_API_KEY", "")
 
@@ -101,8 +107,12 @@ async def scan_image(
                 label = "nsfw"
             break
 
+    is_nsfw = nsfw_score >= NSFW_THRESHOLD
+    if is_nsfw:
+        logger.info("NSFW detected: url=%s score=%.4f", req.url, nsfw_score)
+
     return ImageScanResponse(
-        nsfw=nsfw_score >= NSFW_THRESHOLD,
+        nsfw=is_nsfw,
         score=round(nsfw_score, 4),
         label=label,
     )
@@ -144,6 +154,17 @@ async def scan_text(
         insult >= INSULT_THRESHOLD
         or (toxicity >= TOXICITY_THRESHOLD and threat >= 0.3)
     )
+
+    if is_hate_speech:
+        logger.info(
+            "Hate speech detected: identity_attack=%.4f severe_toxicity=%.4f text=%s",
+            identity_attack, severe_toxicity, req.text[:200],
+        )
+    if is_bullying:
+        logger.info(
+            "Bullying detected: insult=%.4f toxicity=%.4f threat=%.4f text=%s",
+            insult, toxicity, threat, req.text[:200],
+        )
 
     return TextScanResponse(
         toxicity=round(toxicity, 4),
