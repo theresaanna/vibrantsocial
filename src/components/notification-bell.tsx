@@ -18,6 +18,7 @@ import { timeAgo } from "@/lib/time";
 import { Tooltip } from "@/components/tooltip";
 import type { NotificationType } from "@/generated/prisma/client";
 import { getNotificationText } from "@/lib/notification-text";
+import { FriendRequestNotificationActions } from "@/components/friend-request-notification-actions";
 
 interface NotificationActor {
   id: string;
@@ -43,6 +44,7 @@ interface NotificationItem {
   post: { id: string; content: string } | null;
   message: { id: string; conversationId: string } | null;
   tag: { id: string; name: string } | null;
+  hasPendingFriendRequest?: boolean;
 }
 
 function getNotificationHref(notification: NotificationItem): string {
@@ -270,24 +272,35 @@ export function NotificationBell({
                       {avatarImg}
                     </span>
                   )}
-                  <Link
-                    href={href}
-                    onClick={() => {
-                      if (isUnread) handleMarkRead(notification.id);
-                      setIsOpen(false);
-                    }}
-                    className="static min-w-0 flex-1 after:absolute after:inset-0 after:content-['']"
-                  >
-                    <p className="text-xs text-zinc-700 dark:text-zinc-300">
-                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                        {name}
-                      </span>{" "}
-                      {text}
-                    </p>
-                    <p className="mt-0.5 text-[10px] text-zinc-400">
-                      {timeAgo(new Date(notification.createdAt))}
-                    </p>
-                  </Link>
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      href={href}
+                      onClick={() => {
+                        if (isUnread) handleMarkRead(notification.id);
+                        setIsOpen(false);
+                      }}
+                      className="static after:absolute after:inset-0 after:content-['']"
+                    >
+                      <p className="text-xs text-zinc-700 dark:text-zinc-300">
+                        <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                          {name}
+                        </span>{" "}
+                        {text}
+                      </p>
+                      <p className="mt-0.5 text-[10px] text-zinc-400">
+                        {timeAgo(new Date(notification.createdAt))}
+                      </p>
+                    </Link>
+                    {notification.type === "FRIEND_REQUEST" &&
+                      notification.hasPendingFriendRequest && (
+                        <FriendRequestNotificationActions
+                          actorId={notification.actorId}
+                          onRespond={() => {
+                            getRecentNotifications().then(setNotifications);
+                          }}
+                        />
+                      )}
+                  </div>
                   {isUnread && (
                     <span className="relative z-10 mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
                   )}

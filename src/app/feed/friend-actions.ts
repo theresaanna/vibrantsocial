@@ -289,6 +289,53 @@ export async function removeFriend(
   return { success: true, message: "Friend removed" };
 }
 
+export async function respondToFriendRequestByActor(
+  actorId: string,
+  action: "accept" | "decline"
+): Promise<FriendActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const request = await prisma.friendRequest.findFirst({
+    where: {
+      senderId: actorId,
+      receiverId: session.user.id,
+      status: "PENDING",
+    },
+  });
+
+  if (!request) {
+    return { success: false, message: "No pending friend request found" };
+  }
+
+  if (action === "accept") {
+    await prisma.friendRequest.update({
+      where: { id: request.id },
+      data: { status: "ACCEPTED" },
+    });
+
+    try {
+      await createNotification({
+        type: "FRIEND_REQUEST",
+        actorId: session.user.id,
+        targetUserId: request.senderId,
+      });
+    } catch {
+      // Non-critical
+    }
+
+    revalidatePath("/");
+    return { success: true, message: "Friend request accepted" };
+  }
+
+  // Decline: delete so sender can re-request later
+  await prisma.friendRequest.delete({ where: { id: request.id } });
+  revalidatePath("/");
+  return { success: true, message: "Friend request declined" };
+}
+
 export async function getPendingFriendRequests() {
   const session = await auth();
   if (!session?.user?.id) return [];
