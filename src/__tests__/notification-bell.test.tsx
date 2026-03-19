@@ -36,6 +36,12 @@ vi.mock("@/lib/time", () => ({
   timeAgo: vi.fn().mockReturnValue("1m ago"),
 }));
 
+const mockRespondToFriendRequestByActor = vi.fn();
+vi.mock("@/app/feed/friend-actions", () => ({
+  respondToFriendRequestByActor: (...args: unknown[]) =>
+    mockRespondToFriendRequestByActor(...args),
+}));
+
 vi.mock("next/link", () => ({
   default: ({
     href,
@@ -349,6 +355,45 @@ describe("NotificationBell", () => {
     await waitFor(() => {
       expect(mockGetRecentNotifications).toHaveBeenCalled();
     });
+  });
+
+  it("shows Accept/Decline buttons for pending FRIEND_REQUEST notifications", () => {
+    const notifications = [
+      makeNotification("n1", "FRIEND_REQUEST", {
+        hasPendingFriendRequest: true,
+        postId: null,
+        post: null,
+      }),
+    ];
+    render(
+      <NotificationBell
+        initialUnreadCount={1}
+        initialNotifications={notifications}
+      />
+    );
+    fireEvent.click(screen.getByLabelText("Notifications"));
+    expect(screen.getByText("Accept")).toBeInTheDocument();
+    expect(screen.getByText("Decline")).toBeInTheDocument();
+  });
+
+  it("does not show Accept/Decline buttons for non-pending FRIEND_REQUEST notifications", () => {
+    const notifications = [
+      makeNotification("n1", "FRIEND_REQUEST", {
+        hasPendingFriendRequest: false,
+        postId: null,
+        post: null,
+      }),
+    ];
+    render(
+      <NotificationBell
+        initialUnreadCount={1}
+        initialNotifications={notifications}
+      />
+    );
+    fireEvent.click(screen.getByLabelText("Notifications"));
+    expect(screen.getByText("sent you a friend request")).toBeInTheDocument();
+    expect(screen.queryByText("Accept")).not.toBeInTheDocument();
+    expect(screen.queryByText("Decline")).not.toBeInTheDocument();
   });
 
   it("closes pane when clicking outside", () => {

@@ -3,11 +3,33 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
+async function enrichWithPendingFriendRequests(
+  notifications: Array<{ type: string; actorId: string }>,
+  currentUserId: string
+): Promise<Set<string>> {
+  const friendRequestActorIds = notifications
+    .filter((n) => n.type === "FRIEND_REQUEST")
+    .map((n) => n.actorId);
+
+  if (friendRequestActorIds.length === 0) return new Set();
+
+  const pendingRequests = await prisma.friendRequest.findMany({
+    where: {
+      senderId: { in: friendRequestActorIds },
+      receiverId: currentUserId,
+      status: "PENDING",
+    },
+    select: { senderId: true },
+  });
+
+  return new Set(pendingRequests.map((r) => r.senderId));
+}
+
 export async function getNotifications() {
   const session = await auth();
   if (!session?.user?.id) return [];
 
-  return prisma.notification.findMany({
+  const notifications = await prisma.notification.findMany({
     where: { targetUserId: session.user.id },
     orderBy: { createdAt: "desc" },
     take: 50,
@@ -29,6 +51,19 @@ export async function getNotifications() {
       tag: { select: { id: true, name: true } },
     },
   });
+
+  const pendingActorIds = await enrichWithPendingFriendRequests(
+    notifications,
+    session.user.id
+  );
+
+  return notifications.map((n) => ({
+    ...n,
+    hasPendingFriendRequest:
+      n.type === "FRIEND_REQUEST"
+        ? pendingActorIds.has(n.actorId)
+        : undefined,
+  }));
 }
 
 export async function markNotificationRead(notificationId: string) {
@@ -86,7 +121,20 @@ export async function getRecentNotifications() {
     },
   });
 
-  return JSON.parse(JSON.stringify(notifications));
+  const pendingActorIds = await enrichWithPendingFriendRequests(
+    notifications,
+    session.user.id
+  );
+
+  const enriched = notifications.map((n) => ({
+    ...n,
+    hasPendingFriendRequest:
+      n.type === "FRIEND_REQUEST"
+        ? pendingActorIds.has(n.actorId)
+        : undefined,
+  }));
+
+  return JSON.parse(JSON.stringify(enriched));
 }
 
 export async function getUnreadNotificationCount() {

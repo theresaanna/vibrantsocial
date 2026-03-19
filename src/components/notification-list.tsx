@@ -11,6 +11,7 @@ import {
 import type { NotificationType } from "@/generated/prisma/client";
 import { getNotificationText } from "@/lib/notification-text";
 import { StyledName } from "@/components/styled-name";
+import { FriendRequestNotificationActions } from "@/components/friend-request-notification-actions";
 
 interface NotificationActor {
   id: string;
@@ -37,6 +38,7 @@ interface NotificationItem {
   post: { id: string; content: string } | null;
   message: { id: string; conversationId: string } | null;
   tag: { id: string; name: string } | null;
+  hasPendingFriendRequest?: boolean;
 }
 
 function getActorName(actor: NotificationActor): string {
@@ -144,29 +146,37 @@ export function NotificationList({
                   {avatarImg}
                 </span>
               )}
-              <Link
-                href={href}
-                onClick={() => {
-                  if (isUnread) handleMarkRead(notification.id);
-                }}
-                className="static min-w-0 flex-1 after:absolute after:inset-0 after:content-['']"
-              >
-                <p className="text-sm text-zinc-700 dark:text-zinc-300">
-                  {notification.type === "CONTENT_MODERATION" ? (
-                    <span>{text}</span>
-                  ) : (
-                    <>
-                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                        <StyledName fontId={notification.actor.usernameFont}>{name}</StyledName>
-                      </span>{" "}
-                      {text}
-                    </>
+              <div className="min-w-0 flex-1">
+                <Link
+                  href={href}
+                  onClick={() => {
+                    if (isUnread) handleMarkRead(notification.id);
+                  }}
+                  className="static after:absolute after:inset-0 after:content-['']"
+                >
+                  <p className="text-sm text-zinc-700 dark:text-zinc-300">
+                    {notification.type === "CONTENT_MODERATION" ? (
+                      <span>{text}</span>
+                    ) : (
+                      <>
+                        <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                          <StyledName fontId={notification.actor.usernameFont}>{name}</StyledName>
+                        </span>{" "}
+                        {text}
+                      </>
+                    )}
+                  </p>
+                  <p className="mt-0.5 text-xs text-zinc-400">
+                    {timeAgo(new Date(notification.createdAt))}
+                  </p>
+                </Link>
+                {notification.type === "FRIEND_REQUEST" &&
+                  notification.hasPendingFriendRequest && (
+                    <FriendRequestNotificationActions
+                      actorId={notification.actorId}
+                    />
                   )}
-                </p>
-                <p className="mt-0.5 text-xs text-zinc-400">
-                  {timeAgo(new Date(notification.createdAt))}
-                </p>
-              </Link>
+              </div>
               {isUnread && (
                 <span className="relative z-10 mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
               )}

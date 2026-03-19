@@ -7,6 +7,12 @@ vi.mock("@/app/notifications/actions", () => ({
   markAllNotificationsRead: vi.fn().mockResolvedValue({ success: true }),
 }));
 
+const mockRespondToFriendRequestByActor = vi.fn();
+vi.mock("@/app/feed/friend-actions", () => ({
+  respondToFriendRequestByActor: (...args: unknown[]) =>
+    mockRespondToFriendRequestByActor(...args),
+}));
+
 vi.mock("@/lib/time", () => ({
   timeAgo: vi.fn().mockReturnValue("1m ago"),
 }));
@@ -252,5 +258,53 @@ describe("NotificationList", () => {
       />
     );
     expect(screen.getByText("Mark all as read")).toBeInTheDocument();
+  });
+
+  it("shows Accept/Decline buttons for pending FRIEND_REQUEST notifications", () => {
+    render(
+      <NotificationList
+        initialNotifications={[
+          {
+            id: "n-fr",
+            type: "FRIEND_REQUEST",
+            actorId: "actor1",
+            postId: null,
+            commentId: null,
+            readAt: null,
+            createdAt: new Date(),
+            actor: baseActor,
+            post: null,
+            hasPendingFriendRequest: true,
+          },
+        ]}
+      />
+    );
+    expect(screen.getByText("sent you a friend request")).toBeInTheDocument();
+    expect(screen.getByText("Accept")).toBeInTheDocument();
+    expect(screen.getByText("Decline")).toBeInTheDocument();
+  });
+
+  it("does not show Accept/Decline buttons for non-pending FRIEND_REQUEST notifications", () => {
+    render(
+      <NotificationList
+        initialNotifications={[
+          {
+            id: "n-fr2",
+            type: "FRIEND_REQUEST",
+            actorId: "actor1",
+            postId: null,
+            commentId: null,
+            readAt: null,
+            createdAt: new Date(),
+            actor: baseActor,
+            post: null,
+            hasPendingFriendRequest: false,
+          },
+        ]}
+      />
+    );
+    expect(screen.getByText("sent you a friend request")).toBeInTheDocument();
+    expect(screen.queryByText("Accept")).not.toBeInTheDocument();
+    expect(screen.queryByText("Decline")).not.toBeInTheDocument();
   });
 });
