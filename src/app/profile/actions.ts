@@ -9,6 +9,7 @@ import { isValidHexColor, THEME_COLOR_FIELDS, isPresetTheme } from "@/lib/profil
 import { isValidPreset, parseJsonArray, clamp } from "@/lib/sparklefall-presets";
 import { isValidFrameId } from "@/lib/profile-frames";
 import { isValidFontId, getFontById } from "@/lib/profile-fonts";
+import { checkAndExpirePremium } from "@/lib/premium";
 import { isValidBgRepeat, isValidBgAttachment, isValidBgSize, isValidBgPosition } from "@/lib/profile-backgrounds";
 import { isPresetBackgroundSrc } from "@/lib/profile-backgrounds.server";
 import { invalidate, cacheKeys } from "@/lib/cache";
@@ -90,8 +91,10 @@ export async function updateProfile(
     select: { bio: true, tier: true, profileFrameId: true, suspended: true },
   });
 
+  const isPremium = await checkAndExpirePremium(session.user.id);
+
   // Non-premium users can only use preset themes, not custom colors
-  if (currentUser?.tier !== "premium" && !isPresetTheme(themeColors)) {
+  if (!isPremium && !isPresetTheme(themeColors)) {
     for (const field of THEME_COLOR_FIELDS) {
       themeColors[field] = null;
     }
@@ -101,7 +104,7 @@ export async function updateProfile(
   const rawFrameId = formData.get("profileFrameId") as string | null;
   let profileFrameId: string | null = null;
   if (rawFrameId && rawFrameId.trim()) {
-    if (currentUser?.tier !== "premium") {
+    if (!isPremium) {
       profileFrameId = null;
     } else if (!isValidFrameId(rawFrameId.trim())) {
       return { success: false, message: "Invalid frame selection." };
@@ -118,7 +121,7 @@ export async function updateProfile(
       return { success: false, message: "Invalid font selection." };
     }
     const font = getFontById(rawFontId.trim());
-    if (font && font.tier === "premium" && currentUser?.tier !== "premium") {
+    if (font && font.tier === "premium" && !isPremium) {
       usernameFont = null;
     } else {
       usernameFont = rawFontId.trim();
@@ -148,7 +151,7 @@ export async function updateProfile(
       return { success: false, message: "Invalid background image." };
     }
 
-    if (currentUser?.tier !== "premium" && !isPreset) {
+    if (!isPremium && !isPreset) {
       bgData.profileBgImage = null;
     } else {
       bgData.profileBgImage = rawBgImage;
@@ -187,7 +190,7 @@ export async function updateProfile(
     sparklefallMaxSize: null,
   };
 
-  if (currentUser?.tier === "premium" && sparklefallEnabled) {
+  if (isPremium && sparklefallEnabled) {
     sparklefallData.sparklefallEnabled = true;
 
     const rawPreset = (formData.get("sparklefallPreset") as string)?.trim() || null;

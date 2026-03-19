@@ -1,37 +1,105 @@
 "use server";
 
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import {
+  createPremiumCheckoutSession,
+  createBillingPortalSession,
+} from "@/lib/stripe";
 
-interface WaitlistState {
+interface PremiumActionResult {
   success: boolean;
   message: string;
+  url?: string;
 }
 
-export async function joinPremiumWaitlist(
-  _prevState: WaitlistState,
-  formData: FormData
-): Promise<WaitlistState> {
-  const email = (formData.get("email") as string)?.trim().toLowerCase();
-
-  if (!email) {
-    return { success: false, message: "Email is required" };
+export async function createPremiumSubscription(): Promise<PremiumActionResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
   }
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { success: false, message: "Invalid email address" };
-  }
-
-  const existing = await prisma.premiumWaitlist.findUnique({
-    where: { email },
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      email: true,
+      tier: true,
+      stripeCustomerId: true,
+    },
   });
 
-  if (existing) {
-    return { success: true, message: "You're already on the list! We'll be in touch." };
+  if (!user) {
+    return { success: false, message: "User not found" };
   }
 
-  await prisma.premiumWaitlist.create({
-    data: { email },
+  if (user.tier === "premium") {
+    return { success: false, message: "Already subscribed to premium" };
+  }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!appUrl) {
+    return { success: false, message: "Server configuration error" };
+  }
+
+  try {
+    const checkoutSession = await createPremiumCheckoutSession({
+      userId: session.user.id,
+      userEmail: user.email,
+      stripeCustomerId: user.stripeCustomerId,
+      successUrl: `${appUrl}/premium?success=true`,
+      cancelUrl: `${appUrl}/premium?canceled=true`,
+    });
+
+    return {
+      success: true,
+      message: "Checkout session created",
+      url: checkoutSession.url ?? undefined,
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to create checkout session";
+    return { success: false, message };
+  }
+}
+
+export async function createBillingPortal(): Promise<PremiumActionResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { stripeCustomerId: true },
   });
 
-  return { success: true, message: "You're on the list! We'll notify you when Premium launches." };
+  if (!user?.stripeCustomerId) {
+    return { success: false, message: "No active subscription found" };
+  }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!appUrl) {
+    return { success: false, message: "Server configuration error" };
+  }
+
+  try {
+    const portalSession = await createBillingPortalSession({
+      stripeCustomerId: user.stripeCustomerId,
+      returnUrl: `${appUrl}/premium`,
+    });
+
+    return {
+      success: true,
+      message: "Billing portal session created",
+      url: portalSession.url,
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to create billing portal session";
+    return { success: false, message };
+  }
 }

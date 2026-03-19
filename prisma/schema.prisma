@@ -70,7 +70,10 @@ model User {
   showNsfwContent      Boolean   @default(false)
 
   // Subscription tier
-  tier String @default("free") // "free" | "premium"
+  tier                  String    @default("free") // "free" | "premium"
+  stripeCustomerId      String?   @unique
+  stripeSubscriptionId  String?
+  premiumExpiresAt      DateTime?
 
   // Stars (interaction points)
   stars Int @default(0)

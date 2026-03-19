@@ -13,6 +13,7 @@ import {
 import { extractTagsFromNames } from "@/lib/tags";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { notifyPostSubscribers } from "@/lib/subscription-notifications";
+import { checkAndExpirePremium } from "@/lib/premium";
 import { notifyTagSubscribers } from "@/lib/tag-subscription-notifications";
 import { generateSlugFromContent, validateSlug } from "@/lib/slugs";
 import { inngest } from "@/lib/inngest";
@@ -109,11 +110,8 @@ export async function createPost(
     : [];
 
   if (hasCustomAudience) {
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { tier: true },
-    });
-    if (user?.tier !== "premium") {
+    const hasPremium = await checkAndExpirePremium(session.user.id);
+    if (!hasPremium) {
       return { success: false, message: "Custom audience is a premium feature" };
     }
 
@@ -290,11 +288,8 @@ export async function editPost(
     : [];
 
   if (hasCustomAudience) {
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { tier: true },
-    });
-    if (user?.tier !== "premium") {
+    const hasPremium = await checkAndExpirePremium(session.user.id);
+    if (!hasPremium) {
       return { success: false, message: "Custom audience is a premium feature" };
     }
   }

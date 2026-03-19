@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
-import { WaitlistForm } from "./waitlist-form";
+import { auth } from "@/auth";
+import { SubscribeButton } from "./subscribe-button";
+import { ManageButton } from "./manage-button";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Premium",
@@ -34,7 +37,11 @@ const features = [
   },
 ];
 
-export default function PremiumPage() {
+export default async function PremiumPage() {
+  const session = await auth();
+  const isLoggedIn = !!session?.user?.id;
+  const isPremium = session?.user?.tier === "premium";
+
   return (
     <div className="flex min-h-[calc(100vh-57px)] items-center justify-center px-4 py-12">
       <div className="w-full max-w-lg space-y-8">
@@ -84,25 +91,32 @@ export default function PremiumPage() {
           ))}
         </div>
 
-        {/* Sign up button (placeholder) */}
+        {/* Action area */}
         <div className="rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-900">
-          <button
-            disabled
-            className="w-full rounded-lg bg-emerald-600 px-4 py-3 text-sm font-semibold text-white opacity-50 cursor-not-allowed"
-          >
-            Sign Up for Premium — Coming Soon
-          </button>
-        </div>
-
-        {/* Email waitlist */}
-        <div className="rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-900">
-          <h2 className="mb-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            Get notified when Premium launches
-          </h2>
-          <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
-            Enter your email and we&apos;ll let you know when Premium is available.
-          </p>
-          <WaitlistForm />
+          {isPremium ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                  ✓ Premium Member
+                </span>
+              </div>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                You have access to all premium features. Manage your subscription below.
+              </p>
+              <ManageButton />
+            </div>
+          ) : isLoggedIn ? (
+            <SubscribeButton />
+          ) : (
+            <div className="space-y-3">
+              <Link
+                href="/login"
+                className="block w-full rounded-lg bg-emerald-600 px-4 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600"
+              >
+                Log in to subscribe
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>
