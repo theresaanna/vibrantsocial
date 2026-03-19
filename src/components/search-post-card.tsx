@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
+import { StyledName } from "@/components/styled-name";
 
 interface SearchPostCardProps {
   post: {
@@ -16,6 +17,7 @@ interface SearchPostCardProps {
       avatar: string | null;
       image: string | null;
       profileFrameId: string | null;
+      usernameFont?: string | null;
     };
     _count: {
       likes: number;
@@ -49,7 +51,7 @@ export function SearchPostCard({ post }: SearchPostCardProps) {
         <FramedAvatar src={avatarSrc} alt={displayName} initial={displayName[0]?.toUpperCase()} size={40} frameId={post.author.profileFrameId} />
         <div className="flex items-baseline gap-1.5 text-sm">
           <span className="font-medium text-zinc-900 dark:text-zinc-100">
-            {displayName}
+            <StyledName fontId={post.author.usernameFont}>{displayName}</StyledName>
           </span>
           {post.author.username && (
             <span className="text-zinc-500">@{post.author.username}</span>

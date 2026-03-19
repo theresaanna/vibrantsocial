@@ -226,6 +226,7 @@ describe("createComment", () => {
         image: true,
         avatar: true,
         profileFrameId: true,
+        usernameFont: true,
       },
     },
   };

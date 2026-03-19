@@ -49,6 +49,7 @@ export function FontSelector({
   onSelect,
 }: FontSelectorProps) {
   const [selectedFontId, setSelectedFontId] = useState<string | null>(currentFontId);
+  const [expanded, setExpanded] = useState(false);
 
   const freeFonts = USERNAME_FONTS.filter((f) => f.tier === "free");
   const premiumFonts = USERNAME_FONTS.filter((f) => f.tier === "premium");
@@ -67,12 +68,34 @@ export function FontSelector({
 
   return (
     <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" data-testid="font-selector">
-      <p className="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
-        Username Font
-      </p>
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="flex w-full items-center justify-between"
+        data-testid="font-selector-toggle"
+      >
+        <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+          Username Font
+          {selectedFont && (
+            <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">
+              ({selectedFont.name})
+            </span>
+          )}
+        </span>
+        <svg
+          className={`h-4 w-4 text-zinc-400 transition-transform ${expanded ? "rotate-180" : ""}`}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
 
+      {!expanded ? null : <>
       {/* Live preview */}
-      <div className="mb-4 rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800" data-testid="font-preview">
+      <div className="mt-3 mb-4 rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800" data-testid="font-preview">
         <p className="text-center text-xl font-bold text-zinc-900 dark:text-zinc-100" style={{ fontFamily: previewFontFamily }}>
           {displayName || "Your Name"}
         </p>
@@ -154,6 +177,7 @@ export function FontSelector({
           ))}
         </div>
       </div>
+      </>}
     </div>
   );
 }

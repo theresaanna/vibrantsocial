@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
+import { StyledName } from "@/components/styled-name";
 
 interface SearchUserCardProps {
   user: {
@@ -11,6 +12,7 @@ interface SearchUserCardProps {
     avatar: string | null;
     image: string | null;
     profileFrameId: string | null;
+    usernameFont?: string | null;
     bio: string | null;
     _count: { followers: number; posts: number };
   };
@@ -30,7 +32,7 @@ export function SearchUserCard({ user }: SearchUserCardProps) {
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
           <span className="truncate font-medium text-zinc-900 dark:text-zinc-100">
-            {displayName}
+            <StyledName fontId={user.usernameFont}>{displayName}</StyledName>
           </span>
           {user.username && (
             <span className="truncate text-sm text-zinc-500">

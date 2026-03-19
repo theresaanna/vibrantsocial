@@ -6,6 +6,7 @@ import { FollowButton } from "@/components/follow-button";
 import { FriendButton } from "@/components/friend-button";
 import type { FollowUser } from "@/app/feed/follow-actions";
 import type { FriendshipStatus } from "@/app/feed/friend-actions";
+import { StyledName } from "@/components/styled-name";
 
 export interface UserFriendshipInfo {
   status: FriendshipStatus;
@@ -50,7 +51,7 @@ export function UserList({ users, currentUserId, emptyMessage, friendshipStatuse
                 href={`/${user.username}`}
                 className="block truncate text-sm font-semibold text-zinc-900 hover:underline dark:text-zinc-100"
               >
-                {displayName}
+                <StyledName fontId={user.usernameFont}>{displayName}</StyledName>
               </Link>
               {user.username && (
                 <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">

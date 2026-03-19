@@ -10,6 +10,7 @@ import { PresenceIndicator } from "@/components/chat/presence-indicator";
 import { timeAgo } from "@/lib/time";
 import { Tooltip } from "@/components/tooltip";
 import type { ConversationListItem } from "@/types/chat";
+import { StyledName } from "@/components/styled-name";
 
 const PRESENCE_CHANNEL = "presence:global";
 const MAX_VISIBLE = 8;
@@ -241,7 +242,7 @@ function ChatPaneItem({
                 : "font-medium text-zinc-700 dark:text-zinc-300"
             }`}
           >
-            {displayName}
+            <StyledName fontId={!isGroup ? participants[0]?.usernameFont : undefined}>{displayName}</StyledName>
           </span>
           {lastMessage && (
             <span className="ml-2 flex-shrink-0 text-[10px] text-zinc-400">

@@ -11,7 +11,7 @@ test.describe("Username font selector (free tier)", () => {
     await setTestUserFont(null);
   });
 
-  test("font selector section is visible on profile page", async ({ page }) => {
+  test("font selector section is visible and collapsed by default", async ({ page }) => {
     await page.goto("/profile");
 
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
@@ -19,13 +19,19 @@ test.describe("Username font selector (free tier)", () => {
 
     await expect(page.getByTestId("font-selector")).toBeVisible({ timeout: 10000 });
     expect(await page.getByText("Username Font").count()).toBeGreaterThan(0);
+
+    // Should be collapsed — font options not visible
+    await expect(page.getByTestId("font-option-default")).not.toBeVisible();
   });
 
-  test("free user can see free font options", async ({ page }) => {
+  test("free user can expand and see free font options", async ({ page }) => {
     await page.goto("/profile");
 
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.waitForTimeout(500);
+
+    // Expand the font selector
+    await page.getByTestId("font-selector-toggle").click();
 
     await expect(page.getByTestId("font-option-default")).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId("font-option-sofadi-one")).toBeVisible();
@@ -38,6 +44,8 @@ test.describe("Username font selector (free tier)", () => {
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.waitForTimeout(500);
 
+    await page.getByTestId("font-selector-toggle").click();
+
     await expect(page.getByTestId("font-upgrade-prompt")).toBeVisible({ timeout: 10000 });
     const gugiButton = page.getByTestId("font-option-gugi");
     await expect(gugiButton).toBeVisible();
@@ -49,6 +57,8 @@ test.describe("Username font selector (free tier)", () => {
 
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.waitForTimeout(500);
+
+    await page.getByTestId("font-selector-toggle").click();
 
     const sofadiBtn = page.getByTestId("font-option-sofadi-one");
     await expect(sofadiBtn).toBeVisible({ timeout: 10000 });
@@ -79,6 +89,8 @@ test.describe("Username font selector (premium tier)", () => {
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.waitForTimeout(500);
 
+    await page.getByTestId("font-selector-toggle").click();
+
     const gugiBtn = page.getByTestId("font-option-gugi");
     await expect(gugiBtn).toBeVisible({ timeout: 10000 });
     await expect(gugiBtn).not.toBeDisabled();
@@ -92,6 +104,8 @@ test.describe("Username font selector (premium tier)", () => {
 
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.waitForTimeout(500);
+
+    await page.getByTestId("font-selector-toggle").click();
 
     await expect(page.getByTestId("font-selector")).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId("font-upgrade-prompt")).not.toBeVisible();

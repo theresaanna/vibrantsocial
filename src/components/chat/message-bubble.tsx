@@ -10,6 +10,7 @@ import { MediaRenderer } from "./media-renderer";
 import { FramedAvatar } from "@/components/framed-avatar";
 import type { MessageData, ChatUserProfile, MediaType, ChatThemeColors } from "@/types/chat";
 import { LinkifyText } from "./linkify-text";
+import { StyledName } from "@/components/styled-name";
 
 const LazyEmojiPicker = lazy(() => import("emoji-picker-react"));
 
@@ -230,7 +231,7 @@ export function MessageBubble({
           {/* Sender name in group */}
           {isGroup && !isOwn && (
             <span className="mb-0.5 px-3 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-              {displayName}
+              <StyledName fontId={senderProfile.usernameFont}>{displayName}</StyledName>
             </span>
           )}
 

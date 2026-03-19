@@ -27,6 +27,7 @@ const userSelect = {
   avatar: true,
   profileFrameId: true,
   image: true,
+  usernameFont: true,
 } as const;
 
 const replyToInclude = {

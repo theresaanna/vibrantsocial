@@ -31,6 +31,7 @@ const commentAuthorSelect = {
   image: true,
   avatar: true,
   profileFrameId: true,
+  usernameFont: true,
 } as const;
 
 function groupReactions(
@@ -577,17 +578,7 @@ export async function createComment(
   const comment = await prisma.comment.create({
     data: { content, postId, authorId: session.user.id, parentId },
     include: {
-      author: {
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          name: true,
-          image: true,
-          avatar: true,
-          profileFrameId: true,
-        },
-      },
+      author: { select: commentAuthorSelect },
     },
   });
   await prisma.user.update({ where: { id: session.user.id }, data: { stars: { increment: 1 } } });

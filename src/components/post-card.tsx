@@ -17,6 +17,7 @@ import Link from "next/link";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { ReportModal } from "@/components/report-modal";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { StyledName } from "@/components/styled-name";
 
 interface PostAuthor {
   id: string;
@@ -26,6 +27,7 @@ interface PostAuthor {
   image: string | null;
   avatar: string | null;
   profileFrameId: string | null;
+  usernameFont?: string | null;
 }
 
 interface CommentData {
@@ -266,10 +268,10 @@ export function PostCard({
                   href={`/${post.author.username}`}
                   className="hover:underline"
                 >
-                  {authorName}
+                  <StyledName fontId={post.author?.usernameFont}>{authorName}</StyledName>
                 </Link>
               ) : (
-                authorName
+                <StyledName fontId={post.author?.usernameFont}>{authorName}</StyledName>
               )}
             </span>
             {post.author?.username && (
