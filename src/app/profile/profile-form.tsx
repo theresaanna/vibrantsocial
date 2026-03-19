@@ -15,6 +15,7 @@ import type { BackgroundDefinition } from "@/lib/profile-backgrounds";
 import { FrameSelector } from "@/components/frame-selector";
 import { PremiumCrown } from "@/components/premium-crown";
 import { FramedAvatar } from "@/components/framed-avatar";
+import { FontSelector } from "@/components/font-selector";
 import { PushNotificationToggle } from "@/components/push-notification-toggle";
 import { LinkAccountModal } from "@/components/link-account-modal";
 import { AvatarCropperModal } from "@/components/avatar-cropper-modal";
@@ -47,6 +48,7 @@ interface ProfileFormProps {
     sparklefallMaxSparkles: number | null;
     sparklefallMinSize: number | null;
     sparklefallMaxSize: number | null;
+    usernameFont: string | null;
   };
   email: string | null;
   pendingEmail: string | null;
@@ -106,6 +108,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
   const [frameId, setFrameId] = useState<string | null>(user.profileFrameId);
   const [showFrameSelector, setShowFrameSelector] = useState(false);
+  const [usernameFont, setUsernameFont] = useState<string | null>(user.usernameFont);
   const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
 
   const displayedAvatar = avatarPreview || oauthImage;
@@ -517,6 +520,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
         className="space-y-4"
       >
         <input type="hidden" name="profileFrameId" value={frameId ?? ""} />
+        <input type="hidden" name="usernameFont" value={usernameFont ?? ""} />
         <div>
           <label
             htmlFor="username"
@@ -568,6 +572,14 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
             className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
           />
         </div>
+
+        <FontSelector
+          currentFontId={usernameFont}
+          displayName={displayNameValue || user.displayName || ""}
+          isPremium={isPremium}
+          userEmail={userEmail}
+          onSelect={(fontId) => { setUsernameFont(fontId); scheduleAutosave(); }}
+        />
 
         <div>
           <BioEditor initialContent={user.bio} onChange={scheduleAutosave} />

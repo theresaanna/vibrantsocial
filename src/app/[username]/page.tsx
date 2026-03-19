@@ -25,6 +25,8 @@ import { extractTextFromLexicalJson } from "@/lib/lexical-text";
 import { buildProfilePostsContentFilter } from "./profile-queries";
 import { PremiumCrown } from "@/components/premium-crown";
 import { ProfileSparklefall } from "@/components/profile-sparklefall";
+import { UsernameFontLoader } from "@/components/username-font-loader";
+import { getFontById } from "@/lib/profile-fonts";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
@@ -39,6 +41,7 @@ const profileSelect = {
   image: true,
   avatar: true,
   profileFrameId: true,
+  usernameFont: true,
   bio: true,
   profileBgColor: true,
   profileTextColor: true,
@@ -401,6 +404,8 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   const displayName = user.displayName || user.name || user.username;
   const avatarSrc = user.avatar || user.image;
   const initial = (displayName || "?")[0].toUpperCase();
+  const usernameFont = getFontById(user.usernameFont);
+  const usernameFontFamily = usernameFont ? `'${usernameFont.name}', sans-serif` : undefined;
 
   const hasCustomTheme = !!(
     user.profileBgColor ||
@@ -486,7 +491,12 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             <div className="min-w-0 w-full sm:flex-1">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                 <div className="min-w-0">
-                  <h1 className={`text-xl font-bold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                  <UsernameFontLoader fontId={user.usernameFont} />
+                  <h1
+                    className={`text-xl font-bold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}
+                    style={usernameFontFamily ? { fontFamily: usernameFontFamily } : undefined}
+                    data-testid="profile-display-name"
+                  >
                     <span className="inline-flex items-center gap-1.5">
                       {displayName}
                       {user.tier === "premium" && (
