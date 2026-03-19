@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { isValidHexColor, THEME_COLOR_FIELDS, isPresetTheme } from "@/lib/profile-themes";
 import { isValidPreset, parseJsonArray, clamp } from "@/lib/sparklefall-presets";
 import { isValidFrameId } from "@/lib/profile-frames";
+import { isValidFontId, getFontById } from "@/lib/profile-fonts";
 import { isValidBgRepeat, isValidBgAttachment, isValidBgSize, isValidBgPosition } from "@/lib/profile-backgrounds";
 import { isPresetBackgroundSrc } from "@/lib/profile-backgrounds.server";
 import { invalidate, cacheKeys } from "@/lib/cache";
@@ -106,6 +107,21 @@ export async function updateProfile(
       return { success: false, message: "Invalid frame selection." };
     } else {
       profileFrameId = rawFrameId.trim();
+    }
+  }
+
+  // Validate username font
+  const rawFontId = formData.get("usernameFont") as string | null;
+  let usernameFont: string | null = null;
+  if (rawFontId && rawFontId.trim()) {
+    if (!isValidFontId(rawFontId.trim())) {
+      return { success: false, message: "Invalid font selection." };
+    }
+    const font = getFontById(rawFontId.trim());
+    if (font && font.tier === "premium" && currentUser?.tier !== "premium") {
+      usernameFont = null;
+    } else {
+      usernameFont = rawFontId.trim();
     }
   }
 
@@ -258,6 +274,7 @@ export async function updateProfile(
       pushEnabled,
       isProfilePublic,
       profileFrameId,
+      usernameFont,
       ...themeColors,
       ...bgData,
       ...sparklefallData,

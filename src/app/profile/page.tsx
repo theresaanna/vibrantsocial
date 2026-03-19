@@ -30,6 +30,7 @@ export default async function ProfilePage() {
       avatar: true,
       image: true,
       profileFrameId: true,
+      usernameFont: true,
       profileBgColor: true,
       profileTextColor: true,
       profileLinkColor: true,
@@ -117,6 +118,7 @@ export default async function ProfilePage() {
             sparklefallMaxSparkles: user?.sparklefallMaxSparkles ?? null,
             sparklefallMinSize: user?.sparklefallMinSize ?? null,
             sparklefallMaxSize: user?.sparklefallMaxSize ?? null,
+            usernameFont: user?.usernameFont ?? null,
           }}
           currentAvatar={user?.avatar ?? null}
           oauthImage={oauthImage}

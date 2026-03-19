@@ -127,6 +127,18 @@ export async function setTestUserFrame(frameId: string | null) {
   }
 }
 
+export async function setTestUserFont(fontId: string | null) {
+  const pool = createPool();
+  try {
+    await pool.query(
+      'UPDATE "User" SET "usernameFont" = $1 WHERE email = $2',
+      [fontId, TEST_USER.email]
+    );
+  } finally {
+    await pool.end();
+  }
+}
+
 export async function cleanupLinkedAccountGroups() {
   const pool = createPool();
   try {

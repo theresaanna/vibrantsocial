@@ -55,6 +55,15 @@ vi.mock("@/components/theme-editor", () => ({
   ThemeEditor: () => <div data-testid="theme-editor" />,
 }));
 
+// Mock FontSelector
+vi.mock("@/components/font-selector", () => ({
+  FontSelector: ({ onSelect }: { onSelect: (id: string | null) => void }) => (
+    <div data-testid="font-selector">
+      <button data-testid="mock-font-select" onClick={() => onSelect("sofadi-one")}>Select Font</button>
+    </div>
+  ),
+}));
+
 const defaultUser = {
   id: "user1",
   username: "testuser" as string | null,
@@ -71,6 +80,16 @@ const defaultUser = {
   profileBgAttachment: null as string | null,
   profileBgSize: null as string | null,
   profileBgPosition: null as string | null,
+  sparklefallEnabled: false,
+  sparklefallPreset: null as string | null,
+  sparklefallSparkles: null as string | null,
+  sparklefallColors: null as string | null,
+  sparklefallInterval: null as number | null,
+  sparklefallWind: null as number | null,
+  sparklefallMaxSparkles: null as number | null,
+  sparklefallMinSize: null as number | null,
+  sparklefallMaxSize: null as number | null,
+  usernameFont: null as string | null,
 };
 
 interface RenderFormOptions {
