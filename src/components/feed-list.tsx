@@ -90,13 +90,31 @@ export function FeedList({
     });
   }, []);
 
+  const getItemKey = useCallback(
+    (index: number) => {
+      const item = items[index];
+      return item.type === "post" ? item.data.id : `repost-${item.data.id}`;
+    },
+    [items]
+  );
+
   // Virtualizer for window-based scrolling
   const virtualizer = useWindowVirtualizer({
     count: items.length,
     estimateSize: () => 250,
     overscan: 5,
     gap: 16,
+    getItemKey,
   });
+
+  const handleDelete = useCallback((type: "post" | "repost", id: string) => {
+    setItems((prev) => {
+      const next = prev.filter((i) => !(i.type === type && i.data.id === id));
+      // Schedule measurement invalidation after React re-renders with new items
+      requestAnimationFrame(() => virtualizer.measure());
+      return next;
+    });
+  }, [virtualizer]);
 
   const virtualItems = virtualizer.getVirtualItems();
 
@@ -160,7 +178,7 @@ export function FeedList({
                   ageVerified={ageVerified}
                   showGraphicByDefault={showGraphicByDefault}
                   showNsfwContent={showNsfwContent}
-                  onDelete={() => setItems((prev) => prev.filter((i) => !(i.type === "post" && i.data.id === item.data.id)))}
+                  onDelete={() => handleDelete("post", item.data.id)}
                 />
               ) : (
                 <RepostCard
@@ -170,7 +188,7 @@ export function FeedList({
                   ageVerified={ageVerified}
                   showGraphicByDefault={showGraphicByDefault}
                   showNsfwContent={showNsfwContent}
-                  onDelete={() => setItems((prev) => prev.filter((i) => !(i.type === "repost" && i.data.id === item.data.id)))}
+                  onDelete={() => handleDelete("repost", item.data.id)}
                 />
               )}
             </div>
