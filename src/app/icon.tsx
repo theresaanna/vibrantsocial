@@ -6,7 +6,7 @@ export const size = { width: 512, height: 512 };
 export const contentType = "image/png";
 
 export default async function Icon() {
-  const data = await readFile(join(process.cwd(), "public/icon-512.png"));
+  const data = await readFile(join(process.cwd(), "public/favicon-source.png"));
   const base64 = data.toString("base64");
 
   return new ImageResponse(
