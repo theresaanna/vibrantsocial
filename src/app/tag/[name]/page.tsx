@@ -65,15 +65,15 @@ export default async function TagPage({ params }: TagPageProps) {
     showNsfwContent = currentUser?.showNsfwContent ?? false;
   }
 
-  let subscriptionStatus: { subscribed: boolean; frequency: string } | null =
+  let subscriptionStatus: { subscribed: boolean; frequency: string; emailNotification: boolean } | null =
     null;
   if (currentUserId) {
     const sub = await prisma.tagSubscription.findUnique({
       where: { userId_tagId: { userId: currentUserId, tagId: tag.id } },
     });
     subscriptionStatus = sub
-      ? { subscribed: true, frequency: sub.frequency }
-      : { subscribed: false, frequency: "immediate" };
+      ? { subscribed: true, frequency: sub.frequency, emailNotification: sub.emailNotification }
+      : { subscribed: false, frequency: "immediate", emailNotification: false };
   }
 
   const initialData = await getPostsByTag(decodedName, currentUserId, undefined, showNsfwContent);
