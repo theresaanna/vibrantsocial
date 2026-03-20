@@ -55,7 +55,7 @@ export default async function QuotePage({ params }: Props) {
       <QuotePostPage
         postId={post.id}
         originalAuthor={post.author.username || "unknown"}
-        originalAuthorDisplayName={post.author.displayName || post.author.name || "Anonymous"}
+        originalAuthorDisplayName={post.author.displayName || post.author.name || post.author.username || "Anonymous"}
         originalAuthorAvatar={post.author.avatar || post.author.image}
         originalContent={post.content}
         originalCreatedAt={post.createdAt.toISOString()}
