@@ -101,7 +101,7 @@ export function FrameSelector({
         </div>
 
         <div className={`relative space-y-4 ${!isPremium ? "pointer-events-none opacity-50" : ""}`} data-testid={!isPremium ? "frame-upgrade-prompt" : undefined}>
-          {!isPremium && <PremiumCrown />}
+          <PremiumCrown />
           {/* None option */}
           <button
             type="button"

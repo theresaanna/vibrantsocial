@@ -171,7 +171,7 @@ export function BackgroundEditor({
 
       {/* Custom upload — premium only */}
       <div className="relative space-y-2">
-        {!isPremium && <PremiumCrown />}
+        <PremiumCrown />
         <div className={`flex flex-wrap items-center gap-2 ${!isPremium ? "pointer-events-none opacity-50" : ""}`}>
           <button
             type="button"

@@ -77,6 +77,7 @@ export function CommentSection({
       const result = await createComment(prevState, formData);
       if (result.success) {
         setReplyingTo(null);
+        inputRef.current?.clear();
       }
       return result;
     },
@@ -195,7 +196,7 @@ export function CommentSection({
               </button>
             </div>
           )}
-          <form action={formAction} className="flex gap-2">
+          <form action={formAction} className="flex flex-col gap-2 sm:flex-row">
             <input type="hidden" name="postId" value={postId} />
             {replyingTo && (
               <input type="hidden" name="parentId" value={replyingTo.id} />
@@ -211,7 +212,7 @@ export function CommentSection({
             <button
               type="submit"
               disabled={isPending}
-              className="shrink-0 rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              className="shrink-0 self-end rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
             >
               {isPending ? "..." : "Reply"}
             </button>

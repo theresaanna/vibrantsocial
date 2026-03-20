@@ -363,7 +363,7 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, onPostCrea
                   ? `Custom Audience (${customAudienceIds.length})`
                   : "Custom Audience"}
               </button>
-              {!isPremium && <PremiumCrown />}
+              <PremiumCrown />
             </span>
             <LoggedInOnlyToggle
               checked={isLoggedInOnly}

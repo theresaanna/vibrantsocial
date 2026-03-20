@@ -97,7 +97,7 @@ export function SparkleEditor({
           <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
             Raining Emoji
           </h2>
-          <PremiumCrown />
+          <PremiumCrown inline />
         </span>
         <svg
           className={`h-4 w-4 text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
@@ -117,7 +117,7 @@ export function SparkleEditor({
       {isOpen && (
         <div id={contentId} className="space-y-4 px-4 pb-4">
           <div className="relative">
-            {!isPremium && <PremiumCrown />}
+            <PremiumCrown />
             <div
               className={
                 !isPremium ? "pointer-events-none opacity-50" : undefined

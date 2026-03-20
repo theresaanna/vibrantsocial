@@ -4,6 +4,7 @@ interface PremiumBadgeProps {
   className?: string;
   color?: "amber" | "green";
   href?: string;
+  inline?: boolean;
 }
 
 const colorStyles = {
@@ -11,13 +12,17 @@ const colorStyles = {
   green: { bg: "bg-emerald-500", icon: "text-white" },
 };
 
-export function PremiumBadge({ className = "", color = "amber", href }: PremiumBadgeProps) {
+export function PremiumBadge({ className = "", color = "green", href, inline = false }: PremiumBadgeProps) {
   const { bg, icon } = colorStyles[color];
+
+  const positionClass = inline
+    ? "relative inline-flex"
+    : "absolute -right-1.5 -top-1.5 flex";
 
   const badge = (
     <span
-      className={`absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full ${bg} shadow-sm ${className}`}
-      title="Premium member"
+      className={`${positionClass} h-4 w-4 items-center justify-center rounded-full ${bg} shadow-sm ${className}`}
+      title="Premium feature"
     >
       <svg
         className={`h-2.5 w-2.5 ${icon}`}

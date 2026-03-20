@@ -16,6 +16,7 @@ interface MentionInputProps {
 
 export interface MentionInputHandle {
   focus: () => void;
+  clear: () => void;
 }
 
 /**
@@ -35,6 +36,7 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(
 
     useImperativeHandle(ref, () => ({
       focus: () => inputRef.current?.focus(),
+      clear: () => setValue(""),
     }));
 
     // Detect @mention query from input value and cursor position

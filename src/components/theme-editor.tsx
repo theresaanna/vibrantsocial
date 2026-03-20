@@ -118,7 +118,7 @@ export function ThemeEditor({
 
       {/* Individual color pickers — premium only */}
       <div className="relative" data-testid={isPremium ? "custom-color-pickers" : "custom-colors-upgrade-prompt"}>
-        {!isPremium && <PremiumCrown />}
+        <PremiumCrown />
         <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${!isPremium ? "pointer-events-none opacity-50" : ""}`}>
           {THEME_COLOR_FIELDS.map((field) => (
             <div key={field} className="flex items-center gap-2">
