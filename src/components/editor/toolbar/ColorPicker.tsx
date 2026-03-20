@@ -74,14 +74,14 @@ export function ColorPicker({ type }: ColorPickerProps) {
         )}
       </button>
       {open && (
-        <div className="absolute top-full left-0 z-50 mt-1 rounded-lg border border-zinc-200 bg-white p-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
-          <div className="grid grid-cols-7 gap-1">
+        <div className="absolute top-full left-0 z-50 mt-1 w-[232px] rounded-lg border border-zinc-200 bg-white p-3 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+          <div className="grid grid-cols-7 gap-1.5">
             {PRESET_COLORS.map((c) => (
               <button
                 key={c}
                 type="button"
                 onClick={() => applyColor(c)}
-                className={`h-5 w-5 rounded border transition-transform hover:scale-110 ${
+                className={`h-6 w-6 rounded border transition-transform hover:scale-110 ${
                   color === c ? "ring-2 ring-blue-500" : "border-zinc-300 dark:border-zinc-600"
                 }`}
                 style={{ backgroundColor: c }}
@@ -89,7 +89,17 @@ export function ColorPicker({ type }: ColorPickerProps) {
               />
             ))}
           </div>
-          <div className="mt-2 flex items-center gap-1 border-t border-zinc-200 pt-2 dark:border-zinc-700">
+          <div className="mt-3 flex items-center gap-2 border-t border-zinc-200 pt-3 dark:border-zinc-700">
+            <label className="relative flex cursor-pointer items-center gap-1.5">
+              <input
+                type="color"
+                value={color || "#000000"}
+                onChange={(e) => applyColor(e.target.value)}
+                className="h-6 w-6 cursor-pointer appearance-none rounded border border-zinc-300 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-0.5 [&::-webkit-color-swatch]:rounded-sm [&::-webkit-color-swatch]:border-none dark:border-zinc-600"
+                aria-label="Pick custom color"
+              />
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">Custom</span>
+            </label>
             <input
               type="text"
               placeholder="#hex"
