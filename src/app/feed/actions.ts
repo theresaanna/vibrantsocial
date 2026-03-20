@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
 import { requirePhoneVerification } from "@/lib/phone-gate";
 import { requireMinimumAge } from "@/lib/age-gate";
 import { requireNotSuspended } from "@/lib/suspension-gate";
@@ -57,6 +57,10 @@ export async function createPost(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `feed:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   const isNotSuspended = await requireNotSuspended(session.user.id);
@@ -257,6 +261,10 @@ export async function editPost(
     return { success: false, message: "Not authenticated" };
   }
 
+  if (await isRateLimited(apiLimiter, `feed:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
   const postId = formData.get("postId") as string;
   const content = formData.get("content") as string;
   if (!postId || !content) {
@@ -399,6 +407,10 @@ export async function restorePostRevision(
     return { success: false, message: "Not authenticated" };
   }
 
+  if (await isRateLimited(apiLimiter, `feed:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
   const revision = await prisma.postRevision.findUnique({
     where: { id: revisionId },
     include: { post: { select: { authorId: true, id: true, content: true } } },
@@ -437,6 +449,10 @@ export async function updatePostChecklist(
     return { success: false, message: "Not authenticated" };
   }
 
+  if (await isRateLimited(apiLimiter, `feed:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
   const post = await prisma.post.findUnique({ where: { id: postId } });
   if (!post || post.authorId !== session.user.id) {
     return { success: false, message: "Not authorized" };
@@ -457,6 +473,10 @@ export async function deletePost(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `feed:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   const postId = formData.get("postId") as string;
@@ -496,6 +516,10 @@ export async function togglePinPost(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `feed:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   const postId = formData.get("postId") as string;

@@ -35,6 +35,23 @@ const nextConfig: NextConfig = {
           key: "Strict-Transport-Security",
           value: "max-age=31536000; includeSubDomains",
         },
+        {
+          key: "Content-Security-Policy",
+          value: [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline'",
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
+            "font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com",
+            "img-src 'self' data: blob: https://lh3.googleusercontent.com https://cdn.discordapp.com https://*.public.blob.vercel-storage.com",
+            "connect-src 'self' https://*.ingest.us.sentry.io https://api.agechecker.net https://shield.projectarachnid.com https://discord.com https://www.googleapis.com https://api.anthropic.com wss://realtime.ably.io https://*.public.blob.vercel-storage.com https://checkout.stripe.com https://billing.stripe.com",
+            "frame-src 'self' https://checkout.stripe.com https://billing.stripe.com",
+            "media-src 'self' https://*.public.blob.vercel-storage.com",
+            "object-src 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
+            "frame-ancestors 'none'",
+          ].join("; "),
+        },
       ],
     },
     {

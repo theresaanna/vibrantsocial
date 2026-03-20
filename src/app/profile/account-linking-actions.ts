@@ -1,7 +1,7 @@
 "use server";
 
 import { auth, signIn } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import type { LinkedAccount } from "@/types/next-auth";
@@ -82,6 +82,10 @@ export async function linkAccount(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `account-link:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   const email = (formData.get("email") as string)?.trim().toLowerCase();
@@ -191,6 +195,10 @@ export async function unlinkAccount(
     return { success: false, message: "Not authenticated" };
   }
 
+  if (await isRateLimited(apiLimiter, `account-link:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
   // Verify current user has a group and target is in the same group
   const currentUser = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -254,6 +262,10 @@ export async function switchAccount(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `account-link:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   // Verify group membership

@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
 import { normalizeTag } from "@/lib/tags";
 import { PAGE_SIZE, getPostInclude } from "@/app/feed/feed-queries";
 import { cached, cacheKeys, invalidate } from "@/lib/cache";
@@ -265,6 +265,10 @@ export async function getPostsByTag(
 export async function toggleTagNsfw(tagId: string) {
   const session = await auth();
   if (!isAdmin(session?.user?.id)) {
+    return { success: false, isNsfw: false };
+  }
+
+  if (await isRateLimited(apiLimiter, `tag:${session!.user!.id}`)) {
     return { success: false, isNsfw: false };
   }
 

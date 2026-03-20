@@ -1,6 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { apiLimiter, isRateLimited } from "@/lib/rate-limit";
+import { headers } from "next/headers";
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -9,6 +11,12 @@ function isValidEmail(email: string): boolean {
 export async function subscribeToPremiumNotify(
   email: string
 ): Promise<{ success: boolean; message: string }> {
+  const headersList = await headers();
+  const ip = headersList.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
+  if (await isRateLimited(apiLimiter, `premium-notify:${ip}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
   const trimmed = email.trim().toLowerCase();
 
   if (!trimmed || !isValidEmail(trimmed)) {

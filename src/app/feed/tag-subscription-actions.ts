@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 interface SubscriptionState {
@@ -16,6 +16,10 @@ export async function toggleTagSubscription(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `tag-sub:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   const tagId = formData.get("tagId") as string;
@@ -58,6 +62,10 @@ export async function updateTagSubscriptionFrequency(
     return { success: false, message: "Not authenticated" };
   }
 
+  if (await isRateLimited(apiLimiter, `tag-sub:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
   if (frequency !== "immediate" && frequency !== "digest") {
     return { success: false, message: "Invalid frequency" };
   }
@@ -91,6 +99,10 @@ export async function updateTagSubscriptionEmail(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `tag-sub:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   if (frequency !== undefined && frequency !== "immediate" && frequency !== "digest") {

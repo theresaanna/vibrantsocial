@@ -7,7 +7,7 @@ import { PageBreakNode } from "@/components/editor/nodes/PageBreakNode";
 import { DateNode } from "@/components/editor/nodes/DateNode";
 import { StickyNoteNode } from "@/components/editor/nodes/StickyNoteNode";
 import { PollNode } from "@/components/editor/nodes/PollNode";
-import { ExcalidrawNode } from "@/components/editor/nodes/ExcalidrawNode";
+
 import { VideoNode } from "@/components/editor/nodes/VideoNode";
 import { FileNode } from "@/components/editor/nodes/FileNode";
 import { MentionNode } from "@/components/editor/nodes/MentionNode";
@@ -20,7 +20,7 @@ const allNodes = [
   DateNode,
   StickyNoteNode,
   PollNode,
-  ExcalidrawNode,
+
   VideoNode,
   FileNode,
   MentionNode,
@@ -343,34 +343,6 @@ describe("PollNode", () => {
   });
 });
 
-describe("ExcalidrawNode", () => {
-  let editor: LexicalEditor;
-  beforeEach(() => {
-    editor = createTestEditor();
-  });
-
-  it("has correct type", () => {
-    expect(ExcalidrawNode.getType()).toBe("excalidraw");
-  });
-
-  it("stores scene data as JSON string", () => {
-    const data = JSON.stringify({ elements: [{ type: "rectangle" }] });
-    const json = withEditor(editor, () => {
-      const node = new ExcalidrawNode(data);
-      return node.exportJSON();
-    });
-    expect(json.type).toBe("excalidraw");
-    expect(json.data).toBe(data);
-  });
-
-  it("defaults to empty object", () => {
-    const nodeData = withEditor(editor, () => {
-      const node = new ExcalidrawNode();
-      return node.getData();
-    });
-    expect(nodeData).toBe("{}");
-  });
-});
 
 describe("VideoNode", () => {
   let editor: LexicalEditor;
@@ -533,7 +505,7 @@ describe("MentionNode", () => {
 describe("editorNodes registry", () => {
   it("exports all node types", async () => {
     const { editorNodes } = await import("@/components/editor/nodes");
-    expect(editorNodes.length).toBeGreaterThanOrEqual(15);
+    expect(editorNodes.length).toBeGreaterThanOrEqual(14);
 
     const types = editorNodes.map((n) => n.getType());
     expect(types).toContain("image");
@@ -543,7 +515,7 @@ describe("editorNodes registry", () => {
     expect(types).toContain("date");
     expect(types).toContain("sticky-note");
     expect(types).toContain("poll");
-    expect(types).toContain("excalidraw");
+
     expect(types).toContain("heading");
     expect(types).toContain("quote");
     expect(types).toContain("code");

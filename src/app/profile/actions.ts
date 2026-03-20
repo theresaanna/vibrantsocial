@@ -2,7 +2,7 @@
 
 import crypto from "crypto";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
 import { del } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { isValidHexColor, THEME_COLOR_FIELDS, isPresetTheme } from "@/lib/profile-themes";
@@ -45,6 +45,10 @@ export async function updateProfile(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `profile:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   const username = formData.get("username") as string | null;
@@ -302,6 +306,10 @@ export async function removeAvatar(): Promise<ProfileState> {
     return { success: false, message: "Not authenticated" };
   }
 
+  if (await isRateLimited(apiLimiter, `profile:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { avatar: true, username: true },
@@ -355,6 +363,10 @@ export async function restoreBioRevision(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `profile:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   const revision = await prisma.bioRevision.findUnique({
@@ -412,6 +424,10 @@ export async function requestEmailChange(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `profile:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   const email = (formData.get("email") as string)?.trim().toLowerCase();
@@ -484,6 +500,10 @@ export async function cancelEmailChange(): Promise<EmailChangeState> {
     return { success: false, message: "Not authenticated" };
   }
 
+  if (await isRateLimited(apiLimiter, `profile:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { pendingEmail: true },
@@ -508,6 +528,10 @@ export async function resendVerificationEmail(): Promise<ProfileState> {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `profile:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   const user = await prisma.user.findUnique({
@@ -569,6 +593,10 @@ export async function deleteAccount(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `profile:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   const confirmation = (formData.get("confirmation") as string)?.trim();

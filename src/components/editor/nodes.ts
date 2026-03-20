@@ -13,7 +13,7 @@ import { PageBreakNode } from "./nodes/PageBreakNode";
 import { StickyNoteNode } from "./nodes/StickyNoteNode";
 import { PollNode } from "./nodes/PollNode";
 import { DateNode } from "./nodes/DateNode";
-import { ExcalidrawNode } from "./nodes/ExcalidrawNode";
+
 import { VideoNode } from "./nodes/VideoNode";
 import { FileNode } from "./nodes/FileNode";
 import { MentionNode } from "./nodes/MentionNode";
@@ -39,7 +39,7 @@ export const editorNodes: Array<Klass<LexicalNode>> = [
   StickyNoteNode,
   PollNode,
   DateNode,
-  ExcalidrawNode,
+
   VideoNode,
   FileNode,
   MentionNode,

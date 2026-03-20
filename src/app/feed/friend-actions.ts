@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/notifications";
 import { inngest } from "@/lib/inngest";
@@ -48,6 +48,10 @@ export async function sendFriendRequest(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `friend:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   const targetUserId = formData.get("userId") as string;
@@ -167,6 +171,10 @@ export async function acceptFriendRequest(
     return { success: false, message: "Not authenticated" };
   }
 
+  if (await isRateLimited(apiLimiter, `friend:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
   const requestId = formData.get("requestId") as string;
 
   const request = await prisma.friendRequest.findUnique({
@@ -210,6 +218,10 @@ export async function declineFriendRequest(
     return { success: false, message: "Not authenticated" };
   }
 
+  if (await isRateLimited(apiLimiter, `friend:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
   const requestId = formData.get("requestId") as string;
 
   const request = await prisma.friendRequest.findUnique({
@@ -239,6 +251,10 @@ export async function removeFriend(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `friend:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   const targetUserId = formData.get("userId") as string;
@@ -296,6 +312,10 @@ export async function respondToFriendRequestByActor(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `friend:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   const request = await prisma.friendRequest.findFirst({
