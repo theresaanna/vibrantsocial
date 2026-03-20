@@ -221,6 +221,7 @@ export async function sendTagDigestEmails(): Promise<{ emailsSent: number }> {
   const subscriptions = await prisma.tagSubscription.findMany({
     where: {
       frequency: "digest",
+      emailNotification: true,
       user: {
         emailOnTagPost: true,
         email: { not: null },

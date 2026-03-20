@@ -27,6 +27,7 @@ import { prisma } from "@/lib/prisma";
 import {
   toggleTagSubscription,
   updateTagSubscriptionFrequency,
+  updateTagSubscriptionEmail,
   getTagSubscriptionStatus,
 } from "@/app/feed/tag-subscription-actions";
 
@@ -243,11 +244,12 @@ describe("getTagSubscriptionStatus", () => {
     expect(result).toEqual({
       subscribed: false,
       frequency: "immediate",
+      emailNotification: false,
       tagId: "tag1",
     });
   });
 
-  it("returns subscribed true with correct frequency", async () => {
+  it("returns subscribed true with correct frequency and emailNotification", async () => {
     mockAuth.mockResolvedValueOnce({
       user: { id: "user1" },
     } as never);
@@ -256,6 +258,7 @@ describe("getTagSubscriptionStatus", () => {
     mockPrisma.tagSubscription.findUnique.mockResolvedValueOnce({
       id: "sub1",
       frequency: "digest",
+      emailNotification: true,
     } as never);
 
     const result = await getTagSubscriptionStatus("art");
@@ -263,7 +266,135 @@ describe("getTagSubscriptionStatus", () => {
     expect(result).toEqual({
       subscribed: true,
       frequency: "digest",
+      emailNotification: true,
       tagId: "tag1",
+    });
+  });
+});
+
+describe("updateTagSubscriptionEmail", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns error when not authenticated", async () => {
+    mockAuth.mockResolvedValueOnce(null);
+
+    const result = await updateTagSubscriptionEmail("tag1", true);
+
+    expect(result).toEqual({
+      success: false,
+      message: "Not authenticated",
+    });
+  });
+
+  it("returns error for invalid frequency", async () => {
+    mockAuth.mockResolvedValueOnce({
+      user: { id: "user1" },
+    } as never);
+
+    const result = await updateTagSubscriptionEmail("tag1", true, "weekly");
+
+    expect(result).toEqual({
+      success: false,
+      message: "Invalid frequency",
+    });
+  });
+
+  it("returns error when not subscribed", async () => {
+    mockAuth.mockResolvedValueOnce({
+      user: { id: "user1" },
+    } as never);
+
+    mockPrisma.tagSubscription.findUnique.mockResolvedValueOnce(null);
+
+    const result = await updateTagSubscriptionEmail("tag1", true);
+
+    expect(result).toEqual({
+      success: false,
+      message: "Not subscribed to this tag",
+    });
+  });
+
+  it("enables email notifications", async () => {
+    mockAuth.mockResolvedValueOnce({
+      user: { id: "user1" },
+    } as never);
+
+    mockPrisma.tagSubscription.findUnique.mockResolvedValueOnce({
+      id: "sub1",
+    } as never);
+    mockPrisma.tagSubscription.update.mockResolvedValueOnce({} as never);
+
+    const result = await updateTagSubscriptionEmail("tag1", true);
+
+    expect(result).toEqual({
+      success: true,
+      message: "Email notifications enabled",
+    });
+    expect(mockPrisma.tagSubscription.update).toHaveBeenCalledWith({
+      where: { id: "sub1" },
+      data: { emailNotification: true },
+    });
+  });
+
+  it("disables email notifications", async () => {
+    mockAuth.mockResolvedValueOnce({
+      user: { id: "user1" },
+    } as never);
+
+    mockPrisma.tagSubscription.findUnique.mockResolvedValueOnce({
+      id: "sub1",
+    } as never);
+    mockPrisma.tagSubscription.update.mockResolvedValueOnce({} as never);
+
+    const result = await updateTagSubscriptionEmail("tag1", false);
+
+    expect(result).toEqual({
+      success: true,
+      message: "Email notifications disabled",
+    });
+    expect(mockPrisma.tagSubscription.update).toHaveBeenCalledWith({
+      where: { id: "sub1" },
+      data: { emailNotification: false },
+    });
+  });
+
+  it("enables email notifications with frequency", async () => {
+    mockAuth.mockResolvedValueOnce({
+      user: { id: "user1" },
+    } as never);
+
+    mockPrisma.tagSubscription.findUnique.mockResolvedValueOnce({
+      id: "sub1",
+    } as never);
+    mockPrisma.tagSubscription.update.mockResolvedValueOnce({} as never);
+
+    const result = await updateTagSubscriptionEmail("tag1", true, "digest");
+
+    expect(result).toEqual({
+      success: true,
+      message: "Email notifications enabled",
+    });
+    expect(mockPrisma.tagSubscription.update).toHaveBeenCalledWith({
+      where: { id: "sub1" },
+      data: { emailNotification: true, frequency: "digest" },
+    });
+  });
+
+  it("does not include frequency when not provided", async () => {
+    mockAuth.mockResolvedValueOnce({
+      user: { id: "user1" },
+    } as never);
+
+    mockPrisma.tagSubscription.findUnique.mockResolvedValueOnce({
+      id: "sub1",
+    } as never);
+    mockPrisma.tagSubscription.update.mockResolvedValueOnce({} as never);
+
+    await updateTagSubscriptionEmail("tag1", true);
+
+    expect(mockPrisma.tagSubscription.update).toHaveBeenCalledWith({
+      where: { id: "sub1" },
+      data: { emailNotification: true },
     });
   });
 });

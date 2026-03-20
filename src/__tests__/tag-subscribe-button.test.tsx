@@ -3,13 +3,13 @@ import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const mockToggleTagSubscription = vi.fn();
-const mockUpdateTagSubscriptionFrequency = vi.fn();
+const mockUpdateTagSubscriptionEmail = vi.fn();
 
 vi.mock("@/app/feed/tag-subscription-actions", () => ({
   toggleTagSubscription: (...args: unknown[]) =>
     mockToggleTagSubscription(...args),
-  updateTagSubscriptionFrequency: (...args: unknown[]) =>
-    mockUpdateTagSubscriptionFrequency(...args),
+  updateTagSubscriptionEmail: (...args: unknown[]) =>
+    mockUpdateTagSubscriptionEmail(...args),
 }));
 
 import { TagSubscribeButton } from "@/app/tag/[name]/tag-subscribe-button";
@@ -19,6 +19,7 @@ const defaultProps = {
   tagName: "javascript",
   initialSubscribed: false,
   initialFrequency: "immediate",
+  initialEmailNotification: false,
 };
 
 describe("TagSubscribeButton", () => {
@@ -36,8 +37,9 @@ describe("TagSubscribeButton", () => {
     expect(screen.getByText("Subscribe")).toBeInTheDocument();
   });
 
-  it("does not show frequency select when not subscribed", () => {
+  it("does not show email checkbox or frequency select when not subscribed", () => {
     render(<TagSubscribeButton {...defaultProps} />);
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
   });
 
@@ -56,32 +58,57 @@ describe("TagSubscribeButton", () => {
     expect(screen.getByText("Subscribed")).toBeInTheDocument();
   });
 
-  it("shows frequency select when subscribed", () => {
+  it("shows email checkbox when subscribed", () => {
     render(
       <TagSubscribeButton
         {...defaultProps}
         initialSubscribed={true}
       />
     );
-    expect(screen.getByRole("combobox")).toBeInTheDocument();
+    expect(screen.getByRole("checkbox")).toBeInTheDocument();
+    expect(screen.getByText("Email")).toBeInTheDocument();
   });
 
-  it("shows Immediate and Daily Digest options", () => {
+  it("does not show frequency select when subscribed but email disabled", () => {
     render(
       <TagSubscribeButton
         {...defaultProps}
         initialSubscribed={true}
+        initialEmailNotification={false}
+      />
+    );
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+  });
+
+  it("shows frequency select when subscribed and email enabled", () => {
+    render(
+      <TagSubscribeButton
+        {...defaultProps}
+        initialSubscribed={true}
+        initialEmailNotification={true}
+      />
+    );
+    expect(screen.getByRole("combobox")).toBeInTheDocument();
+  });
+
+  it("shows Immediate and Daily Digest options when email enabled", () => {
+    render(
+      <TagSubscribeButton
+        {...defaultProps}
+        initialSubscribed={true}
+        initialEmailNotification={true}
       />
     );
     expect(screen.getByText("Immediate")).toBeInTheDocument();
     expect(screen.getByText("Daily Digest")).toBeInTheDocument();
   });
 
-  it("selects initial frequency", () => {
+  it("selects initial frequency when email enabled", () => {
     render(
       <TagSubscribeButton
         {...defaultProps}
         initialSubscribed={true}
+        initialEmailNotification={true}
         initialFrequency="digest"
       />
     );
@@ -103,7 +130,6 @@ describe("TagSubscribeButton", () => {
       );
     });
 
-    // Optimistically shows subscribed
     expect(screen.getByText("Subscribed")).toBeInTheDocument();
   });
 
@@ -126,7 +152,6 @@ describe("TagSubscribeButton", () => {
       );
     });
 
-    // Optimistically shows unsubscribed
     expect(screen.getByText("Subscribe")).toBeInTheDocument();
   });
 
@@ -142,20 +167,88 @@ describe("TagSubscribeButton", () => {
       );
     });
 
-    // Should revert back to Subscribe
     expect(screen.getByText("Subscribe")).toBeInTheDocument();
   });
 
-  // ─── Frequency change ─────────────────────────────────────
+  // ─── Email toggle ──────────────────────────────────────────
 
-  it("updates frequency on select change", async () => {
-    mockUpdateTagSubscriptionFrequency.mockResolvedValue({ success: true });
+  it("toggles email on when checkbox clicked", async () => {
+    mockUpdateTagSubscriptionEmail.mockResolvedValue({ success: true });
     const user = userEvent.setup();
 
     render(
       <TagSubscribeButton
         {...defaultProps}
         initialSubscribed={true}
+        initialEmailNotification={false}
+      />
+    );
+
+    await act(async () => {
+      await user.click(screen.getByRole("checkbox"));
+    });
+
+    expect(mockUpdateTagSubscriptionEmail).toHaveBeenCalledWith(
+      "tag-123",
+      true,
+      "immediate"
+    );
+  });
+
+  it("toggles email off when checkbox unchecked", async () => {
+    mockUpdateTagSubscriptionEmail.mockResolvedValue({ success: true });
+    const user = userEvent.setup();
+
+    render(
+      <TagSubscribeButton
+        {...defaultProps}
+        initialSubscribed={true}
+        initialEmailNotification={true}
+      />
+    );
+
+    await act(async () => {
+      await user.click(screen.getByRole("checkbox"));
+    });
+
+    expect(mockUpdateTagSubscriptionEmail).toHaveBeenCalledWith(
+      "tag-123",
+      false,
+      undefined
+    );
+  });
+
+  it("reverts email toggle on failure", async () => {
+    mockUpdateTagSubscriptionEmail.mockResolvedValue({ success: false });
+    const user = userEvent.setup();
+
+    render(
+      <TagSubscribeButton
+        {...defaultProps}
+        initialSubscribed={true}
+        initialEmailNotification={false}
+      />
+    );
+
+    await act(async () => {
+      await user.click(screen.getByRole("checkbox"));
+    });
+
+    const checkbox = screen.getByRole("checkbox") as HTMLInputElement;
+    expect(checkbox.checked).toBe(false);
+  });
+
+  // ─── Frequency change ─────────────────────────────────────
+
+  it("updates frequency on select change", async () => {
+    mockUpdateTagSubscriptionEmail.mockResolvedValue({ success: true });
+    const user = userEvent.setup();
+
+    render(
+      <TagSubscribeButton
+        {...defaultProps}
+        initialSubscribed={true}
+        initialEmailNotification={true}
         initialFrequency="immediate"
       />
     );
@@ -164,14 +257,15 @@ describe("TagSubscribeButton", () => {
       await user.selectOptions(screen.getByRole("combobox"), "digest");
     });
 
-    expect(mockUpdateTagSubscriptionFrequency).toHaveBeenCalledWith(
+    expect(mockUpdateTagSubscriptionEmail).toHaveBeenCalledWith(
       "tag-123",
+      true,
       "digest"
     );
   });
 
   it("reverts frequency on failure", async () => {
-    mockUpdateTagSubscriptionFrequency.mockResolvedValue({
+    mockUpdateTagSubscriptionEmail.mockResolvedValue({
       success: false,
     });
     const user = userEvent.setup();
@@ -180,6 +274,7 @@ describe("TagSubscribeButton", () => {
       <TagSubscribeButton
         {...defaultProps}
         initialSubscribed={true}
+        initialEmailNotification={true}
         initialFrequency="immediate"
       />
     );
@@ -188,7 +283,6 @@ describe("TagSubscribeButton", () => {
       await user.selectOptions(screen.getByRole("combobox"), "digest");
     });
 
-    // Should revert back to immediate
     const select = screen.getByRole("combobox") as HTMLSelectElement;
     expect(select.value).toBe("immediate");
   });

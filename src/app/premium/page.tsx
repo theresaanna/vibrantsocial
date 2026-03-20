@@ -50,10 +50,13 @@ export default async function PremiumPage() {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 shadow-lg">
             <svg
               className="h-7 w-7 text-white"
-              viewBox="1 0 22 24"
-              fill="currentColor"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2.5}
+              strokeLinecap="round"
             >
-              <path d="M2 19h20v3H2v-3zm1-1L12 4l4.5 7L22 5v13H2V18z" />
+              <path d="M12 5v14M5 12h14" />
             </svg>
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">

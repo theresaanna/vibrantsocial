@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import {
   toggleTagSubscription,
-  updateTagSubscriptionFrequency,
+  updateTagSubscriptionEmail,
 } from "@/app/feed/tag-subscription-actions";
 
 interface TagSubscribeButtonProps {
@@ -11,6 +11,7 @@ interface TagSubscribeButtonProps {
   tagName: string;
   initialSubscribed: boolean;
   initialFrequency: string;
+  initialEmailNotification: boolean;
 }
 
 export function TagSubscribeButton({
@@ -18,8 +19,10 @@ export function TagSubscribeButton({
   tagName,
   initialSubscribed,
   initialFrequency,
+  initialEmailNotification,
 }: TagSubscribeButtonProps) {
   const [subscribed, setSubscribed] = useState(initialSubscribed);
+  const [emailEnabled, setEmailEnabled] = useState(initialEmailNotification);
   const [frequency, setFrequency] = useState(initialFrequency);
   const [isPending, startTransition] = useTransition();
 
@@ -38,12 +41,32 @@ export function TagSubscribeButton({
     });
   }
 
+  function handleEmailToggle() {
+    const newEmailEnabled = !emailEnabled;
+    const oldEmailEnabled = emailEnabled;
+    setEmailEnabled(newEmailEnabled);
+    startTransition(async () => {
+      const result = await updateTagSubscriptionEmail(
+        tagId,
+        newEmailEnabled,
+        newEmailEnabled ? frequency : undefined
+      );
+      if (!result.success) {
+        setEmailEnabled(oldEmailEnabled);
+      }
+    });
+  }
+
   function handleFrequencyChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const newFrequency = e.target.value;
     const oldFrequency = frequency;
     setFrequency(newFrequency);
     startTransition(async () => {
-      const result = await updateTagSubscriptionFrequency(tagId, newFrequency);
+      const result = await updateTagSubscriptionEmail(
+        tagId,
+        true,
+        newFrequency
+      );
       if (!result.success) {
         setFrequency(oldFrequency);
       }
@@ -82,6 +105,18 @@ export function TagSubscribeButton({
         {subscribed ? "Subscribed" : "Subscribe"}
       </button>
       {subscribed && (
+        <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+          <input
+            type="checkbox"
+            checked={emailEnabled}
+            onChange={handleEmailToggle}
+            disabled={isPending}
+            className="h-3.5 w-3.5 rounded border-zinc-300 text-fuchsia-600 focus:ring-fuchsia-500 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800"
+          />
+          Email
+        </label>
+      )}
+      {subscribed && emailEnabled && (
         <select
           value={frequency}
           onChange={handleFrequencyChange}
