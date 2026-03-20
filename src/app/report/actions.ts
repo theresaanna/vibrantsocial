@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendReportEmail } from "@/lib/email";
+import { apiLimiter, isRateLimited } from "@/lib/rate-limit";
 
 export interface ReportState {
   success: boolean;
@@ -18,6 +19,10 @@ export async function submitReport(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "You must be logged in to submit a report." };
+  }
+
+  if (await isRateLimited(apiLimiter, `report:${session.user.id}`)) {
+    return { success: false, message: "Too many reports. Please try again later." };
   }
 
   const contentType = formData.get("contentType") as string;

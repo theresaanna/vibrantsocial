@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationCode, checkVerificationCode } from "@/lib/twilio";
 import { revalidatePath } from "next/cache";
+import { authLimiter, isRateLimited } from "@/lib/rate-limit";
 
 export interface VerifyState {
   step: "input" | "verify" | "done";
@@ -18,6 +19,10 @@ export async function sendPhoneCode(
   const session = await auth();
   if (!session?.user?.id) {
     return { step: "input", message: "Not authenticated", success: false };
+  }
+
+  if (await isRateLimited(authLimiter, `phone-send:${session.user.id}`)) {
+    return { step: "input", message: "Too many attempts. Please try again later.", success: false };
   }
 
   const countryCode = formData.get("countryCode") as string;
@@ -57,6 +62,10 @@ export async function verifyPhoneCode(
   const session = await auth();
   if (!session?.user?.id) {
     return { step: "input", message: "Not authenticated", success: false };
+  }
+
+  if (await isRateLimited(authLimiter, `phone-verify:${session.user.id}`)) {
+    return { step: "verify", message: "Too many attempts. Please try again later.", success: false };
   }
 
   const code = formData.get("code") as string;

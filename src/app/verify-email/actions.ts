@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-
+import { headers } from "next/headers";
+import { authLimiter, isRateLimited } from "@/lib/rate-limit";
 
 interface VerifyEmailState {
   success: boolean;
@@ -14,6 +15,12 @@ export async function verifyEmail(
 ): Promise<VerifyEmailState> {
   if (!token || !email) {
     return { success: false, message: "Invalid verification link." };
+  }
+
+  const headersList = await headers();
+  const ip = headersList.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
+  if (await isRateLimited(authLimiter, `verify-email:${ip}`)) {
+    return { success: false, message: "Too many attempts. Please try again later." };
   }
 
   const normalizedEmail = email.trim().toLowerCase();

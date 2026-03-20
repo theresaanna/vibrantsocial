@@ -19,11 +19,9 @@ export async function GET(req: NextRequest) {
   const provider = req.nextUrl.searchParams.get("provider");
   const linkCookie = req.cookies.get("linkFromUserId")?.value;
 
-  console.log("[finish-link] from:", from, "provider:", provider, "linkCookie:", linkCookie);
-
   // Security: the URL param must match the httpOnly cookie
   if (!from || from !== linkCookie) {
-    console.log("[finish-link] SECURITY CHECK FAILED — from/cookie mismatch");
+    console.error("[finish-link] Security check failed: from/cookie mismatch");
     const res = NextResponse.redirect(new URL("/profile", req.url));
     if (linkCookie) res.cookies.delete("linkFromUserId");
     res.cookies.delete("linkRedirect");
@@ -32,7 +30,6 @@ export async function GET(req: NextRequest) {
 
   const session = await auth();
   if (!session?.user?.id) {
-    console.log("[finish-link] No session — redirecting to /login");
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
@@ -43,10 +40,8 @@ export async function GET(req: NextRequest) {
     // ── Different-email case ──
     // OAuth created a new user with a different email.
     // Link the original user and the OAuth user.
-    console.log("[finish-link] Different users — linking", from, "↔", oauthUserId);
     try {
       await linkUsersInGroup(from, oauthUserId);
-      console.log("[finish-link] linkUsersInGroup succeeded");
     } catch (err) {
       console.error("[finish-link] linking error:", err);
     }
@@ -58,33 +53,13 @@ export async function GET(req: NextRequest) {
     // Check if the JWT callback already split it into a separate user.
     const existingLinks = await loadLinkedAccounts(from);
     if (existingLinks.length > 0) {
-      console.log("[finish-link] Same-email: JWT callback already handled splitting");
       // Trigger a session refresh so the client picks up the linked accounts
       redirectUrl.searchParams.set("_switchTo", from);
     } else {
-      console.log("[finish-link] Same-email: splitting Account into separate user");
       try {
-        // Dump ALL accounts for this user for diagnostics
         const allUserAccounts = await prisma.account.findMany({
           where: { userId: from },
         });
-        console.log(
-          "[finish-link] All accounts for user:",
-          JSON.stringify(allUserAccounts.map((a) => ({
-            id: a.id, provider: a.provider, providerAccountId: a.providerAccountId,
-          })))
-        );
-
-        // Also check ALL accounts for this provider (across all users)
-        const allProviderAccounts = await prisma.account.findMany({
-          where: { provider },
-        });
-        console.log(
-          "[finish-link] All", provider, "accounts:",
-          JSON.stringify(allProviderAccounts.map((a) => ({
-            id: a.id, userId: a.userId, providerAccountId: a.providerAccountId,
-          })))
-        );
 
         // Find the Account that Auth.js just linked to the current user
         const account = allUserAccounts.find((a) => a.provider === provider) ?? null;
@@ -138,23 +113,18 @@ export async function GET(req: NextRequest) {
               emailVerified: new Date(),
             },
           });
-          console.log("[finish-link] Created new user:", newUser.id, "displayName:", displayName);
 
           // Move the Account from the current user to the new user
           await prisma.account.update({
             where: { id: account.id },
             data: { userId: newUser.id },
           });
-          console.log("[finish-link] Moved Account to new user");
 
           // Link both users in a group
           await linkUsersInGroup(from, newUser.id);
-          console.log("[finish-link] Linked users in group");
 
           // Trigger session refresh to pick up the new linked account
           redirectUrl.searchParams.set("_switchTo", from);
-        } else {
-          console.log("[finish-link] No Account found for provider:", provider, "user:", from);
         }
       } catch (err) {
         console.error("[finish-link] Same-email splitting error:", err);
@@ -162,7 +132,6 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  console.log("[finish-link] redirecting to:", redirectUrl.toString());
   const res = NextResponse.redirect(redirectUrl);
   res.cookies.delete("linkFromUserId");
   res.cookies.delete("linkRedirect");

@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendStrikeAppealEmail } from "@/lib/email";
+import { apiLimiter, isRateLimited } from "@/lib/rate-limit";
 
 interface AppealState {
   success: boolean;
@@ -16,6 +17,10 @@ export async function submitStrikeAppeal(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `appeal:${session.user.id}`)) {
+    return { success: false, message: "Too many attempts. Please try again later." };
   }
 
   const violationId = formData.get("violationId") as string;

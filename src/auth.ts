@@ -14,8 +14,8 @@ import type { LinkedAccount } from "@/types/next-auth";
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [
-    Google({ allowDangerousEmailAccountLinking: true }),
-    Discord({ allowDangerousEmailAccountLinking: true }),
+    Google({}),
+    Discord({}),
     Credentials({
       credentials: {
         email: { label: "Email", type: "email" },
@@ -85,9 +85,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async redirect({ url, baseUrl }) {
       // If the URL already points to finish-link, let it through unchanged.
       if (url.includes("/api/finish-link")) {
-        const result = url.startsWith("/") ? `${baseUrl}${url}` : url;
-        console.log("[auth:redirect] finish-link URL passthrough →", result);
-        return result;
+        return url.startsWith("/") ? `${baseUrl}${url}` : url;
       }
 
       // Only redirect to finish-link when BOTH linkFromUserId AND linkRedirect
@@ -100,17 +98,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const cookieStore = await cookies();
         linkFromUserId = cookieStore.get("linkFromUserId")?.value;
         linkRedirectUrl = cookieStore.get("linkRedirect")?.value;
-      } catch (err) {
-        console.log("[auth:redirect] cookies() threw:", (err as Error).message);
+      } catch {
+        // cookies() can fail in certain NextAuth callback contexts
       }
       if (linkFromUserId && linkRedirectUrl) {
-        const result = `${baseUrl}${linkRedirectUrl}`;
-        console.log("[auth:redirect] linking flow →", result);
-        return result;
+        return `${baseUrl}${linkRedirectUrl}`;
       }
 
       // Default redirect behaviour (same as NextAuth's built-in default)
-      console.log("[auth:redirect] default redirect, url:", url, "baseUrl:", baseUrl);
       if (url.startsWith("/")) return `${baseUrl}${url}`;
       try {
         if (new URL(url).origin === baseUrl) return url;

@@ -23,31 +23,22 @@ export async function GET(req: NextRequest) {
     const provider = callbackIdx >= 0 ? pathParts[callbackIdx + 1] : null;
 
     if (provider) {
-      console.log("[nextauth] Pre-callback check for provider:", provider, "linkingUser:", linkCookie);
       try {
         const allAccounts = await prisma.account.findMany({
           where: { provider },
         });
-        console.log("[nextauth] Found", allAccounts.length, provider, "accounts");
 
         for (const acct of allAccounts) {
           if (acct.userId === linkCookie) continue;
 
           const owner = await prisma.user.findUnique({
             where: { id: acct.userId },
-            select: { id: true, email: true, passwordHash: true },
+            select: { id: true },
           });
-          console.log(
-            "[nextauth] Account", acct.id, "→ user:", acct.userId,
-            "email:", owner?.email ?? "null",
-            "hasPassword:", !!owner?.passwordHash
-          );
 
           if (owner) {
             // Account belongs to an existing user — link directly
-            console.log("[nextauth] Account belongs to user — linking", linkCookie, "↔", owner.id);
             await linkUsersInGroup(linkCookie, owner.id);
-            console.log("[nextauth] linkUsersInGroup succeeded");
 
             const profileUrl = new URL("/profile", req.url);
             profileUrl.searchParams.set("_switchTo", linkCookie);
@@ -57,7 +48,6 @@ export async function GET(req: NextRequest) {
             return res;
           }
           // No owner — Account is truly orphaned (dangling FK), skip it
-          console.log("[nextauth] Skipping orphan account (no owner):", acct.id);
         }
       } catch (err) {
         console.error("[nextauth] Pre-callback error:", err);
@@ -84,7 +74,6 @@ export async function GET(req: NextRequest) {
         callbackIdx >= 0 ? pathParts[callbackIdx + 1] : null;
 
       if (provider) {
-        console.log("[nextauth] OAuthAccountNotLinked — attempting direct link for provider:", provider);
         try {
           const conflictAccount = await prisma.account.findFirst({
             where: { provider, userId: { not: linkCookie } },
@@ -97,7 +86,6 @@ export async function GET(req: NextRequest) {
             if (owner) {
               // Link the users (works for both password and OAuth-only users)
               await linkUsersInGroup(linkCookie, owner.id);
-              console.log("[nextauth] Post-callback: linked", linkCookie, "↔", owner.id);
               const profileUrl = new URL("/profile", req.url);
               profileUrl.searchParams.set("_switchTo", linkCookie);
               const res = NextResponse.redirect(profileUrl);
