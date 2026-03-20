@@ -347,7 +347,7 @@ function CommentItem({
   currentUserId?: string;
 }) {
   const authorName =
-    comment.author.displayName || comment.author.name || "User";
+    comment.author.displayName || comment.author.name || comment.author.username || "User";
   const avatarSrc = comment.author.avatar || comment.author.image;
   const reactions = comment.reactions ?? [];
   const isOwner = currentUserId === comment.author.id;
