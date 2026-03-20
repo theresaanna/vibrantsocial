@@ -83,9 +83,56 @@ export async function updateTagSubscriptionFrequency(
   return { success: true, message: `Frequency set to ${frequency}` };
 }
 
+export async function updateTagSubscriptionEmail(
+  tagId: string,
+  emailNotification: boolean,
+  frequency?: string
+): Promise<SubscriptionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  if (frequency !== undefined && frequency !== "immediate" && frequency !== "digest") {
+    return { success: false, message: "Invalid frequency" };
+  }
+
+  const existing = await prisma.tagSubscription.findUnique({
+    where: {
+      userId_tagId: {
+        userId: session.user.id,
+        tagId,
+      },
+    },
+  });
+
+  if (!existing) {
+    return { success: false, message: "Not subscribed to this tag" };
+  }
+
+  const data: { emailNotification: boolean; frequency?: string } = {
+    emailNotification,
+  };
+  if (frequency !== undefined) {
+    data.frequency = frequency;
+  }
+
+  await prisma.tagSubscription.update({
+    where: { id: existing.id },
+    data,
+  });
+
+  return {
+    success: true,
+    message: emailNotification
+      ? "Email notifications enabled"
+      : "Email notifications disabled",
+  };
+}
+
 export async function getTagSubscriptionStatus(
   tagName: string
-): Promise<{ subscribed: boolean; frequency: string; tagId: string } | null> {
+): Promise<{ subscribed: boolean; frequency: string; emailNotification: boolean; tagId: string } | null> {
   const session = await auth();
   if (!session?.user?.id) return null;
 
@@ -108,6 +155,7 @@ export async function getTagSubscriptionStatus(
   return {
     subscribed: !!sub,
     frequency: sub?.frequency ?? "immediate",
+    emailNotification: sub?.emailNotification ?? false,
     tagId: tag.id,
   };
 }

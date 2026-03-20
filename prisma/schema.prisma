@@ -501,12 +501,13 @@ model Block {
 // Tag subscriptions (subscribe to new posts in a tag)
 
 model TagSubscription {
-  id              String    @id @default(cuid())
-  userId          String
-  tagId           String
-  frequency       String    @default("immediate") // "immediate" | "digest"
-  lastDigestSentAt DateTime?
-  createdAt       DateTime  @default(now())
+  id                String    @id @default(cuid())
+  userId            String
+  tagId             String
+  frequency         String    @default("immediate") // "immediate" | "digest"
+  emailNotification Boolean   @default(false)        // whether to also send email
+  lastDigestSentAt  DateTime?
+  createdAt         DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)

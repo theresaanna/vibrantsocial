@@ -18,6 +18,9 @@ interface NotifyTagSubscribersParams {
  * Skips sensitive/graphic and close-friends-only posts.
  * NSFW posts only notify subscribers who opted into NSFW content.
  * Deduplicates across tags so each user gets at most one notification.
+ *
+ * In-app notifications are sent to ALL subscribers.
+ * Email notifications are only sent to subscribers with emailNotification enabled.
  */
 export async function notifyTagSubscribers(params: NotifyTagSubscribersParams) {
   const {
@@ -38,17 +41,21 @@ export async function notifyTagSubscribers(params: NotifyTagSubscribersParams) {
   // Find all subscriptions for these tags
   const subscriptions = await prisma.tagSubscription.findMany({
     where: { tagId: { in: tagIds } },
-    select: { userId: true, tagId: true, frequency: true },
+    select: { userId: true, tagId: true, frequency: true, emailNotification: true },
   });
 
   if (subscriptions.length === 0) return;
 
   // Deduplicate by userId — keep the first subscription's tagId for the notification
-  const seen = new Map<string, { tagId: string; frequency: string }>();
+  const seen = new Map<string, { tagId: string; frequency: string; emailNotification: boolean }>();
   for (const sub of subscriptions) {
     if (sub.userId === authorId) continue; // Don't notify the author
     if (!seen.has(sub.userId)) {
-      seen.set(sub.userId, { tagId: sub.tagId, frequency: sub.frequency });
+      seen.set(sub.userId, {
+        tagId: sub.tagId,
+        frequency: sub.frequency,
+        emailNotification: sub.emailNotification,
+      });
     }
   }
 
@@ -71,33 +78,30 @@ export async function notifyTagSubscribers(params: NotifyTagSubscribersParams) {
 
   if (subscriberIds.length === 0) return;
 
-  // Split into immediate and digest subscribers
-  const immediateIds = subscriberIds.filter(
-    (id) => seen.get(id)!.frequency === "immediate"
+  // Send in-app notifications to ALL subscribers (regardless of frequency)
+  const notificationPromises = subscriberIds.map((subscriberId) =>
+    createNotification({
+      type: "TAG_POST",
+      actorId: authorId,
+      targetUserId: subscriberId,
+      postId,
+      tagId: seen.get(subscriberId)!.tagId,
+    })
   );
-  const _digestIds = subscriberIds.filter(
-    (id) => seen.get(id)!.frequency === "digest"
-  );
-  // Digest subscribers are handled by the daily cron job, not here.
 
-  // Send in-app notifications to immediate subscribers
-  if (immediateIds.length > 0) {
-    const notificationPromises = immediateIds.map((subscriberId) =>
-      createNotification({
-        type: "TAG_POST",
-        actorId: authorId,
-        targetUserId: subscriberId,
-        postId,
-        tagId: seen.get(subscriberId)!.tagId,
-      })
-    );
+  await Promise.allSettled(notificationPromises);
 
-    await Promise.allSettled(notificationPromises);
+  // Queue email notifications only for subscribers with emailNotification enabled
+  // and frequency === "immediate" (digest subscribers are handled by cron)
+  const immediateEmailIds = subscriberIds.filter((id) => {
+    const sub = seen.get(id)!;
+    return sub.emailNotification && sub.frequency === "immediate";
+  });
 
-    // Queue email notifications for immediate subscribers with email preference enabled
+  if (immediateEmailIds.length > 0) {
     const subscribersWithEmail = await prisma.user.findMany({
       where: {
-        id: { in: immediateIds },
+        id: { in: immediateEmailIds },
         emailOnTagPost: true,
         email: { not: null },
       },

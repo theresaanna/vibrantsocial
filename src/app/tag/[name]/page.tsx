@@ -107,6 +107,7 @@ export default async function TagPage({ params }: TagPageProps) {
                 tagName={decodedName}
                 initialSubscribed={subscriptionStatus.subscribed}
                 initialFrequency={subscriptionStatus.frequency}
+                initialEmailNotification={subscriptionStatus.emailNotification}
               />
             )}
           </div>
