@@ -176,7 +176,7 @@ export function PostCard({
   }
 
   const authorName =
-    post.author?.displayName || post.author?.name || "Anonymous";
+    post.author?.displayName || post.author?.name || post.author?.username || "Anonymous";
   const authorInitial = authorName[0].toUpperCase();
   const avatarSrc = post.author?.avatar || post.author?.image;
 

@@ -102,8 +102,9 @@ export function EditorContent({
           contentEditable={
             <ContentEditable
               className={`text-sm text-zinc-900 outline-none dark:text-zinc-100${
-                editable ? " cursor-default" : ""
+                editable ? " cursor-default" : " cursor-default [&_*]:cursor-default [&_a]:cursor-pointer"
               }`}
+              readOnly={!editable}
             />
           }
           placeholder={null}
