@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { headers } from "next/headers";
+import { authLimiter, isRateLimited } from "@/lib/rate-limit";
 
 interface ResetPasswordState {
   success: boolean;
@@ -12,6 +14,12 @@ export async function resetPassword(
   _prevState: ResetPasswordState,
   formData: FormData
 ): Promise<ResetPasswordState> {
+  const headersList = await headers();
+  const ip = headersList.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
+  if (await isRateLimited(authLimiter, `reset-password:${ip}`)) {
+    return { success: false, message: "Too many attempts. Please try again later." };
+  }
+
   const token = formData.get("token") as string;
   const email = (formData.get("email") as string)?.trim().toLowerCase();
   const password = formData.get("password") as string;

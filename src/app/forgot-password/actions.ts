@@ -3,6 +3,8 @@
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { headers } from "next/headers";
+import { authLimiter, isRateLimited } from "@/lib/rate-limit";
 
 interface ForgotPasswordState {
   success: boolean;
@@ -13,6 +15,12 @@ export async function requestPasswordReset(
   _prevState: ForgotPasswordState,
   formData: FormData
 ): Promise<ForgotPasswordState> {
+  const headersList = await headers();
+  const ip = headersList.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
+  if (await isRateLimited(authLimiter, `forgot-password:${ip}`)) {
+    return { success: false, message: "Too many attempts. Please try again later." };
+  }
+
   const email = (formData.get("email") as string)?.trim().toLowerCase();
 
   if (!email) {

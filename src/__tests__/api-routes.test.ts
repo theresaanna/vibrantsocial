@@ -191,19 +191,16 @@ describe("Generic Upload API (/api/upload)", () => {
     expect(body.error).toContain("5MB");
   });
 
-  it("accepts SVG uploads (unlike avatar)", async () => {
+  it("rejects SVG uploads (XSS risk)", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
-    mockPut.mockResolvedValueOnce({
-      url: "https://blob.vercel-storage.com/uploads/user1-123.svg",
-    } as never);
 
     const { POST } = await import("@/app/api/upload/route");
     const res = await POST(
       createPostRequest("http://localhost/api/upload", createMockFile("diagram.svg", "image/svg+xml", 1000)) as unknown as Request
     );
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.url).toBeDefined();
+    expect(body.error).toContain("Invalid file type");
   });
 });
 
