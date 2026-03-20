@@ -139,12 +139,22 @@ async def scan_text(
 
     scores = toxicity_model.predict(req.text)
 
-    toxicity = float(scores["toxicity"])
-    severe_toxicity = float(scores["severe_toxicity"])
-    obscenity = float(scores["obscenity"])
-    insult = float(scores["insult"])
-    threat = float(scores["threat"])
-    identity_attack = float(scores["identity_attack"])
+    # Detoxify "original" model returns: toxicity, severe_toxic, obscene,
+    # threat, insult, identity_hate.  Other model variants (e.g. "unbiased")
+    # use: toxicity, severe_toxicity, obscenity, sexual_explicit, identity_attack,
+    # insult, threat.  Accept both key naming conventions with fallbacks.
+    toxicity = float(scores.get("toxicity", 0.0))
+    severe_toxicity = float(
+        scores.get("severe_toxicity", scores.get("severe_toxic", 0.0))
+    )
+    obscenity = float(
+        scores.get("obscenity", scores.get("obscene", 0.0))
+    )
+    insult = float(scores.get("insult", 0.0))
+    threat = float(scores.get("threat", 0.0))
+    identity_attack = float(
+        scores.get("identity_attack", scores.get("identity_hate", 0.0))
+    )
 
     is_hate_speech = (
         identity_attack >= IDENTITY_ATTACK_THRESHOLD

@@ -97,15 +97,37 @@ class TestImageScan:
 
 
 class TestTextScan:
-    def _mock_predict(self, **overrides):
-        defaults = {
-            "toxicity": 0.01,
-            "severe_toxicity": 0.0,
-            "obscenity": 0.0,
-            "insult": 0.01,
-            "threat": 0.0,
-            "identity_attack": 0.0,
-        }
+    # Keys as returned by the Detoxify "original" model
+    ORIGINAL_KEYS = {
+        "toxicity": 0.01,
+        "severe_toxic": 0.0,
+        "obscene": 0.0,
+        "insult": 0.01,
+        "threat": 0.0,
+        "identity_hate": 0.0,
+    }
+
+    # Keys as returned by the Detoxify "unbiased" model variant
+    UNBIASED_KEYS = {
+        "toxicity": 0.01,
+        "severe_toxicity": 0.0,
+        "obscenity": 0.0,
+        "insult": 0.01,
+        "threat": 0.0,
+        "identity_attack": 0.0,
+    }
+
+    def _mock_predict(self, key_style="original", **overrides):
+        """Mock the toxicity model predict method.
+
+        key_style: "original" uses Detoxify original model keys (severe_toxic,
+                   obscene, identity_hate). "unbiased" uses unbiased model keys
+                   (severe_toxicity, obscenity, identity_attack).
+        """
+        if key_style == "original":
+            defaults = dict(self.ORIGINAL_KEYS)
+        else:
+            defaults = dict(self.UNBIASED_KEYS)
         defaults.update(overrides)
         mock_model = MagicMock()
         mock_model.predict.return_value = defaults
@@ -113,7 +135,7 @@ class TestTextScan:
 
     def test_hate_speech_detected_logs(self, client, headers, caplog):
         """Hate speech detection should log with scores and text preview."""
-        self._mock_predict(identity_attack=0.8, severe_toxicity=0.2)
+        self._mock_predict(identity_hate=0.8, severe_toxic=0.2)
 
         with caplog.at_level(logging.INFO, logger="moderation"):
             resp = client.post(
@@ -174,7 +196,7 @@ class TestTextScan:
     def test_hate_speech_log_truncates_long_text(self, client, headers, caplog):
         """Log messages should truncate text to 200 chars."""
         long_text = "x" * 500
-        self._mock_predict(identity_attack=0.9)
+        self._mock_predict(identity_hate=0.9)
 
         with caplog.at_level(logging.INFO, logger="moderation"):
             client.post(
@@ -191,7 +213,7 @@ class TestTextScan:
     def test_both_hate_speech_and_bullying_logs_both(self, client, headers, caplog):
         """When both are detected, both should be logged."""
         self._mock_predict(
-            identity_attack=0.8,
+            identity_hate=0.8,
             insult=0.9,
             toxicity=0.8,
             threat=0.5,
@@ -211,6 +233,96 @@ class TestTextScan:
         messages = [r.message for r in caplog.records]
         assert any("Hate speech detected" in m for m in messages)
         assert any("Bullying detected" in m for m in messages)
+
+
+class TestTextScanKeyCompatibility:
+    """Verify that both Detoxify key naming conventions are supported."""
+
+    def _mock_predict(self, scores):
+        mock_model = MagicMock()
+        mock_model.predict.return_value = scores
+        main.toxicity_model = mock_model
+
+    def test_original_model_keys(self, client, headers):
+        """Detoxify 'original' model keys (severe_toxic, obscene, identity_hate)."""
+        self._mock_predict({
+            "toxicity": 0.1,
+            "severe_toxic": 0.2,
+            "obscene": 0.3,
+            "insult": 0.4,
+            "threat": 0.05,
+            "identity_hate": 0.06,
+        })
+        resp = client.post(
+            "/scan/text",
+            json={"text": "test content"},
+            headers=headers,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["toxicity"] == 0.1
+        assert data["severe_toxicity"] == 0.2
+        assert data["obscenity"] == 0.3
+        assert data["insult"] == 0.4
+        assert data["threat"] == 0.05
+        assert data["identity_attack"] == 0.06
+
+    def test_unbiased_model_keys(self, client, headers):
+        """Detoxify 'unbiased' model keys (severe_toxicity, obscenity, identity_attack)."""
+        self._mock_predict({
+            "toxicity": 0.1,
+            "severe_toxicity": 0.2,
+            "obscenity": 0.3,
+            "insult": 0.4,
+            "threat": 0.05,
+            "identity_attack": 0.06,
+        })
+        resp = client.post(
+            "/scan/text",
+            json={"text": "test content"},
+            headers=headers,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["toxicity"] == 0.1
+        assert data["severe_toxicity"] == 0.2
+        assert data["obscenity"] == 0.3
+        assert data["insult"] == 0.4
+        assert data["threat"] == 0.05
+        assert data["identity_attack"] == 0.06
+
+    def test_hate_speech_with_original_keys(self, client, headers):
+        """Hate speech detection works with original model key names."""
+        self._mock_predict({
+            "toxicity": 0.1,
+            "severe_toxic": 0.0,
+            "obscene": 0.0,
+            "insult": 0.1,
+            "threat": 0.0,
+            "identity_hate": 0.8,
+        })
+        resp = client.post(
+            "/scan/text",
+            json={"text": "hateful content"},
+            headers=headers,
+        )
+        assert resp.status_code == 200
+        assert resp.json()["is_hate_speech"] is True
+
+    def test_missing_keys_default_to_zero(self, client, headers):
+        """Missing keys should default to 0.0 instead of raising KeyError."""
+        self._mock_predict({"toxicity": 0.5})
+        resp = client.post(
+            "/scan/text",
+            json={"text": "partial keys"},
+            headers=headers,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["toxicity"] == 0.5
+        assert data["severe_toxicity"] == 0.0
+        assert data["obscenity"] == 0.0
+        assert data["identity_attack"] == 0.0
 
 
 # ── Auth tests ────────────────────────────────────────────────────
