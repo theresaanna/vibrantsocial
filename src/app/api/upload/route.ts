@@ -11,7 +11,6 @@ const IMAGE_TYPES = [
   "image/png",
   "image/gif",
   "image/webp",
-  "image/svg+xml",
 ];
 
 const CONVERTIBLE_IMAGE_TYPES = ["image/heic", "image/heif"];
@@ -87,7 +86,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         error:
-          "Invalid file type. Supported: JPEG, PNG, GIF, WebP, SVG, HEIC, HEIF, MP4, WebM, MOV, OGG, MP3, PDF, Audio",
+          "Invalid file type. Supported: JPEG, PNG, GIF, WebP, HEIC, HEIF, MP4, WebM, MOV, OGG, MP3, PDF, Audio",
       },
       { status: 400 }
     );

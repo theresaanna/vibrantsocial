@@ -12,11 +12,16 @@ export async function proxy(request: Request) {
   const linkRedirectMatch = rawCookies.match(
     /(?:^|;\s*)linkRedirect=([^;]*)/
   );
-  console.log("[proxy]", pathname, "linkRedirect cookie:", linkRedirectMatch ? decodeURIComponent(linkRedirectMatch[1]) : "not found");
   if (linkRedirectMatch) {
     const target = decodeURIComponent(linkRedirectMatch[1]);
-    console.log("[proxy] linkRedirect → redirecting to:", target);
-    const response = NextResponse.redirect(new URL(target, request.url));
+    // Prevent open redirect: only allow relative paths starting with /
+    if (target.startsWith("/") && !target.startsWith("//")) {
+      const response = NextResponse.redirect(new URL(target, request.url));
+      response.cookies.delete("linkRedirect");
+      return response;
+    }
+    // Invalid redirect target, clear cookie and continue
+    const response = NextResponse.next();
     response.cookies.delete("linkRedirect");
     return response;
   }

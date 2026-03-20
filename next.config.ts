@@ -16,6 +16,28 @@ const nextConfig: NextConfig = {
   },
   headers: async () => [
     {
+      // Security headers for all routes
+      source: "/(.*)",
+      headers: [
+        {
+          key: "X-Content-Type-Options",
+          value: "nosniff",
+        },
+        {
+          key: "X-Frame-Options",
+          value: "DENY",
+        },
+        {
+          key: "Referrer-Policy",
+          value: "strict-origin-when-cross-origin",
+        },
+        {
+          key: "Strict-Transport-Security",
+          value: "max-age=31536000; includeSubDomains",
+        },
+      ],
+    },
+    {
       // Cache static assets aggressively
       source: "/:path*.(ico|svg|jpg|jpeg|png|gif|webp|woff|woff2)",
       headers: [

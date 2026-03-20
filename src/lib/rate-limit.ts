@@ -58,3 +58,16 @@ export async function checkRateLimit(
 
   return null;
 }
+
+/**
+ * Rate limit check for server actions (returns boolean instead of NextResponse).
+ * Returns true if the request is rate limited.
+ */
+export async function isRateLimited(
+  limiter: Ratelimit | null,
+  identifier: string
+): Promise<boolean> {
+  if (!limiter) return false;
+  const { success } = await limiter.limit(identifier);
+  return !success;
+}

@@ -2,6 +2,8 @@
 
 import { signIn } from "@/auth";
 import { AuthError } from "next-auth";
+import { headers } from "next/headers";
+import { authLimiter, isRateLimited } from "@/lib/rate-limit";
 
 interface LoginState {
   success: boolean;
@@ -12,6 +14,12 @@ export async function loginWithCredentials(
   _prevState: LoginState,
   formData: FormData
 ): Promise<LoginState> {
+  const headersList = await headers();
+  const ip = headersList.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
+  if (await isRateLimited(authLimiter, `login:${ip}`)) {
+    return { success: false, message: "Too many attempts. Please try again later." };
+  }
+
   try {
     await signIn("credentials", {
       email: (formData.get("email") as string)?.trim().toLowerCase(),

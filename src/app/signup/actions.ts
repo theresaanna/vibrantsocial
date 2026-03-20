@@ -8,6 +8,8 @@ import { AuthError } from "next-auth";
 import { autoFriendNewUser } from "@/lib/auto-friend";
 import { inngest } from "@/lib/inngest";
 import { sendEmailVerificationEmail } from "@/lib/email";
+import { headers } from "next/headers";
+import { authLimiter, isRateLimited } from "@/lib/rate-limit";
 
 interface SignupState {
   success: boolean;
@@ -18,6 +20,12 @@ export async function signup(
   _prevState: SignupState,
   formData: FormData
 ): Promise<SignupState> {
+  const headersList = await headers();
+  const ip = headersList.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
+  if (await isRateLimited(authLimiter, `signup:${ip}`)) {
+    return { success: false, message: "Too many attempts. Please try again later." };
+  }
+
   const email = (formData.get("email") as string)?.trim().toLowerCase();
   const username = (formData.get("username") as string)?.trim().toLowerCase();
   const dateOfBirthStr = formData.get("dateOfBirth") as string;
