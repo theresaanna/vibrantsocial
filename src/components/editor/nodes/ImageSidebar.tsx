@@ -32,8 +32,8 @@ export function ImageSidebar({
       <div
         ref={ref}
         data-testid="image-sidebar"
-        className={`fixed bottom-0 left-0 right-0 z-[90] flex items-center justify-center gap-2 border-t border-zinc-200 bg-white px-4 py-2 shadow-lg transition-transform duration-200 ease-out dark:border-zinc-700 dark:bg-zinc-900 ${
-          visible ? "translate-y-0" : "translate-y-full"
+        className={`fixed top-0 left-0 right-0 z-[90] flex items-center justify-center gap-2 border-b border-zinc-200 bg-white px-4 py-2 shadow-lg transition-transform duration-200 ease-out dark:border-zinc-700 dark:bg-zinc-900 ${
+          visible ? "translate-y-0" : "-translate-y-full"
         }`}
         onMouseDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
