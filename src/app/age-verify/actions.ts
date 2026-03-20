@@ -8,6 +8,7 @@ import {
   type AgeCheckerStatus,
 } from "@/lib/agechecker";
 import { revalidatePath } from "next/cache";
+import { authLimiter, isRateLimited } from "@/lib/rate-limit";
 
 interface ActionState {
   success: boolean;
@@ -30,6 +31,10 @@ export async function initiateAgeVerification(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(authLimiter, `age-verify:${session.user.id}`)) {
+    return { success: false, message: "Too many attempts. Please try again later." };
   }
 
   const user = await prisma.user.findUnique({
