@@ -257,6 +257,7 @@ export default function ImageComponent({
             isTouchDevice={isTouchDevice}
             onResizeClick={() => setShowResizeModal(true)}
             onAltTextClick={() => setShowAltTextModal(true)}
+            editorContainer={editor.getRootElement()?.closest(".rounded-lg.border") as HTMLElement | null}
           />
         </>
       )}
