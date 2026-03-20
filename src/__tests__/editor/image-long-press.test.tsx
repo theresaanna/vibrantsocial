@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen } from "@testing-library/react";
 
 const mockEditor = {
   registerCommand: vi.fn().mockReturnValue(() => {}),
   update: vi.fn((fn: () => void) => fn()),
   isEditable: vi.fn().mockReturnValue(true),
+  getRootElement: vi.fn().mockReturnValue({ clientWidth: 600 }),
 };
 
 vi.mock("@lexical/react/LexicalComposerContext", () => ({
@@ -40,18 +41,13 @@ vi.mock("@/components/editor/nodes/ImageNode", () => ({
 
 import ImageComponent from "@/components/editor/nodes/ImageComponent";
 
-describe("Image long-press context menu", () => {
+describe("Image component (no context menu)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers();
     mockEditor.isEditable.mockReturnValue(true);
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it("opens context menu after 500ms long-press", () => {
+  it("does not render a context menu (replaced by sidebar)", () => {
     render(
       <ImageComponent
         src="https://example.com/img.png"
@@ -62,24 +58,11 @@ describe("Image long-press context menu", () => {
       />
     );
 
-    const img = screen.getByAltText("test image");
-
-    act(() => {
-      fireEvent.touchStart(img, {
-        touches: [{ clientX: 200, clientY: 150 }],
-      });
-    });
-
+    // Context menu was removed in the sidebar refactor
     expect(screen.queryByTestId("image-context-menu")).not.toBeInTheDocument();
-
-    act(() => {
-      vi.advanceTimersByTime(500);
-    });
-
-    expect(screen.getByTestId("image-context-menu")).toBeInTheDocument();
   });
 
-  it("does not open context menu on short tap", () => {
+  it("does not render sidebar when not selected", () => {
     render(
       <ImageComponent
         src="https://example.com/img.png"
@@ -90,64 +73,11 @@ describe("Image long-press context menu", () => {
       />
     );
 
-    const img = screen.getByAltText("test image");
-
-    act(() => {
-      fireEvent.touchStart(img, {
-        touches: [{ clientX: 200, clientY: 150 }],
-      });
-    });
-
-    act(() => {
-      vi.advanceTimersByTime(200);
-    });
-
-    act(() => {
-      fireEvent.touchEnd(img);
-    });
-
-    act(() => {
-      vi.advanceTimersByTime(500);
-    });
-
-    expect(screen.queryByTestId("image-context-menu")).not.toBeInTheDocument();
+    // isSelected is mocked as false, so sidebar should not appear
+    expect(screen.queryByTestId("image-sidebar")).not.toBeInTheDocument();
   });
 
-  it("cancels long-press when finger moves", () => {
-    render(
-      <ImageComponent
-        src="https://example.com/img.png"
-        altText="test image"
-        width={400}
-        height={300}
-        nodeKey="test-key"
-      />
-    );
-
-    const img = screen.getByAltText("test image");
-
-    act(() => {
-      fireEvent.touchStart(img, {
-        touches: [{ clientX: 200, clientY: 150 }],
-      });
-    });
-
-    act(() => {
-      vi.advanceTimersByTime(200);
-    });
-
-    act(() => {
-      fireEvent.touchMove(img);
-    });
-
-    act(() => {
-      vi.advanceTimersByTime(500);
-    });
-
-    expect(screen.queryByTestId("image-context-menu")).not.toBeInTheDocument();
-  });
-
-  it("does not open context menu when editor is not editable", () => {
+  it("does not render sidebar when editor is not editable", () => {
     mockEditor.isEditable.mockReturnValue(false);
 
     render(
@@ -160,18 +90,6 @@ describe("Image long-press context menu", () => {
       />
     );
 
-    const img = screen.getByAltText("test image");
-
-    act(() => {
-      fireEvent.touchStart(img, {
-        touches: [{ clientX: 200, clientY: 150 }],
-      });
-    });
-
-    act(() => {
-      vi.advanceTimersByTime(500);
-    });
-
-    expect(screen.queryByTestId("image-context-menu")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("image-sidebar")).not.toBeInTheDocument();
   });
 });

@@ -8,6 +8,7 @@ const mockEditor = {
   registerCommand: vi.fn().mockReturnValue(() => {}),
   update: vi.fn((fn: () => void) => fn()),
   isEditable: vi.fn().mockReturnValue(true),
+  getRootElement: vi.fn().mockReturnValue({ clientWidth: 600 }),
 };
 
 vi.mock("@lexical/react/LexicalComposerContext", () => ({
@@ -118,20 +119,20 @@ describe("ImageComponent resize handles", () => {
     const nw = screen.getByTestId("resize-handle-nw");
 
     // SE: bottom-right
-    expect(se.className).toContain("-right-1");
-    expect(se.className).toContain("-bottom-1");
+    expect(se.className).toContain("-right-2");
+    expect(se.className).toContain("-bottom-2");
 
     // SW: bottom-left
-    expect(sw.className).toContain("-left-1");
-    expect(sw.className).toContain("-bottom-1");
+    expect(sw.className).toContain("-left-2");
+    expect(sw.className).toContain("-bottom-2");
 
     // NE: top-right
-    expect(ne.className).toContain("-right-1");
-    expect(ne.className).toContain("-top-1");
+    expect(ne.className).toContain("-right-2");
+    expect(ne.className).toContain("-top-2");
 
     // NW: top-left
-    expect(nw.className).toContain("-left-1");
-    expect(nw.className).toContain("-top-1");
+    expect(nw.className).toContain("-left-2");
+    expect(nw.className).toContain("-top-2");
   });
 
   it("persists the final dragged width to the Lexical node on mouseup", () => {
@@ -231,7 +232,7 @@ describe("ImageComponent resize handles", () => {
     expect(mockSetWidthAndHeight).toHaveBeenCalledWith(100, "inherit");
   });
 
-  it("renders the action toolbar when selected and editable", () => {
+  it("renders the sidebar when selected and editable", () => {
     render(
       <ImageComponent
         src="https://example.com/img.png"
@@ -242,12 +243,12 @@ describe("ImageComponent resize handles", () => {
       />
     );
 
-    expect(screen.getByTestId("image-action-toolbar")).toBeInTheDocument();
-    expect(screen.getByTestId("toolbar-resize-button")).toBeInTheDocument();
-    expect(screen.getByTestId("toolbar-alt-text-button")).toBeInTheDocument();
+    expect(screen.getByTestId("image-sidebar")).toBeInTheDocument();
+    expect(screen.getByTestId("sidebar-resize-button")).toBeInTheDocument();
+    expect(screen.getByTestId("sidebar-alt-text-button")).toBeInTheDocument();
   });
 
-  it("does not render action toolbar when not editable", () => {
+  it("does not render sidebar when not editable", () => {
     mockEditor.isEditable.mockReturnValue(false);
 
     render(
@@ -260,7 +261,7 @@ describe("ImageComponent resize handles", () => {
       />
     );
 
-    expect(screen.queryByTestId("image-action-toolbar")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("image-sidebar")).not.toBeInTheDocument();
   });
 });
 

@@ -2,10 +2,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+const mockSetWidthAndHeight = vi.fn();
+
 const mockEditor = {
   registerCommand: vi.fn().mockReturnValue(() => {}),
-  update: vi.fn(),
+  update: vi.fn((fn: () => void) => fn()),
   isEditable: vi.fn().mockReturnValue(true),
+  getRootElement: vi.fn().mockReturnValue({ clientWidth: 600 }),
 };
 
 vi.mock("@lexical/react/LexicalComposerContext", () => ({
@@ -13,7 +16,7 @@ vi.mock("@lexical/react/LexicalComposerContext", () => ({
 }));
 
 vi.mock("@lexical/react/useLexicalNodeSelection", () => ({
-  useLexicalNodeSelection: () => [false, vi.fn(), vi.fn()],
+  useLexicalNodeSelection: () => [true, vi.fn(), vi.fn()],
 }));
 
 vi.mock("@lexical/utils", () => ({
@@ -23,7 +26,9 @@ vi.mock("@lexical/utils", () => ({
 }));
 
 vi.mock("lexical", () => ({
-  $getNodeByKey: vi.fn(),
+  $getNodeByKey: vi.fn(() => ({
+    setWidthAndHeight: mockSetWidthAndHeight,
+  })),
   $getSelection: vi.fn(),
   $isNodeSelection: vi.fn(),
   CLICK_COMMAND: "CLICK_COMMAND",
@@ -35,28 +40,6 @@ vi.mock("lexical", () => ({
 vi.mock("@/components/editor/nodes/ImageNode", () => ({
   $isImageNode: vi.fn().mockReturnValue(true),
 }));
-
-// We need to test ResizePopover directly, but it's not exported.
-// Instead we re-export it for testing via a test helper approach.
-// Since ResizePopover is an internal function, we'll test it through
-// the ImageComponent by triggering the context menu -> Resize flow.
-// However, that requires right-click + menu interaction which is complex.
-//
-// A simpler approach: extract and test the validation logic, or test
-// ResizePopover by temporarily exporting it. Let's test via the component
-// by directly importing and rendering it through a wrapper.
-
-// Since ResizePopover is not exported, we'll test the behavior through
-// a re-export. But first, let's check if we can access it.
-// We'll take the approach of testing through the full ImageComponent flow.
-
-// Actually, the simplest approach: we can render ImageComponent, right-click
-// to open context menu, click Resize, and then interact with the popover.
-// But that's complex in unit tests. Instead, let's export ResizePopover
-// for testing. We'll use a different approach: test the component indirectly.
-
-// For a clean unit test, let's just directly test by importing the default
-// ImageComponent and interacting with it.
 
 import ImageComponent from "@/components/editor/nodes/ImageComponent";
 
@@ -72,16 +55,11 @@ function renderImageComponent() {
   );
 }
 
-async function openResizePopover(user: ReturnType<typeof userEvent.setup>) {
-  const img = screen.getByAltText("test");
-  // Right-click to open context menu
-  await user.pointer({ keys: "[MouseRight]", target: img });
-  // Click "Resize" in context menu
-  const resizeButton = screen.getByText("Resize");
-  await user.click(resizeButton);
+async function openResizeModal(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByTestId("sidebar-resize-button"));
 }
 
-describe("ResizePopover", () => {
+describe("Resize modal", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockEditor.isEditable.mockReturnValue(true);
@@ -90,7 +68,7 @@ describe("ResizePopover", () => {
   it("renders width and height inputs with initial values", async () => {
     const user = userEvent.setup();
     renderImageComponent();
-    await openResizePopover(user);
+    await openResizeModal(user);
 
     const widthInput = screen.getByTestId("resize-width-input") as HTMLInputElement;
     const heightInput = screen.getByTestId("resize-height-input") as HTMLInputElement;
@@ -104,7 +82,7 @@ describe("ResizePopover", () => {
   it("allows typing any value in the inputs", async () => {
     const user = userEvent.setup();
     renderImageComponent();
-    await openResizePopover(user);
+    await openResizeModal(user);
 
     const widthInput = screen.getByTestId("resize-width-input") as HTMLInputElement;
     await user.clear(widthInput);
@@ -116,7 +94,7 @@ describe("ResizePopover", () => {
   it("shows error when submitting with empty width", async () => {
     const user = userEvent.setup();
     renderImageComponent();
-    await openResizePopover(user);
+    await openResizeModal(user);
 
     // Unlock aspect ratio so clearing width doesn't affect height
     await user.click(screen.getByTestId("resize-aspect-lock"));
@@ -127,13 +105,13 @@ describe("ResizePopover", () => {
     await user.click(screen.getByTestId("resize-apply-button"));
 
     expect(screen.getByTestId("resize-error")).toBeInTheDocument();
-    expect(screen.getByTestId("resize-error").textContent).toMatch(/positive whole numbers/);
+    expect(screen.getByTestId("resize-error").textContent).toMatch(/positive numbers/);
   });
 
   it("shows error when submitting with empty height", async () => {
     const user = userEvent.setup();
     renderImageComponent();
-    await openResizePopover(user);
+    await openResizeModal(user);
 
     await user.click(screen.getByTestId("resize-aspect-lock"));
 
@@ -143,13 +121,13 @@ describe("ResizePopover", () => {
     await user.click(screen.getByTestId("resize-apply-button"));
 
     expect(screen.getByTestId("resize-error")).toBeInTheDocument();
-    expect(screen.getByTestId("resize-error").textContent).toMatch(/positive whole numbers/);
+    expect(screen.getByTestId("resize-error").textContent).toMatch(/positive numbers/);
   });
 
   it("shows error when submitting with non-numeric value", async () => {
     const user = userEvent.setup();
     renderImageComponent();
-    await openResizePopover(user);
+    await openResizeModal(user);
 
     await user.click(screen.getByTestId("resize-aspect-lock"));
 
@@ -160,13 +138,13 @@ describe("ResizePopover", () => {
     await user.click(screen.getByTestId("resize-apply-button"));
 
     expect(screen.getByTestId("resize-error")).toBeInTheDocument();
-    expect(screen.getByTestId("resize-error").textContent).toMatch(/positive whole numbers/);
+    expect(screen.getByTestId("resize-error").textContent).toMatch(/positive numbers/);
   });
 
   it("shows error when submitting with value less than 10", async () => {
     const user = userEvent.setup();
     renderImageComponent();
-    await openResizePopover(user);
+    await openResizeModal(user);
 
     await user.click(screen.getByTestId("resize-aspect-lock"));
 
@@ -184,27 +162,10 @@ describe("ResizePopover", () => {
     expect(screen.getByTestId("resize-error").textContent).toMatch(/Minimum size is 10/);
   });
 
-  it("shows error when submitting with decimal value", async () => {
+  it("calls apply with valid values and closes modal", async () => {
     const user = userEvent.setup();
     renderImageComponent();
-    await openResizePopover(user);
-
-    await user.click(screen.getByTestId("resize-aspect-lock"));
-
-    const widthInput = screen.getByTestId("resize-width-input");
-    await user.clear(widthInput);
-    await user.type(widthInput, "100.5");
-
-    await user.click(screen.getByTestId("resize-apply-button"));
-
-    expect(screen.getByTestId("resize-error")).toBeInTheDocument();
-    expect(screen.getByTestId("resize-error").textContent).toMatch(/positive whole numbers/);
-  });
-
-  it("calls onApply with valid values and closes popover", async () => {
-    const user = userEvent.setup();
-    renderImageComponent();
-    await openResizePopover(user);
+    await openResizeModal(user);
 
     await user.click(screen.getByTestId("resize-aspect-lock"));
 
@@ -217,15 +178,15 @@ describe("ResizePopover", () => {
 
     await user.click(screen.getByTestId("resize-apply-button"));
 
-    // Popover should close (no error, popover gone)
+    // Modal should close (no error, inputs gone)
     expect(screen.queryByTestId("resize-error")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("image-resize-popover")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("resize-width-input")).not.toBeInTheDocument();
   });
 
   it("updates height proportionally when aspect ratio is locked", async () => {
     const user = userEvent.setup();
     renderImageComponent();
-    await openResizePopover(user);
+    await openResizeModal(user);
 
     // Natural dimensions fall back to 300x200 in jsdom, so aspect ratio = 3:2
     const widthInput = screen.getByTestId("resize-width-input") as HTMLInputElement;
@@ -241,7 +202,7 @@ describe("ResizePopover", () => {
   it("does not update height when aspect ratio is unlocked", async () => {
     const user = userEvent.setup();
     renderImageComponent();
-    await openResizePopover(user);
+    await openResizeModal(user);
 
     // Unlock aspect ratio
     await user.click(screen.getByTestId("resize-aspect-lock"));
@@ -259,7 +220,7 @@ describe("ResizePopover", () => {
   it("clears error when user types a new value", async () => {
     const user = userEvent.setup();
     renderImageComponent();
-    await openResizePopover(user);
+    await openResizeModal(user);
 
     await user.click(screen.getByTestId("resize-aspect-lock"));
 
@@ -275,5 +236,24 @@ describe("ResizePopover", () => {
     await user.type(widthInput, "200");
 
     expect(screen.queryByTestId("resize-error")).not.toBeInTheDocument();
+  });
+
+  it("shows unit toggle with px and % options", async () => {
+    const user = userEvent.setup();
+    renderImageComponent();
+    await openResizeModal(user);
+
+    expect(screen.getByTestId("unit-toggle-px")).toBeInTheDocument();
+    expect(screen.getByTestId("unit-toggle-pct")).toBeInTheDocument();
+  });
+
+  it("shows preset buttons", async () => {
+    const user = userEvent.setup();
+    renderImageComponent();
+    await openResizeModal(user);
+
+    expect(screen.getByTestId("preset-25")).toBeInTheDocument();
+    expect(screen.getByTestId("preset-50")).toBeInTheDocument();
+    expect(screen.getByTestId("preset-100")).toBeInTheDocument();
   });
 });

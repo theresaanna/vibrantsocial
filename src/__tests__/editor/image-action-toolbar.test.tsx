@@ -9,6 +9,7 @@ const mockEditor = {
   registerCommand: vi.fn().mockReturnValue(() => {}),
   update: vi.fn((fn: () => void) => fn()),
   isEditable: vi.fn().mockReturnValue(true),
+  getRootElement: vi.fn().mockReturnValue({ clientWidth: 600 }),
 };
 
 vi.mock("@lexical/react/LexicalComposerContext", () => ({
@@ -47,13 +48,13 @@ vi.mock("@/components/editor/nodes/ImageNode", () => ({
 
 import ImageComponent from "@/components/editor/nodes/ImageComponent";
 
-describe("Image action toolbar", () => {
+describe("Image sidebar", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockEditor.isEditable.mockReturnValue(true);
   });
 
-  it("renders toolbar when image is selected and editable", () => {
+  it("renders sidebar when image is selected and editable", () => {
     render(
       <ImageComponent
         src="https://example.com/img.png"
@@ -64,12 +65,12 @@ describe("Image action toolbar", () => {
       />
     );
 
-    expect(screen.getByTestId("image-action-toolbar")).toBeInTheDocument();
-    expect(screen.getByTestId("toolbar-resize-button")).toBeInTheDocument();
-    expect(screen.getByTestId("toolbar-alt-text-button")).toBeInTheDocument();
+    expect(screen.getByTestId("image-sidebar")).toBeInTheDocument();
+    expect(screen.getByTestId("sidebar-resize-button")).toBeInTheDocument();
+    expect(screen.getByTestId("sidebar-alt-text-button")).toBeInTheDocument();
   });
 
-  it("does not render toolbar when editor is not editable", () => {
+  it("does not render sidebar when editor is not editable", () => {
     mockEditor.isEditable.mockReturnValue(false);
 
     render(
@@ -82,10 +83,10 @@ describe("Image action toolbar", () => {
       />
     );
 
-    expect(screen.queryByTestId("image-action-toolbar")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("image-sidebar")).not.toBeInTheDocument();
   });
 
-  it("opens resize popover when resize button is clicked", async () => {
+  it("opens resize modal when resize button is clicked", async () => {
     const user = userEvent.setup();
 
     render(
@@ -98,12 +99,13 @@ describe("Image action toolbar", () => {
       />
     );
 
-    await user.click(screen.getByTestId("toolbar-resize-button"));
+    await user.click(screen.getByTestId("sidebar-resize-button"));
 
-    expect(screen.getByTestId("image-resize-popover")).toBeInTheDocument();
+    expect(screen.getByTestId("resize-width-input")).toBeInTheDocument();
+    expect(screen.getByTestId("resize-height-input")).toBeInTheDocument();
   });
 
-  it("opens alt text popover when alt text button is clicked", async () => {
+  it("opens alt text modal when alt text button is clicked", async () => {
     const user = userEvent.setup();
 
     render(
@@ -116,8 +118,8 @@ describe("Image action toolbar", () => {
       />
     );
 
-    await user.click(screen.getByTestId("toolbar-alt-text-button"));
+    await user.click(screen.getByTestId("sidebar-alt-text-button"));
 
-    expect(screen.getByTestId("alt-text-popover")).toBeInTheDocument();
+    expect(screen.getByTestId("alt-text-input")).toBeInTheDocument();
   });
 });
