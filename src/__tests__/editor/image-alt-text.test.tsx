@@ -8,6 +8,7 @@ const mockEditor = {
   registerCommand: vi.fn().mockReturnValue(() => {}),
   update: vi.fn((fn: () => void) => fn()),
   isEditable: vi.fn().mockReturnValue(true),
+  getRootElement: vi.fn().mockReturnValue({ clientWidth: 600 }),
 };
 
 vi.mock("@lexical/react/LexicalComposerContext", () => ({
@@ -15,7 +16,7 @@ vi.mock("@lexical/react/LexicalComposerContext", () => ({
 }));
 
 vi.mock("@lexical/react/useLexicalNodeSelection", () => ({
-  useLexicalNodeSelection: () => [false, vi.fn(), vi.fn()],
+  useLexicalNodeSelection: () => [true, vi.fn(), vi.fn()],
 }));
 
 vi.mock("@lexical/utils", () => ({
@@ -55,14 +56,8 @@ function renderImageComponent(altText = "test image") {
   );
 }
 
-async function openContextMenu(user: ReturnType<typeof userEvent.setup>) {
-  const img = screen.getByAltText("test image");
-  await user.pointer({ keys: "[MouseRight]", target: img });
-}
-
-async function openAltTextPopover(user: ReturnType<typeof userEvent.setup>) {
-  await openContextMenu(user);
-  await user.click(screen.getByTestId("context-menu-alt-text"));
+async function openAltTextModal(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByTestId("sidebar-alt-text-button"));
 }
 
 describe("Image alt text editing", () => {
@@ -71,30 +66,19 @@ describe("Image alt text editing", () => {
     mockEditor.isEditable.mockReturnValue(true);
   });
 
-  it("shows 'Alt text' option in the context menu", async () => {
-    const user = userEvent.setup();
-    renderImageComponent();
-    await openContextMenu(user);
-
-    expect(screen.getByTestId("context-menu-alt-text")).toBeInTheDocument();
-    expect(screen.getByText("Alt text")).toBeInTheDocument();
-  });
-
-  it("opens alt text popover with current alt text value", async () => {
+  it("opens alt text modal with current alt text value", async () => {
     const user = userEvent.setup();
     renderImageComponent("A sunset over mountains");
-    const img = screen.getByAltText("A sunset over mountains");
-    await user.pointer({ keys: "[MouseRight]", target: img });
-    await user.click(screen.getByTestId("context-menu-alt-text"));
+    await user.click(screen.getByTestId("sidebar-alt-text-button"));
 
-    const input = screen.getByTestId("alt-text-input") as HTMLInputElement;
+    const input = screen.getByTestId("alt-text-input") as HTMLTextAreaElement;
     expect(input.value).toBe("A sunset over mountains");
   });
 
   it("updates the Lexical node alt text on apply", async () => {
     const user = userEvent.setup();
     renderImageComponent();
-    await openAltTextPopover(user);
+    await openAltTextModal(user);
 
     const input = screen.getByTestId("alt-text-input");
     await user.clear(input);
@@ -108,7 +92,7 @@ describe("Image alt text editing", () => {
   it("allows empty alt text for decorative images", async () => {
     const user = userEvent.setup();
     renderImageComponent();
-    await openAltTextPopover(user);
+    await openAltTextModal(user);
 
     const input = screen.getByTestId("alt-text-input");
     await user.clear(input);
@@ -116,25 +100,25 @@ describe("Image alt text editing", () => {
     await user.click(screen.getByTestId("alt-text-apply-button"));
 
     expect(mockSetAltText).toHaveBeenCalledWith("");
-    expect(screen.queryByTestId("alt-text-popover")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("alt-text-input")).not.toBeInTheDocument();
   });
 
-  it("closes popover after apply", async () => {
+  it("closes modal after apply", async () => {
     const user = userEvent.setup();
     renderImageComponent();
-    await openAltTextPopover(user);
+    await openAltTextModal(user);
 
-    expect(screen.getByTestId("alt-text-popover")).toBeInTheDocument();
+    expect(screen.getByTestId("alt-text-input")).toBeInTheDocument();
 
     await user.click(screen.getByTestId("alt-text-apply-button"));
 
-    expect(screen.queryByTestId("alt-text-popover")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("alt-text-input")).not.toBeInTheDocument();
   });
 
   it("updates the img element alt attribute after apply", async () => {
     const user = userEvent.setup();
     renderImageComponent();
-    await openAltTextPopover(user);
+    await openAltTextModal(user);
 
     const input = screen.getByTestId("alt-text-input");
     await user.clear(input);
