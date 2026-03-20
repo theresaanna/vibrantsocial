@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { requirePhoneVerification } from "@/lib/phone-gate";
 import { requireNotSuspended } from "@/lib/suspension-gate";
@@ -228,6 +228,10 @@ export async function startConversation(
     return { success: false, message: "Not authenticated" };
   }
 
+  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
   const isNotSuspended = await requireNotSuspended(session.user.id);
   if (!isNotSuspended) {
     return { success: false, message: "Your account is suspended" };
@@ -317,6 +321,10 @@ export async function createGroupConversation(data: {
     return { success: false, message: "Not authenticated" };
   }
 
+  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
   const isNotSuspended2 = await requireNotSuspended(session.user.id);
   if (!isNotSuspended2) {
     return { success: false, message: "Your account is suspended" };
@@ -384,6 +392,10 @@ export async function sendMessage(data: {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   const isNotSuspended3 = await requireNotSuspended(session.user.id);
@@ -525,6 +537,10 @@ export async function editMessage(data: {
     return { success: false, message: "Not authenticated" };
   }
 
+  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
   const { messageId, content } = data;
   const trimmedContent = content.trim();
 
@@ -575,6 +591,10 @@ export async function deleteMessage(messageId: string): Promise<ActionState> {
     return { success: false, message: "Not authenticated" };
   }
 
+  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
   const message = await prisma.message.findUnique({
     where: { id: messageId },
   });
@@ -613,6 +633,10 @@ export async function markConversationRead(
     return { success: false, message: "Not authenticated" };
   }
 
+  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
   const participant = await prisma.conversationParticipant.findUnique({
     where: {
       conversationId_userId: { conversationId, userId: session.user.id },
@@ -648,6 +672,10 @@ export async function acceptMessageRequest(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   const request = await prisma.messageRequest.findUnique({
@@ -697,6 +725,10 @@ export async function declineMessageRequest(
     return { success: false, message: "Not authenticated" };
   }
 
+  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
   const request = await prisma.messageRequest.findUnique({
     where: { id: requestId },
   });
@@ -725,6 +757,10 @@ export async function bulkDeclineMessageRequests(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   if (!requestIds.length) {
@@ -762,6 +798,10 @@ export async function toggleReaction(data: {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   const { messageId, emoji } = data;
@@ -900,6 +940,10 @@ export async function updateGroupName(data: {
     return { success: false, message: "Not authenticated" };
   }
 
+  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
   const { conversationId, name } = data;
   const trimmedName = name.trim();
 
@@ -949,6 +993,10 @@ export async function addGroupMembers(data: {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   const { conversationId, userIds } = data;
@@ -1025,6 +1073,10 @@ export async function removeGroupMember(data: {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   const { conversationId, userId } = data;

@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
 
 async function enrichWithPendingFriendRequests(
   notifications: Array<{ type: string; actorId: string }>,
@@ -72,6 +72,10 @@ export async function markNotificationRead(notificationId: string) {
     return { success: false, message: "Not authenticated" };
   }
 
+  if (await isRateLimited(apiLimiter, `notif:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
   await prisma.notification.updateMany({
     where: { id: notificationId, targetUserId: session.user.id },
     data: { readAt: new Date() },
@@ -84,6 +88,10 @@ export async function markAllNotificationsRead() {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `notif:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   await prisma.notification.updateMany({

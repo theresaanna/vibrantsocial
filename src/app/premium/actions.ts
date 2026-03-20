@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
 import {
   createPremiumCheckoutSession,
   createBillingPortalSession,
@@ -17,6 +17,10 @@ export async function createPremiumSubscription(): Promise<PremiumActionResult> 
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `premium:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   const user = await prisma.user.findUnique({
@@ -68,6 +72,10 @@ export async function createBillingPortal(): Promise<PremiumActionResult> {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `premium:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   const user = await prisma.user.findUnique({
