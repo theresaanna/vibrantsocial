@@ -7,12 +7,14 @@ interface ImageSidebarProps {
   isTouchDevice: boolean;
   onResizeClick: () => void;
   onAltTextClick: () => void;
+  editorContainer?: HTMLElement | null;
 }
 
 export function ImageSidebar({
   isTouchDevice,
   onResizeClick,
   onAltTextClick,
+  editorContainer,
 }: ImageSidebarProps) {
   const [visible, setVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -27,13 +29,16 @@ export function ImageSidebar({
     "flex h-10 w-10 items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-100 active:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:active:bg-zinc-600 transition-colors";
 
   if (isTouchDevice) {
-    // Bottom bar on mobile
+    // Slide down from toolbar into the editor on mobile
+    const portalTarget = editorContainer ?? document.body;
     return createPortal(
       <div
         ref={ref}
         data-testid="image-sidebar"
-        className={`fixed top-0 left-0 right-0 z-[90] flex items-center justify-center gap-2 border-b border-zinc-200 bg-white px-4 py-2 shadow-lg transition-transform duration-200 ease-out dark:border-zinc-700 dark:bg-zinc-900 ${
-          visible ? "translate-y-0" : "-translate-y-full"
+        className={`sticky top-0 z-[90] flex items-center justify-center gap-2 border-b border-zinc-200 bg-white px-4 py-2 shadow-md transition-all duration-200 ease-out dark:border-zinc-700 dark:bg-zinc-900 ${
+          visible
+            ? "max-h-20 opacity-100"
+            : "max-h-0 overflow-hidden border-b-0 py-0 opacity-0"
         }`}
         onMouseDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
@@ -61,7 +66,7 @@ export function ImageSidebar({
           </svg>
         </button>
       </div>,
-      document.body,
+      portalTarget,
     );
   }
 
