@@ -15,7 +15,20 @@ const COMBINED_REGEX = new RegExp(
   "g"
 );
 
-export function LinkifyText({ text }: { text: string }) {
+/**
+ * @param text - The plain text to parse
+ * @param asSpans - When true, renders mentions/hashtags/links as styled
+ *   <span> elements instead of <a> tags.  Use this when LinkifyText is
+ *   rendered inside an interactive parent (<a>, <button>, <Link>) to
+ *   avoid invalid nested interactive HTML.
+ */
+export function LinkifyText({
+  text,
+  asSpans = false,
+}: {
+  text: string;
+  asSpans?: boolean;
+}) {
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -30,25 +43,27 @@ export function LinkifyText({ text }: { text: string }) {
 
     if (match[5]) {
       // Mention match (group 5) - @username
+      const Tag = asSpans ? "span" : "a";
       parts.push(
-        <a
+        <Tag
           key={match.index}
-          href={`/${match[5]}`}
-          className="font-medium hover:underline"
+          {...(!asSpans ? { href: `/${match[5]}` } : {})}
+          className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
         >
           {matched}
-        </a>
+        </Tag>
       );
     } else if (match[4]) {
       // Hashtag match (group 4) - #tag
+      const Tag = asSpans ? "span" : "a";
       parts.push(
-        <a
+        <Tag
           key={match.index}
-          href={`/tag/${normalizeTag(match[4])}`}
-          className="font-medium hover:underline"
+          {...(!asSpans ? { href: `/tag/${normalizeTag(match[4])}` } : {})}
+          className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
         >
           {matched}
-        </a>
+        </Tag>
       );
     } else {
       // URL, www, or email match
@@ -61,17 +76,25 @@ export function LinkifyText({ text }: { text: string }) {
         href = matched;
       }
 
-      parts.push(
-        <a
-          key={match.index}
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline break-all"
-        >
-          {matched}
-        </a>
-      );
+      if (asSpans) {
+        parts.push(
+          <span key={match.index} className="underline break-all">
+            {matched}
+          </span>
+        );
+      } else {
+        parts.push(
+          <a
+            key={match.index}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline break-all"
+          >
+            {matched}
+          </a>
+        );
+      }
     }
 
     lastIndex = match.index + matched.length;

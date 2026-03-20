@@ -95,10 +95,11 @@ describe("SearchUserCard", () => {
     expect(screen.getByText(/@bob/)).toBeInTheDocument();
   });
 
-  it("falls back to raw bio string for non-JSON bio", () => {
+  it("renders empty for non-JSON bio string", () => {
+    // extractTextFromLexicalJson returns "" for non-JSON input
     const user = { ...baseUser, bio: "Just a plain bio" };
     render(<SearchUserCard user={user} />);
-    expect(screen.getByText("Just a plain bio")).toBeInTheDocument();
+    expect(screen.queryByText("Just a plain bio")).not.toBeInTheDocument();
   });
 
   it("renders display name and username", () => {

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
 import { StyledName } from "@/components/styled-name";
+import { LinkifyText } from "@/components/chat/linkify-text";
 
 interface SearchPostCardProps {
   post: {
@@ -62,7 +63,7 @@ export function SearchPostCard({ post }: SearchPostCardProps) {
       </div>
 
       <p className="mt-2 line-clamp-3 text-sm text-zinc-700 dark:text-zinc-300">
-        {plainText || "No content"}
+        <LinkifyText text={plainText || "No content"} asSpans />
       </p>
 
       {post.tags && post.tags.length > 0 && (
