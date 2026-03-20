@@ -495,8 +495,8 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                       <StyledName fontId={user.usernameFont}>{displayName}</StyledName>
                       {user.tier === "premium" && (
                         <Link href="/premium" title="Premium member" className="relative inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 shadow-sm">
-                          <svg className="h-2.5 w-2.5 text-white" viewBox="1 0 22 24" fill="currentColor">
-                            <path d="M2 19h20v3H2v-3zm1-1L12 4l4.5 7L22 5v13H2V18z" />
+                          <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round">
+                            <path d="M12 5v14M5 12h14" />
                           </svg>
                         </Link>
                       )}
