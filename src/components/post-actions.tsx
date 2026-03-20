@@ -361,7 +361,7 @@ function RepostButton({
       </button>
 
       {showConfirmUnrepost && (
-        <div className="absolute bottom-full left-0 z-10 mb-1 w-44 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+        <div className="absolute bottom-full left-0 z-50 mb-1 w-44 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
           <p className="px-3 py-1.5 text-xs text-zinc-500 dark:text-zinc-400">
             Remove your repost?
           </p>
@@ -383,7 +383,7 @@ function RepostButton({
       )}
 
       {showMenu && (
-        <div className="absolute bottom-full left-0 z-10 mb-1 w-36 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+        <div className="absolute bottom-full left-0 z-50 mb-1 w-36 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
           <button
             type="button"
             onClick={() => { setShowMenu(false); onRepost(); }}

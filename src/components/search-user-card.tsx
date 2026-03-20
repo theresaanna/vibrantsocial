@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
 import { StyledName } from "@/components/styled-name";
+import { LinkifyText } from "@/components/chat/linkify-text";
 
 interface SearchUserCardProps {
   user: {
@@ -42,7 +43,7 @@ export function SearchUserCard({ user }: SearchUserCardProps) {
         </div>
         {user.bio && (
           <p className="mt-0.5 line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">
-            {extractTextFromLexicalJson(user.bio)}
+            <LinkifyText text={extractTextFromLexicalJson(user.bio)} asSpans />
           </p>
         )}
         <div className="mt-1 flex gap-3 text-xs text-zinc-400">

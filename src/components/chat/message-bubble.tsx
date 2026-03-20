@@ -262,9 +262,12 @@ export function MessageBubble({
                   <span className="block truncate text-xs text-zinc-500 dark:text-zinc-400">
                     {message.replyTo.mediaType && !message.replyTo.content
                       ? `[${message.replyTo.mediaType}]`
-                      : message.replyTo.content.length > 80
-                        ? message.replyTo.content.slice(0, 80) + "..."
-                        : message.replyTo.content}
+                      : <LinkifyText
+                          text={message.replyTo.content.length > 80
+                            ? message.replyTo.content.slice(0, 80) + "..."
+                            : message.replyTo.content}
+                          asSpans
+                        />}
                   </span>
                 )}
               </div>
