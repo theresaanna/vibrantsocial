@@ -2,7 +2,7 @@
 
 import { UndoRedoButtons } from "./UndoRedoButtons";
 import { BlockFormatDropdown } from "./BlockFormatDropdown";
-import { FontDropdown } from "./FontDropdown";
+
 import { FontSizeControls } from "./FontSizeControls";
 import { TextFormatButtons, CodeFormatButtons } from "./TextFormatButtons";
 import { LinkButton } from "./LinkButton";
@@ -27,10 +27,7 @@ export function Toolbar() {
     <div className="flex flex-wrap items-center gap-0.5 border-b border-zinc-200 px-2 py-1 dark:border-zinc-700">
       <UndoRedoButtons />
       <span className="hidden sm:contents">
-        <Divider />
         <BlockFormatDropdown />
-        <Divider />
-        <FontDropdown />
         <FontSizeControls />
         <Divider />
       </span>
