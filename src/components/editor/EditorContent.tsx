@@ -13,6 +13,7 @@ import { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin";
 import { editorTheme } from "./theme";
 import { editorNodes } from "./nodes";
 import { ReadOnlyChecklistPlugin } from "./plugins/ReadOnlyChecklistPlugin";
+import { MentionLinkPlugin } from "./plugins/MentionLinkPlugin";
 import { PostAuthorProvider } from "./PostAuthorContext";
 
 interface EditorContentProps {
@@ -109,6 +110,7 @@ export function EditorContent({
           ErrorBoundary={({ children }) => <>{children}</>}
         />
         <ClickableLinkPlugin />
+        <MentionLinkPlugin />
         {allowChecklistToggle && (
           <>
             <ListPlugin />

@@ -84,7 +84,7 @@ export class MentionNode extends DecoratorNode<ReactNode> {
 
 export function $createMentionNode(
   username: string,
-  userId: string
+  userId: string = ""
 ): MentionNode {
   return $applyNodeReplacement(new MentionNode(username, userId));
 }
