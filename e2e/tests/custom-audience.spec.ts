@@ -23,8 +23,9 @@ test.describe("Custom Audience", () => {
     // Wait for the page to load (Post button should be visible)
     await expect(page.locator('button:has-text("Post")')).toBeVisible({ timeout: 10000 });
 
+    // Button is visible but disabled for free users
     const button = page.getByTestId("custom-audience-button");
-    await expect(button).not.toBeVisible();
+    await expect(button).toBeDisabled();
   });
 
   test("premium user can open audience picker modal", async ({ page }) => {
