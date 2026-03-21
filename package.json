@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "prisma migrate deploy && prisma generate && next build",
     "db:migrate": "prisma migrate deploy",
+    "db:setup": "./scripts/setup-local-db.sh",
+    "db:reset": "prisma migrate reset --force",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate || true",

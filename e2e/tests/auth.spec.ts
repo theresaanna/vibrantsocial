@@ -21,6 +21,11 @@ test.describe("Authentication", () => {
     }
     await expect(page).toHaveURL(/\/feed/, { timeout: 15000 });
 
+    // Dismiss cookie toast so it doesn't block UI in subsequent tests
+    await page.evaluate(() =>
+      localStorage.setItem("vibrantsocial-cookie-notice-dismissed", "true")
+    );
+
     // Save auth state for all other test suites
     await page.context().storageState({ path: AUTH_STATE_PATH });
   });

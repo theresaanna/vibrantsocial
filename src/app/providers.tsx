@@ -4,7 +4,7 @@ import { SessionProvider, useSession } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 import { AblyProvider, ChannelProvider, usePresence } from "ably/react";
 import { getAblyRealtimeClient } from "@/lib/ably";
-import { createContext, useContext, useEffect, useRef } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { ToastProvider } from "@/components/toast-provider";
 import { CookieToast } from "@/components/cookie-toast";
 import { Toaster } from "sonner";
@@ -26,21 +26,47 @@ export function useAblyReady() {
 function AblyProviderWrapper({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
   const clientRef = useRef<ReturnType<typeof getAblyRealtimeClient> | null>(null);
+  const [ablyConnected, setAblyConnected] = useState(false);
 
   useEffect(() => {
-    if (session?.user?.id && !clientRef.current) {
+    if (!session?.user?.id) return;
+
+    if (!clientRef.current) {
       clientRef.current = getAblyRealtimeClient();
-      clientRef.current.connect();
     }
+
+    const client = clientRef.current;
+
+    const onStateChange = (stateChange: { current: string }) => {
+      setAblyConnected(stateChange.current === "connected");
+    };
+
+    client.connection.on(onStateChange);
+
+    // If already connected (e.g. singleton reused), sync state immediately
+    if (client.connection.state === "connected") {
+      setAblyConnected(true);
+    } else {
+      client.connect();
+    }
+
+    return () => {
+      client.connection.off(onStateChange);
+    };
+  }, [session?.user?.id]);
+
+  // Clean up on unmount
+  useEffect(() => {
     return () => {
       if (clientRef.current) {
         clientRef.current.close();
         clientRef.current = null;
+        setAblyConnected(false);
       }
     };
-  }, [session?.user?.id]);
+  }, []);
 
-  if (!session?.user?.id || !clientRef.current) {
+  if (!session?.user?.id || !clientRef.current || !ablyConnected) {
     return (
       <AblyReadyContext.Provider value={false}>
         <CommentCountProvider>
