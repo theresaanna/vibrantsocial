@@ -25,48 +25,24 @@ export function useAblyReady() {
 
 function AblyProviderWrapper({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
-  const clientRef = useRef<ReturnType<typeof getAblyRealtimeClient> | null>(null);
-  const [ablyConnected, setAblyConnected] = useState(false);
+  // Use state (not ref) so setting the client triggers a re-render
+  const [ablyClient, setAblyClient] = useState<ReturnType<typeof getAblyRealtimeClient> | null>(null);
 
   useEffect(() => {
-    if (!session?.user?.id) return;
-
-    if (!clientRef.current) {
-      clientRef.current = getAblyRealtimeClient();
-    }
-
-    const client = clientRef.current;
-
-    const onStateChange = (stateChange: { current: string }) => {
-      setAblyConnected(stateChange.current === "connected");
-    };
-
-    client.connection.on(onStateChange);
-
-    // If already connected (e.g. singleton reused), sync state immediately
-    if (client.connection.state === "connected") {
-      setAblyConnected(true);
-    } else {
+    if (session?.user?.id && !ablyClient) {
+      const client = getAblyRealtimeClient();
       client.connect();
+      setAblyClient(client);
     }
-
     return () => {
-      client.connection.off(onStateChange);
-    };
-  }, [session?.user?.id]);
-
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      if (clientRef.current) {
-        clientRef.current.close();
-        clientRef.current = null;
-        setAblyConnected(false);
+      if (ablyClient) {
+        ablyClient.close();
+        setAblyClient(null);
       }
     };
-  }, []);
+  }, [session?.user?.id, ablyClient]);
 
-  if (!session?.user?.id || !clientRef.current || !ablyConnected) {
+  if (!session?.user?.id || !ablyClient) {
     return (
       <AblyReadyContext.Provider value={false}>
         <CommentCountProvider>
@@ -79,7 +55,7 @@ function AblyProviderWrapper({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AblyProvider client={clientRef.current}>
+    <AblyProvider client={ablyClient}>
       <AblyReadyContext.Provider value={true}>
         <CommentCountProvider>
           <ChannelProvider channelName={PRESENCE_CHANNEL}>
