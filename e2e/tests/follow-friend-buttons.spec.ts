@@ -43,8 +43,8 @@ async function createFollow(followerEmail: string, followingEmail: string) {
     if (!follower.rows[0] || !following.rows[0]) return;
 
     await pool.query(
-      `INSERT INTO "Follow" ("followerId", "followingId", "createdAt")
-       VALUES ($1, $2, NOW())
+      `INSERT INTO "Follow" (id, "followerId", "followingId", "createdAt")
+       VALUES (gen_random_uuid(), $1, $2, NOW())
        ON CONFLICT DO NOTHING`,
       [follower.rows[0].id, following.rows[0].id]
     );

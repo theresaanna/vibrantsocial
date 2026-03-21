@@ -9,9 +9,9 @@ test.describe("Post deletion from feed", () => {
     const editor = page.locator('[contenteditable="true"]').first();
     await expect(editor).toBeVisible({ timeout: 10000 });
     await editor.click();
-    await page.keyboard.type(uniqueText);
+    await editor.pressSequentially(uniqueText, { delay: 20 });
 
-    const postButton = page.getByRole("button", { name: /post/i });
+    const postButton = page.getByRole("button", { name: "Post", exact: true });
     await postButton.click();
 
     // Should redirect to feed
@@ -53,7 +53,7 @@ test.describe("Post deletion from feed", () => {
     const editor = page.locator('[contenteditable="true"]').first();
     await expect(editor).toBeVisible({ timeout: 10000 });
     await editor.click();
-    await page.keyboard.type(uniqueText);
+    await editor.pressSequentially(uniqueText, { delay: 20 });
 
     const postButton = page.getByRole("button", { name: /post/i });
     await postButton.click();
