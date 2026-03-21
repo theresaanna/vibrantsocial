@@ -4,7 +4,7 @@ import { SessionProvider, useSession } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 import { AblyProvider, ChannelProvider, usePresence } from "ably/react";
 import { getAblyRealtimeClient } from "@/lib/ably";
-import { createContext, useContext, useEffect, useRef } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { ToastProvider } from "@/components/toast-provider";
 import { CookieToast } from "@/components/cookie-toast";
 import { Toaster } from "sonner";
@@ -25,22 +25,24 @@ export function useAblyReady() {
 
 function AblyProviderWrapper({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
-  const clientRef = useRef<ReturnType<typeof getAblyRealtimeClient> | null>(null);
+  // Use state (not ref) so setting the client triggers a re-render
+  const [ablyClient, setAblyClient] = useState<ReturnType<typeof getAblyRealtimeClient> | null>(null);
 
   useEffect(() => {
-    if (session?.user?.id && !clientRef.current) {
-      clientRef.current = getAblyRealtimeClient();
-      clientRef.current.connect();
+    if (session?.user?.id && !ablyClient) {
+      const client = getAblyRealtimeClient();
+      client.connect();
+      setAblyClient(client);
     }
     return () => {
-      if (clientRef.current) {
-        clientRef.current.close();
-        clientRef.current = null;
+      if (ablyClient) {
+        ablyClient.close();
+        setAblyClient(null);
       }
     };
-  }, [session?.user?.id]);
+  }, [session?.user?.id, ablyClient]);
 
-  if (!session?.user?.id || !clientRef.current) {
+  if (!session?.user?.id || !ablyClient) {
     return (
       <AblyReadyContext.Provider value={false}>
         <CommentCountProvider>
@@ -53,7 +55,7 @@ function AblyProviderWrapper({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AblyProvider client={clientRef.current}>
+    <AblyProvider client={ablyClient}>
       <AblyReadyContext.Provider value={true}>
         <CommentCountProvider>
           <ChannelProvider channelName={PRESENCE_CHANNEL}>

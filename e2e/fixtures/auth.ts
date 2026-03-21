@@ -15,6 +15,10 @@ export const test = base.extend<{ forceLogin: void }>({
         await page.click('button[type="submit"]');
         await page.waitForURL("**/feed", { timeout: 15000 });
       }
+      // Dismiss cookie toast so it doesn't block UI
+      await page.evaluate(() =>
+        localStorage.setItem("vibrantsocial-cookie-notice-dismissed", "true")
+      );
       await use();
     },
     { auto: false },
