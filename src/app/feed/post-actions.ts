@@ -21,6 +21,23 @@ import { notifyPostSubscribers } from "@/lib/subscription-notifications";
 interface ActionState {
   success: boolean;
   message: string;
+  comment?: {
+    id: string;
+    content: string;
+    createdAt: Date;
+    parentId: string | null;
+    author: {
+      id: string;
+      username: string | null;
+      displayName: string | null;
+      name: string | null;
+      image: string | null;
+      avatar: string | null;
+      profileFrameId: string | null;
+      usernameFont: string | null;
+    };
+    reactions: { emoji: string; userIds: string[] }[];
+  };
 }
 
 const commentAuthorSelect = {
