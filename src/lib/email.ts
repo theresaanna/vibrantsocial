@@ -138,6 +138,49 @@ export async function sendWelcomeEmail(toEmail: string) {
   });
 }
 
+export async function sendPremiumWelcomeEmail(params: {
+  toEmail: string;
+}) {
+  const { toEmail } = params;
+  const baseUrl = getBaseUrl();
+  const verifyUrl = `${baseUrl}/age-verify`;
+
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: toEmail,
+      subject: "Welcome to Premium!",
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #18181b; margin-bottom: 16px;">Welcome to Premium!</h2>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            Thank you for supporting VibrantSocial! As a premium member, you now have access to custom audiences, exclusive profile frames, and more.
+          </p>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            As a thank you, age verification is <strong>free</strong> for premium members. Use the coupon code below during checkout:
+          </p>
+          <div style="margin: 20px 0; padding: 16px; background-color: #f4f4f5; border-radius: 8px; text-align: center;">
+            <span style="font-size: 20px; font-weight: 700; letter-spacing: 2px; color: #18181b;">FREEVERIFICATION</span>
+          </div>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            Age verification lets you post and view sensitive and graphic/explicit content. Get verified now to unlock the full experience.
+          </p>
+          <a href="${verifyUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
+            Verify Your Age for Free
+          </a>
+          <p style="color: #a1a1aa; font-size: 12px; margin-top: 32px;">
+            If you have any questions, reach out at <a href="mailto:vibrantsocial@proton.me" style="color: #a1a1aa;">vibrantsocial@proton.me</a>.
+          </p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    Sentry.captureException(error, {
+      extra: { emailType: "premium-welcome", toEmail },
+    });
+  }
+}
+
 export async function sendEmailVerificationEmail(params: {
   toEmail: string;
   token: string;
