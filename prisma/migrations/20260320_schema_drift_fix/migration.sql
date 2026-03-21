@@ -1,43 +1,45 @@
--- AlterEnum
-ALTER TYPE "NotificationType" ADD VALUE 'CONTENT_MODERATION';
+-- AlterEnum (idempotent: check if value exists first)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'CONTENT_MODERATION' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'NotificationType')) THEN
+    ALTER TYPE "NotificationType" ADD VALUE 'CONTENT_MODERATION';
+  END IF;
+END $$;
 
 -- DropIndex
 DROP INDEX IF EXISTS "User_phoneNumber_key";
 
--- AlterTable
-ALTER TABLE "Post" ADD COLUMN     "hasCustomAudience" BOOLEAN NOT NULL DEFAULT false;
+-- AlterTable (use IF NOT EXISTS for each column)
+ALTER TABLE "Post" ADD COLUMN IF NOT EXISTS "hasCustomAudience" BOOLEAN NOT NULL DEFAULT false;
 
--- AlterTable
-ALTER TABLE "Tag" ADD COLUMN     "isNsfw" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Tag" ADD COLUMN IF NOT EXISTS "isNsfw" BOOLEAN NOT NULL DEFAULT false;
 
--- AlterTable
-ALTER TABLE "TagSubscription" ADD COLUMN     "emailNotification" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "TagSubscription" ADD COLUMN IF NOT EXISTS "emailNotification" BOOLEAN NOT NULL DEFAULT false;
 
--- AlterTable
-ALTER TABLE "User" ADD COLUMN     "contentStrikes" INTEGER NOT NULL DEFAULT 0,
-ADD COLUMN     "premiumExpiresAt" TIMESTAMP(3),
-ADD COLUMN     "profileBgAttachment" TEXT,
-ADD COLUMN     "profileBgImage" TEXT,
-ADD COLUMN     "profileBgPosition" TEXT,
-ADD COLUMN     "profileBgRepeat" TEXT,
-ADD COLUMN     "profileBgSize" TEXT,
-ADD COLUMN     "sparklefallColors" TEXT,
-ADD COLUMN     "sparklefallEnabled" BOOLEAN NOT NULL DEFAULT false,
-ADD COLUMN     "sparklefallInterval" INTEGER,
-ADD COLUMN     "sparklefallMaxSize" INTEGER,
-ADD COLUMN     "sparklefallMaxSparkles" INTEGER,
-ADD COLUMN     "sparklefallMinSize" INTEGER,
-ADD COLUMN     "sparklefallPreset" TEXT,
-ADD COLUMN     "sparklefallSparkles" TEXT,
-ADD COLUMN     "sparklefallWind" DOUBLE PRECISION,
-ADD COLUMN     "stripeCustomerId" TEXT,
-ADD COLUMN     "stripeSubscriptionId" TEXT,
-ADD COLUMN     "suspended" BOOLEAN NOT NULL DEFAULT false,
-ADD COLUMN     "suspendedAt" TIMESTAMP(3),
-ADD COLUMN     "usernameFont" TEXT;
+ALTER TABLE "User"
+ADD COLUMN IF NOT EXISTS "contentStrikes" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN IF NOT EXISTS "premiumExpiresAt" TIMESTAMP(3),
+ADD COLUMN IF NOT EXISTS "profileBgAttachment" TEXT,
+ADD COLUMN IF NOT EXISTS "profileBgImage" TEXT,
+ADD COLUMN IF NOT EXISTS "profileBgPosition" TEXT,
+ADD COLUMN IF NOT EXISTS "profileBgRepeat" TEXT,
+ADD COLUMN IF NOT EXISTS "profileBgSize" TEXT,
+ADD COLUMN IF NOT EXISTS "sparklefallColors" TEXT,
+ADD COLUMN IF NOT EXISTS "sparklefallEnabled" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN IF NOT EXISTS "sparklefallInterval" INTEGER,
+ADD COLUMN IF NOT EXISTS "sparklefallMaxSize" INTEGER,
+ADD COLUMN IF NOT EXISTS "sparklefallMaxSparkles" INTEGER,
+ADD COLUMN IF NOT EXISTS "sparklefallMinSize" INTEGER,
+ADD COLUMN IF NOT EXISTS "sparklefallPreset" TEXT,
+ADD COLUMN IF NOT EXISTS "sparklefallSparkles" TEXT,
+ADD COLUMN IF NOT EXISTS "sparklefallWind" DOUBLE PRECISION,
+ADD COLUMN IF NOT EXISTS "stripeCustomerId" TEXT,
+ADD COLUMN IF NOT EXISTS "stripeSubscriptionId" TEXT,
+ADD COLUMN IF NOT EXISTS "suspended" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN IF NOT EXISTS "suspendedAt" TIMESTAMP(3),
+ADD COLUMN IF NOT EXISTS "usernameFont" TEXT;
 
--- CreateTable
-CREATE TABLE "ContentViolation" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "ContentViolation" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "postId" TEXT NOT NULL,
@@ -50,8 +52,7 @@ CREATE TABLE "ContentViolation" (
     CONSTRAINT "ContentViolation_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "PostAudience" (
+CREATE TABLE IF NOT EXISTS "PostAudience" (
     "id" TEXT NOT NULL,
     "postId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -59,32 +60,26 @@ CREATE TABLE "PostAudience" (
     CONSTRAINT "PostAudience_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE INDEX "ContentViolation_userId_idx" ON "ContentViolation"("userId");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "ContentViolation_userId_idx" ON "ContentViolation"("userId");
+CREATE INDEX IF NOT EXISTS "ContentViolation_postId_idx" ON "ContentViolation"("postId");
+CREATE INDEX IF NOT EXISTS "PostAudience_postId_idx" ON "PostAudience"("postId");
+CREATE INDEX IF NOT EXISTS "PostAudience_userId_idx" ON "PostAudience"("userId");
+CREATE UNIQUE INDEX IF NOT EXISTS "PostAudience_postId_userId_key" ON "PostAudience"("postId", "userId");
+CREATE UNIQUE INDEX IF NOT EXISTS "User_stripeCustomerId_key" ON "User"("stripeCustomerId");
 
--- CreateIndex
-CREATE INDEX "ContentViolation_postId_idx" ON "ContentViolation"("postId");
-
--- CreateIndex
-CREATE INDEX "PostAudience_postId_idx" ON "PostAudience"("postId");
-
--- CreateIndex
-CREATE INDEX "PostAudience_userId_idx" ON "PostAudience"("userId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "PostAudience_postId_userId_key" ON "PostAudience"("postId", "userId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "User_stripeCustomerId_key" ON "User"("stripeCustomerId");
-
--- AddForeignKey
-ALTER TABLE "ContentViolation" ADD CONSTRAINT "ContentViolation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "ContentViolation" ADD CONSTRAINT "ContentViolation_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "PostAudience" ADD CONSTRAINT "PostAudience_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "PostAudience" ADD CONSTRAINT "PostAudience_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- AddForeignKey (idempotent: use DO block to check)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'ContentViolation_userId_fkey') THEN
+    ALTER TABLE "ContentViolation" ADD CONSTRAINT "ContentViolation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'ContentViolation_postId_fkey') THEN
+    ALTER TABLE "ContentViolation" ADD CONSTRAINT "ContentViolation_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'PostAudience_postId_fkey') THEN
+    ALTER TABLE "PostAudience" ADD CONSTRAINT "PostAudience_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'PostAudience_userId_fkey') THEN
+    ALTER TABLE "PostAudience" ADD CONSTRAINT "PostAudience_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
