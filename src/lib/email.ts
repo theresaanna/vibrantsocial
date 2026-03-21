@@ -403,6 +403,49 @@ export async function sendReportEmail(params: {
   }
 }
 
+export async function sendContentNoticeEmail(params: {
+  toEmail: string;
+  postId: string;
+  markingLabel: string;
+  warningCount: number;
+}) {
+  const { toEmail, postId, markingLabel, warningCount } = params;
+  const baseUrl = getBaseUrl();
+  const postUrl = `${baseUrl}/post/${postId}`;
+
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: toEmail,
+      subject: "We marked your post for you",
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #18181b; margin-bottom: 16px;">Heads up — we marked your post</h2>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            Your post was detected as containing adult content, so we automatically marked it as <strong>${markingLabel}</strong>. This helps other users control what they see in their feed.
+          </p>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            Next time, please mark your post yourself when uploading this type of content. You can do this from the content flags option in the post editor.
+          </p>
+          <p style="color: #71717a; font-size: 14px; line-height: 1.6;">
+            This is notice ${warningCount} of 5. After 5 notices, further unmarked posts will result in strikes against your account.
+          </p>
+          <a href="${postUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
+            View Post
+          </a>
+          <p style="color: #a1a1aa; font-size: 12px; margin-top: 32px;">
+            Please review the <a href="${baseUrl}" style="color: #a1a1aa;">content guidelines</a> for more information.
+          </p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    Sentry.captureException(error, {
+      extra: { emailType: "content-notice", toEmail, postId },
+    });
+  }
+}
+
 export async function sendContentWarningEmail(params: {
   toEmail: string;
   postId: string;
@@ -418,15 +461,15 @@ export async function sendContentWarningEmail(params: {
     await getResend().emails.send({
       from: FROM_EMAIL,
       to: toEmail,
-      subject: `Content flag notice — Strike ${strikeCount} of 5`,
+      subject: `Content flag notice — Strike ${strikeCount} of 3`,
       html: `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
           <h2 style="color: #18181b; margin-bottom: 16px;">Content Flag Notice</h2>
           <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
-            Your post was detected as containing adult content that was not properly marked. It has been automatically flagged as NSFW.
+            Your post was detected as containing adult content that was not properly marked. It has been automatically flagged.
           </p>
           <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
-            This is <strong>strike ${strikeCount} of 5</strong>. ${strikeCount >= 4 ? "Your account will be suspended if you receive one more strike." : "Please remember to mark your content appropriately when posting."}
+            This is <strong>strike ${strikeCount} of 3</strong>. ${strikeCount >= 2 ? "Your account will be suspended if you receive one more strike." : "Please remember to mark your content appropriately when posting."}
           </p>
           <a href="${postUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
             View Post
