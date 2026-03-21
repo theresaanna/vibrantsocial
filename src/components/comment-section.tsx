@@ -76,6 +76,34 @@ export function CommentSection({
     async (prevState: { success: boolean; message: string }, formData: FormData) => {
       const result = await createComment(prevState, formData);
       if (result.success) {
+        // Add comment to list immediately (don't wait for Ably)
+        if (result.comment) {
+          const newComment: CommentData = {
+            ...result.comment,
+            createdAt: new Date(result.comment.createdAt),
+            replies: [],
+          };
+          setComments((prev) => {
+            // Avoid duplicate if Ably message already arrived
+            const exists = prev.some((c) => c.id === newComment.id) ||
+              prev.some((c) => c.replies?.some((r) => r.id === newComment.id));
+            if (exists) return prev;
+            if (newComment.parentId) {
+              // Add as reply under parent
+              function addReply(list: CommentData[]): CommentData[] {
+                return list.map((c) => {
+                  if (c.id === newComment.parentId) {
+                    return { ...c, replies: [...(c.replies || []), newComment] };
+                  }
+                  if (c.replies) return { ...c, replies: addReply(c.replies) };
+                  return c;
+                });
+              }
+              return addReply(prev);
+            }
+            return [...prev, newComment];
+          });
+        }
         setReplyingTo(null);
         inputRef.current?.clear();
       }

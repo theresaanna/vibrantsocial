@@ -21,6 +21,23 @@ import { notifyPostSubscribers } from "@/lib/subscription-notifications";
 interface ActionState {
   success: boolean;
   message: string;
+  comment?: {
+    id: string;
+    content: string;
+    createdAt: Date;
+    parentId: string | null;
+    author: {
+      id: string;
+      username: string | null;
+      displayName: string | null;
+      name: string | null;
+      image: string | null;
+      avatar: string | null;
+      profileFrameId: string | null;
+      usernameFont: string | null;
+    };
+    reactions: { emoji: string; userIds: string[] }[];
+  };
 }
 
 const commentAuthorSelect = {
@@ -698,7 +715,18 @@ export async function createComment(
 
   revalidatePath("/feed");
   revalidatePath(`/post/${postId}`);
-  return { success: true, message: "Comment added" };
+  return {
+    success: true,
+    message: "Comment added",
+    comment: {
+      id: comment.id,
+      content: comment.content,
+      createdAt: comment.createdAt,
+      parentId: comment.parentId,
+      author: comment.author,
+      reactions: [],
+    },
+  };
 }
 
 // ── Quote post interactions ───────────────────────────────────────
