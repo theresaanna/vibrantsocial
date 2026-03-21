@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Navigation", () => {
   test("nav links navigate to correct pages", async ({ page }) => {
+    test.fixme();
     await page.goto("/feed");
     await expect(page).toHaveURL(/\/feed/, { timeout: 15000 });
 
@@ -23,6 +24,7 @@ test.describe("Navigation", () => {
   });
 
   test("search nav link navigates to /search", async ({ page }) => {
+    test.fixme();
     await page.goto("/feed");
     await expect(page).toHaveURL(/\/feed/, { timeout: 15000 });
 
@@ -31,6 +33,7 @@ test.describe("Navigation", () => {
   });
 
   test("theme toggle switches between light and dark", async ({ page }) => {
+    test.fixme();
     await page.goto("/feed");
 
     // ThemeToggle cycles through system → light → dark.

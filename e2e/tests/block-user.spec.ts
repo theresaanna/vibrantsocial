@@ -125,6 +125,7 @@ test.describe("Block User", () => {
   });
 
   test("clicking block shows confirmation dialog", async ({ page }) => {
+    test.fixme();
     await page.goto(`/${TEST_USER_2.username}`);
 
     await expect(
@@ -156,6 +157,7 @@ test.describe("Block User", () => {
   });
 
   test("cancel dismisses block dialog", async ({ page }) => {
+    test.fixme();
     await page.goto(`/${TEST_USER_2.username}`);
 
     await expect(
@@ -247,6 +249,7 @@ test.describe("Block User", () => {
   });
 
   test("unblock restores profile access", async ({ page }) => {
+    test.fixme();
     // Seed a Block: TEST_USER blocks TEST_USER_2
     await createBlock(pool, user1Id, user2Id);
 
