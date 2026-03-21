@@ -2,21 +2,20 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Post deletion from feed", () => {
   test("deleting a post removes it from the feed without page refresh", async ({ page }) => {
-    // Create a post first so we have something to delete
-    await page.goto("/feed");
-
-    // Wait for the composer to be ready
-    const composer = page.locator('[data-testid="post-composer"]');
-    await expect(composer).toBeVisible({ timeout: 10000 });
-
-    // Create a post with unique content we can identify
+    // Create a post via the compose page
     const uniqueText = `e2e-delete-test-${Date.now()}`;
-    await composer.click();
+    await page.goto("/compose");
+
+    const editor = page.locator('[contenteditable="true"]').first();
+    await expect(editor).toBeVisible({ timeout: 10000 });
+    await editor.click();
     await page.keyboard.type(uniqueText);
 
-    // Submit the post
     const postButton = page.getByRole("button", { name: /post/i });
     await postButton.click();
+
+    // Should redirect to feed
+    await expect(page).toHaveURL(/\/feed/, { timeout: 15000 });
 
     // Wait for the post to appear in the feed
     const postContent = page.locator(`text=${uniqueText}`);
@@ -35,7 +34,8 @@ test.describe("Post deletion from feed", () => {
     await deleteButton.click();
 
     // Confirm deletion in the dialog
-    const confirmButton = postCard.getByRole("button", { name: /delete/i }).last();
+    const confirmButton = page.getByRole("button", { name: /delete/i }).last();
+    await expect(confirmButton).toBeVisible({ timeout: 3000 });
     await confirmButton.click();
 
     // The post should be removed from the DOM without a page refresh
@@ -46,35 +46,41 @@ test.describe("Post deletion from feed", () => {
   });
 
   test("deleted post does not leave an empty gap in the feed", async ({ page }) => {
-    await page.goto("/feed");
+    // First create a post so we have something to delete
+    const uniqueText = `e2e-gap-test-${Date.now()}`;
+    await page.goto("/compose");
 
-    // Wait for posts to load
-    const firstPost = page.locator('[data-testid="post-card"]').first();
-    await expect(firstPost).toBeVisible({ timeout: 10000 });
+    const editor = page.locator('[contenteditable="true"]').first();
+    await expect(editor).toBeVisible({ timeout: 10000 });
+    await editor.click();
+    await page.keyboard.type(uniqueText);
+
+    const postButton = page.getByRole("button", { name: /post/i });
+    await postButton.click();
+    await expect(page).toHaveURL(/\/feed/, { timeout: 15000 });
+
+    // Wait for post to appear
+    const postContent = page.locator(`text=${uniqueText}`);
+    await expect(postContent).toBeVisible({ timeout: 10000 });
 
     // Count posts before deletion
     const postCountBefore = await page.locator('[data-testid="post-card"]').count();
 
-    // Only proceed if there's a post we authored (has menu button)
-    const menuButton = firstPost.getByTestId("post-menu-button");
-    const hasMenu = await menuButton.isVisible().catch(() => false);
-
-    if (!hasMenu) {
-      test.skip();
-      return;
-    }
-
-    // Delete the first post
+    // Find and delete the post
+    const postCard = postContent.locator("xpath=ancestor::*[@data-testid='post-card']");
+    const menuButton = postCard.getByTestId("post-menu-button");
     await menuButton.click();
-    const deleteButton = firstPost.getByTestId("post-delete-button");
+
+    const deleteButton = postCard.getByTestId("post-delete-button");
     await expect(deleteButton).toBeVisible({ timeout: 3000 });
     await deleteButton.click();
 
-    const confirmButton = firstPost.getByRole("button", { name: /delete/i }).last();
+    const confirmButton = page.getByRole("button", { name: /delete/i }).last();
+    await expect(confirmButton).toBeVisible({ timeout: 3000 });
     await confirmButton.click();
 
     // Wait for removal
-    await page.waitForTimeout(1000);
+    await expect(postContent).not.toBeVisible({ timeout: 5000 });
 
     // Post count should decrease
     const postCountAfter = await page.locator('[data-testid="post-card"]').count();

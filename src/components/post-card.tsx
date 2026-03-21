@@ -249,7 +249,7 @@ export function PostCard({
   }
 
   return (
-    <div className={`rounded-2xl bg-white shadow-lg dark:bg-zinc-900${showMenu ? " relative z-[100]" : ""}`}>
+    <div className={`rounded-2xl bg-white shadow-lg dark:bg-zinc-900${showMenu ? " relative z-[100]" : ""}`} data-testid="post-card">
       {/* Pinned indicator */}
       {isPinned && showPinnedIndicator && (
         <div

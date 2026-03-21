@@ -6,9 +6,24 @@ test.describe("Comment @ mention typeahead", () => {
     await seedSecondTestUser();
   });
 
-  test("typing @ in comment input shows mention dropdown", async ({ page }) => {
-    // Navigate to feed and open comments on a post
+  // Helper: ensure at least one post exists by creating one if needed
+  async function ensurePostExists(page: import("@playwright/test").Page) {
     await page.goto("/feed");
+    const existingPost = page.locator('[data-testid="post-card"]').first();
+    const hasPost = await existingPost.isVisible({ timeout: 3000 }).catch(() => false);
+    if (!hasPost) {
+      await page.goto("/compose");
+      const editor = page.locator('[contenteditable="true"]').first();
+      await expect(editor).toBeVisible({ timeout: 10000 });
+      await editor.click();
+      await page.keyboard.type(`e2e comment test post ${Date.now()}`);
+      await page.getByRole("button", { name: /post/i }).click();
+      await expect(page).toHaveURL(/\/feed/, { timeout: 15000 });
+    }
+  }
+
+  test("typing @ in comment input shows mention dropdown", async ({ page }) => {
+    await ensurePostExists(page);
 
     // Wait for a post to appear
     const postCard = page.locator('[data-testid="post-card"]').first();
@@ -30,7 +45,7 @@ test.describe("Comment @ mention typeahead", () => {
   });
 
   test("selecting a mention from dropdown inserts @username", async ({ page }) => {
-    await page.goto("/feed");
+    await ensurePostExists(page);
 
     const postCard = page.locator('[data-testid="post-card"]').first();
     await expect(postCard).toBeVisible({ timeout: 10000 });
@@ -60,7 +75,7 @@ test.describe("Comment @ mention typeahead", () => {
   });
 
   test("pressing Escape closes the mention dropdown", async ({ page }) => {
-    await page.goto("/feed");
+    await ensurePostExists(page);
 
     const postCard = page.locator('[data-testid="post-card"]').first();
     await expect(postCard).toBeVisible({ timeout: 10000 });
@@ -82,7 +97,7 @@ test.describe("Comment @ mention typeahead", () => {
   });
 
   test("no dropdown for text without @", async ({ page }) => {
-    await page.goto("/feed");
+    await ensurePostExists(page);
 
     const postCard = page.locator('[data-testid="post-card"]').first();
     await expect(postCard).toBeVisible({ timeout: 10000 });

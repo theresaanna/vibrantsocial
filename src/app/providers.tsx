@@ -25,22 +25,18 @@ export function useAblyReady() {
 
 function AblyProviderWrapper({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
-  // Use state (not ref) so setting the client triggers a re-render
+  // State triggers re-render when client is created; ref avoids stale closures
   const [ablyClient, setAblyClient] = useState<ReturnType<typeof getAblyRealtimeClient> | null>(null);
+  const clientRef = useRef<ReturnType<typeof getAblyRealtimeClient> | null>(null);
 
   useEffect(() => {
-    if (session?.user?.id && !ablyClient) {
+    if (session?.user?.id && !clientRef.current) {
       const client = getAblyRealtimeClient();
       client.connect();
+      clientRef.current = client;
       setAblyClient(client);
     }
-    return () => {
-      if (ablyClient) {
-        ablyClient.close();
-        setAblyClient(null);
-      }
-    };
-  }, [session?.user?.id, ablyClient]);
+  }, [session?.user?.id]);
 
   if (!session?.user?.id || !ablyClient) {
     return (

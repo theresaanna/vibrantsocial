@@ -92,7 +92,7 @@ test.describe("Follow & Friend Button UI", () => {
     await page.goto(`/${TEST_USER_2.username}`);
 
     await expect(
-      page.locator("h1", { hasText: TEST_USER_2.username })
+      page.locator("h1", { hasText: TEST_USER_2.displayName })
     ).toBeVisible({ timeout: 15000 });
 
     const followButton = page.getByRole("button", { name: "Follow" });
@@ -113,7 +113,7 @@ test.describe("Follow & Friend Button UI", () => {
     await page.goto(`/${TEST_USER_2.username}`);
 
     await expect(
-      page.locator("h1", { hasText: TEST_USER_2.username })
+      page.locator("h1", { hasText: TEST_USER_2.displayName })
     ).toBeVisible({ timeout: 15000 });
 
     const followingButton = page.getByRole("button", { name: "Following" });
@@ -131,7 +131,7 @@ test.describe("Follow & Friend Button UI", () => {
     await page.goto(`/${TEST_USER_2.username}`);
 
     await expect(
-      page.locator("h1", { hasText: TEST_USER_2.username })
+      page.locator("h1", { hasText: TEST_USER_2.displayName })
     ).toBeVisible({ timeout: 15000 });
 
     const addFriendButton = page.getByRole("button", { name: "Add Friend" });
@@ -152,7 +152,7 @@ test.describe("Follow & Friend Button UI", () => {
     await page.goto(`/${TEST_USER_2.username}`);
 
     await expect(
-      page.locator("h1", { hasText: TEST_USER_2.username })
+      page.locator("h1", { hasText: TEST_USER_2.displayName })
     ).toBeVisible({ timeout: 15000 });
 
     const friendsButton = page.getByRole("button", { name: "Friends" });
@@ -172,7 +172,7 @@ test.describe("Follow & Friend Button UI", () => {
     await page.goto(`/${TEST_USER_2.username}`);
 
     await expect(
-      page.locator("h1", { hasText: TEST_USER_2.username })
+      page.locator("h1", { hasText: TEST_USER_2.displayName })
     ).toBeVisible({ timeout: 15000 });
 
     const followingButton = page.getByRole("button", { name: "Following" });
@@ -205,7 +205,7 @@ test.describe("Follow & Friend Button UI", () => {
     await page.goto(`/${TEST_USER_2.username}`);
 
     await expect(
-      page.locator("h1", { hasText: TEST_USER_2.username })
+      page.locator("h1", { hasText: TEST_USER_2.displayName })
     ).toBeVisible({ timeout: 15000 });
 
     const friendsButton = page.getByRole("button", { name: "Friends" });
@@ -238,7 +238,7 @@ test.describe("Follow & Friend Button UI", () => {
     await page.goto(`/${TEST_USER_2.username}`);
 
     await expect(
-      page.locator("h1", { hasText: TEST_USER_2.username })
+      page.locator("h1", { hasText: TEST_USER_2.displayName })
     ).toBeVisible({ timeout: 15000 });
 
     const followingButton = page.getByRole("button", { name: "Following" });
@@ -269,7 +269,7 @@ test.describe("Follow & Friend Button UI", () => {
     await page.goto(`/${TEST_USER_2.username}`);
 
     await expect(
-      page.locator("h1", { hasText: TEST_USER_2.username })
+      page.locator("h1", { hasText: TEST_USER_2.displayName })
     ).toBeVisible({ timeout: 15000 });
 
     const friendsButton = page.getByRole("button", { name: "Friends" });

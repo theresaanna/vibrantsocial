@@ -106,7 +106,7 @@ test.describe("Block User", () => {
     await page.goto(`/${TEST_USER_2.username}`);
 
     await expect(
-      page.locator("h1", { hasText: TEST_USER_2.username })
+      page.locator("h1", { hasText: TEST_USER_2.displayName })
     ).toBeVisible({ timeout: 15000 });
 
     const blockButton = page.locator('[data-testid="profile-block-button"]');
@@ -128,7 +128,7 @@ test.describe("Block User", () => {
     await page.goto(`/${TEST_USER_2.username}`);
 
     await expect(
-      page.locator("h1", { hasText: TEST_USER_2.username })
+      page.locator("h1", { hasText: TEST_USER_2.displayName })
     ).toBeVisible({ timeout: 15000 });
 
     const blockButton = page.locator('[data-testid="profile-block-button"]');
@@ -159,7 +159,7 @@ test.describe("Block User", () => {
     await page.goto(`/${TEST_USER_2.username}`);
 
     await expect(
-      page.locator("h1", { hasText: TEST_USER_2.username })
+      page.locator("h1", { hasText: TEST_USER_2.displayName })
     ).toBeVisible({ timeout: 15000 });
 
     const blockButton = page.locator('[data-testid="profile-block-button"]');
@@ -188,7 +188,7 @@ test.describe("Block User", () => {
     await page.goto(`/${TEST_USER_2.username}`);
 
     await expect(
-      page.locator("h1", { hasText: TEST_USER_2.username })
+      page.locator("h1", { hasText: TEST_USER_2.displayName })
     ).toBeVisible({ timeout: 15000 });
 
     // Should show "You have blocked this user" message
@@ -211,7 +211,7 @@ test.describe("Block User", () => {
     await page.goto(`/${TEST_USER_2.username}`);
 
     await expect(
-      page.locator("h1", { hasText: TEST_USER_2.username })
+      page.locator("h1", { hasText: TEST_USER_2.displayName })
     ).toBeVisible({ timeout: 15000 });
 
     // Should show "This content is unavailable" message
@@ -232,7 +232,7 @@ test.describe("Block User", () => {
     await page.goto(`/${TEST_USER_2.username}`);
 
     await expect(
-      page.locator("h1", { hasText: TEST_USER_2.username })
+      page.locator("h1", { hasText: TEST_USER_2.displayName })
     ).toBeVisible({ timeout: 15000 });
 
     // Should show blocked message instead of "Following" button
@@ -253,7 +253,7 @@ test.describe("Block User", () => {
     await page.goto(`/${TEST_USER_2.username}`);
 
     await expect(
-      page.locator("h1", { hasText: TEST_USER_2.username })
+      page.locator("h1", { hasText: TEST_USER_2.displayName })
     ).toBeVisible({ timeout: 15000 });
 
     // Should show blocked message

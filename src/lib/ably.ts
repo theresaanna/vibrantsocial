@@ -6,7 +6,24 @@ export function getAblyRealtimeClient(): Ably.Realtime {
   if (!realtimeClient) {
     realtimeClient = new Ably.Realtime({
       authUrl: "/api/ably-token",
+      authMethod: "GET",
       autoConnect: false,
+      // When Ably auth fails (e.g. 503 when ABLY_API_KEY not set),
+      // don't keep retrying — just stay disconnected.
+      authCallback: async (_data, callback) => {
+        try {
+          const res = await fetch("/api/ably-token");
+          if (!res.ok) {
+            // Non-retryable error — Ably will move to "failed" state
+            callback(new Error(`Ably auth failed: ${res.status}`), null);
+            return;
+          }
+          const tokenRequest = await res.json();
+          callback(null, tokenRequest);
+        } catch (err) {
+          callback(err as Error, null);
+        }
+      },
     });
   }
   return realtimeClient;
