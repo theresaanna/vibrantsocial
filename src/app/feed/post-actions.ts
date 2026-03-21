@@ -698,7 +698,18 @@ export async function createComment(
 
   revalidatePath("/feed");
   revalidatePath(`/post/${postId}`);
-  return { success: true, message: "Comment added" };
+  return {
+    success: true,
+    message: "Comment added",
+    comment: {
+      id: comment.id,
+      content: comment.content,
+      createdAt: comment.createdAt,
+      parentId: comment.parentId,
+      author: comment.author,
+      reactions: [],
+    },
+  };
 }
 
 // ── Quote post interactions ───────────────────────────────────────
