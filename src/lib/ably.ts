@@ -15,13 +15,14 @@ export function getAblyRealtimeClient(): Ably.Realtime {
           const res = await fetch("/api/ably-token");
           if (!res.ok) {
             // Non-retryable error — Ably will move to "failed" state
-            callback(new Error(`Ably auth failed: ${res.status}`), null);
+            callback(new Ably.ErrorInfo(`Ably auth failed: ${res.status}`, res.status, res.status), null);
             return;
           }
           const tokenRequest = await res.json();
           callback(null, tokenRequest);
         } catch (err) {
-          callback(err as Error, null);
+          const msg = err instanceof Error ? err.message : String(err);
+          callback(new Ably.ErrorInfo(msg, 500, 500), null);
         }
       },
     });
