@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    post: { findUnique: vi.fn(), update: vi.fn() },
+    post: { findUnique: vi.fn(), update: vi.fn(), delete: vi.fn() },
     user: { findUnique: vi.fn(), update: vi.fn() },
     contentViolation: { create: vi.fn() },
     notification: { create: vi.fn() },
@@ -44,6 +44,7 @@ vi.mock("@/lib/email", () => ({
   sendTagDigestEmail: vi.fn(),
   sendContentNoticeEmail: vi.fn(),
   sendContentWarningEmail: vi.fn(),
+  sendPostDeclinedEmail: vi.fn(),
   sendSuspensionEmail: vi.fn(),
   sendModerationAlertEmail: vi.fn(),
 }));
@@ -56,6 +57,7 @@ import { prisma } from "@/lib/prisma";
 import {
   sendContentNoticeEmail,
   sendContentWarningEmail,
+  sendPostDeclinedEmail,
   sendSuspensionEmail,
   sendModerationAlertEmail,
 } from "@/lib/email";
@@ -67,6 +69,7 @@ const mockPrisma = vi.mocked(prisma);
 const mockSendAlert = vi.mocked(sendModerationAlertEmail);
 const mockSendNotice = vi.mocked(sendContentNoticeEmail);
 const mockSendWarning = vi.mocked(sendContentWarningEmail);
+const mockSendDeclined = vi.mocked(sendPostDeclinedEmail);
 const mockSendSuspension = vi.mocked(sendSuspensionEmail);
 
 async function callHandler(postId: string, userId: string) {
@@ -95,6 +98,7 @@ describe("scanPostContentFn", () => {
     username: "testuser",
     contentStrikes: 0,
     contentWarnings: 0,
+    ageVerified: new Date(),
   };
 
   function setupMocks(postOverrides = {}, userOverrides = {}) {
@@ -113,6 +117,7 @@ describe("scanPostContentFn", () => {
     mockPrisma.contentViolation.create.mockResolvedValue({} as never);
     mockPrisma.notification.create.mockResolvedValue({} as never);
     mockPrisma.post.update.mockResolvedValue({} as never);
+    mockPrisma.post.delete.mockResolvedValue({} as never);
   }
 
   function mockFetch(imageResult?: object, textResult?: object) {
@@ -345,6 +350,57 @@ describe("scanPostContentFn", () => {
           violationType: "bullying",
         })
       );
+    });
+  });
+
+  describe("NSFW detection — non-age-verified user", () => {
+    it("declines (deletes) post for graphic-level NSFW from non-verified user", async () => {
+      const postWithImage = {
+        ...mockPost,
+        content: '{"root":{"children":[{"type":"image","src":"https://example.com/img.jpg"}],"type":"root"}}',
+      };
+      setupMocks({}, { ageVerified: null });
+      mockPrisma.post.findUnique.mockResolvedValue(postWithImage as never);
+      mockFetch(
+        { nsfw: true, score: 0.92 },
+        { is_hate_speech: false, is_bullying: false, toxicity: 0.01, identity_attack: 0.0, insult: 0.01 }
+      );
+
+      const result = await callHandler("post1", "user1");
+
+      // Post should be deleted
+      expect(mockPrisma.post.delete).toHaveBeenCalledWith({ where: { id: "post1" } });
+      // Should send declined email, not notice or warning
+      expect(mockSendDeclined).toHaveBeenCalledWith(
+        expect.objectContaining({ toEmail: "user@example.com" })
+      );
+      expect(mockSendNotice).not.toHaveBeenCalled();
+      expect(mockSendWarning).not.toHaveBeenCalled();
+      // Should return postDeclined flag
+      expect(result).toEqual(expect.objectContaining({ postDeclined: true }));
+    });
+
+    it("still auto-marks nudity-level NSFW for non-verified user (normal flow)", async () => {
+      const postWithImage = {
+        ...mockPost,
+        content: '{"root":{"children":[{"type":"image","src":"https://example.com/img.jpg"}],"type":"root"}}',
+      };
+      setupMocks({}, { ageVerified: null });
+      mockPrisma.post.findUnique.mockResolvedValue(postWithImage as never);
+      mockFetch(
+        { nsfw: true, score: 0.7 },
+        { is_hate_speech: false, is_bullying: false, toxicity: 0.01, identity_attack: 0.0, insult: 0.01 }
+      );
+
+      await callHandler("post1", "user1");
+
+      // Post should be marked as NSFW (not deleted)
+      expect(mockPrisma.post.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { isNsfw: true } })
+      );
+      expect(mockPrisma.post.delete).not.toHaveBeenCalled();
+      expect(mockSendDeclined).not.toHaveBeenCalled();
+      expect(mockSendNotice).toHaveBeenCalled();
     });
   });
 

@@ -403,6 +403,43 @@ export async function sendReportEmail(params: {
   }
 }
 
+export async function sendPostDeclinedEmail(params: {
+  toEmail: string;
+}) {
+  const { toEmail } = params;
+  const baseUrl = getBaseUrl();
+  const verifyUrl = `${baseUrl}/age-verify`;
+
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: toEmail,
+      subject: "Your post needs age verification",
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #18181b; margin-bottom: 16px;">Your post was declined</h2>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            Your post was detected as containing graphic or explicit content. Because your account is not age-verified, the post has been removed.
+          </p>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            To post this type of content, please complete age verification first. Once verified, you can repost your content with the appropriate content flag selected.
+          </p>
+          <a href="${verifyUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
+            Verify Your Age
+          </a>
+          <p style="color: #a1a1aa; font-size: 12px; margin-top: 32px;">
+            Please review the <a href="${baseUrl}" style="color: #a1a1aa;">content guidelines</a> for more information.
+          </p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    Sentry.captureException(error, {
+      extra: { emailType: "post-declined", toEmail },
+    });
+  }
+}
+
 export async function sendContentNoticeEmail(params: {
   toEmail: string;
   postId: string;

@@ -12,6 +12,7 @@ import {
   sendTagDigestEmail,
   sendContentNoticeEmail,
   sendContentWarningEmail,
+  sendPostDeclinedEmail,
   sendSuspensionEmail,
   sendModerationAlertEmail,
 } from "./email";
@@ -447,7 +448,7 @@ export const scanPostContentFn = inngest.createFunction(
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, username: true, contentStrikes: true, contentWarnings: true },
+      select: { id: true, email: true, username: true, contentStrikes: true, contentWarnings: true, ageVerified: true },
     });
 
     if (!user) return { skipped: true, reason: "user not found" };
@@ -526,6 +527,28 @@ export const scanPostContentFn = inngest.createFunction(
     if (nsfwDetected && !post.isNsfw && !post.isGraphicNudity) {
       // Auto-mark based on confidence: high score = graphic/explicit, lower = nsfw/nudity
       const isGraphic = nsfwScore >= 0.85;
+
+      // Non-age-verified users cannot have graphic/explicit posts — decline it
+      if (isGraphic && !user.ageVerified) {
+        await prisma.post.delete({ where: { id: postId } });
+
+        await prisma.notification.create({
+          data: {
+            type: "CONTENT_MODERATION",
+            actorId: user.id,
+            targetUserId: user.id,
+          },
+        });
+
+        if (user.email) {
+          await sendPostDeclinedEmail({
+            toEmail: user.email,
+          });
+        }
+
+        return { postId, nsfwDetected, postDeclined: true };
+      }
+
       await prisma.post.update({
         where: { id: postId },
         data: isGraphic ? { isGraphicNudity: true } : { isNsfw: true },
