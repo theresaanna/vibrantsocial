@@ -6,9 +6,24 @@ test.describe("Comment @ mention typeahead", () => {
     await seedSecondTestUser();
   });
 
-  test("typing @ in comment input shows mention dropdown", async ({ page }) => {
-    // Navigate to feed and open comments on a post
+  // Helper: ensure at least one post exists by creating one if needed
+  async function ensurePostExists(page: import("@playwright/test").Page) {
     await page.goto("/feed");
+    const existingPost = page.locator('[data-testid="post-card"]').first();
+    const hasPost = await existingPost.isVisible({ timeout: 3000 }).catch(() => false);
+    if (!hasPost) {
+      await page.goto("/compose");
+      const editor = page.locator('[contenteditable="true"]').first();
+      await expect(editor).toBeVisible({ timeout: 10000 });
+      await editor.click();
+      await page.keyboard.type(`e2e comment test post ${Date.now()}`);
+      await page.getByRole("button", { name: /post/i }).click();
+      await expect(page).toHaveURL(/\/feed/, { timeout: 15000 });
+    }
+  }
+
+  test("typing @ in comment input shows mention dropdown", async ({ page }) => {
+    await ensurePostExists(page);
 
     // Wait for a post to appear
     const postCard = page.locator('[data-testid="post-card"]').first();
@@ -23,14 +38,15 @@ test.describe("Comment @ mention typeahead", () => {
     await expect(mentionInput).toBeVisible({ timeout: 5000 });
 
     // Type @ followed by the second test user's username prefix
-    await mentionInput.fill(`@${TEST_USER_2.username.slice(0, 4)}`);
+    await mentionInput.click();
+    await mentionInput.pressSequentially(`@${TEST_USER_2.username.slice(0, 4)}`, { delay: 50 });
 
     // The mention dropdown should appear
     await expect(page.getByTestId("mention-dropdown")).toBeVisible({ timeout: 5000 });
   });
 
   test("selecting a mention from dropdown inserts @username", async ({ page }) => {
-    await page.goto("/feed");
+    await ensurePostExists(page);
 
     const postCard = page.locator('[data-testid="post-card"]').first();
     await expect(postCard).toBeVisible({ timeout: 10000 });
@@ -42,7 +58,8 @@ test.describe("Comment @ mention typeahead", () => {
     await expect(mentionInput).toBeVisible({ timeout: 5000 });
 
     // Type @ to trigger mentions
-    await mentionInput.fill(`@${TEST_USER_2.username.slice(0, 4)}`);
+    await mentionInput.click();
+    await mentionInput.pressSequentially(`@${TEST_USER_2.username.slice(0, 4)}`, { delay: 50 });
 
     // Wait for dropdown
     await expect(page.getByTestId("mention-dropdown")).toBeVisible({ timeout: 5000 });
@@ -60,7 +77,7 @@ test.describe("Comment @ mention typeahead", () => {
   });
 
   test("pressing Escape closes the mention dropdown", async ({ page }) => {
-    await page.goto("/feed");
+    await ensurePostExists(page);
 
     const postCard = page.locator('[data-testid="post-card"]').first();
     await expect(postCard).toBeVisible({ timeout: 10000 });
@@ -71,7 +88,8 @@ test.describe("Comment @ mention typeahead", () => {
     const mentionInput = postCard.getByTestId("mention-input");
     await expect(mentionInput).toBeVisible({ timeout: 5000 });
 
-    await mentionInput.fill(`@${TEST_USER_2.username.slice(0, 4)}`);
+    await mentionInput.click();
+    await mentionInput.pressSequentially(`@${TEST_USER_2.username.slice(0, 4)}`, { delay: 50 });
     await expect(page.getByTestId("mention-dropdown")).toBeVisible({ timeout: 5000 });
 
     // Press Escape
@@ -82,7 +100,7 @@ test.describe("Comment @ mention typeahead", () => {
   });
 
   test("no dropdown for text without @", async ({ page }) => {
-    await page.goto("/feed");
+    await ensurePostExists(page);
 
     const postCard = page.locator('[data-testid="post-card"]').first();
     await expect(postCard).toBeVisible({ timeout: 10000 });
@@ -94,7 +112,8 @@ test.describe("Comment @ mention typeahead", () => {
     await expect(mentionInput).toBeVisible({ timeout: 5000 });
 
     // Type without @
-    await mentionInput.fill("hello world");
+    await mentionInput.click();
+    await mentionInput.pressSequentially("hello world", { delay: 50 });
 
     // No dropdown should appear
     await expect(page.getByTestId("mention-dropdown")).not.toBeVisible();

@@ -23,39 +23,11 @@ export function useAblyReady() {
   return useContext(AblyReadyContext);
 }
 
-function AblyProviderWrapper({ children }: { children: React.ReactNode }) {
-  const { data: session } = useSession();
-  // Use state (not ref) so setting the client triggers a re-render
-  const [ablyClient, setAblyClient] = useState<ReturnType<typeof getAblyRealtimeClient> | null>(null);
-
-  useEffect(() => {
-    if (session?.user?.id && !ablyClient) {
-      const client = getAblyRealtimeClient();
-      client.connect();
-      setAblyClient(client);
-    }
-    return () => {
-      if (ablyClient) {
-        ablyClient.close();
-        setAblyClient(null);
-      }
-    };
-  }, [session?.user?.id, ablyClient]);
-
-  if (!session?.user?.id || !ablyClient) {
-    return (
-      <AblyReadyContext.Provider value={false}>
-        <CommentCountProvider>
-          <Toaster position="bottom-right" />
-          <CookieToast />
-          {children}
-        </CommentCountProvider>
-      </AblyReadyContext.Provider>
-    );
-  }
-
+// Separate component that only mounts when Ably is ready.
+// This avoids the "Rendered more hooks" error from conditional hook calls.
+function AblyFeatures({ client, children }: { client: ReturnType<typeof getAblyRealtimeClient>; children: React.ReactNode }) {
   return (
-    <AblyProvider client={ablyClient}>
+    <AblyProvider client={client}>
       <AblyReadyContext.Provider value={true}>
         <CommentCountProvider>
           <ChannelProvider channelName={PRESENCE_CHANNEL}>
@@ -67,6 +39,41 @@ function AblyProviderWrapper({ children }: { children: React.ReactNode }) {
         </CommentCountProvider>
       </AblyReadyContext.Provider>
     </AblyProvider>
+  );
+}
+
+function AblyProviderWrapper({ children }: { children: React.ReactNode }) {
+  const { data: session } = useSession();
+  const [ablyClient, setAblyClient] = useState<ReturnType<typeof getAblyRealtimeClient> | null>(null);
+  const clientRef = useRef<ReturnType<typeof getAblyRealtimeClient> | null>(null);
+
+  useEffect(() => {
+    if (session?.user?.id && !clientRef.current) {
+      const client = getAblyRealtimeClient();
+      client.connect();
+      clientRef.current = client;
+      setAblyClient(client);
+    }
+  }, [session?.user?.id]);
+
+  const fallback = (
+    <AblyReadyContext.Provider value={false}>
+      <CommentCountProvider>
+        <Toaster position="bottom-right" />
+        <CookieToast />
+        {children}
+      </CommentCountProvider>
+    </AblyReadyContext.Provider>
+  );
+
+  if (!session?.user?.id || !ablyClient) {
+    return fallback;
+  }
+
+  return (
+    <AblyFeatures client={ablyClient}>
+      {children}
+    </AblyFeatures>
   );
 }
 

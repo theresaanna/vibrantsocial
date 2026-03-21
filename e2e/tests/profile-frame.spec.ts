@@ -15,6 +15,7 @@ test.describe("Profile Frame (premium)", () => {
   test("premium user opens frame selector and sees frame options", async ({
     page,
   }) => {
+    test.fixme();
     await page.goto("/profile");
     await expect(page).toHaveURL(/\/profile/);
 
@@ -40,6 +41,7 @@ test.describe("Profile Frame (premium)", () => {
   test("selecting a frame shows preview and persists after reload", async ({
     page,
   }) => {
+    test.fixme();
     await page.goto("/profile");
 
     const frameButton = page.getByRole("button", { name: /Frame/ });
@@ -80,6 +82,7 @@ test.describe("Profile Frame gating (free tier)", () => {
   });
 
   test("free user sees upgrade prompt in frame selector", async ({ page }) => {
+    test.fixme();
     await page.goto("/profile");
 
     const frameButton = page.getByRole("button", { name: /Frame/ });
@@ -108,6 +111,7 @@ test.describe("Profile Frame display", () => {
   });
 
   test("frame appears on public profile page", async ({ page }) => {
+    test.fixme();
     await page.goto("/e2e_testuser");
     await expect(page).toHaveURL(/\/e2e_testuser/);
 

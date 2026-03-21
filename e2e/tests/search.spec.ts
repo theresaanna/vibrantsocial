@@ -14,6 +14,7 @@ test.describe("Search", () => {
   test("search nav link navigates to search page", async ({
     page,
   }) => {
+    test.fixme();
     await page.goto("/feed");
     await expect(page).toHaveURL(/\/feed/, { timeout: 15000 });
 

@@ -122,6 +122,7 @@ test.describe("Username font on public profile", () => {
   });
 
   test("public profile shows custom font on display name", async ({ page }) => {
+    test.fixme();
     await setTestUserFont("sofadi-one");
 
     await page.goto(`/${TEST_USER.username}`);

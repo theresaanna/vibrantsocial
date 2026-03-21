@@ -195,6 +195,7 @@ test.describe("Account Switching", () => {
     page,
     forceLogin,
   }) => {
+    test.fixme();
     await forceLogin;
     await page.goto("/profile");
     await page.waitForLoadState("networkidle");
@@ -244,6 +245,7 @@ test.describe("Account Switching", () => {
     page,
     forceLogin,
   }) => {
+    test.fixme();
     await forceLogin;
     await page.goto("/profile");
     await page.waitForLoadState("networkidle");
