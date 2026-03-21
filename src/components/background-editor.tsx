@@ -7,6 +7,7 @@ import {
   VALID_BG_ATTACHMENT,
   VALID_BG_SIZE,
   VALID_BG_POSITION,
+  getDefaultsForBackground,
 } from "@/lib/profile-backgrounds";
 import { PremiumCrown } from "./premium-crown";
 
@@ -45,8 +46,21 @@ export function BackgroundEditor({
   const isCustomUpload = bgImage?.includes("blob.vercel-storage.com") ?? false;
 
   const handlePresetSelect = useCallback(
-    (src: string | null) => {
-      setBgImage(src);
+    (bg: BackgroundDefinition | null) => {
+      if (bg) {
+        setBgImage(bg.src);
+        const defaults = getDefaultsForBackground(bg);
+        setBgRepeat(defaults.repeat);
+        setBgSize(defaults.size);
+        setBgPosition(defaults.position);
+        setBgAttachment(defaults.attachment);
+      } else {
+        setBgImage(null);
+        setBgRepeat("no-repeat");
+        setBgSize("cover");
+        setBgPosition("center");
+        setBgAttachment("scroll");
+      }
       setError(null);
       onChange();
     },
@@ -152,7 +166,7 @@ export function BackgroundEditor({
           <button
             key={bg.id}
             type="button"
-            onClick={() => handlePresetSelect(bg.src)}
+            onClick={() => handlePresetSelect(bg)}
             title={bg.name}
             className={`h-12 w-12 overflow-hidden rounded-lg border transition-all ${
               bgImage === bg.src
@@ -168,6 +182,19 @@ export function BackgroundEditor({
           </button>
         ))}
       </div>
+
+      {/* Live preview */}
+      {bgImage && (
+        <div
+          className="h-32 w-full rounded-lg border border-zinc-200 dark:border-zinc-700"
+          style={{
+            backgroundImage: `url(${bgImage})`,
+            backgroundRepeat: bgRepeat,
+            backgroundSize: bgSize,
+            backgroundPosition: bgPosition,
+          }}
+        />
+      )}
 
       {/* Custom upload — premium only */}
       <div className="relative space-y-2">
