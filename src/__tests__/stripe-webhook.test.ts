@@ -14,12 +14,18 @@ vi.mock("@/lib/stripe", () => ({
   constructWebhookEvent: vi.fn(),
 }));
 
+vi.mock("@/lib/email", () => ({
+  sendPremiumWelcomeEmail: vi.fn(),
+}));
+
 import { prisma } from "@/lib/prisma";
 import { constructWebhookEvent } from "@/lib/stripe";
+import { sendPremiumWelcomeEmail } from "@/lib/email";
 import { POST } from "@/app/api/stripe/webhook/route";
 
 const mockPrisma = vi.mocked(prisma);
 const mockConstructEvent = vi.mocked(constructWebhookEvent);
+const mockSendPremiumWelcome = vi.mocked(sendPremiumWelcomeEmail);
 
 function makeRequest(body: string, signature?: string): NextRequest {
   const headers: Record<string, string> = {};
@@ -253,6 +259,7 @@ describe("Stripe webhook route", () => {
       mockConstructEvent.mockReturnValue(makePremiumCheckoutEvent() as never);
       mockPrisma.user.findUnique.mockResolvedValue({
         stripeSubscriptionId: null,
+        email: "user@example.com",
       } as never);
       mockPrisma.user.update.mockResolvedValue({} as never);
 
@@ -270,6 +277,22 @@ describe("Stripe webhook route", () => {
           stripeSubscriptionId: "sub_123",
           premiumExpiresAt: null,
         },
+      });
+    });
+
+    it("sends premium welcome email with verification coupon", async () => {
+      mockConstructEvent.mockReturnValue(makePremiumCheckoutEvent() as never);
+      mockPrisma.user.findUnique.mockResolvedValue({
+        stripeSubscriptionId: null,
+        email: "user@example.com",
+      } as never);
+      mockPrisma.user.update.mockResolvedValue({} as never);
+
+      const req = makeRequest("{}", "valid-sig");
+      await POST(req);
+
+      expect(mockSendPremiumWelcome).toHaveBeenCalledWith({
+        toEmail: "user@example.com",
       });
     });
 
@@ -357,7 +380,7 @@ describe("Stripe webhook route", () => {
 
       expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: "user-789" },
-        select: { stripeSubscriptionId: true },
+        select: { stripeSubscriptionId: true, email: true },
       });
     });
   });

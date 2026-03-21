@@ -23,6 +23,7 @@ export default async function ComposePage() {
       phoneVerified: true,
       dateOfBirth: true,
       tier: true,
+      ageVerified: true,
     },
   });
 
@@ -31,10 +32,11 @@ export default async function ComposePage() {
   const phoneVerified = !!currentUser.phoneVerified;
   const isOldEnough = calculateAge(currentUser.dateOfBirth!) >= 18;
   const isPremium = currentUser.tier === "premium";
+  const isAgeVerified = !!currentUser.ageVerified;
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
-      <ComposeClient phoneVerified={phoneVerified} isOldEnough={isOldEnough} isPremium={isPremium} />
+      <ComposeClient phoneVerified={phoneVerified} isOldEnough={isOldEnough} isPremium={isPremium} isAgeVerified={isAgeVerified} />
     </main>
   );
 }

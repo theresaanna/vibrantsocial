@@ -135,6 +135,7 @@ model User {
   // Content moderation
   quarantinedUploads    QuarantinedUpload[]
   contentViolations     ContentViolation[]
+  contentWarnings       Int       @default(0)
   contentStrikes        Int       @default(0)
   suspended             Boolean   @default(false)
   suspendedAt           DateTime?

@@ -10,7 +10,9 @@ import {
   sendNewPostEmail,
   sendTagPostEmail,
   sendTagDigestEmail,
+  sendContentNoticeEmail,
   sendContentWarningEmail,
+  sendPostDeclinedEmail,
   sendSuspensionEmail,
   sendModerationAlertEmail,
 } from "./email";
@@ -372,7 +374,8 @@ export const pollChatEmailNotificationsFn = inngest.createFunction(
 
 const MODERATION_API_URL = process.env.MODERATION_API_URL;
 const MODERATION_API_KEY = process.env.MODERATION_API_KEY;
-const MAX_STRIKES = 5;
+const MAX_WARNINGS = 5;
+const MAX_STRIKES = 3;
 
 function extractPlainText(lexicalJson: string): string {
   try {
@@ -445,7 +448,7 @@ export const scanPostContentFn = inngest.createFunction(
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, username: true, contentStrikes: true },
+      select: { id: true, email: true, username: true, contentStrikes: true, contentWarnings: true, ageVerified: true },
     });
 
     if (!user) return { skipped: true, reason: "user not found" };
@@ -520,13 +523,38 @@ export const scanPostContentFn = inngest.createFunction(
       }
     }
 
-    // Handle NSFW detection: auto-flag if not already marked
+    // Handle NSFW detection: auto-mark post and warn user
     if (nsfwDetected && !post.isNsfw && !post.isGraphicNudity) {
-      // Auto-flag the post
+      // Auto-mark based on confidence: high score = graphic/explicit, lower = nsfw/nudity
+      const isGraphic = nsfwScore >= 0.85;
+
+      // Non-age-verified users cannot have graphic/explicit posts — decline it
+      if (isGraphic && !user.ageVerified) {
+        await prisma.post.delete({ where: { id: postId } });
+
+        await prisma.notification.create({
+          data: {
+            type: "CONTENT_MODERATION",
+            actorId: user.id,
+            targetUserId: user.id,
+          },
+        });
+
+        if (user.email) {
+          await sendPostDeclinedEmail({
+            toEmail: user.email,
+          });
+        }
+
+        return { postId, nsfwDetected, postDeclined: true };
+      }
+
       await prisma.post.update({
         where: { id: postId },
-        data: { isNsfw: true },
+        data: isGraphic ? { isGraphicNudity: true } : { isNsfw: true },
       });
+
+      const markingLabel = isGraphic ? "graphic/explicit" : "nsfw (nudity)";
 
       // Create violation record
       await prisma.contentViolation.create({
@@ -535,15 +563,8 @@ export const scanPostContentFn = inngest.createFunction(
           postId,
           type: "nsfw_unmarked",
           confidence: nsfwScore,
-          action: "auto_flagged",
+          action: "auto_marked",
         },
-      });
-
-      // Increment strikes
-      const updatedUser = await prisma.user.update({
-        where: { id: user.id },
-        data: { contentStrikes: { increment: 1 } },
-        select: { contentStrikes: true },
       });
 
       // Create in-app notification
@@ -556,37 +577,52 @@ export const scanPostContentFn = inngest.createFunction(
         },
       });
 
-      // Send warning email
-      if (user.email) {
-        await sendContentWarningEmail({
-          toEmail: user.email,
-          postId,
-          violationType: "nsfw_unmarked",
-          strikeCount: updatedUser.contentStrikes,
-        });
-      }
-
-      // Alert admin about unmarked NSFW
-      await sendModerationAlertEmail({
-        postId,
-        authorUsername: user.username ?? "unknown",
-        violationType: "nsfw_unmarked",
-        confidence: nsfwScore,
-        contentPreview: plainText.slice(0, 200),
-      });
-
-      // Check for suspension
-      if (updatedUser.contentStrikes >= MAX_STRIKES) {
-        await prisma.user.update({
+      // Warning-first escalation: 5 friendly notices, then strikes
+      if (user.contentWarnings < MAX_WARNINGS) {
+        const updatedUser = await prisma.user.update({
           where: { id: user.id },
-          data: { suspended: true, suspendedAt: new Date(), isProfilePublic: false },
+          data: { contentWarnings: { increment: 1 } },
+          select: { contentWarnings: true },
         });
 
         if (user.email) {
-          await sendSuspensionEmail({
+          await sendContentNoticeEmail({
             toEmail: user.email,
+            postId,
+            markingLabel,
+            warningCount: updatedUser.contentWarnings,
+          });
+        }
+      } else {
+        // Past warning threshold — issue a strike
+        const updatedUser = await prisma.user.update({
+          where: { id: user.id },
+          data: { contentStrikes: { increment: 1 } },
+          select: { contentStrikes: true },
+        });
+
+        if (user.email) {
+          await sendContentWarningEmail({
+            toEmail: user.email,
+            postId,
+            violationType: "nsfw_unmarked",
             strikeCount: updatedUser.contentStrikes,
           });
+        }
+
+        // Check for suspension
+        if (updatedUser.contentStrikes >= MAX_STRIKES) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { suspended: true, suspendedAt: new Date(), isProfilePublic: false },
+          });
+
+          if (user.email) {
+            await sendSuspensionEmail({
+              toEmail: user.email,
+              strikeCount: updatedUser.contentStrikes,
+            });
+          }
         }
       }
     }

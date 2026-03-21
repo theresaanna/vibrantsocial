@@ -107,6 +107,17 @@ export async function createPost(
   const hasCustomAudience = formData.get("hasCustomAudience") === "true";
   const isLoggedInOnly = formData.get("isLoggedInOnly") === "true";
 
+  // Age verification required for sensitive/graphic content
+  if (isSensitive || isGraphicNudity) {
+    const poster = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { ageVerified: true },
+    });
+    if (!poster?.ageVerified) {
+      return { success: false, message: "Age verification required to post sensitive or graphic/explicit content" };
+    }
+  }
+
   // Custom audience: premium-only feature
   const rawAudienceIds = formData.get("customAudienceIds") as string;
   const customAudienceIds = hasCustomAudience && rawAudienceIds
