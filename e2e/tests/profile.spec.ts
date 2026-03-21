@@ -31,9 +31,13 @@ test.describe("Theme editor (premium)", () => {
   test("profile theme editor shows preset buttons", async ({ page }) => {
     await page.goto("/profile");
 
-    // Scroll to the bottom to reveal the theme editor (avoids DOM detach from Lexical re-renders)
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.waitForTimeout(500);
+    // Wait for profile page to load, then scroll theme editor into view
+    await expect(page.locator('input[name="username"]')).toBeVisible({ timeout: 10000 });
+    // Scroll to bottom multiple times to ensure lazy-rendered content loads
+    for (let i = 0; i < 3; i++) {
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+      await page.waitForTimeout(300);
+    }
 
     // Preset buttons have aria-pressed attribute — use that to distinguish from editor toolbar
     await expect(

@@ -9,8 +9,8 @@ test.describe("Navigation", () => {
     await page.click('a[aria-label="Compose"]');
     await expect(page).toHaveURL(/\/compose/, { timeout: 15000 });
 
-    // Feed
-    await page.click('a[aria-label="Feed"]');
+    // Home (Feed)
+    await page.click('a[aria-label="Home"]');
     await expect(page).toHaveURL(/\/feed/, { timeout: 15000 });
 
     // Likes
@@ -33,11 +33,11 @@ test.describe("Navigation", () => {
   test("theme toggle switches between light and dark", async ({ page }) => {
     await page.goto("/feed");
 
-    // Two ThemeToggle instances exist (mobile sm:hidden + desktop hidden sm:block).
-    // Target the desktop one inside the "hidden sm:block" wrapper using nth(1).
+    // ThemeToggle cycles through system → light → dark.
+    // Target the desktop one (nth(1)) since mobile is hidden at desktop viewport.
     const themeButton = page
       .locator(
-        'button[aria-label="Switch to dark mode"], button[aria-label="Switch to light mode"]'
+        'button[aria-label="System theme"], button[aria-label="Light mode"], button[aria-label="Dark mode"]'
       )
       .nth(1);
     await expect(themeButton).toBeVisible({ timeout: 10000 });
@@ -47,15 +47,15 @@ test.describe("Navigation", () => {
 
     await themeButton.click();
 
-    // Class should change (light ↔ dark)
+    // Class should change after cycling theme
     await expect(html).not.toHaveAttribute("class", initialClass ?? "", {
       timeout: 5000,
     });
 
-    // Toggle back
+    // Toggle again
     const toggledButton = page
       .locator(
-        'button[aria-label="Switch to dark mode"], button[aria-label="Switch to light mode"]'
+        'button[aria-label="System theme"], button[aria-label="Light mode"], button[aria-label="Dark mode"]'
       )
       .nth(1);
     await toggledButton.click();
