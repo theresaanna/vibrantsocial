@@ -25,7 +25,7 @@ export function TagCloud({ tags }: TagCloudProps) {
   const range = maxCount - minCount || 1;
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-3" data-testid="tag-cloud">
+    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3" data-testid="tag-cloud">
       {tags.map((tag, i) => {
         const t = (tag.count - minCount) / range;
         const fontSize = 14 + t * 16;
@@ -36,14 +36,12 @@ export function TagCloud({ tags }: TagCloudProps) {
           <Link
             key={tag.name}
             href={`/tag/${tag.name}`}
-            className={`inline-flex items-center gap-1.5 rounded-full font-semibold text-white transition-colors ${PILL_COLORS[i % PILL_COLORS.length]}`}
+            className={`tag-pill inline-flex items-center gap-1 sm:gap-1.5 rounded-full font-semibold text-white transition-colors ${PILL_COLORS[i % PILL_COLORS.length]}`}
             style={{
-              fontSize: `${fontSize}px`,
-              paddingLeft: `${px}px`,
-              paddingRight: `${px}px`,
-              paddingTop: `${py}px`,
-              paddingBottom: `${py}px`,
-            }}
+              "--pill-fs": `${fontSize}px`,
+              "--pill-px": `${px}px`,
+              "--pill-py": `${py}px`,
+            } as React.CSSProperties}
           >
             #{tag.name}
             <span className="opacity-70">{tag.count}</span>
