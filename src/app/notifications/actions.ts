@@ -102,6 +102,27 @@ export async function markAllNotificationsRead() {
   return { success: true, message: "All marked as read" };
 }
 
+export async function deleteNotifications(ids: string[]) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated", deletedCount: 0 };
+  }
+
+  if (await isRateLimited(apiLimiter, `notif:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later.", deletedCount: 0 };
+  }
+
+  if (ids.length === 0) {
+    return { success: true, message: "Nothing to delete", deletedCount: 0 };
+  }
+
+  const result = await prisma.notification.deleteMany({
+    where: { id: { in: ids }, targetUserId: session.user.id },
+  });
+
+  return { success: true, message: "Notifications deleted", deletedCount: result.count };
+}
+
 export async function getRecentNotifications() {
   const session = await auth();
   if (!session?.user?.id) return [];

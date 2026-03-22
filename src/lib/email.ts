@@ -383,7 +383,7 @@ export async function sendTagDigestEmail(params: {
 export async function sendReportEmail(params: {
   reporterUsername: string;
   reporterEmail: string;
-  contentType: "post" | "comment" | "profile";
+  contentType: "post" | "comment" | "profile" | "conversation";
   contentId: string;
   contentPreview: string;
   description: string;

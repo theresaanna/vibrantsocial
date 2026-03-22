@@ -9,6 +9,7 @@ vi.mock("@/lib/prisma", () => ({
     notification: {
       findMany: vi.fn(),
       updateMany: vi.fn(),
+      deleteMany: vi.fn(),
       count: vi.fn(),
     },
   },
@@ -20,6 +21,7 @@ import {
   getNotifications,
   markNotificationRead,
   markAllNotificationsRead,
+  deleteNotifications,
   getRecentNotifications,
   getUnreadNotificationCount,
 } from "@/app/notifications/actions";
@@ -123,6 +125,38 @@ describe("notification server actions", () => {
       expect(mockPrisma.notification.updateMany).toHaveBeenCalledWith({
         where: { targetUserId: "u1", readAt: null },
         data: { readAt: expect.any(Date) },
+      });
+    });
+  });
+
+  /* ── deleteNotifications ───────────────────────────── */
+
+  describe("deleteNotifications", () => {
+    it("returns error when not authenticated", async () => {
+      mockAuth.mockResolvedValueOnce(null as never);
+      const result = await deleteNotifications(["n1"]);
+      expect(result.success).toBe(false);
+      expect(result.message).toBe("Not authenticated");
+      expect(result.deletedCount).toBe(0);
+    });
+
+    it("returns early for empty ids array", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "u1" } } as never);
+      const result = await deleteNotifications([]);
+      expect(result.success).toBe(true);
+      expect(result.deletedCount).toBe(0);
+      expect(mockPrisma.notification.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it("deletes notifications scoped to current user", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "u1" } } as never);
+      mockPrisma.notification.deleteMany.mockResolvedValueOnce({ count: 2 } as never);
+
+      const result = await deleteNotifications(["n1", "n2"]);
+      expect(result.success).toBe(true);
+      expect(result.deletedCount).toBe(2);
+      expect(mockPrisma.notification.deleteMany).toHaveBeenCalledWith({
+        where: { id: { in: ["n1", "n2"] }, targetUserId: "u1" },
       });
     });
   });
