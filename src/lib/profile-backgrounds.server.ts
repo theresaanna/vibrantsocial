@@ -1,8 +1,24 @@
 import fs from "fs";
 import path from "path";
-import type { BackgroundDefinition } from "./profile-backgrounds";
+import type { BackgroundDefinition, BgCategory } from "./profile-backgrounds";
 
 const SUPPORTED_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".svg", ".webp", ".gif"]);
+
+const PATTERN_IDS = new Set([
+  "bows-and-hearts",
+  "checkered-pattern",
+  "citrus-slices",
+  "crown-pattern",
+  "leopard-fur-pattern",
+  "pattern-1",
+  "pink-hearts",
+  "red-stars-pattern",
+  "rose-gold-hexagonal",
+  "skulls-pattern",
+  "smiley-faces",
+  "spiderweb-pattern",
+  "yellow-triangles",
+]);
 
 function fileNameToDisplayName(filename: string): string {
   const name = path.parse(filename).name;
@@ -26,11 +42,13 @@ export function getProfileBackgrounds(): BackgroundDefinition[] {
         const id = path.parse(f).name;
         const thumbPath = path.join(bgDir, "thumbs", `${id}.webp`);
         const hasThumb = fs.existsSync(thumbPath);
+        const category: BgCategory = PATTERN_IDS.has(id) ? "pattern" : "photo";
         return {
           id,
           name: fileNameToDisplayName(f),
           src: `/backgrounds/${f}`,
           thumbSrc: hasThumb ? `/backgrounds/thumbs/${id}.webp` : `/backgrounds/${f}`,
+          category,
         };
       });
   } catch {

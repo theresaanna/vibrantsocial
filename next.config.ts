@@ -39,11 +39,11 @@ const nextConfig: NextConfig = {
           key: "Content-Security-Policy",
           value: [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline'",
+            `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
             "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
             "font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com",
             "img-src 'self' data: blob: https://lh3.googleusercontent.com https://cdn.discordapp.com https://*.public.blob.vercel-storage.com https://cdn.jsdelivr.net",
-            "connect-src 'self' https://*.ingest.us.sentry.io https://api.agechecker.net https://shield.projectarachnid.com https://discord.com https://www.googleapis.com https://api.anthropic.com wss://*.ably.io https://*.ably.io https://*.ably-realtime.com https://*.public.blob.vercel-storage.com https://checkout.stripe.com https://billing.stripe.com",
+            "connect-src 'self' https://*.ingest.us.sentry.io https://api.agechecker.net https://shield.projectarachnid.com https://discord.com https://www.googleapis.com https://api.anthropic.com wss://*.ably.io https://*.ably.io wss://*.ably-realtime.com https://*.ably-realtime.com https://*.public.blob.vercel-storage.com https://checkout.stripe.com https://billing.stripe.com",
             "frame-src 'self' https://checkout.stripe.com https://billing.stripe.com https://www.youtube.com https://www.youtube-nocookie.com",
             "media-src 'self' https://*.public.blob.vercel-storage.com",
             "object-src 'none'",

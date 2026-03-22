@@ -10,7 +10,7 @@ export interface ReportState {
   message: string;
 }
 
-const VALID_CONTENT_TYPES = ["post", "comment", "profile"] as const;
+const VALID_CONTENT_TYPES = ["post", "comment", "profile", "conversation"] as const;
 
 export async function submitReport(
   _prevState: ReportState,
@@ -74,12 +74,25 @@ export async function submitReport(
       select: { username: true, displayName: true },
     });
     contentPreview = user?.username ?? "User not found";
+  } else if (contentType === "conversation") {
+    const conv = await prisma.conversation.findUnique({
+      where: { id: contentId },
+      include: {
+        participants: {
+          include: { user: { select: { username: true } } },
+          take: 5,
+        },
+      },
+    });
+    contentPreview = conv
+      ? `Conversation with ${conv.participants.map((p: { user: { username: string | null } }) => p.user.username ?? "unknown").join(", ")}`
+      : "Conversation not found";
   }
 
   await sendReportEmail({
     reporterUsername: reporter.username ?? "unknown",
     reporterEmail: reporter.email,
-    contentType: contentType as "post" | "comment" | "profile",
+    contentType: contentType as "post" | "comment" | "profile" | "conversation",
     contentId,
     contentPreview,
     description,

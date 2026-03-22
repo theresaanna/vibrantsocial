@@ -1,18 +1,33 @@
 "use client";
 
-import type * as Ably from "ably";
-import { useChannel } from "ably/react";
-import { useState } from "react";
+import type { InboundMessage } from "ably";
+import { useState, useEffect, useCallback } from "react";
+import { getAblyRealtimeClient } from "@/lib/ably";
+import { useAblyReady } from "@/app/providers";
+import { getMessages } from "@/app/chat/actions";
 import type { MessageData, MessageReplyTo, MediaType, ReactionGroup } from "@/types/chat";
 
 export function useChatMessages(
   conversationId: string,
-  initialMessages: MessageData[]
+  initialMessages: MessageData[],
+  currentUserId: string
 ) {
   const [messages, setMessages] = useState<MessageData[]>(initialMessages);
   const channelName = `chat:${conversationId}`;
+  const ablyReady = useAblyReady();
 
-  useChannel(channelName, (event: Ably.Message) => {
+  // Merge fetched messages with existing state (adds new, updates existing)
+  const mergeMessages = useCallback((fetched: MessageData[]) => {
+    setMessages((prev) => {
+      const existingIds = new Set(prev.map((m) => m.id));
+      const newMsgs = fetched.filter((m) => !existingIds.has(m.id));
+      if (newMsgs.length === 0) return prev;
+      return [...prev, ...newMsgs];
+    });
+  }, []);
+
+  // Primary: Ably per-conversation channel subscription
+  const handleEvent = useCallback((event: InboundMessage) => {
     const data = event.data as Record<string, string | null>;
     switch (event.name) {
       case "new": {
@@ -76,7 +91,45 @@ export function useChatMessages(
         break;
       }
     }
-  });
+  }, []);
+
+  useEffect(() => {
+    if (!ablyReady) return;
+    const client = getAblyRealtimeClient();
+    const channel = client.channels.get(channelName);
+    channel.subscribe(handleEvent);
+    return () => {
+      channel.unsubscribe(handleEvent);
+    };
+  }, [ablyReady, channelName, handleEvent]);
+
+  // Fallback: listen to personal chat-notify channel for real-time triggers
+  useEffect(() => {
+    if (!ablyReady) return;
+    const client = getAblyRealtimeClient();
+    const notifyChannel = client.channels.get(`chat-notify:${currentUserId}`);
+
+    const handler = (msg: InboundMessage) => {
+      const data = msg.data as { conversationId?: string };
+      if (data.conversationId === conversationId) {
+        getMessages(conversationId).then((result) => mergeMessages(result.messages));
+      }
+    };
+
+    notifyChannel.subscribe("new", handler);
+    return () => {
+      notifyChannel.unsubscribe("new", handler);
+    };
+  }, [ablyReady, conversationId, currentUserId, mergeMessages]);
+
+  // Fallback: refresh messages on window focus
+  useEffect(() => {
+    const handleFocus = () => {
+      getMessages(conversationId).then((result) => mergeMessages(result.messages));
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [conversationId, mergeMessages]);
 
   return { messages, setMessages, channelName };
 }

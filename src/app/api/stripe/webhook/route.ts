@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { constructWebhookEvent } from "@/lib/stripe";
+import { sendPremiumWelcomeEmail } from "@/lib/email";
 
 const GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -86,7 +87,7 @@ export async function handlePremiumCheckoutCompleted(session: any) {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { stripeSubscriptionId: true },
+    select: { stripeSubscriptionId: true, email: true },
   });
 
   if (!user) return;
@@ -113,6 +114,11 @@ export async function handlePremiumCheckoutCompleted(session: any) {
       premiumExpiresAt: null,
     },
   });
+
+  // Send premium welcome email with free age verification coupon
+  if (user.email) {
+    await sendPremiumWelcomeEmail({ toEmail: user.email });
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

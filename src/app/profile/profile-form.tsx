@@ -360,7 +360,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
               >
                 {frameId ? "Change Frame" : "Add Frame"}
               </button>
-              <PremiumCrown />
+              <PremiumCrown href="/premium" />
             </span>
           </div>
 
