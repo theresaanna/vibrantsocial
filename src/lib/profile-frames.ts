@@ -2,7 +2,7 @@ export interface FrameDefinition {
   id: string;
   name: string;
   src: string;
-  category: "spring" | "neon";
+  category: "spring" | "neon" | "decorative";
 }
 
 export const PROFILE_FRAMES: FrameDefinition[] = [
@@ -14,6 +14,11 @@ export const PROFILE_FRAMES: FrameDefinition[] = [
   { id: "neon-3", name: "Neon Bloom", src: "/frames/neon-3.svg", category: "neon" },
   { id: "neon-4", name: "Neon Ring", src: "/frames/neon-4.svg", category: "neon" },
   { id: "neon-5", name: "Neon Flower", src: "/frames/neon-5.svg", category: "neon" },
+  { id: "decorative-1", name: "Frame 1", src: "/frames/frame1.svg", category: "decorative" },
+  { id: "decorative-2", name: "Frame 2", src: "/frames/frame2.svg", category: "decorative" },
+  { id: "decorative-3", name: "Frame 3", src: "/frames/frame3.svg", category: "decorative" },
+  { id: "decorative-4", name: "Frame 4", src: "/frames/frame4.svg", category: "decorative" },
+  { id: "decorative-5", name: "Frame 5", src: "/frames/frame5.svg", category: "decorative" },
 ];
 
 const FRAME_MAP = new Map(PROFILE_FRAMES.map((f) => [f.id, f]));
