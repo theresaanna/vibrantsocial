@@ -14,7 +14,7 @@ interface FramedAvatarProps {
 
 // When a frame is shown, the avatar shrinks to this ratio of the
 // container so the frame ring sits outside the photo circle.
-const AVATAR_INSET = 0.72;
+const AVATAR_INSET = 0.78;
 
 export function FramedAvatar({
   src,
