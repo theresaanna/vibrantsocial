@@ -31,6 +31,11 @@ const features = [
       "Control exactly who sees your posts with custom audience lists.",
   },
   {
+    title: "Free Age Verification",
+    description:
+      "Get a free age verification coupon emailed to you on signup, so you can verify your account instantly.",
+  },
+  {
     title: "And More",
     description:
       "Discover delightful surprises and exclusive features waiting for you as a premium member.",
