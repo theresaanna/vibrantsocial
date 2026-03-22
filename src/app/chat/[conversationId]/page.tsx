@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePhoneVerification } from "@/lib/phone-gate";
 import { requireNotSuspended } from "@/lib/suspension-gate";
 import { getConversations, getMessages, getMessageRequests, getFriendsForChat } from "../actions";
+import { getBlockStatus } from "@/app/feed/block-actions";
 import { ConversationPageClient } from "./conversation-page-client";
 import { generateAdaptiveTheme } from "@/lib/profile-themes";
 
@@ -75,6 +76,18 @@ export default async function ConversationPage({ params }: Props) {
 
   if (!conversation) redirect("/chat");
 
+  // Check block status for 1:1 chats
+  let isBlocked = false;
+  if (!conversation.isGroup) {
+    const otherParticipant = conversation.participants.find(
+      (p: { userId: string }) => p.userId !== session.user.id
+    );
+    if (otherParticipant) {
+      const blockStatus = await getBlockStatus(otherParticipant.userId);
+      isBlocked = blockStatus !== "none";
+    }
+  }
+
   const hasCustomTheme = !!(
     currentUser?.profileBgColor ||
     currentUser?.profileTextColor ||
@@ -123,6 +136,7 @@ export default async function ConversationPage({ params }: Props) {
       conversation={conversation}
       currentUserId={session.user.id}
       phoneVerified={phoneVerified && notSuspended}
+      isBlocked={isBlocked}
       themeColors={themeColors}
       hasCustomTheme={hasCustomTheme}
       themeStyle={themeStyle}

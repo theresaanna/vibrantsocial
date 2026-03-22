@@ -6,7 +6,7 @@ import { submitReport, type ReportState } from "@/app/report/actions";
 import Link from "next/link";
 
 interface ReportModalProps {
-  contentType: "post" | "comment" | "profile";
+  contentType: "post" | "comment" | "profile" | "conversation";
   contentId: string;
   isOpen: boolean;
   onClose: () => void;
@@ -16,6 +16,7 @@ const LABELS: Record<string, string> = {
   post: "Report Post",
   comment: "Report Comment",
   profile: "Report Profile",
+  conversation: "Report Conversation",
 };
 
 export function ReportModal({ contentType, contentId, isOpen, onClose }: ReportModalProps) {

@@ -29,6 +29,7 @@ interface ConversationPageClientProps {
   conversation: ConversationWithParticipants;
   currentUserId: string;
   phoneVerified: boolean;
+  isBlocked?: boolean;
   themeColors?: ChatThemeColors;
   hasCustomTheme?: boolean;
   themeStyle?: React.CSSProperties;
@@ -92,6 +93,7 @@ function PresenceAwareThread({
   conversation,
   currentUserId,
   phoneVerified,
+  isBlocked,
   themeColors,
 }: {
   conversationId: string;
@@ -99,6 +101,7 @@ function PresenceAwareThread({
   conversation: ConversationWithParticipants;
   currentUserId: string;
   phoneVerified: boolean;
+  isBlocked?: boolean;
   themeColors?: ChatThemeColors;
 }) {
   const { presenceData } = usePresenceListener(PRESENCE_CHANNEL);
@@ -118,6 +121,7 @@ function PresenceAwareThread({
             currentUserId={currentUserId}
             onlineUserIds={onlineUserIds}
             phoneVerified={phoneVerified}
+            isBlocked={isBlocked}
             themeColors={themeColors}
           />
         </ChannelProvider>
@@ -135,6 +139,7 @@ export function ConversationPageClient({
   conversation,
   currentUserId,
   phoneVerified,
+  isBlocked,
   themeColors,
   hasCustomTheme,
   themeStyle,
@@ -205,6 +210,7 @@ export function ConversationPageClient({
             conversation={conversation}
             currentUserId={currentUserId}
             phoneVerified={phoneVerified}
+            isBlocked={isBlocked}
             themeColors={themeColors}
           />
         ) : (
