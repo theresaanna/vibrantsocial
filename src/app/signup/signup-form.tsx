@@ -96,7 +96,7 @@ export function SignupForm() {
             )}
             {usernameStatus === "available" && (
               <p className="text-xs text-green-600">
-                vibrantsocial.com/{usernameValue.trim().toLowerCase()} is
+                vibrantsocial.app/{usernameValue.trim().toLowerCase()} is
                 available
               </p>
             )}
