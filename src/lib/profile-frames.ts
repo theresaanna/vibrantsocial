@@ -19,7 +19,6 @@ export const PROFILE_FRAMES: FrameDefinition[] = [
   { id: "decorative-3", name: "Frame 3", src: "/frames/frame3.svg", category: "decorative" },
   { id: "decorative-4", name: "Frame 4", src: "/frames/frame4.svg", category: "decorative" },
   { id: "decorative-5", name: "Frame 5", src: "/frames/frame5.svg", category: "decorative" },
-  { id: "decorative-6", name: "Frame 6", src: "/frames/frame9.svg", category: "decorative" },
 ];
 
 const FRAME_MAP = new Map(PROFILE_FRAMES.map((f) => [f.id, f]));
