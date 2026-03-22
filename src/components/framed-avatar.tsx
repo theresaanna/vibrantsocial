@@ -55,21 +55,26 @@ export function FramedAvatar({
           {initial || "?"}
         </div>
       )}
-      {showFrame && (
-        <img
-          src={frame.src}
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none absolute"
-          style={{
-            width: size * FRAME_SCALE,
-            height: size * FRAME_SCALE,
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-          }}
-        />
-      )}
+      {showFrame && (() => {
+        const scale = frame.frameScale ?? FRAME_SCALE;
+        const sx = frame.scaleX ?? 1;
+        const sy = frame.scaleY ?? 1;
+        return (
+          <img
+            src={frame.src}
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none absolute"
+            style={{
+              width: size * scale,
+              height: size * scale,
+              top: "50%",
+              left: "50%",
+              transform: `translate(-50%, -50%) scale(${sx}, ${sy})`,
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
