@@ -58,7 +58,8 @@ export function MessageThread({
 
   const { messages, setMessages, channelName } = useChatMessages(
     conversationId,
-    initialMessages
+    initialMessages,
+    currentUserId
   );
   const { typingUsers, keystroke, stopTyping } = useTypingIndicator(
     conversationId,
