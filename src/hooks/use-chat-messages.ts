@@ -1,8 +1,9 @@
 "use client";
 
-import type * as Ably from "ably";
-import { useChannel } from "ably/react";
-import { useState } from "react";
+import type { InboundMessage } from "ably";
+import { useState, useEffect, useCallback } from "react";
+import { getAblyRealtimeClient } from "@/lib/ably";
+import { useAblyReady } from "@/app/providers";
 import type { MessageData, MessageReplyTo, MediaType, ReactionGroup } from "@/types/chat";
 
 export function useChatMessages(
@@ -11,8 +12,9 @@ export function useChatMessages(
 ) {
   const [messages, setMessages] = useState<MessageData[]>(initialMessages);
   const channelName = `chat:${conversationId}`;
+  const ablyReady = useAblyReady();
 
-  useChannel(channelName, (event: Ably.Message) => {
+  const handleEvent = useCallback((event: InboundMessage) => {
     const data = event.data as Record<string, string | null>;
     switch (event.name) {
       case "new": {
@@ -76,7 +78,17 @@ export function useChatMessages(
         break;
       }
     }
-  });
+  }, []);
+
+  useEffect(() => {
+    if (!ablyReady) return;
+    const client = getAblyRealtimeClient();
+    const channel = client.channels.get(channelName);
+    channel.subscribe(handleEvent);
+    return () => {
+      channel.unsubscribe(handleEvent);
+    };
+  }, [ablyReady, channelName, handleEvent]);
 
   return { messages, setMessages, channelName };
 }
