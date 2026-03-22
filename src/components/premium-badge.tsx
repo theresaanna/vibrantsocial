@@ -39,7 +39,7 @@ export function PremiumBadge({ className = "", color = "green", href, inline = f
 
   if (href) {
     return (
-      <Link href={href} className="relative">
+      <Link href={href}>
         {badge}
       </Link>
     );

@@ -1,9 +1,9 @@
 "use client";
 
-import type * as Ably from "ably";
-import { useChannel } from "ably/react";
+import type { InboundMessage } from "ably";
 import { useState, useEffect, useCallback } from "react";
 import { getAblyRealtimeClient } from "@/lib/ably";
+import { useAblyReady } from "@/app/providers";
 import { getMessages } from "@/app/chat/actions";
 import type { MessageData, MessageReplyTo, MediaType, ReactionGroup } from "@/types/chat";
 
@@ -14,6 +14,7 @@ export function useChatMessages(
 ) {
   const [messages, setMessages] = useState<MessageData[]>(initialMessages);
   const channelName = `chat:${conversationId}`;
+  const ablyReady = useAblyReady();
 
   // Merge fetched messages with existing state (adds new, updates existing)
   const mergeMessages = useCallback((fetched: MessageData[]) => {
@@ -26,7 +27,7 @@ export function useChatMessages(
   }, []);
 
   // Primary: Ably per-conversation channel subscription
-  useChannel(channelName, (event: Ably.Message) => {
+  const handleEvent = useCallback((event: InboundMessage) => {
     const data = event.data as Record<string, string | null>;
     switch (event.name) {
       case "new": {
@@ -90,14 +91,25 @@ export function useChatMessages(
         break;
       }
     }
-  });
+  }, []);
+
+  useEffect(() => {
+    if (!ablyReady) return;
+    const client = getAblyRealtimeClient();
+    const channel = client.channels.get(channelName);
+    channel.subscribe(handleEvent);
+    return () => {
+      channel.unsubscribe(handleEvent);
+    };
+  }, [ablyReady, channelName, handleEvent]);
 
   // Fallback: listen to personal chat-notify channel for real-time triggers
   useEffect(() => {
+    if (!ablyReady) return;
     const client = getAblyRealtimeClient();
     const notifyChannel = client.channels.get(`chat-notify:${currentUserId}`);
 
-    const handler = (msg: Ably.InboundMessage) => {
+    const handler = (msg: InboundMessage) => {
       const data = msg.data as { conversationId?: string };
       if (data.conversationId === conversationId) {
         getMessages(conversationId).then((result) => mergeMessages(result.messages));
@@ -108,7 +120,7 @@ export function useChatMessages(
     return () => {
       notifyChannel.unsubscribe("new", handler);
     };
-  }, [conversationId, currentUserId, mergeMessages]);
+  }, [ablyReady, conversationId, currentUserId, mergeMessages]);
 
   // Fallback: refresh messages on window focus
   useEffect(() => {

@@ -5,18 +5,22 @@ import type { MessageData } from "@/types/chat";
 
 let channelCallback: (event: { name: string; data: Record<string, string | null> }) => void;
 
-vi.mock("ably/react", () => ({
-  useChannel: vi.fn((_channelName: string, cb: (event: { name: string; data: Record<string, string | null> }) => void) => {
-    channelCallback = cb;
-    return { channel: null };
-  }),
+vi.mock("@/app/providers", () => ({
+  useAblyReady: vi.fn(() => true),
 }));
 
 vi.mock("@/lib/ably", () => ({
   getAblyRealtimeClient: vi.fn(() => ({
     channels: {
       get: vi.fn(() => ({
-        subscribe: vi.fn(),
+        subscribe: vi.fn((cbOrEvent: string | ((...args: unknown[]) => void), maybeCb?: (...args: unknown[]) => void) => {
+          // When called with just a callback (primary channel), capture it
+          if (typeof cbOrEvent === "function") {
+            channelCallback = cbOrEvent as typeof channelCallback;
+          }
+          // When called with event name + callback (notify channel), ignore
+          void maybeCb;
+        }),
         unsubscribe: vi.fn(),
       })),
     },

@@ -98,6 +98,7 @@ export function FeedClient({
         phoneVerified={phoneVerified}
         isOldEnough={isOldEnough}
         isPremium={isPremium}
+        isAgeVerified={ageVerified}
         onPostCreated={handlePostCreated}
       />
       <FeedList

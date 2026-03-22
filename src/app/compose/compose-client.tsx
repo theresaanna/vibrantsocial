@@ -8,9 +8,10 @@ interface ComposeClientProps {
   phoneVerified: boolean;
   isOldEnough: boolean;
   isPremium: boolean;
+  isAgeVerified: boolean;
 }
 
-export function ComposeClient({ phoneVerified, isOldEnough, isPremium }: ComposeClientProps) {
+export function ComposeClient({ phoneVerified, isOldEnough, isPremium, isAgeVerified }: ComposeClientProps) {
   const router = useRouter();
 
   const handlePostCreated = useCallback(() => {
@@ -22,6 +23,7 @@ export function ComposeClient({ phoneVerified, isOldEnough, isPremium }: Compose
       phoneVerified={phoneVerified}
       isOldEnough={isOldEnough}
       isPremium={isPremium}
+      isAgeVerified={isAgeVerified}
       onPostCreated={handlePostCreated}
     />
   );

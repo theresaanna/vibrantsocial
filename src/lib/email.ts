@@ -138,6 +138,49 @@ export async function sendWelcomeEmail(toEmail: string) {
   });
 }
 
+export async function sendPremiumWelcomeEmail(params: {
+  toEmail: string;
+}) {
+  const { toEmail } = params;
+  const baseUrl = getBaseUrl();
+  const verifyUrl = `${baseUrl}/age-verify`;
+
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: toEmail,
+      subject: "Welcome to Premium!",
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #18181b; margin-bottom: 16px;">Welcome to Premium!</h2>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            Thank you for supporting VibrantSocial! As a premium member, you now have access to custom audiences, exclusive profile frames, and more.
+          </p>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            As a thank you, age verification is <strong>free</strong> for premium members. Use the coupon code below during checkout:
+          </p>
+          <div style="margin: 20px 0; padding: 16px; background-color: #f4f4f5; border-radius: 8px; text-align: center;">
+            <span style="font-size: 20px; font-weight: 700; letter-spacing: 2px; color: #18181b;">FREEVERIFICATION</span>
+          </div>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            Age verification lets you post and view sensitive and graphic/explicit content. Get verified now to unlock the full experience.
+          </p>
+          <a href="${verifyUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
+            Verify Your Age for Free
+          </a>
+          <p style="color: #a1a1aa; font-size: 12px; margin-top: 32px;">
+            If you have any questions, reach out at <a href="mailto:vibrantsocial@proton.me" style="color: #a1a1aa;">vibrantsocial@proton.me</a>.
+          </p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    Sentry.captureException(error, {
+      extra: { emailType: "premium-welcome", toEmail },
+    });
+  }
+}
+
 export async function sendEmailVerificationEmail(params: {
   toEmail: string;
   token: string;
@@ -403,6 +446,86 @@ export async function sendReportEmail(params: {
   }
 }
 
+export async function sendPostDeclinedEmail(params: {
+  toEmail: string;
+}) {
+  const { toEmail } = params;
+  const baseUrl = getBaseUrl();
+  const verifyUrl = `${baseUrl}/age-verify`;
+
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: toEmail,
+      subject: "Your post needs age verification",
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #18181b; margin-bottom: 16px;">Your post was declined</h2>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            Your post was detected as containing graphic or explicit content. Because your account is not age-verified, the post has been removed.
+          </p>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            To post this type of content, please complete age verification first. Once verified, you can repost your content with the appropriate content flag selected.
+          </p>
+          <a href="${verifyUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
+            Verify Your Age
+          </a>
+          <p style="color: #a1a1aa; font-size: 12px; margin-top: 32px;">
+            Please review the <a href="${baseUrl}" style="color: #a1a1aa;">content guidelines</a> for more information.
+          </p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    Sentry.captureException(error, {
+      extra: { emailType: "post-declined", toEmail },
+    });
+  }
+}
+
+export async function sendContentNoticeEmail(params: {
+  toEmail: string;
+  postId: string;
+  markingLabel: string;
+  warningCount: number;
+}) {
+  const { toEmail, postId, markingLabel, warningCount } = params;
+  const baseUrl = getBaseUrl();
+  const postUrl = `${baseUrl}/post/${postId}`;
+
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: toEmail,
+      subject: "We marked your post for you",
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #18181b; margin-bottom: 16px;">Heads up — we marked your post</h2>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            Your post was detected as containing adult content, so we automatically marked it as <strong>${markingLabel}</strong>. This helps other users control what they see in their feed.
+          </p>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            Next time, please mark your post yourself when uploading this type of content. You can do this from the content flags option in the post editor.
+          </p>
+          <p style="color: #71717a; font-size: 14px; line-height: 1.6;">
+            This is notice ${warningCount} of 5. After 5 notices, further unmarked posts will result in strikes against your account.
+          </p>
+          <a href="${postUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
+            View Post
+          </a>
+          <p style="color: #a1a1aa; font-size: 12px; margin-top: 32px;">
+            Please review the <a href="${baseUrl}" style="color: #a1a1aa;">content guidelines</a> for more information.
+          </p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    Sentry.captureException(error, {
+      extra: { emailType: "content-notice", toEmail, postId },
+    });
+  }
+}
+
 export async function sendContentWarningEmail(params: {
   toEmail: string;
   postId: string;
@@ -418,15 +541,15 @@ export async function sendContentWarningEmail(params: {
     await getResend().emails.send({
       from: FROM_EMAIL,
       to: toEmail,
-      subject: `Content flag notice — Strike ${strikeCount} of 5`,
+      subject: `Content flag notice — Strike ${strikeCount} of 3`,
       html: `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
           <h2 style="color: #18181b; margin-bottom: 16px;">Content Flag Notice</h2>
           <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
-            Your post was detected as containing adult content that was not properly marked. It has been automatically flagged as NSFW.
+            Your post was detected as containing adult content that was not properly marked. It has been automatically flagged.
           </p>
           <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
-            This is <strong>strike ${strikeCount} of 5</strong>. ${strikeCount >= 4 ? "Your account will be suspended if you receive one more strike." : "Please remember to mark your content appropriately when posting."}
+            This is <strong>strike ${strikeCount} of 3</strong>. ${strikeCount >= 2 ? "Your account will be suspended if you receive one more strike." : "Please remember to mark your content appropriately when posting."}
           </p>
           <a href="${postUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
             View Post

@@ -1,11 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { usePresenceListener } from "ably/react";
+import { useSession } from "next-auth/react";
 import { ConversationList } from "@/components/chat/conversation-list";
 import { MessageRequestList } from "@/components/chat/message-request-list";
 import { ChatFriendsList } from "@/components/chat/chat-friends-list";
 import { useAblyReady } from "@/app/providers";
+import { getAblyRealtimeClient } from "@/lib/ably";
+import { getConversations } from "@/app/chat/actions";
 import type { ConversationListItem, MessageRequestData, ChatThemeColors, ChatUserProfile } from "@/types/chat";
 
 const PRESENCE_CHANNEL = "presence:global";
@@ -78,6 +81,22 @@ export function ChatPageClient({
   themeStyle,
 }: ChatPageClientProps) {
   const ablyReady = useAblyReady();
+  const { data: session } = useSession();
+  const [liveConversations, setLiveConversations] = useState(conversations);
+
+  // Subscribe to chat-notify channel for instant conversation list updates
+  useEffect(() => {
+    if (!ablyReady || !session?.user?.id) return;
+    const client = getAblyRealtimeClient();
+    const channel = client.channels.get(`chat-notify:${session.user.id}`);
+    const handler = () => {
+      getConversations().then(setLiveConversations);
+    };
+    channel.subscribe("new", handler);
+    return () => {
+      channel.unsubscribe("new", handler);
+    };
+  }, [ablyReady, session?.user?.id]);
 
   return (
     <main
@@ -88,14 +107,14 @@ export function ChatPageClient({
       <div className="flex w-full flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white md:w-80 md:flex-shrink-0 md:rounded-l-2xl md:rounded-r-none dark:border-zinc-800 dark:bg-zinc-900">
         {ablyReady ? (
           <PresenceAwareSidebar
-            conversations={conversations}
+            conversations={liveConversations}
             messageRequests={messageRequests}
             friends={friends}
             themeColors={themeColors}
           />
         ) : (
           <>
-            <ConversationList conversations={conversations} themeColors={themeColors} />
+            <ConversationList conversations={liveConversations} themeColors={themeColors} />
             {friends && friends.length > 0 && <ChatFriendsList friends={friends} />}
             <MessageRequestList requests={messageRequests} />
           </>

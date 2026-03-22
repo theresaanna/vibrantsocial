@@ -4,8 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma migrate deploy && prisma generate && next build",
+    "build": "prisma migrate resolve --rolled-back 20260320_schema_drift_fix 2>/dev/null; prisma migrate deploy && prisma generate && next build",
     "db:migrate": "prisma migrate deploy",
+    "db:setup": "./scripts/setup-local-db.sh",
+    "db:reset": "prisma migrate reset --force",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate || true",

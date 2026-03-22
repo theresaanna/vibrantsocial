@@ -7,6 +7,7 @@ import { MessageRequestList } from "@/components/chat/message-request-list";
 import { ChatFriendsList } from "@/components/chat/chat-friends-list";
 import { MessageThread } from "@/components/chat/message-thread";
 import { useAblyReady } from "@/app/providers";
+import { getAblyRealtimeClient } from "@/lib/ably";
 import { getConversations } from "@/app/chat/actions";
 import type {
   ConversationListItem,
@@ -141,7 +142,7 @@ export function ConversationPageClient({
   const ablyReady = useAblyReady();
   const [liveConversations, setLiveConversations] = useState(conversations);
 
-  // Refresh sidebar on focus and periodically
+  // Refresh sidebar on focus, periodically, and on real-time chat notifications
   useEffect(() => {
     const refresh = () => getConversations().then(setLiveConversations);
     const handleFocus = () => refresh();
@@ -152,6 +153,20 @@ export function ConversationPageClient({
       clearInterval(interval);
     };
   }, []);
+
+  // Subscribe to chat-notify channel for instant conversation list updates
+  useEffect(() => {
+    if (!ablyReady || !currentUserId) return;
+    const client = getAblyRealtimeClient();
+    const channel = client.channels.get(`chat-notify:${currentUserId}`);
+    const handler = () => {
+      getConversations().then(setLiveConversations);
+    };
+    channel.subscribe("new", handler);
+    return () => {
+      channel.unsubscribe("new", handler);
+    };
+  }, [ablyReady, currentUserId]);
 
   return (
     <main

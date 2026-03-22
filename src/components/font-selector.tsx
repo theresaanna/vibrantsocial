@@ -148,7 +148,7 @@ export function FontSelector({
 
       {/* Premium fonts */}
       <div className={`relative ${!isPremium ? "pointer-events-none opacity-50" : ""}`} data-testid={!isPremium ? "font-upgrade-prompt" : undefined}>
-        <PremiumCrown />
+        <PremiumCrown href="/premium" />
         <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
           Premium
         </h3>
