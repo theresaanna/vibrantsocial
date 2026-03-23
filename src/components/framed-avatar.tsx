@@ -59,6 +59,8 @@ export function FramedAvatar({
         const scale = frame.frameScale ?? FRAME_SCALE;
         const sx = frame.scaleX ?? 1;
         const sy = frame.scaleY ?? 1;
+        const ox = frame.offsetX ?? 0;
+        const oy = frame.offsetY ?? 0;
         return (
           <img
             src={frame.src}
@@ -70,7 +72,7 @@ export function FramedAvatar({
               height: size * scale,
               top: "50%",
               left: "50%",
-              transform: `translate(-50%, -50%) scale(${sx}, ${sy})`,
+              transform: `translate(calc(-50% + ${ox}%) , calc(-50% + ${oy}%)) scale(${sx}, ${sy})`,
             }}
           />
         );
