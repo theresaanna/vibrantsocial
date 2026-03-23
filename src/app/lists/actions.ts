@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { invalidate, cached, cacheKeys } from "@/lib/cache";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 import { getPostInclude, getRepostInclude, PAGE_SIZE } from "@/app/feed/feed-queries";
+import { createNotification } from "@/lib/notifications";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -178,6 +179,17 @@ export async function addMemberToList(
   }
 
   await prisma.userListMember.create({ data: { listId, userId } });
+
+  try {
+    await createNotification({
+      type: "LIST_ADD",
+      actorId: session.user.id,
+      targetUserId: userId,
+    });
+  } catch {
+    // Non-critical
+  }
+
   await invalidate(cacheKeys.userListMembers(listId));
   revalidatePath(`/lists/${listId}`);
   revalidatePath("/feed");
@@ -280,6 +292,19 @@ export async function addUserToMultipleLists(
     );
   }
   await Promise.all(operations);
+
+  // Notify user if they were added to any new lists
+  if (toAdd.length > 0) {
+    try {
+      await createNotification({
+        type: "LIST_ADD",
+        actorId: session.user.id,
+        targetUserId,
+      });
+    } catch {
+      // Non-critical
+    }
+  }
 
   // Invalidate caches for all affected lists
   const allAffected = [...new Set([...toAdd, ...toRemove])];

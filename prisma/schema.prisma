@@ -642,6 +642,7 @@ enum NotificationType {
   CONTENT_MODERATION
   REFERRAL_SIGNUP
   STARS_MILESTONE
+  LIST_ADD
 }
 
 model Notification {

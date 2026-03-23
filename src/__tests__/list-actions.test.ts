@@ -58,6 +58,10 @@ vi.mock("@/app/feed/block-actions", () => ({
   getAllBlockRelatedIds: vi.fn().mockResolvedValue([]),
 }));
 
+vi.mock("@/lib/notifications", () => ({
+  createNotification: vi.fn(),
+}));
+
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isRateLimited } from "@/lib/rate-limit";

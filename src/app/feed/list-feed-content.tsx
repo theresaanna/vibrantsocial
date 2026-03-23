@@ -8,7 +8,12 @@ import { getCloseFriendIds } from "@/app/feed/close-friends-actions";
 import { isProfileIncomplete } from "@/lib/require-profile";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 
-export async function ListFeedContent({ userId, listId }: { userId: string; listId: string }) {
+interface ListSummary {
+  id: string;
+  name: string;
+}
+
+export async function ListFeedContent({ userId, listId, lists }: { userId: string; listId: string; lists: ListSummary[] }) {
   // Verify the list exists
   const list = await prisma.userList.findUnique({
     where: { id: listId },
@@ -81,6 +86,7 @@ export async function ListFeedContent({ userId, listId }: { userId: string; list
         hasEmail={!!currentUser.email}
         isPremium={currentUser.tier === "premium"}
         listId={listId}
+        lists={lists}
       />
     );
   }
