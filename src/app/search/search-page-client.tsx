@@ -8,11 +8,19 @@ import {
   useTransition,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { searchUsers, searchPosts } from "./actions";
+import Link from "next/link";
+import { searchUsers, searchPosts, searchTagsForSearch } from "./actions";
 import { SearchPostCard } from "@/components/search-post-card";
 import { SearchUserCard } from "@/components/search-user-card";
 
-type SearchTab = "users" | "posts";
+type SearchTab = "users" | "posts" | "tags";
+
+interface SearchTag {
+  id: string;
+  name: string;
+  isNsfw: boolean;
+  postCount: number;
+}
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 interface SearchPageClientProps {
@@ -20,6 +28,7 @@ interface SearchPageClientProps {
   initialTab: SearchTab;
   initialUsers: { users: any[]; hasMore: boolean };
   initialPosts: { posts: any[]; hasMore: boolean };
+  initialTags: { tags: SearchTag[]; hasMore: boolean };
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
@@ -28,6 +37,7 @@ export function SearchPageClient({
   initialTab,
   initialUsers,
   initialPosts,
+  initialTags,
 }: SearchPageClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -40,6 +50,8 @@ export function SearchPageClient({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [posts, setPosts] = useState<any[]>(initialPosts.posts);
   const [postsHasMore, setPostsHasMore] = useState(initialPosts.hasMore);
+  const [tags, setTags] = useState<SearchTag[]>(initialTags.tags);
+  const [tagsHasMore, setTagsHasMore] = useState(initialTags.hasMore);
   const [isPending, startTransition] = useTransition();
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -76,6 +88,8 @@ export function SearchPageClient({
       setUsersHasMore(false);
       setPosts([]);
       setPostsHasMore(false);
+      setTags([]);
+      setTagsHasMore(false);
       lastSearchedQuery.current = trimmed;
       return;
     }
@@ -92,10 +106,14 @@ export function SearchPageClient({
           const result = await searchUsers(trimmed);
           setUsers(result.users);
           setUsersHasMore(result.hasMore);
-        } else {
+        } else if (activeTab === "posts") {
           const result = await searchPosts(trimmed);
           setPosts(result.posts);
           setPostsHasMore(result.hasMore);
+        } else {
+          const result = await searchTagsForSearch(trimmed);
+          setTags(result.tags);
+          setTagsHasMore(result.hasMore);
         }
       });
     }, 300);
@@ -118,10 +136,14 @@ export function SearchPageClient({
           const result = await searchUsers(trimmed);
           setUsers(result.users);
           setUsersHasMore(result.hasMore);
-        } else {
+        } else if (tab === "posts") {
           const result = await searchPosts(trimmed);
           setPosts(result.posts);
           setPostsHasMore(result.hasMore);
+        } else {
+          const result = await searchTagsForSearch(trimmed);
+          setTags(result.tags);
+          setTagsHasMore(result.hasMore);
         }
       });
     }
@@ -147,7 +169,7 @@ export function SearchPageClient({
           loadingRef.current = false;
         }
       });
-    } else {
+    } else if (activeTab === "posts") {
       if (!postsHasMore) return;
       const lastPost = posts[posts.length - 1];
       if (!lastPost) return;
@@ -165,8 +187,23 @@ export function SearchPageClient({
           loadingRef.current = false;
         }
       });
+    } else {
+      if (!tagsHasMore) return;
+      const lastTag = tags[tags.length - 1];
+      if (!lastTag) return;
+      loadingRef.current = true;
+
+      startTransition(async () => {
+        try {
+          const result = await searchTagsForSearch(trimmed, lastTag.id);
+          setTags((prev) => [...prev, ...result.tags]);
+          setTagsHasMore(result.hasMore);
+        } finally {
+          loadingRef.current = false;
+        }
+      });
     }
-  }, [query, activeTab, users, usersHasMore, posts, postsHasMore]);
+  }, [query, activeTab, users, usersHasMore, posts, postsHasMore, tags, tagsHasMore]);
 
   // IntersectionObserver for infinite scroll
   useEffect(() => {
@@ -197,7 +234,7 @@ export function SearchPageClient({
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search users and posts..."
+          placeholder="Search users, posts, and tags..."
           aria-label="Search"
           className="w-full rounded-lg border border-zinc-300 px-4 py-3 pl-10 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
         />
@@ -237,6 +274,16 @@ export function SearchPageClient({
         >
           Posts
         </button>
+        <button
+          onClick={() => handleTabChange("tags")}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === "tags"
+              ? "border-b-2 border-zinc-900 text-zinc-900 dark:border-zinc-100 dark:text-zinc-100"
+              : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300"
+          }`}
+        >
+          Tags
+        </button>
       </div>
 
       <div className="mt-4">
@@ -253,7 +300,7 @@ export function SearchPageClient({
               ))}
             </div>
           </>
-        ) : (
+        ) : activeTab === "posts" ? (
           <>
             {hasSearched && posts.length === 0 && !isPending && (
               <p className="py-8 text-center text-sm text-zinc-500">
@@ -263,6 +310,38 @@ export function SearchPageClient({
             <div className="space-y-3">
               {posts.map((post) => (
                 <SearchPostCard key={post.id} post={post} />
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            {hasSearched && tags.length === 0 && !isPending && (
+              <p className="py-8 text-center text-sm text-zinc-500">
+                No tags found
+              </p>
+            )}
+            <div className="space-y-3">
+              {tags.map((tag) => (
+                <Link
+                  key={tag.id}
+                  href={`/tag/${tag.name}`}
+                  className="flex items-center justify-between rounded-lg border border-zinc-200 p-4 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg text-zinc-400 dark:text-zinc-500">#</span>
+                    <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                      {tag.name}
+                    </span>
+                    {tag.isNsfw && (
+                      <span className="rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                        NSFW
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                    {tag.postCount} {tag.postCount === 1 ? "post" : "posts"}
+                  </span>
+                </Link>
               ))}
             </div>
           </>

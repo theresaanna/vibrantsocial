@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { PAGE_SIZE } from "@/app/feed/feed-queries";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
+import { normalizeTag } from "@/lib/tags";
 
 export async function searchUsers(query: string, cursor?: string) {
   const session = await auth();
@@ -116,6 +117,66 @@ export async function searchPosts(query: string, cursor?: string) {
   const hasMore = posts.length > PAGE_SIZE;
   return {
     posts: posts.slice(0, PAGE_SIZE),
+    hasMore,
+  };
+}
+
+export async function searchTagsForSearch(query: string, cursor?: string) {
+  const session = await auth();
+  if (!session?.user?.id) return { tags: [], hasMore: false };
+
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { showNsfwContent: true },
+  });
+
+  const normalized = normalizeTag(query);
+  if (!normalized) return { tags: [], hasMore: false };
+
+  const includeNsfw = !!currentUser?.showNsfwContent;
+  const postFilter = includeNsfw
+    ? { isSensitive: false, isGraphicNudity: false, author: { isProfilePublic: true } }
+    : { isSensitive: false, isNsfw: false, isGraphicNudity: false, author: { isProfilePublic: true } };
+
+  const fetchCount = PAGE_SIZE + 1;
+
+  const tags = await prisma.tag.findMany({
+    where: {
+      name: { contains: normalized, mode: "insensitive" },
+      ...(!includeNsfw ? { isNsfw: false } : {}),
+      posts: {
+        some: {
+          post: postFilter,
+        },
+      },
+    },
+    select: {
+      id: true,
+      name: true,
+      isNsfw: true,
+      _count: {
+        select: {
+          posts: {
+            where: {
+              post: postFilter,
+            },
+          },
+        },
+      },
+    },
+    orderBy: { name: "asc" },
+    take: fetchCount,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+  });
+
+  const hasMore = tags.length > PAGE_SIZE;
+  return {
+    tags: tags.slice(0, PAGE_SIZE).map((t: typeof tags[number]) => ({
+      id: t.id,
+      name: t.name,
+      isNsfw: t.isNsfw,
+      postCount: t._count.posts,
+    })),
     hasMore,
   };
 }
