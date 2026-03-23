@@ -57,7 +57,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
           ownerUsername: activeListInfo.owner.username,
         } : null}
       />
-      <Suspense fallback={<FeedSkeleton />}>
+      <Suspense key={activeListId ?? "main-feed"} fallback={<FeedSkeleton />}>
         {activeListId ? (
           <ListFeedContent userId={session.user.id} listId={activeListId} />
         ) : (
