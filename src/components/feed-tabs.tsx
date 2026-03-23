@@ -1,16 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 
 interface ListSummary {
   id: string;
   name: string;
 }
 
-export function FeedTabs({ lists }: { lists: ListSummary[] }) {
-  const searchParams = useSearchParams();
-  const activeListId = searchParams.get("list");
+export function FeedTabs({ lists, activeListId }: { lists: ListSummary[]; activeListId?: string }) {
 
   const baseClass = "px-3 py-1.5 rounded-md text-sm font-medium transition-colors";
   const activeClass = "bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-zinc-100";
