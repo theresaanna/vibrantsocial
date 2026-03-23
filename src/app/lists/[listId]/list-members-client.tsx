@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useActionState } from "react";
 import Link from "next/link";
 import { FramedAvatar } from "@/components/framed-avatar";
-import { searchUsersForList, addMemberToList, removeMemberFromList } from "../actions";
+import { searchUsersForList, addMemberToList, removeMemberFromList, renameList } from "../actions";
 
 interface MemberUser {
   id: string;
@@ -76,12 +76,77 @@ function AddMemberButton({ listId, userId }: { listId: string; userId: string })
   );
 }
 
+function RenameListForm({ listId, currentName }: { listId: string; currentName: string }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [name, setName] = useState(currentName);
+  const [, formAction, isPending] = useActionState(renameList, {
+    success: false,
+    message: "",
+  });
+
+  if (!isEditing) {
+    return (
+      <div className="mb-4 flex items-center gap-2">
+        <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{name}</h1>
+        <button
+          type="button"
+          onClick={() => setIsEditing(true)}
+          className="rounded p-1 text-zinc-400 transition-colors hover:text-zinc-600 dark:hover:text-zinc-300"
+          title="Rename list"
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+          </svg>
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      action={(formData) => {
+        formAction(formData);
+        setName(formData.get("name") as string);
+        setIsEditing(false);
+      }}
+      className="mb-4 flex items-center gap-2"
+    >
+      <input type="hidden" name="listId" value={listId} />
+      <input
+        type="text"
+        name="name"
+        defaultValue={name}
+        maxLength={50}
+        required
+        autoFocus
+        className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-lg font-bold text-zinc-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+      />
+      <button
+        type="submit"
+        disabled={isPending}
+        className="rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50"
+      >
+        {isPending ? "..." : "Save"}
+      </button>
+      <button
+        type="button"
+        onClick={() => setIsEditing(false)}
+        className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+      >
+        Cancel
+      </button>
+    </form>
+  );
+}
+
 export function ListMembersClient({
   listId,
+  listName,
   members,
   isOwner,
 }: {
   listId: string;
+  listName: string;
   members: MemberEntry[];
   isOwner: boolean;
 }) {
@@ -113,6 +178,13 @@ export function ListMembersClient({
 
   return (
     <div>
+      {/* List name with rename (owner only) */}
+      {isOwner ? (
+        <RenameListForm listId={listId} currentName={listName} />
+      ) : (
+        <h1 className="mb-4 text-xl font-bold text-zinc-900 dark:text-zinc-100">{listName}</h1>
+      )}
+
       {/* Search to add members (owner only) */}
       {isOwner && (
         <div className="mb-6">

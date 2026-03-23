@@ -44,12 +44,9 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
             </svg>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{list.name}</h1>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              {members.length} {members.length === 1 ? "member" : "members"}
-            </p>
-          </div>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            {members.length} {members.length === 1 ? "member" : "members"}
+          </p>
         </div>
         <Link
           href={`/feed?list=${list.id}`}
@@ -61,6 +58,7 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
 
       <ListMembersClient
         listId={list.id}
+        listName={list.name}
         members={JSON.parse(JSON.stringify(members))}
         isOwner={isOwner}
       />

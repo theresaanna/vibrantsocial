@@ -109,7 +109,7 @@ export function FeedClient({
         isAgeVerified={ageVerified}
         onPostCreated={handlePostCreated}
       />
-      <FeedTabs lists={lists} />
+      <FeedTabs lists={lists} activeListId={listId} />
       <FeedList
         initialItems={initialItems}
         initialHasMore={initialHasMore}
