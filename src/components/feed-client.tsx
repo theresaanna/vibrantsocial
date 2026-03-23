@@ -99,13 +99,15 @@ export function FeedClient({
     <>
       <AddToHomeBanner />
       <AddEmailBanner hasEmail={hasEmail} />
-      <PostComposer
-        phoneVerified={phoneVerified}
-        isOldEnough={isOldEnough}
-        isPremium={isPremium}
-        isAgeVerified={ageVerified}
-        onPostCreated={handlePostCreated}
-      />
+      {!listId && (
+        <PostComposer
+          phoneVerified={phoneVerified}
+          isOldEnough={isOldEnough}
+          isPremium={isPremium}
+          isAgeVerified={ageVerified}
+          onPostCreated={handlePostCreated}
+        />
+      )}
       <FeedList
         initialItems={initialItems}
         initialHasMore={initialHasMore}
