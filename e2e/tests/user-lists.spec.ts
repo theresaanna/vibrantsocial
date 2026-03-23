@@ -106,8 +106,8 @@ test.describe("User Lists", () => {
     await page.fill('input[name="name"]', "My Test List");
     await page.click('button:has-text("Create")');
 
-    // Should show the new list
-    await expect(page.getByText("My Test List")).toBeVisible();
+    // Wait for server action to complete and page to update
+    await expect(page.getByText("My Test List")).toBeVisible({ timeout: 10000 });
     await expect(page.getByText("0 members")).toBeVisible();
   });
 
@@ -124,9 +124,8 @@ test.describe("User Lists", () => {
     // Search for test user 2
     await page.fill('input[placeholder="Search users to add..."]', TEST_USER_2.username);
 
-    // Wait for search results
-    await page.waitForTimeout(500); // debounce
-    await expect(page.getByText(TEST_USER_2.username)).toBeVisible();
+    // Wait for debounce + server action to return results
+    await expect(page.getByText(TEST_USER_2.username)).toBeVisible({ timeout: 10000 });
 
     // Add user to list
     await page.click('button:has-text("Add")');
@@ -187,7 +186,7 @@ test.describe("User Lists", () => {
     await page.waitForURL(/\/feed/);
 
     // Should see the Feed tab and the list tab
-    await expect(page.getByRole("link", { name: "Feed" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Feed", exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Feed Tab List" })).toBeVisible();
   });
 
