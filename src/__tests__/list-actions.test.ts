@@ -19,6 +19,12 @@ vi.mock("@/lib/prisma", () => ({
       create: vi.fn(),
       delete: vi.fn(),
     },
+    userListSubscription: {
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      delete: vi.fn(),
+    },
     block: {
       findFirst: vi.fn(),
     },
@@ -49,6 +55,7 @@ vi.mock("@/lib/cache", () => ({
   cacheKeys: {
     userLists: (id: string) => `user:${id}:lists`,
     userListMembers: (id: string) => `list:${id}:members`,
+    userListSubscriptions: (id: string) => `user:${id}:list-subs`,
     userFollowing: (id: string) => `user:${id}:following`,
     userBlockedIds: (id: string) => `user:${id}:blocked`,
   },
@@ -70,6 +77,7 @@ import {
   deleteList,
   renameList,
   addMemberToList,
+  toggleListSubscription,
   removeMemberFromList,
   addUserToMultipleLists,
   getUserLists,
@@ -496,5 +504,56 @@ describe("searchUsersForList", () => {
     expect(result.users).toHaveLength(2);
     expect(result.users[0].isInList).toBe(true);
     expect(result.users[1].isInList).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// toggleListSubscription
+// ---------------------------------------------------------------------------
+describe("toggleListSubscription", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns error when not authenticated", async () => {
+    mockAuth.mockResolvedValue(null as never);
+    const result = await toggleListSubscription(prevState, makeFormData({ listId: "l1" }));
+    expect(result.success).toBe(false);
+  });
+
+  it("returns error when list not found", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "u1" } } as never);
+    mockPrisma.userList.findUnique.mockResolvedValue(null);
+    const result = await toggleListSubscription(prevState, makeFormData({ listId: "l1" }));
+    expect(result.success).toBe(false);
+    expect(result.message).toContain("not found");
+  });
+
+  it("returns error when subscribing to own list", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "u1" } } as never);
+    mockPrisma.userList.findUnique.mockResolvedValue({ id: "l1", ownerId: "u1" } as never);
+    const result = await toggleListSubscription(prevState, makeFormData({ listId: "l1" }));
+    expect(result.success).toBe(false);
+    expect(result.message).toContain("own this list");
+  });
+
+  it("subscribes when not already subscribed", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "u1" } } as never);
+    mockPrisma.userList.findUnique.mockResolvedValue({ id: "l1", ownerId: "u2" } as never);
+    mockPrisma.userListSubscription.findUnique.mockResolvedValue(null);
+    mockPrisma.userListSubscription.create.mockResolvedValue({} as never);
+    const result = await toggleListSubscription(prevState, makeFormData({ listId: "l1" }));
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("Subscribed");
+    expect(mockPrisma.userListSubscription.create).toHaveBeenCalled();
+  });
+
+  it("unsubscribes when already subscribed", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "u1" } } as never);
+    mockPrisma.userList.findUnique.mockResolvedValue({ id: "l1", ownerId: "u2" } as never);
+    mockPrisma.userListSubscription.findUnique.mockResolvedValue({ id: "s1" } as never);
+    mockPrisma.userListSubscription.delete.mockResolvedValue({} as never);
+    const result = await toggleListSubscription(prevState, makeFormData({ listId: "l1" }));
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("Unsubscribed");
+    expect(mockPrisma.userListSubscription.delete).toHaveBeenCalled();
   });
 });

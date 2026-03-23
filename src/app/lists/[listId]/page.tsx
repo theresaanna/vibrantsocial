@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { notFound } from "next/navigation";
-import { getListMembers } from "../actions";
+import { getListMembers, isSubscribedToList } from "../actions";
 import { ListMembersClient } from "./list-members-client";
+import { SubscribeListButton } from "./subscribe-list-button";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -25,6 +26,7 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
 
   const { list, members } = result;
   const isOwner = list.ownerId === session.user.id;
+  const isSubscribed = !isOwner ? await isSubscribedToList(listId) : false;
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
@@ -48,12 +50,17 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
             {members.length} {members.length === 1 ? "member" : "members"}
           </p>
         </div>
-        <Link
-          href={`/feed?list=${list.id}`}
-          className="rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:from-indigo-500 hover:to-violet-500"
-        >
-          View Feed
-        </Link>
+        <div className="flex items-center gap-2">
+          {!isOwner && (
+            <SubscribeListButton listId={list.id} isSubscribed={isSubscribed} />
+          )}
+          <Link
+            href={`/feed?list=${list.id}`}
+            className="rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:from-indigo-500 hover:to-violet-500"
+          >
+            View Feed
+          </Link>
+        </div>
       </div>
 
       <ListMembersClient
