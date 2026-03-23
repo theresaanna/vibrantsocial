@@ -60,4 +60,6 @@ export const cacheKeys = {
   tagPostCount: (tagName: string) => `tag:${tagName}:count`,
   userBlockedIds: (userId: string) => `user:${userId}:blocked`,
   linkPreview: (url: string) => `linkpreview:${url}`,
+  userLists: (userId: string) => `user:${userId}:lists`,
+  userListMembers: (listId: string) => `list:${listId}:members`,
 } as const;

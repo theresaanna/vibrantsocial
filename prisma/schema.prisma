@@ -163,6 +163,10 @@ model User {
   blockedUsers Block[] @relation("blocker")
   blockedBy    Block[] @relation("blocked")
 
+  // User lists
+  userLists       UserList[]       @relation("userListOwner")
+  userListMembers UserListMember[] @relation("userListMembership")
+
   // Tag subscriptions
   tagSubscriptions TagSubscription[]
 
@@ -741,6 +745,36 @@ model PremiumWaitlist {
   id        String   @id @default(cuid())
   email     String   @unique
   createdAt DateTime @default(now())
+}
+
+// User lists (curated feeds)
+
+model UserList {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner   User             @relation("userListOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members UserListMember[]
+
+  @@unique([ownerId, name])
+  @@index([ownerId])
+}
+
+model UserListMember {
+  id        String   @id @default(cuid())
+  listId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  list UserList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  user User     @relation("userListMembership", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, userId])
+  @@index([listId])
+  @@index([userId])
 }
 
 model PostAudience {
