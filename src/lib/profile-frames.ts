@@ -24,11 +24,11 @@ export const PROFILE_FRAMES: FrameDefinition[] = [
   { id: "neon-3", name: "Neon Bloom", src: "/frames/neon-3.svg", category: "neon" },
   { id: "neon-4", name: "Neon Ring", src: "/frames/neon-4.svg", category: "neon" },
   { id: "neon-5", name: "Neon Flower", src: "/frames/neon-5.svg", category: "neon" },
-  { id: "decorative-1", name: "Frame 1", src: "/frames/frame1.svg", category: "decorative", scaleX: 1.15, scaleY: 0.92, offsetX: 3, offsetY: 3 },
-  { id: "decorative-3", name: "Frame 3", src: "/frames/frame3.svg", category: "decorative", scaleX: 1.18, scaleY: 0.9, offsetX: 1, offsetY: 1 },
-  { id: "decorative-5", name: "Frame 5", src: "/frames/frame5.svg", category: "decorative", scaleX: 1.15, scaleY: 0.92 },
-  { id: "decorative-10", name: "Frame 6", src: "/frames/frame10.svg", category: "decorative", frameScale: 1.5, scaleX: 1.15, scaleY: 0.9 },
-  { id: "decorative-12", name: "Frame 8", src: "/frames/frame12.svg", category: "decorative", offsetX: -3 },
+  { id: "decorative-1", name: "Digital City", src: "/frames/frame1.svg", category: "decorative", scaleX: 1.15, scaleY: 0.92, offsetX: 3, offsetY: 3 },
+  { id: "decorative-3", name: "Autumn Leaves", src: "/frames/frame3.svg", category: "decorative", scaleX: 1.18, scaleY: 0.9, offsetX: 1, offsetY: 1 },
+  { id: "decorative-5", name: "Frisbee", src: "/frames/frame5.svg", category: "decorative", scaleX: 1.15, scaleY: 0.92 },
+  { id: "decorative-10", name: "Flames", src: "/frames/frame10.svg", category: "decorative", frameScale: 1.5, scaleX: 1.15, scaleY: 0.9 },
+  { id: "decorative-12", name: "Lava", src: "/frames/frame12.svg", category: "decorative", offsetX: -3 },
 ];
 
 const FRAME_MAP = new Map(PROFILE_FRAMES.map((f) => [f.id, f]));
