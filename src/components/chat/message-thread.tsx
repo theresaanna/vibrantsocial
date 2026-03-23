@@ -9,6 +9,8 @@ import { MessageBubble } from "./message-bubble";
 import { MessageInput } from "./message-input";
 import { TypingIndicator } from "./typing-indicator";
 import { PresenceIndicator } from "./presence-indicator";
+import { FramedAvatar } from "@/components/framed-avatar";
+import { StyledName } from "@/components/styled-name";
 import { GroupChatSettings } from "./group-chat-settings";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { ReportModal } from "@/components/report-modal";
@@ -119,6 +121,7 @@ export function MessageThread({
       otherParticipants[0]?.user.username ??
       otherParticipants[0]?.user.name ??
       "User";
+  const otherUser = !isGroup ? otherParticipants[0]?.user : undefined;
   const otherUserId = !isGroup ? otherParticipants[0]?.userId : undefined;
   const isOtherOnline = otherUserId ? onlineUserIds.has(otherUserId) : false;
 
@@ -380,10 +383,29 @@ export function MessageThread({
               <path fillRule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clipRule="evenodd" />
             </svg>
           </Link>
+          {!isGroup && otherUser && (
+            <Link href={`/user/${otherUser.username}`} className="shrink-0">
+              <FramedAvatar
+                src={otherUser.avatar ?? otherUser.image}
+                alt={displayName}
+                initial={displayName.charAt(0)}
+                size={36}
+                frameId={otherUser.profileFrameId}
+              />
+            </Link>
+          )}
           <div>
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-              {displayName}
-            </h3>
+            {!isGroup && otherUser?.username ? (
+              <Link href={`/user/${otherUser.username}`} className="hover:underline">
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  <StyledName fontId={otherUser.usernameFont}>{displayName}</StyledName>
+                </h3>
+              </Link>
+            ) : (
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                {displayName}
+              </h3>
+            )}
             {!isGroup && (
               <div className="flex items-center gap-1.5">
                 <PresenceIndicator isOnline={isOtherOnline} size="sm" />
