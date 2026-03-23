@@ -25,6 +25,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/app/search/actions", () => ({
   searchUsers: vi.fn(),
   searchPosts: vi.fn(),
+  searchTagsForSearch: vi.fn(),
 }));
 
 vi.mock("@/components/search-post-card", () => ({
@@ -52,6 +53,7 @@ const defaultProps = {
   initialTab: "users" as const,
   initialUsers: { users: [], hasMore: false },
   initialPosts: { posts: [], hasMore: false },
+  initialTags: { tags: [], hasMore: false },
 };
 
 describe("SearchPageClient", () => {

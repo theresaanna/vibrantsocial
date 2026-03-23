@@ -228,11 +228,12 @@ describe("PostComposer", () => {
     expect(screen.queryByText("NSFW")).not.toBeInTheDocument();
   });
 
-  it("can check content flag checkboxes", () => {
+  it("can check content flag checkboxes when age verified", () => {
     render(
       <PostComposer
         phoneVerified={true}
         isOldEnough={true}
+        isAgeVerified={true}
       />
     );
     fireEvent.click(screen.getByText("Content Warnings"));
@@ -254,11 +255,51 @@ describe("PostComposer", () => {
     expect(graphicCheckbox).toBeChecked();
   });
 
+  it("disables Sensitive and Graphic/Explicit checkboxes when not age verified", () => {
+    render(
+      <PostComposer
+        phoneVerified={true}
+        isOldEnough={true}
+        isAgeVerified={false}
+      />
+    );
+    fireEvent.click(screen.getByText("Content Warnings"));
+
+    // NSFW should still be enabled
+    const nsfwCheckbox = screen.getByRole("checkbox", { name: "NSFW" });
+    expect(nsfwCheckbox).not.toBeDisabled();
+
+    // Sensitive and Graphic/Explicit should be disabled
+    const disabledCheckboxes = screen.getAllByRole("checkbox").filter((cb) => (cb as HTMLInputElement).disabled);
+    expect(disabledCheckboxes).toHaveLength(2);
+
+    // Should show verify age links
+    const verifyLinks = screen.getAllByText("(verify age)");
+    expect(verifyLinks).toHaveLength(2);
+    expect(verifyLinks[0].closest("a")).toHaveAttribute("href", "/age-verify");
+  });
+
+  it("shows NSFW checkbox enabled regardless of age verification", () => {
+    render(
+      <PostComposer
+        phoneVerified={true}
+        isOldEnough={true}
+        isAgeVerified={false}
+      />
+    );
+    fireEvent.click(screen.getByText("Content Warnings"));
+
+    const nsfwCheckbox = screen.getByRole("checkbox", { name: "NSFW" });
+    fireEvent.click(nsfwCheckbox);
+    expect(nsfwCheckbox).toBeChecked();
+  });
+
   it("shows graphic nudity warning when Graphic/Explicit is checked", () => {
     render(
       <PostComposer
         phoneVerified={true}
         isOldEnough={true}
+        isAgeVerified={true}
       />
     );
     fireEvent.click(screen.getByText("Content Warnings"));

@@ -59,6 +59,7 @@ export function FrameSelector({
 
   const springFrames = PROFILE_FRAMES.filter((f) => f.category === "spring");
   const neonFrames = PROFILE_FRAMES.filter((f) => f.category === "neon");
+  const decorativeFrames = PROFILE_FRAMES.filter((f) => f.category === "decorative");
 
   function handleSelect(frameId: string | null) {
     setSelectedFrameId(frameId);
@@ -101,7 +102,7 @@ export function FrameSelector({
         </div>
 
         <div className={`relative space-y-4 ${!isPremium ? "pointer-events-none opacity-50" : ""}`} data-testid={!isPremium ? "frame-upgrade-prompt" : undefined}>
-          <PremiumCrown />
+          <PremiumCrown href="/premium" />
           {/* None option */}
           <button
             type="button"
@@ -144,6 +145,25 @@ export function FrameSelector({
             </h3>
             <div className="grid grid-cols-3 gap-2">
               {neonFrames.map((frame) => (
+                <FrameOption
+                  key={frame.id}
+                  frame={frame}
+                  isSelected={selectedFrameId === frame.id}
+                  avatarSrc={avatarSrc}
+                  initial={initial}
+                  onSelect={(id) => handleSelect(id)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Decorative frames */}
+          <div>
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+              Decorative
+            </h3>
+            <div className="grid grid-cols-3 gap-2">
+              {decorativeFrames.map((frame) => (
                 <FrameOption
                   key={frame.id}
                   frame={frame}

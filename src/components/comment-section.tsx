@@ -7,6 +7,7 @@ import { timeAgo } from "@/lib/time";
 import { useComments, type CommentData, type ReactionGroup } from "@/hooks/use-comments";
 import Link from "next/link";
 import { LinkifyText } from "@/components/chat/linkify-text";
+import { LinkPreviewCard } from "@/components/link-preview-card";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { ReportModal } from "@/components/report-modal";
 import { StyledName } from "@/components/styled-name";
@@ -76,6 +77,34 @@ export function CommentSection({
     async (prevState: { success: boolean; message: string }, formData: FormData) => {
       const result = await createComment(prevState, formData);
       if (result.success) {
+        // Add comment to list immediately (don't wait for Ably)
+        if (result.comment) {
+          const newComment: CommentData = {
+            ...result.comment,
+            createdAt: new Date(result.comment.createdAt),
+            replies: [],
+          };
+          setComments((prev) => {
+            // Avoid duplicate if Ably message already arrived
+            const exists = prev.some((c) => c.id === newComment.id) ||
+              prev.some((c) => c.replies?.some((r) => r.id === newComment.id));
+            if (exists) return prev;
+            if (newComment.parentId) {
+              // Add as reply under parent
+              function addReply(list: CommentData[]): CommentData[] {
+                return list.map((c) => {
+                  if (c.id === newComment.parentId) {
+                    return { ...c, replies: [...(c.replies || []), newComment] };
+                  }
+                  if (c.replies) return { ...c, replies: addReply(c.replies) };
+                  return c;
+                });
+              }
+              return addReply(prev);
+            }
+            return [...prev, newComment];
+          });
+        }
         setReplyingTo(null);
         inputRef.current?.clear();
       }
@@ -480,9 +509,12 @@ function CommentItem({
             </button>
           </form>
         ) : (
-          <p className="text-sm text-zinc-700 dark:text-zinc-300">
-            <LinkifyText text={comment.content} />
-          </p>
+          <>
+            <p className="text-sm text-zinc-700 dark:text-zinc-300">
+              <LinkifyText text={comment.content} />
+            </p>
+            <CommentLinkPreview text={comment.content} />
+          </>
         )}
 
         {/* Reactions display */}
@@ -625,4 +657,13 @@ function CommentItem({
       />
     </div>
   );
+}
+
+const YOUTUBE_RE = /^https?:\/\/(?:www\.)?(?:youtube\.com\/watch|youtu\.be\/)/i;
+const COMMENT_URL_RE = /https?:\/\/[^\s)]+/;
+
+function CommentLinkPreview({ text }: { text: string }) {
+  const match = text.match(COMMENT_URL_RE);
+  if (!match || YOUTUBE_RE.test(match[0])) return null;
+  return <LinkPreviewCard url={match[0]} />;
 }

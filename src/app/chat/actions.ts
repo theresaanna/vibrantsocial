@@ -435,6 +435,19 @@ export async function sendMessage(data: {
     return { success: false, message: "Not a participant of this conversation" };
   }
 
+  // Check for blocks between participants
+  const otherParticipants = await prisma.conversationParticipant.findMany({
+    where: { conversationId, userId: { not: session.user.id } },
+    select: { userId: true },
+  });
+  const blockedIds = await getAllBlockRelatedIds(session.user.id);
+  const hasBlockedParticipant = otherParticipants.some((p: { userId: string }) =>
+    blockedIds.includes(p.userId)
+  );
+  if (hasBlockedParticipant) {
+    return { success: false, message: "Cannot send messages in this conversation" };
+  }
+
   // Validate replyToId belongs to the same conversation
   let replyToData: MessageReplyTo | null = null;
   if (replyToId) {
@@ -1123,4 +1136,33 @@ export async function removeGroupMember(data: {
 
   revalidatePath("/chat");
   return { success: true, message: "Member removed" };
+}
+
+export async function leaveConversation(
+  conversationId: string
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
+  const participant = await prisma.conversationParticipant.findUnique({
+    where: {
+      conversationId_userId: { conversationId, userId: session.user.id },
+    },
+  });
+  if (!participant) {
+    return { success: false, message: "Not a participant of this conversation" };
+  }
+
+  await prisma.conversationParticipant.delete({
+    where: { id: participant.id },
+  });
+
+  revalidatePath("/chat");
+  return { success: true, message: "Conversation removed" };
 }

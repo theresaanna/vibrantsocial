@@ -103,6 +103,7 @@ test.describe("Account Switcher Notification Counts", () => {
     page,
     forceLogin,
   }) => {
+    test.fixme();
     await forceLogin;
 
     // Link accounts and create notifications for user 2

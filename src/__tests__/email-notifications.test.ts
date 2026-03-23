@@ -43,6 +43,11 @@ vi.mock("@/lib/inngest", () => ({
   inngest: { send: mockInngestSend },
 }));
 
+vi.mock("@/lib/referral", () => ({
+  awardReferralFirstPostBonus: vi.fn(),
+  checkStarsMilestone: vi.fn(),
+}));
+
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { requirePhoneVerification } from "@/lib/phone-gate";

@@ -1,7 +1,9 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { EditorContent } from "@/components/editor/EditorContent";
+import { extractFirstUrl } from "@/lib/lexical-text";
+import { LinkPreviewCard } from "@/components/link-preview-card";
 
 interface PostContentProps {
   content: string;
@@ -15,6 +17,8 @@ export function PostContent({ content, truncate = true, allowChecklistToggle, on
   const contentRef = useRef<HTMLDivElement>(null);
   const [isOverflowing, setIsOverflowing] = useState(false);
   const [expanded, setExpanded] = useState(false);
+
+  const firstUrl = useMemo(() => extractFirstUrl(content), [content]);
 
   useEffect(() => {
     if (!truncate || expanded) return;
@@ -46,6 +50,7 @@ export function PostContent({ content, truncate = true, allowChecklistToggle, on
         className={shouldTruncate ? "max-h-[50vh] overflow-hidden" : ""}
       >
         <EditorContent content={content} allowChecklistToggle={allowChecklistToggle} onContentChange={onContentChange} isPostAuthor={isPostAuthor} />
+        {firstUrl && <LinkPreviewCard url={firstUrl} />}
       </div>
       {shouldTruncate && isOverflowing && (
         <>

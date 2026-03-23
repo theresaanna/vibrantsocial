@@ -46,6 +46,25 @@ h6 {
   }
 }
 
+/* Tag cloud pills — responsive sizing via CSS custom properties */
+.tag-pill {
+  font-size: calc(var(--pill-fs) * 0.65);
+  padding-left: calc(var(--pill-px) * 0.55);
+  padding-right: calc(var(--pill-px) * 0.55);
+  padding-top: calc(var(--pill-py) * 0.5);
+  padding-bottom: calc(var(--pill-py) * 0.5);
+}
+
+@media (min-width: 640px) {
+  .tag-pill {
+    font-size: var(--pill-fs);
+    padding-left: var(--pill-px);
+    padding-right: var(--pill-px);
+    padding-top: var(--pill-py);
+    padding-bottom: var(--pill-py);
+  }
+}
+
 /* Profile theme overrides — light mode (default) */
 .profile-themed {
   --profile-bg: var(--profile-bg-light);

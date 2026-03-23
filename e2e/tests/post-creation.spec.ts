@@ -57,15 +57,16 @@ test.describe("Post Creation", () => {
     await toggle.click();
     await page.waitForTimeout(300);
 
-    // NSFW checkbox should appear
+    // NSFW checkbox should appear (always a label)
     await expect(page.getByLabel("NSFW")).toBeVisible({ timeout: 5000 });
-    await expect(page.getByLabel("Sensitive")).toBeVisible();
-    await expect(page.getByLabel("Graphic/Explicit")).toBeVisible();
+    // Sensitive and Graphic/Explicit are visible as text (may be disabled spans if not age-verified)
+    await expect(page.getByText("Sensitive")).toBeVisible();
+    await expect(page.getByText("Graphic/Explicit")).toBeVisible();
 
     // Click to collapse
     await toggle.click();
 
-    // Checkboxes should be hidden
+    // Content flags should be hidden
     await expect(page.getByLabel("NSFW")).not.toBeVisible({ timeout: 5000 });
   });
 });

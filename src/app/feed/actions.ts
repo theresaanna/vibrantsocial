@@ -17,6 +17,7 @@ import { checkAndExpirePremium } from "@/lib/premium";
 import { notifyTagSubscribers } from "@/lib/tag-subscription-notifications";
 import { generateSlugFromContent, validateSlug } from "@/lib/slugs";
 import { inngest } from "@/lib/inngest";
+import { awardReferralFirstPostBonus, checkStarsMilestone } from "@/lib/referral";
 
 interface PostState {
   success: boolean;
@@ -107,6 +108,17 @@ export async function createPost(
   const hasCustomAudience = formData.get("hasCustomAudience") === "true";
   const isLoggedInOnly = formData.get("isLoggedInOnly") === "true";
 
+  // Age verification required for sensitive/graphic content
+  if (isSensitive || isGraphicNudity) {
+    const poster = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { ageVerified: true },
+    });
+    if (!poster?.ageVerified) {
+      return { success: false, message: "Age verification required to post sensitive or graphic/explicit content" };
+    }
+  }
+
   // Custom audience: premium-only feature
   const rawAudienceIds = formData.get("customAudienceIds") as string;
   const customAudienceIds = hasCustomAudience && rawAudienceIds
@@ -161,6 +173,10 @@ export async function createPost(
   }
 
   await prisma.user.update({ where: { id: session.user.id }, data: { stars: { increment: 1 } } });
+
+  // Award referral bonus if this is the referred user's first post
+  await awardReferralFirstPostBonus(session.user.id);
+  await checkStarsMilestone(session.user.id);
 
   // Attach tags (skip for sensitive/graphic posts; NSFW posts can have tags)
   const rawTags = formData.get("tags") as string;

@@ -21,6 +21,7 @@ interface MessageInputProps {
   onStopTyping: () => void;
   disabled?: boolean;
   phoneVerified?: boolean;
+  blockedMessage?: string;
   onEditLastMessage?: () => void;
   replyingTo?: MessageData | null;
   onCancelReply?: () => void;
@@ -33,6 +34,7 @@ export function MessageInput({
   onStopTyping,
   disabled,
   phoneVerified = true,
+  blockedMessage,
   onEditLastMessage,
   replyingTo,
   onCancelReply,
@@ -203,6 +205,16 @@ export function MessageInput({
             Verify your phone number
           </Link>{" "}
           to send messages.
+        </p>
+      </div>
+    );
+  }
+
+  if (blockedMessage) {
+    return (
+      <div className="border-t border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+        <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
+          {blockedMessage}
         </p>
       </div>
     );

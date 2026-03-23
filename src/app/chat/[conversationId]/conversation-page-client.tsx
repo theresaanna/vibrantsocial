@@ -7,6 +7,7 @@ import { MessageRequestList } from "@/components/chat/message-request-list";
 import { ChatFriendsList } from "@/components/chat/chat-friends-list";
 import { MessageThread } from "@/components/chat/message-thread";
 import { useAblyReady } from "@/app/providers";
+import { getAblyRealtimeClient } from "@/lib/ably";
 import { getConversations } from "@/app/chat/actions";
 import type {
   ConversationListItem,
@@ -28,6 +29,7 @@ interface ConversationPageClientProps {
   conversation: ConversationWithParticipants;
   currentUserId: string;
   phoneVerified: boolean;
+  isBlocked?: boolean;
   themeColors?: ChatThemeColors;
   hasCustomTheme?: boolean;
   themeStyle?: React.CSSProperties;
@@ -91,6 +93,7 @@ function PresenceAwareThread({
   conversation,
   currentUserId,
   phoneVerified,
+  isBlocked,
   themeColors,
 }: {
   conversationId: string;
@@ -98,6 +101,7 @@ function PresenceAwareThread({
   conversation: ConversationWithParticipants;
   currentUserId: string;
   phoneVerified: boolean;
+  isBlocked?: boolean;
   themeColors?: ChatThemeColors;
 }) {
   const { presenceData } = usePresenceListener(PRESENCE_CHANNEL);
@@ -117,6 +121,7 @@ function PresenceAwareThread({
             currentUserId={currentUserId}
             onlineUserIds={onlineUserIds}
             phoneVerified={phoneVerified}
+            isBlocked={isBlocked}
             themeColors={themeColors}
           />
         </ChannelProvider>
@@ -134,6 +139,7 @@ export function ConversationPageClient({
   conversation,
   currentUserId,
   phoneVerified,
+  isBlocked,
   themeColors,
   hasCustomTheme,
   themeStyle,
@@ -141,7 +147,7 @@ export function ConversationPageClient({
   const ablyReady = useAblyReady();
   const [liveConversations, setLiveConversations] = useState(conversations);
 
-  // Refresh sidebar on focus and periodically
+  // Refresh sidebar on focus, periodically, and on real-time chat notifications
   useEffect(() => {
     const refresh = () => getConversations().then(setLiveConversations);
     const handleFocus = () => refresh();
@@ -152,6 +158,20 @@ export function ConversationPageClient({
       clearInterval(interval);
     };
   }, []);
+
+  // Subscribe to chat-notify channel for instant conversation list updates
+  useEffect(() => {
+    if (!ablyReady || !currentUserId) return;
+    const client = getAblyRealtimeClient();
+    const channel = client.channels.get(`chat-notify:${currentUserId}`);
+    const handler = () => {
+      getConversations().then(setLiveConversations);
+    };
+    channel.subscribe("new", handler);
+    return () => {
+      channel.unsubscribe("new", handler);
+    };
+  }, [ablyReady, currentUserId]);
 
   return (
     <main
@@ -190,6 +210,7 @@ export function ConversationPageClient({
             conversation={conversation}
             currentUserId={currentUserId}
             phoneVerified={phoneVerified}
+            isBlocked={isBlocked}
             themeColors={themeColors}
           />
         ) : (

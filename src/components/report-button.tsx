@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ReportModal } from "@/components/report-modal";
 
 interface ReportButtonProps {
-  contentType: "post" | "comment" | "profile";
+  contentType: "post" | "comment" | "profile" | "conversation";
   contentId: string;
   label?: string;
 }

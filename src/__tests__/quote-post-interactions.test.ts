@@ -38,6 +38,11 @@ vi.mock("next/cache", () => ({
   revalidatePath: (...args: unknown[]) => mockRevalidatePath(...args),
 }));
 
+vi.mock("@/lib/referral", () => ({
+  awardReferralFirstPostBonus: vi.fn(),
+  checkStarsMilestone: vi.fn(),
+}));
+
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notifications";

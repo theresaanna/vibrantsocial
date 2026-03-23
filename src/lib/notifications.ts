@@ -19,8 +19,8 @@ interface CreateNotificationParams {
 export async function createNotification(params: CreateNotificationParams) {
   const { type, actorId, targetUserId, postId, commentId, messageId, repostId, tagId } = params;
 
-  // Don't notify yourself
-  if (actorId === targetUserId) return;
+  // Don't notify yourself (except system notifications like milestones)
+  if (actorId === targetUserId && type !== "STARS_MILESTONE") return;
 
   // Don't notify if a block exists between the two users
   const block = await prisma.block.findFirst({
@@ -108,6 +108,8 @@ export async function createNotification(params: CreateNotificationParams) {
       FRIEND_REQUEST: "sent you a friend request",
       NEW_POST: "published a new post",
       TAG_POST: "posted in a tag you follow",
+      REFERRAL_SIGNUP: "joined using your referral link! You earned 50 stars",
+      STARS_MILESTONE: "You have 500+ stars! Redeem them for a free month of premium",
     };
     const body = `${actorName} ${typeText[type] || "sent you a notification"}`;
     const url = postId ? `/notifications` : "/notifications";
