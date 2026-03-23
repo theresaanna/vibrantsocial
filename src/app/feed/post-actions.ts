@@ -17,6 +17,7 @@ import {
 import { extractTagsFromNames } from "@/lib/tags";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { notifyPostSubscribers } from "@/lib/subscription-notifications";
+import { checkStarsMilestone } from "@/lib/referral";
 
 interface ActionState {
   success: boolean;
@@ -143,6 +144,7 @@ export async function toggleLike(
       data: { postId, userId: session.user.id },
     });
     await prisma.user.update({ where: { id: session.user.id }, data: { stars: { increment: 1 } } });
+    await checkStarsMilestone(session.user.id);
 
     const post = await prisma.post.findUnique({
       where: { id: postId },
@@ -241,6 +243,7 @@ export async function toggleRepost(
       data: { postId, userId: session.user.id },
     });
     await prisma.user.update({ where: { id: session.user.id }, data: { stars: { increment: 1 } } });
+    await checkStarsMilestone(session.user.id);
 
     const post = await prisma.post.findUnique({
       where: { id: postId },
@@ -300,6 +303,7 @@ export async function createQuoteRepost(
     data: { postId, userId: session.user.id, content, isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly },
   });
   await prisma.user.update({ where: { id: session.user.id }, data: { stars: { increment: 1 } } });
+  await checkStarsMilestone(session.user.id);
 
   // Attach tags (skip for sensitive/graphic; NSFW can have tags)
   const rawTags = formData.get("tags") as string;
@@ -614,6 +618,7 @@ export async function createComment(
     },
   });
   await prisma.user.update({ where: { id: session.user.id }, data: { stars: { increment: 1 } } });
+  await checkStarsMilestone(session.user.id);
 
   // Notify post author about the comment
   const post = await prisma.post.findUnique({
@@ -749,6 +754,7 @@ export async function toggleRepostLike(
       data: { repostId, userId: session.user.id },
     });
     await prisma.user.update({ where: { id: session.user.id }, data: { stars: { increment: 1 } } });
+    await checkStarsMilestone(session.user.id);
 
     const repost = await prisma.repost.findUnique({
       where: { id: repostId },
@@ -859,6 +865,7 @@ export async function createRepostComment(
     },
   });
   await prisma.user.update({ where: { id: session.user.id }, data: { stars: { increment: 1 } } });
+  await checkStarsMilestone(session.user.id);
 
   // Notify quote post author
   const repost = await prisma.repost.findUnique({

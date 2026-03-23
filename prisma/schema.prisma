@@ -76,7 +76,15 @@ model User {
   premiumExpiresAt      DateTime?
 
   // Stars (interaction points)
-  stars Int @default(0)
+  stars      Int     @default(0)
+  starsSpent Int     @default(0)
+
+  // Referral program
+  referralCode      String    @unique @default(cuid())
+  referredById      String?
+  referralBonusPaid Boolean   @default(false)
+  referredBy        User?     @relation("referrals", fields: [referredById], references: [id])
+  referrals         User[]    @relation("referrals")
 
   // Phone verification
   phoneNumber   String?
@@ -627,6 +635,8 @@ enum NotificationType {
   NEW_POST
   TAG_POST
   CONTENT_MODERATION
+  REFERRAL_SIGNUP
+  STARS_MILESTONE
 }
 
 model Notification {
