@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { FeedContent } from "./feed-content";
 import { ListFeedContent } from "./list-feed-content";
 import { FeedSkeleton } from "@/components/feed-skeleton";
+import { FeedTabs } from "@/components/feed-tabs";
 import { getUserLists } from "@/app/lists/actions";
 
 export const metadata: Metadata = {
@@ -30,11 +31,12 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
+      <FeedTabs lists={listSummaries} activeListId={activeListId} />
       <Suspense fallback={<FeedSkeleton />}>
         {activeListId ? (
-          <ListFeedContent userId={session.user.id} listId={activeListId} lists={listSummaries} />
+          <ListFeedContent userId={session.user.id} listId={activeListId} />
         ) : (
-          <FeedContent userId={session.user.id} lists={listSummaries} />
+          <FeedContent userId={session.user.id} />
         )}
       </Suspense>
     </main>
