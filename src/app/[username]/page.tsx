@@ -616,7 +616,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                   </span>
                 )}
                 {user._count.userLists > 0 && (
-                  <Link href="/lists" className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
+                  <Link href={`/${user.username}/lists`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
                     <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
                       {user._count.userLists}
                     </span>{" "}
