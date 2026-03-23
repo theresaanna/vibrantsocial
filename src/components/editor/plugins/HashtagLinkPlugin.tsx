@@ -5,7 +5,9 @@ import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext
 import { TextNode } from "lexical";
 import { $createHashtagNode } from "../nodes/HashtagNode";
 
-const HASHTAG_REGEX = /(?<![a-zA-Z0-9])#([a-zA-Z0-9][a-zA-Z0-9-]{0,49})/;
+// Only match hashtags followed by whitespace or punctuation so we don't
+// convert while the user is still typing (e.g. "#t" → HashtagNode too early).
+const HASHTAG_REGEX = /(?<![a-zA-Z0-9])#([a-zA-Z0-9][a-zA-Z0-9-]{0,49})(?=[\s,.!?;:)\]}])/;
 
 /**
  * Lexical plugin that converts plain-text #hashtags in TextNodes into
