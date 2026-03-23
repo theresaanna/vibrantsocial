@@ -25,9 +25,9 @@ export const PROFILE_FRAMES: FrameDefinition[] = [
   { id: "neon-4", name: "Neon Ring", src: "/frames/neon-4.svg", category: "neon" },
   { id: "neon-5", name: "Neon Flower", src: "/frames/neon-5.svg", category: "neon" },
   { id: "decorative-1", name: "Frame 1", src: "/frames/frame1.svg", category: "decorative", scaleX: 1.15, scaleY: 0.92, offsetX: 3, offsetY: 3 },
-  { id: "decorative-2", name: "Frame 2", src: "/frames/frame2.svg", category: "decorative", frameScale: 1.8 },
+  { id: "decorative-2", name: "Frame 2", src: "/frames/frame2.svg", category: "decorative", frameScale: 1.5 },
   { id: "decorative-3", name: "Frame 3", src: "/frames/frame3.svg", category: "decorative", scaleX: 1.18, scaleY: 0.9, offsetX: 1, offsetY: 1 },
-  { id: "decorative-4", name: "Frame 4", src: "/frames/frame4.svg", category: "decorative", frameScale: 2.0 },
+  { id: "decorative-4", name: "Frame 4", src: "/frames/frame4.svg", category: "decorative", frameScale: 1.6 },
   { id: "decorative-5", name: "Frame 5", src: "/frames/frame5.svg", category: "decorative", scaleX: 1.15, scaleY: 0.92 },
 ];
 
