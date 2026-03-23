@@ -7,6 +7,7 @@ import { PostComposer } from "@/components/post-composer";
 import { FeedList } from "@/components/feed-list";
 import { fetchSinglePost, fetchNewFeedItems } from "@/app/feed/feed-actions";
 import { fetchNewListFeedItems } from "@/app/lists/actions";
+import { FeedTabs } from "@/components/feed-tabs";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FeedItem = { type: "post" | "repost"; data: any; date: string };
@@ -25,6 +26,7 @@ interface FeedClientProps {
   hasEmail: boolean;
   isPremium: boolean;
   listId?: string;
+  lists?: { id: string; name: string }[];
 }
 
 export function FeedClient({
@@ -39,6 +41,7 @@ export function FeedClient({
   hasEmail,
   isPremium,
   listId,
+  lists = [],
 }: FeedClientProps) {
   const [newItems, setNewItems] = useState<FeedItem[]>([]);
   const newestDateRef = useRef<string>(
@@ -106,6 +109,7 @@ export function FeedClient({
         isAgeVerified={ageVerified}
         onPostCreated={handlePostCreated}
       />
+      <FeedTabs lists={lists} />
       <FeedList
         initialItems={initialItems}
         initialHasMore={initialHasMore}

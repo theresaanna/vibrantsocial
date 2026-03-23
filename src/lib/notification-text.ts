@@ -30,6 +30,8 @@ export function getNotificationText(type: NotificationType): string {
       return "joined using your referral link! You earned 50 stars.";
     case "STARS_MILESTONE":
       return "You have 500+ stars! Redeem them for a free month of premium.";
+    case "LIST_ADD":
+      return "added you to a list";
     default:
       return "";
   }

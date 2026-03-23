@@ -68,8 +68,7 @@ export function AddToListButton({ targetUserId, lists: initialLists }: AddToList
     createAction(formData);
   };
 
-  // If createState changed to success, we need to reload — simplest approach
-  const needsReload = createState.success;
+  const createSuccess = createState.success;
 
   return (
     <>
@@ -96,7 +95,7 @@ export function AddToListButton({ targetUserId, lists: initialLists }: AddToList
             Add to Lists
           </h2>
 
-          {lists.length === 0 && !needsReload ? (
+          {lists.length === 0 && !createSuccess ? (
             <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
               You don&apos;t have any lists yet. Create one below.
             </p>
@@ -144,9 +143,9 @@ export function AddToListButton({ targetUserId, lists: initialLists }: AddToList
             <p className="mb-3 text-xs text-red-500">{createState.message}</p>
           )}
 
-          {needsReload && (
+          {createSuccess && (
             <p className="mb-3 text-xs text-green-600 dark:text-green-400">
-              List created! Refresh the page to see it here.
+              List created successfully.
             </p>
           )}
 

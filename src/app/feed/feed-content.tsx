@@ -12,7 +12,12 @@ import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
  * Async server component that fetches all feed data.
  * Designed to be wrapped in <Suspense> so the page shell streams immediately.
  */
-export async function FeedContent({ userId }: { userId: string }) {
+interface ListSummary {
+  id: string;
+  name: string;
+}
+
+export async function FeedContent({ userId, lists }: { userId: string; lists: ListSummary[] }) {
   // Phase 1: currentUser + cached followingIds + closeFriendOf + blockedIds in parallel
   const [currentUser, allFollowingIds, closeFriendOfIds, blockedIds] = await Promise.all([
     prisma.user.findUnique({
@@ -134,6 +139,7 @@ export async function FeedContent({ userId }: { userId: string }) {
       showNsfwContent={showNsfwContent}
       hasEmail={!!currentUser.email}
       isPremium={currentUser.tier === "premium"}
+      lists={lists}
     />
   );
 }
