@@ -76,7 +76,15 @@ model User {
   premiumExpiresAt      DateTime?
 
   // Stars (interaction points)
-  stars Int @default(0)
+  stars      Int     @default(0)
+  starsSpent Int     @default(0)
+
+  // Referral program
+  referralCode      String    @unique @default(cuid())
+  referredById      String?
+  referralBonusPaid Boolean   @default(false)
+  referredBy        User?     @relation("referrals", fields: [referredById], references: [id])
+  referrals         User[]    @relation("referrals")
 
   // Phone verification
   phoneNumber   String?
@@ -135,6 +143,7 @@ model User {
   // Content moderation
   quarantinedUploads    QuarantinedUpload[]
   contentViolations     ContentViolation[]
+  contentWarnings       Int       @default(0)
   contentStrikes        Int       @default(0)
   suspended             Boolean   @default(false)
   suspendedAt           DateTime?
@@ -153,6 +162,10 @@ model User {
   // Blocks
   blockedUsers Block[] @relation("blocker")
   blockedBy    Block[] @relation("blocked")
+
+  // User lists
+  userLists       UserList[]       @relation("userListOwner")
+  userListMembers UserListMember[] @relation("userListMembership")
 
   // Tag subscriptions
   tagSubscriptions TagSubscription[]
@@ -627,6 +640,8 @@ enum NotificationType {
   NEW_POST
   TAG_POST
   CONTENT_MODERATION
+  REFERRAL_SIGNUP
+  STARS_MILESTONE
 }
 
 model Notification {
@@ -730,6 +745,36 @@ model PremiumWaitlist {
   id        String   @id @default(cuid())
   email     String   @unique
   createdAt DateTime @default(now())
+}
+
+// User lists (curated feeds)
+
+model UserList {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner   User             @relation("userListOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members UserListMember[]
+
+  @@unique([ownerId, name])
+  @@index([ownerId])
+}
+
+model UserListMember {
+  id        String   @id @default(cuid())
+  listId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  list UserList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  user User     @relation("userListMembership", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, userId])
+  @@index([listId])
+  @@index([userId])
 }
 
 model PostAudience {

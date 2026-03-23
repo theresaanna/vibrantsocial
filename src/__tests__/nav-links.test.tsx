@@ -27,10 +27,11 @@ describe("NavLinks", () => {
   it("renders all nav links", () => {
     render(<NavLinks username="testuser" />);
     expect(screen.getByLabelText("Search")).toBeInTheDocument();
-    expect(screen.getByLabelText("Feed")).toBeInTheDocument();
+    expect(screen.getByLabelText("Home")).toBeInTheDocument();
     expect(screen.getByLabelText("Compose")).toBeInTheDocument();
     expect(screen.getByLabelText("Likes")).toBeInTheDocument();
     expect(screen.getByLabelText("Bookmarks")).toBeInTheDocument();
+    expect(screen.getByLabelText("Lists")).toBeInTheDocument();
     expect(screen.getByLabelText("Close Friends")).toBeInTheDocument();
     expect(screen.getByLabelText("Communities")).toBeInTheDocument();
     expect(screen.getByLabelText("Profile")).toBeInTheDocument();
@@ -42,7 +43,7 @@ describe("NavLinks", () => {
       "href",
       "/search"
     );
-    expect(screen.getByLabelText("Feed")).toHaveAttribute("href", "/feed");
+    expect(screen.getByLabelText("Home")).toHaveAttribute("href", "/feed");
     expect(screen.getByLabelText("Compose")).toHaveAttribute(
       "href",
       "/compose"
@@ -51,6 +52,10 @@ describe("NavLinks", () => {
     expect(screen.getByLabelText("Bookmarks")).toHaveAttribute(
       "href",
       "/bookmarks"
+    );
+    expect(screen.getByLabelText("Lists")).toHaveAttribute(
+      "href",
+      "/lists"
     );
     expect(screen.getByLabelText("Close Friends")).toHaveAttribute(
       "href",
@@ -107,7 +112,7 @@ describe("NavLinks", () => {
   it("highlights Feed link when on /feed", () => {
     vi.mocked(usePathname).mockReturnValue("/feed");
     render(<NavLinks username="testuser" />);
-    const feedLink = screen.getByLabelText("Feed");
+    const feedLink = screen.getByLabelText("Home");
     // Active state: class includes "text-purple-500" (not as hover: variant)
     expect(feedLink.className).toMatch(/(^| )text-purple-500( |$)/);
   });
@@ -115,7 +120,7 @@ describe("NavLinks", () => {
   it("does not highlight Feed link when on different page", () => {
     vi.mocked(usePathname).mockReturnValue("/likes");
     render(<NavLinks username="testuser" />);
-    const feedLink = screen.getByLabelText("Feed");
+    const feedLink = screen.getByLabelText("Home");
     // Inactive: should have text-zinc-600, not standalone text-purple-500
     expect(feedLink.className).toContain("text-zinc-600");
   });

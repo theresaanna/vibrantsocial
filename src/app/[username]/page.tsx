@@ -23,6 +23,8 @@ import { generateAdaptiveTheme } from "@/lib/profile-themes";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
 import { buildProfilePostsContentFilter } from "./profile-queries";
+import { getUserListMemberships } from "@/app/lists/actions";
+import { AddToListButton } from "@/components/add-to-list-button";
 import { PremiumCrown } from "@/components/premium-crown";
 import { ProfileSparklefall } from "@/components/profile-sparklefall";
 import { StyledName } from "@/components/styled-name";
@@ -152,9 +154,10 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   let friendshipStatus: FriendshipStatus = "none";
   let friendRequestId: string | undefined;
   let isSubscribed = false;
+  let listMemberships: { id: string; name: string; isMember: boolean }[] = [];
 
   if (currentUserId && !isOwnProfile) {
-    const [follow, friendship, subscribed] = await Promise.all([
+    const [follow, friendship, subscribed, memberships] = await Promise.all([
       prisma.follow.findUnique({
         where: {
           followerId_followingId: {
@@ -165,11 +168,13 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       }),
       getFriendshipStatus(user.id),
       isSubscribedToUser(user.id),
+      blockStatus === "none" ? getUserListMemberships(user.id) : Promise.resolve([]),
     ]);
     isFollowing = !!follow;
     friendshipStatus = friendship.status;
     friendRequestId = friendship.requestId;
     isSubscribed = subscribed;
+    listMemberships = memberships;
   }
 
   if (currentUserId) {
@@ -535,6 +540,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                       <FriendButton userId={user.id} friendshipStatus={friendshipStatus} requestId={friendRequestId} />
                       {/* Secondary actions — smaller, subtler */}
                       <SubscribeButton userId={user.id} isSubscribed={isSubscribed} size="sm" />
+                      <AddToListButton targetUserId={user.id} lists={listMemberships} />
                     </>
                   )}
                   <ProfileShareButton username={user.username!} hasCustomTheme={hasCustomTheme} size="sm" />

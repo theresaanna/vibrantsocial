@@ -6,6 +6,7 @@ import { AddEmailBanner } from "@/components/add-email-banner";
 import { PostComposer } from "@/components/post-composer";
 import { FeedList } from "@/components/feed-list";
 import { fetchSinglePost, fetchNewFeedItems } from "@/app/feed/feed-actions";
+import { fetchNewListFeedItems } from "@/app/lists/actions";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FeedItem = { type: "post" | "repost"; data: any; date: string };
@@ -23,6 +24,7 @@ interface FeedClientProps {
   showNsfwContent: boolean;
   hasEmail: boolean;
   isPremium: boolean;
+  listId?: string;
 }
 
 export function FeedClient({
@@ -36,6 +38,7 @@ export function FeedClient({
   showNsfwContent,
   hasEmail,
   isPremium,
+  listId,
 }: FeedClientProps) {
   const [newItems, setNewItems] = useState<FeedItem[]>([]);
   const newestDateRef = useRef<string>(
@@ -63,7 +66,9 @@ export function FeedClient({
       if (document.hidden) return;
 
       try {
-        const items = await fetchNewFeedItems(newestDateRef.current);
+        const items = listId
+          ? await fetchNewListFeedItems(listId, newestDateRef.current)
+          : await fetchNewFeedItems(newestDateRef.current);
         if (items.length > 0) {
           setNewItems((prev) => {
             const existingIds = new Set(
@@ -88,7 +93,7 @@ export function FeedClient({
     }, POLL_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [listId]);
 
   return (
     <>

@@ -76,6 +76,18 @@ export function NavLinks({ username }: { username?: string | null }) {
       ),
     },
     {
+      href: "/lists",
+      label: "Lists",
+      matchPrefix: true,
+      color: "hover:bg-indigo-50 hover:text-indigo-500 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-500",
+      activeColor: "bg-indigo-50 text-indigo-500 dark:bg-indigo-900/20 dark:text-indigo-500",
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+        </svg>
+      ),
+    },
+    {
       href: "/close-friends",
       label: "Close Friends",
       matchPrefix: true,

@@ -59,4 +59,6 @@ export const cacheKeys = {
   allTagCloud: () => `tags:all-cloud`,
   tagPostCount: (tagName: string) => `tag:${tagName}:count`,
   userBlockedIds: (userId: string) => `user:${userId}:blocked`,
+  userLists: (userId: string) => `user:${userId}:lists`,
+  userListMembers: (listId: string) => `list:${listId}:members`,
 } as const;
