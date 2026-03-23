@@ -31,6 +31,7 @@ export function FeedTabs({ lists, activeListId, activeListInfo }: {
     <div className="mb-4 flex gap-1 overflow-x-auto rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
       <Link
         href="/feed"
+        prefetch={false}
         className={`${baseClass} ${!activeListId ? activeClass : inactiveClass} shrink-0`}
       >
         Feed
@@ -39,6 +40,7 @@ export function FeedTabs({ lists, activeListId, activeListInfo }: {
         <Link
           key={list.id}
           href={`/feed?list=${list.id}`}
+          prefetch={false}
           className={`${baseClass} ${activeListId === list.id ? activeClass : inactiveClass} shrink-0`}
         >
           {tabLabel(list)}
