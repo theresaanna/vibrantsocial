@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useActionState } from "react";
+import { useState, useEffect, useRef, useActionState } from "react";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -28,6 +28,8 @@ import { ContentFlagsInfoModal } from "@/components/content-flags-info-modal";
 import { AudiencePicker } from "@/components/audience-picker";
 import { PremiumCrown } from "@/components/premium-crown";
 import { DraftPlugin, ClearDraftButton, clearDraft, type DraftSaveStatus } from "@/components/editor/plugins/DraftPlugin";
+import { extractFirstUrl } from "@/lib/lexical-text";
+import { LinkPreviewCard } from "@/components/link-preview-card";
 
 function ClearOnSuccess({
   shouldClear,
@@ -54,10 +56,11 @@ interface PostComposerProps {
   phoneVerified: boolean;
   isOldEnough: boolean;
   isPremium?: boolean;
+  isAgeVerified?: boolean;
   onPostCreated?: (postId: string) => void;
 }
 
-export function PostComposer({ phoneVerified, isOldEnough, isPremium, onPostCreated }: PostComposerProps) {
+export function PostComposer({ phoneVerified, isOldEnough, isPremium, isAgeVerified, onPostCreated }: PostComposerProps) {
   const [editorJson, setEditorJson] = useState("");
   const [shouldClear, setShouldClear] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
@@ -73,6 +76,23 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, onPostCrea
   const [slug, setSlug] = useState("");
   const [showSlugInput, setShowSlugInput] = useState(false);
   const [draftStatus, setDraftStatus] = useState<DraftSaveStatus>("idle");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const previewDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced URL extraction for live link preview
+  useEffect(() => {
+    if (previewDebounce.current) clearTimeout(previewDebounce.current);
+    if (!editorJson) {
+      setPreviewUrl(null);
+      return;
+    }
+    previewDebounce.current = setTimeout(() => {
+      setPreviewUrl(extractFirstUrl(editorJson));
+    }, 500);
+    return () => {
+      if (previewDebounce.current) clearTimeout(previewDebounce.current);
+    };
+  }, [editorJson]);
 
   const [state, formAction, isPending] = useActionState(
     async (
@@ -92,6 +112,7 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, onPostCrea
         setIsLoggedInOnly(false);
         setSlug("");
         setShowSlugInput(false);
+        setPreviewUrl(null);
         clearDraft("compose");
         if (result.postId) onPostCreated?.(result.postId);
       }
@@ -183,6 +204,11 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, onPostCrea
             <ClearDraftButton draftKey="compose" />
           </div>
         </LexicalComposer>
+        {previewUrl && (
+          <div className="border-t border-zinc-200 px-4 py-2 dark:border-zinc-700">
+            <LinkPreviewCard url={previewUrl} />
+          </div>
+        )}
         <div className="flex min-h-[48px] items-center">
           <div className="flex-1">
             <TagInput
@@ -248,7 +274,7 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, onPostCrea
             Content Warnings
           </button>
           {showContentWarnings && (
-            <div className="mt-2 flex items-center gap-4">
+            <div className="mt-2 flex flex-wrap items-center gap-4">
               <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
                 <input
                   type="checkbox"
@@ -260,28 +286,52 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, onPostCrea
                 />
                 NSFW
               </label>
-              <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
-                <input
-                  type="checkbox"
-                  name="isSensitive"
-                  value="true"
-                  className="rounded"
-                  checked={isSensitive}
-                  onChange={(e) => setIsSensitive(e.target.checked)}
-                />
-                Sensitive
-              </label>
-              <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
-                <input
-                  type="checkbox"
-                  name="isGraphicNudity"
-                  value="true"
-                  className="rounded"
-                  checked={isGraphicNudity}
-                  onChange={(e) => setIsGraphicNudity(e.target.checked)}
-                />
-                Graphic/Explicit
-              </label>
+              {isAgeVerified ? (
+                <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+                  <input
+                    type="checkbox"
+                    name="isSensitive"
+                    value="true"
+                    className="rounded"
+                    checked={isSensitive}
+                    onChange={(e) => setIsSensitive(e.target.checked)}
+                  />
+                  Sensitive
+                </label>
+              ) : (
+                <span className="flex items-center gap-1.5 text-sm text-zinc-400 dark:text-zinc-500">
+                  <input type="checkbox" className="rounded opacity-50" disabled />
+                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0110 0v4" />
+                  </svg>
+                  Sensitive
+                  <Link href="/age-verify" className="text-xs text-indigo-500 hover:text-indigo-600 dark:text-indigo-400">(verify age)</Link>
+                </span>
+              )}
+              {isAgeVerified ? (
+                <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+                  <input
+                    type="checkbox"
+                    name="isGraphicNudity"
+                    value="true"
+                    className="rounded"
+                    checked={isGraphicNudity}
+                    onChange={(e) => setIsGraphicNudity(e.target.checked)}
+                  />
+                  Graphic/Explicit
+                </label>
+              ) : (
+                <span className="flex items-center gap-1.5 text-sm text-zinc-400 dark:text-zinc-500">
+                  <input type="checkbox" className="rounded opacity-50" disabled />
+                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0110 0v4" />
+                  </svg>
+                  Graphic/Explicit
+                  <Link href="/age-verify" className="text-xs text-indigo-500 hover:text-indigo-600 dark:text-indigo-400">(verify age)</Link>
+                </span>
+              )}
               <button
                 type="button"
                 onClick={() => setShowInfoModal(true)}
@@ -363,7 +413,7 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, onPostCrea
                   ? `Custom Audience (${customAudienceIds.length})`
                   : "Custom Audience"}
               </button>
-              <PremiumCrown />
+              <PremiumCrown href="/premium" />
             </span>
             <LoggedInOnlyToggle
               checked={isLoggedInOnly}

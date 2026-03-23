@@ -80,6 +80,11 @@ vi.mock("@/lib/tag-subscription-notifications", () => ({
   notifyTagSubscribers: vi.fn(),
 }));
 
+vi.mock("@/lib/referral", () => ({
+  awardReferralFirstPostBonus: vi.fn(),
+  checkStarsMilestone: vi.fn(),
+}));
+
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";

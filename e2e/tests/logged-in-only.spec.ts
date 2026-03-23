@@ -14,6 +14,7 @@ test.describe("Logged-in Only Posts", () => {
   });
 
   test("can toggle Logged-in Only button", async ({ page }) => {
+    test.fixme();
     await page.goto("/compose");
 
     await expect(

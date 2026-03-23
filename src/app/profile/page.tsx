@@ -63,6 +63,8 @@ export default async function ProfilePage() {
       isProfilePublic: true,
       tier: true,
       stars: true,
+      starsSpent: true,
+      referralCode: true,
     },
   });
 
@@ -140,6 +142,8 @@ export default async function ProfilePage() {
           isCredentialsUser={isCredentialsUser}
           isPremium={isPremium}
           stars={user?.stars ?? 0}
+          starsSpent={user?.starsSpent ?? 0}
+          referralCode={user?.referralCode ?? ""}
           backgrounds={backgrounds}
           userEmail={user?.email ?? null}
         />

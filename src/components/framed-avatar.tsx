@@ -15,6 +15,7 @@ interface FramedAvatarProps {
 // When a frame is shown, the avatar shrinks to this ratio of the
 // container so the frame ring sits outside the photo circle.
 const AVATAR_INSET = 0.72;
+const FRAME_SCALE = 1.3;
 
 export function FramedAvatar({
   src,
@@ -54,21 +55,28 @@ export function FramedAvatar({
           {initial || "?"}
         </div>
       )}
-      {showFrame && (
-        <img
-          src={frame.src}
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none absolute"
-          style={{
-            width: size,
-            height: size,
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-          }}
-        />
-      )}
+      {showFrame && (() => {
+        const scale = frame.frameScale ?? FRAME_SCALE;
+        const sx = frame.scaleX ?? 1;
+        const sy = frame.scaleY ?? 1;
+        const ox = frame.offsetX ?? 0;
+        const oy = frame.offsetY ?? 0;
+        return (
+          <img
+            src={frame.src}
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none absolute"
+            style={{
+              width: size * scale,
+              height: size * scale,
+              top: "50%",
+              left: "50%",
+              transform: `translate(calc(-50% + ${ox}%) , calc(-50% + ${oy}%)) scale(${sx}, ${sy})`,
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }

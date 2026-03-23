@@ -130,6 +130,11 @@ vi.mock("@/lib/slugs", () => ({
   validateSlug: vi.fn((s: string) => s),
 }));
 
+vi.mock("@/lib/referral", () => ({
+  awardReferralFirstPostBonus: vi.fn(),
+  checkStarsMilestone: vi.fn(),
+}));
+
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { requirePhoneVerification } from "@/lib/phone-gate";

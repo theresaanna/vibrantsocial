@@ -5,11 +5,30 @@ import type { MessageData } from "@/types/chat";
 
 let channelCallback: (event: { name: string; data: Record<string, string | null> }) => void;
 
-vi.mock("ably/react", () => ({
-  useChannel: vi.fn((_channelName: string, cb: (event: { name: string; data: Record<string, string | null> }) => void) => {
-    channelCallback = cb;
-    return { channel: null };
-  }),
+vi.mock("@/app/providers", () => ({
+  useAblyReady: vi.fn(() => true),
+}));
+
+vi.mock("@/lib/ably", () => ({
+  getAblyRealtimeClient: vi.fn(() => ({
+    channels: {
+      get: vi.fn(() => ({
+        subscribe: vi.fn((cbOrEvent: string | ((...args: unknown[]) => void), maybeCb?: (...args: unknown[]) => void) => {
+          // When called with just a callback (primary channel), capture it
+          if (typeof cbOrEvent === "function") {
+            channelCallback = cbOrEvent as typeof channelCallback;
+          }
+          // When called with event name + callback (notify channel), ignore
+          void maybeCb;
+        }),
+        unsubscribe: vi.fn(),
+      })),
+    },
+  })),
+}));
+
+vi.mock("@/app/chat/actions", () => ({
+  getMessages: vi.fn(() => Promise.resolve({ messages: [], nextCursor: null })),
 }));
 
 const makeSender = () => JSON.stringify({
@@ -30,6 +49,7 @@ const makeMessage = (id: string, content = "hello"): MessageData => ({
   mediaType: null,
   mediaFileName: null,
   mediaFileSize: null,
+  replyTo: null,
   editedAt: null,
   deletedAt: null,
   createdAt: new Date("2024-01-01T10:00:00Z"),
@@ -41,6 +61,7 @@ const makeMessage = (id: string, content = "hello"): MessageData => ({
     name: "Alice",
     avatar: null,
     image: null,
+    profileFrameId: null,
   },
 });
 
@@ -51,19 +72,19 @@ describe("useChatMessages", () => {
 
   it("initializes with provided messages", () => {
     const initial = [makeMessage("m1"), makeMessage("m2")];
-    const { result } = renderHook(() => useChatMessages("conv1", initial));
+    const { result } = renderHook(() => useChatMessages("conv1", initial, "currentUser"));
     expect(result.current.messages).toHaveLength(2);
     expect(result.current.messages[0].id).toBe("m1");
     expect(result.current.messages[1].id).toBe("m2");
   });
 
   it("returns correct channelName", () => {
-    const { result } = renderHook(() => useChatMessages("conv1", []));
+    const { result } = renderHook(() => useChatMessages("conv1", [], "currentUser"));
     expect(result.current.channelName).toBe("chat:conv1");
   });
 
   it("adds message on 'new' event", () => {
-    const { result } = renderHook(() => useChatMessages("conv1", []));
+    const { result } = renderHook(() => useChatMessages("conv1", [], "currentUser"));
 
     act(() => {
       channelCallback({
@@ -88,7 +109,7 @@ describe("useChatMessages", () => {
 
   it("deduplicates messages with same ID", () => {
     const initial = [makeMessage("m1")];
-    const { result } = renderHook(() => useChatMessages("conv1", initial));
+    const { result } = renderHook(() => useChatMessages("conv1", initial, "currentUser"));
 
     act(() => {
       channelCallback({
@@ -111,7 +132,7 @@ describe("useChatMessages", () => {
 
   it("updates content and editedAt on 'edit' event", () => {
     const initial = [makeMessage("m1", "original")];
-    const { result } = renderHook(() => useChatMessages("conv1", initial));
+    const { result } = renderHook(() => useChatMessages("conv1", initial, "currentUser"));
 
     act(() => {
       channelCallback({
@@ -130,7 +151,7 @@ describe("useChatMessages", () => {
 
   it("does not modify messages on edit with unknown ID", () => {
     const initial = [makeMessage("m1", "original")];
-    const { result } = renderHook(() => useChatMessages("conv1", initial));
+    const { result } = renderHook(() => useChatMessages("conv1", initial, "currentUser"));
 
     act(() => {
       channelCallback({
@@ -148,7 +169,7 @@ describe("useChatMessages", () => {
 
   it("sets deletedAt on 'delete' event", () => {
     const initial = [makeMessage("m1")];
-    const { result } = renderHook(() => useChatMessages("conv1", initial));
+    const { result } = renderHook(() => useChatMessages("conv1", initial, "currentUser"));
 
     act(() => {
       channelCallback({
@@ -165,7 +186,7 @@ describe("useChatMessages", () => {
 
   it("updates reactions on 'reaction' event", () => {
     const initial = [makeMessage("m1")];
-    const { result } = renderHook(() => useChatMessages("conv1", initial));
+    const { result } = renderHook(() => useChatMessages("conv1", initial, "currentUser"));
 
     act(() => {
       channelCallback({
@@ -186,7 +207,7 @@ describe("useChatMessages", () => {
 
   it("does not modify other messages on 'reaction' event", () => {
     const initial = [makeMessage("m1"), makeMessage("m2")];
-    const { result } = renderHook(() => useChatMessages("conv1", initial));
+    const { result } = renderHook(() => useChatMessages("conv1", initial, "currentUser"));
 
     act(() => {
       channelCallback({
@@ -205,7 +226,7 @@ describe("useChatMessages", () => {
   });
 
   it("sets reactions to empty array for new messages", () => {
-    const { result } = renderHook(() => useChatMessages("conv1", []));
+    const { result } = renderHook(() => useChatMessages("conv1", [], "currentUser"));
 
     act(() => {
       channelCallback({
@@ -227,7 +248,7 @@ describe("useChatMessages", () => {
   });
 
   it("includes media fields on 'new' event with media", () => {
-    const { result } = renderHook(() => useChatMessages("conv1", []));
+    const { result } = renderHook(() => useChatMessages("conv1", [], "currentUser"));
 
     act(() => {
       channelCallback({
@@ -256,7 +277,7 @@ describe("useChatMessages", () => {
   });
 
   it("sets media fields to null on 'new' event without media", () => {
-    const { result } = renderHook(() => useChatMessages("conv1", []));
+    const { result } = renderHook(() => useChatMessages("conv1", [], "currentUser"));
 
     act(() => {
       channelCallback({

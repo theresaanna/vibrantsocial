@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { upload as blobUpload } from "@vercel/blob/client";
 import { VoiceRecorder } from "./voice-recorder";
 import { getChatFileLimitsHint, getLimitsForTier, type UserTier } from "@/lib/limits";
 import type { MessageData } from "@/types/chat";
@@ -20,6 +21,7 @@ interface MessageInputProps {
   onStopTyping: () => void;
   disabled?: boolean;
   phoneVerified?: boolean;
+  blockedMessage?: string;
   onEditLastMessage?: () => void;
   replyingTo?: MessageData | null;
   onCancelReply?: () => void;
@@ -32,6 +34,7 @@ export function MessageInput({
   onStopTyping,
   disabled,
   phoneVerified = true,
+  blockedMessage,
   onEditLastMessage,
   replyingTo,
   onCancelReply,
@@ -92,22 +95,48 @@ export function MessageInput({
           });
         } else {
           for (const file of selectedFiles) {
-            const formData = new FormData();
-            formData.append("file", file);
+            const mimeBase = file.type.split(";")[0].trim();
+            const isVideo = mimeBase.startsWith("video/");
 
-            const res = await fetch("/api/upload", { method: "POST", body: formData });
-            if (!res.ok) {
-              const err = await res.json();
-              setUploadError(err.error ?? `Upload failed for ${file.name}`);
-              return;
+            if (isVideo) {
+              // Use client-side Vercel Blob upload for videos to avoid
+              // the 4.5 MB serverless function body-size limit.
+              try {
+                const blob = await blobUpload(file.name, file, {
+                  access: "public",
+                  handleUploadUrl: "/api/upload/client",
+                  clientPayload: "video",
+                });
+                mediaList.push({
+                  url: blob.url,
+                  type: "video",
+                  fileName: file.name,
+                  fileSize: file.size,
+                });
+              } catch (err) {
+                setUploadError(
+                  err instanceof Error ? err.message : `Upload failed for ${file.name}`
+                );
+                return;
+              }
+            } else {
+              const formData = new FormData();
+              formData.append("file", file);
+
+              const res = await fetch("/api/upload", { method: "POST", body: formData });
+              if (!res.ok) {
+                const err = await res.json();
+                setUploadError(err.error ?? `Upload failed for ${file.name}`);
+                return;
+              }
+              const data = await res.json();
+              mediaList.push({
+                url: data.url,
+                type: data.fileType,
+                fileName: data.fileName,
+                fileSize: data.fileSize,
+              });
             }
-            const data = await res.json();
-            mediaList.push({
-              url: data.url,
-              type: data.fileType,
-              fileName: data.fileName,
-              fileSize: data.fileSize,
-            });
           }
         }
 
@@ -176,6 +205,16 @@ export function MessageInput({
             Verify your phone number
           </Link>{" "}
           to send messages.
+        </p>
+      </div>
+    );
+  }
+
+  if (blockedMessage) {
+    return (
+      <div className="border-t border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+        <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
+          {blockedMessage}
         </p>
       </div>
     );

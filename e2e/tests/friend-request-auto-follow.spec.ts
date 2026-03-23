@@ -79,7 +79,7 @@ test.describe("Friend Request Auto-Follow", () => {
 
     // Wait for profile to load
     await expect(
-      page.locator("h1", { hasText: TEST_USER_2.username })
+      page.locator("h1", { hasText: TEST_USER_2.displayName })
     ).toBeVisible({ timeout: 15000 });
 
     // Click "Add Friend" button
