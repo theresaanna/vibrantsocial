@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useActionState } from "react";
+import { useState, useEffect, useRef, useActionState } from "react";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -28,6 +28,8 @@ import { ContentFlagsInfoModal } from "@/components/content-flags-info-modal";
 import { AudiencePicker } from "@/components/audience-picker";
 import { PremiumCrown } from "@/components/premium-crown";
 import { DraftPlugin, ClearDraftButton, clearDraft, type DraftSaveStatus } from "@/components/editor/plugins/DraftPlugin";
+import { extractFirstUrl } from "@/lib/lexical-text";
+import { LinkPreviewCard } from "@/components/link-preview-card";
 
 function ClearOnSuccess({
   shouldClear,
@@ -74,6 +76,23 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, isAgeVerif
   const [slug, setSlug] = useState("");
   const [showSlugInput, setShowSlugInput] = useState(false);
   const [draftStatus, setDraftStatus] = useState<DraftSaveStatus>("idle");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const previewDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced URL extraction for live link preview
+  useEffect(() => {
+    if (previewDebounce.current) clearTimeout(previewDebounce.current);
+    if (!editorJson) {
+      setPreviewUrl(null);
+      return;
+    }
+    previewDebounce.current = setTimeout(() => {
+      setPreviewUrl(extractFirstUrl(editorJson));
+    }, 500);
+    return () => {
+      if (previewDebounce.current) clearTimeout(previewDebounce.current);
+    };
+  }, [editorJson]);
 
   const [state, formAction, isPending] = useActionState(
     async (
@@ -93,6 +112,7 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, isAgeVerif
         setIsLoggedInOnly(false);
         setSlug("");
         setShowSlugInput(false);
+        setPreviewUrl(null);
         clearDraft("compose");
         if (result.postId) onPostCreated?.(result.postId);
       }
@@ -184,6 +204,11 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, isAgeVerif
             <ClearDraftButton draftKey="compose" />
           </div>
         </LexicalComposer>
+        {previewUrl && (
+          <div className="border-t border-zinc-200 px-4 py-2 dark:border-zinc-700">
+            <LinkPreviewCard url={previewUrl} />
+          </div>
+        )}
         <div className="flex min-h-[48px] items-center">
           <div className="flex-1">
             <TagInput
