@@ -21,6 +21,8 @@ import { editorNodes } from "./nodes";
 import { Toolbar } from "./toolbar/Toolbar";
 import { AutoLinkPlugin } from "./plugins/AutoLinkPlugin";
 import { MentionsPlugin } from "./plugins/MentionsPlugin";
+import { HashtagPlugin } from "./plugins/HashtagPlugin";
+import { HashtagLinkPlugin } from "./plugins/HashtagLinkPlugin";
 
 import { DraftPlugin, ClearDraftButton } from "./plugins/DraftPlugin";
 
@@ -131,6 +133,8 @@ export function Editor({
           <TablePlugin />
           <TabIndentationPlugin />
           <MentionsPlugin />
+          <HashtagPlugin />
+          <HashtagLinkPlugin />
           {draftKey && <DraftPlugin draftKey={draftKey} />}
         </div>
         {draftKey && (
