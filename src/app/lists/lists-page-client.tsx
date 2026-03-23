@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { createList, deleteList } from "./actions";
+import { ShareListButton } from "@/components/share-list-button";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useState } from "react";
 
@@ -121,6 +122,7 @@ export function ListsPageClient({ lists }: { lists: ListItem[] }) {
                   {list._count.members} {list._count.members === 1 ? "member" : "members"}
                 </span>
               </div>
+              <ShareListButton listId={list.id} listName={list.name} />
               <Link
                 href={`/feed?list=${list.id}`}
                 className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-indigo-800 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"

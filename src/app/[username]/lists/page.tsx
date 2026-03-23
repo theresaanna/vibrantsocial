@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getListsForUser } from "@/app/lists/actions";
+import { ShareListButton } from "@/components/share-list-button";
 import Link from "next/link";
 
 interface UserListsPageProps {
@@ -57,23 +58,20 @@ export default async function UserListsPage({ params }: UserListsPageProps) {
           ) : (
             <div className="space-y-2">
               {lists.map((list) => (
-                <Link
+                <div
                   key={list.id}
-                  href={`/lists/${list.id}`}
                   className="flex items-center justify-between rounded-xl p-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
                 >
-                  <div>
+                  <Link href={`/lists/${list.id}`} className="min-w-0 flex-1">
                     <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                       {list.name}
                     </span>
                     <span className="ml-2 text-sm text-zinc-500 dark:text-zinc-400">
                       {list._count.members} {list._count.members === 1 ? "member" : "members"}
                     </span>
-                  </div>
-                  <svg className="h-4 w-4 text-zinc-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                </Link>
+                  </Link>
+                  <ShareListButton listId={list.id} listName={list.name} />
+                </div>
               ))}
             </div>
           )}

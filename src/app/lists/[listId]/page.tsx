@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { getListMembers, isSubscribedToList } from "../actions";
 import { ListMembersClient } from "./list-members-client";
 import { SubscribeListButton } from "./subscribe-list-button";
+import { ShareListButton } from "@/components/share-list-button";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -51,6 +52,7 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <ShareListButton listId={list.id} listName={list.name} />
           {!isOwner && (
             <SubscribeListButton listId={list.id} isSubscribed={isSubscribed} />
           )}
