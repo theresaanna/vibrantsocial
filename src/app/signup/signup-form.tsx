@@ -6,7 +6,7 @@ import { signup } from "./actions";
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function SignupForm() {
+export function SignupForm({ referralCode }: { referralCode?: string }) {
   const [state, formAction, isPending] = useActionState(signup, {
     success: false,
     message: "",
@@ -52,6 +52,9 @@ export function SignupForm() {
 
   return (
     <form action={formAction} className="space-y-4">
+      {referralCode && (
+        <input type="hidden" name="referralCode" value={referralCode} />
+      )}
       <div>
         <label
           htmlFor="email"

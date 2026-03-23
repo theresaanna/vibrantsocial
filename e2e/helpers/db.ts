@@ -31,9 +31,10 @@ export async function seedTestUser() {
 
     const passwordHash = await bcrypt.hash(TEST_USER.password, 12);
     const id = "e2e_" + Date.now().toString(36);
+    const referralCode = "e2e_ref_" + Date.now().toString(36);
     const result = await pool.query(
-      `INSERT INTO "User" (id, email, username, "passwordHash", "dateOfBirth", "phoneVerified", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, NOW(), NOW(), NOW())
+      `INSERT INTO "User" (id, email, username, "passwordHash", "dateOfBirth", "phoneVerified", "referralCode", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, NOW(), $6, NOW(), NOW())
        RETURNING id`,
       [
         id,
@@ -41,6 +42,7 @@ export async function seedTestUser() {
         TEST_USER.username,
         passwordHash,
         TEST_USER.dateOfBirth.toISOString(),
+        referralCode,
       ]
     );
     return result.rows[0];
@@ -60,9 +62,10 @@ export async function seedSecondTestUser() {
 
     const passwordHash = await bcrypt.hash(TEST_USER_2.password, 12);
     const id = "e2e2_" + Date.now().toString(36);
+    const referralCode2 = "e2e_ref2_" + Date.now().toString(36);
     const result = await pool.query(
-      `INSERT INTO "User" (id, email, username, "displayName", "passwordHash", "dateOfBirth", "phoneVerified", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW(), NOW())
+      `INSERT INTO "User" (id, email, username, "displayName", "passwordHash", "dateOfBirth", "phoneVerified", "referralCode", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7, NOW(), NOW())
        RETURNING id`,
       [
         id,
@@ -71,6 +74,7 @@ export async function seedSecondTestUser() {
         TEST_USER_2.displayName,
         passwordHash,
         TEST_USER_2.dateOfBirth.toISOString(),
+        referralCode2,
       ]
     );
     return result.rows[0];

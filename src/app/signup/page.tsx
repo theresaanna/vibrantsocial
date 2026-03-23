@@ -9,9 +9,15 @@ export const metadata: Metadata = {
   description: "Join VibrantSocial — social media for adults. No algorithms, just self expression.",
 };
 
-export default async function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ref?: string }>;
+}) {
   const session = await auth();
   if (session) redirect("/feed");
+
+  const { ref: referralCode } = await searchParams;
 
   return (
     <div className="flex min-h-[calc(100vh-57px)] items-center justify-center">
@@ -39,7 +45,7 @@ export default async function SignupPage() {
           jurisdiction.
         </div>
 
-        <SignupForm />
+        <SignupForm referralCode={referralCode} />
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">

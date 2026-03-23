@@ -8,6 +8,7 @@ import { AuthError } from "next-auth";
 import { autoFriendNewUser } from "@/lib/auto-friend";
 import { inngest } from "@/lib/inngest";
 import { sendEmailVerificationEmail } from "@/lib/email";
+import { awardReferralSignupStars } from "@/lib/referral";
 import { headers } from "next/headers";
 import { authLimiter, isRateLimited } from "@/lib/rate-limit";
 
@@ -111,6 +112,19 @@ export async function signup(
 
   const passwordHash = await bcrypt.hash(password, 12);
 
+  // Look up referrer if a referral code was provided
+  const referralCode = (formData.get("referralCode") as string)?.trim();
+  let referrerId: string | undefined;
+  if (referralCode) {
+    const referrer = await prisma.user.findUnique({
+      where: { referralCode },
+      select: { id: true },
+    });
+    if (referrer) {
+      referrerId = referrer.id;
+    }
+  }
+
   const newUser = await prisma.user.create({
     data: {
       email,
@@ -118,8 +132,14 @@ export async function signup(
       passwordHash,
       dateOfBirth,
       pendingEmail: email,
+      ...(referrerId ? { referredById: referrerId } : {}),
     },
   });
+
+  // Award referrer 50 stars for the signup
+  if (referrerId) {
+    await awardReferralSignupStars(referrerId, newUser.id);
+  }
 
   // Auto-friend with theresa so new users see content and have a connection
   await autoFriendNewUser(newUser.id);
