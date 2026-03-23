@@ -28,7 +28,23 @@ export async function proxy(request: Request) {
 
   const session = await auth();
 
-  const protectedPaths = ["/profile", "/settings", "/feed", "/verify-phone"];
+  const protectedPaths = [
+    "/profile",
+    "/settings",
+    "/feed",
+    "/verify-phone",
+    "/compose",
+    "/chat",
+    "/bookmarks",
+    "/likes",
+    "/notifications",
+    "/friend-requests",
+    "/close-friends",
+    "/search",
+    "/payment",
+    "/age-verify",
+    "/complete-profile",
+  ];
   const isProtected = protectedPaths.some((path) =>
     pathname.startsWith(path)
   );
