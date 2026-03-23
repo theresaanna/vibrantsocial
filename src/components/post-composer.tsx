@@ -22,6 +22,8 @@ import { editorNodes } from "@/components/editor/nodes";
 import { Toolbar } from "@/components/editor/toolbar/Toolbar";
 import { AutoLinkPlugin } from "@/components/editor/plugins/AutoLinkPlugin";
 import { MentionsPlugin } from "@/components/editor/plugins/MentionsPlugin";
+import { HashtagPlugin } from "@/components/editor/plugins/HashtagPlugin";
+import { HashtagLinkPlugin } from "@/components/editor/plugins/HashtagLinkPlugin";
 import { TagInput } from "@/components/tag-input";
 import { AutoTagButton } from "@/components/auto-tag-button";
 import { ContentFlagsInfoModal } from "@/components/content-flags-info-modal";
@@ -186,6 +188,8 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, isAgeVerif
             <TablePlugin />
             <TabIndentationPlugin />
             <MentionsPlugin />
+            <HashtagPlugin />
+            <HashtagLinkPlugin />
             <DraftPlugin draftKey="compose" onSaveStatusChange={setDraftStatus} />
           </div>
           <ClearOnSuccess
