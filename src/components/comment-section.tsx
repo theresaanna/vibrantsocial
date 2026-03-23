@@ -7,6 +7,7 @@ import { timeAgo } from "@/lib/time";
 import { useComments, type CommentData, type ReactionGroup } from "@/hooks/use-comments";
 import Link from "next/link";
 import { LinkifyText } from "@/components/chat/linkify-text";
+import { LinkPreviewCard } from "@/components/link-preview-card";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { ReportModal } from "@/components/report-modal";
 import { StyledName } from "@/components/styled-name";
@@ -508,9 +509,12 @@ function CommentItem({
             </button>
           </form>
         ) : (
-          <p className="text-sm text-zinc-700 dark:text-zinc-300">
-            <LinkifyText text={comment.content} />
-          </p>
+          <>
+            <p className="text-sm text-zinc-700 dark:text-zinc-300">
+              <LinkifyText text={comment.content} />
+            </p>
+            <CommentLinkPreview text={comment.content} />
+          </>
         )}
 
         {/* Reactions display */}
@@ -653,4 +657,13 @@ function CommentItem({
       />
     </div>
   );
+}
+
+const YOUTUBE_RE = /^https?:\/\/(?:www\.)?(?:youtube\.com\/watch|youtu\.be\/)/i;
+const COMMENT_URL_RE = /https?:\/\/[^\s)]+/;
+
+function CommentLinkPreview({ text }: { text: string }) {
+  const match = text.match(COMMENT_URL_RE);
+  if (!match || YOUTUBE_RE.test(match[0])) return null;
+  return <LinkPreviewCard url={match[0]} />;
 }

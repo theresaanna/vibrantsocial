@@ -81,3 +81,36 @@ export function extractContentFromLexicalJson(
     return { text: "", imageUrls: [] };
   }
 }
+
+const YOUTUBE_RE = /^https?:\/\/(?:www\.)?(?:youtube\.com\/watch|youtu\.be\/)/i;
+
+/**
+ * Walk the Lexical JSON tree and return the URL of the first link/autolink node
+ * that is NOT a YouTube URL (those already have dedicated embeds).
+ */
+export function extractFirstUrl(jsonString: string): string | null {
+  try {
+    const parsed = JSON.parse(jsonString);
+
+    function walk(nodes: LexicalJsonNode[]): string | null {
+      for (const node of nodes) {
+        if (
+          (node.type === "link" || node.type === "autolink") &&
+          typeof node.url === "string" &&
+          !YOUTUBE_RE.test(node.url)
+        ) {
+          return node.url;
+        }
+        if (node.children) {
+          const found = walk(node.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+
+    return parsed?.root?.children ? walk(parsed.root.children) : null;
+  } catch {
+    return null;
+  }
+}
