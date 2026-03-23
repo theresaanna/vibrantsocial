@@ -72,6 +72,7 @@ vi.mock("@/lib/notifications", () => ({
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isRateLimited } from "@/lib/rate-limit";
+import { createNotification } from "@/lib/notifications";
 import {
   createList,
   deleteList,
@@ -88,6 +89,7 @@ import {
 
 const mockAuth = vi.mocked(auth);
 const mockPrisma = vi.mocked(prisma);
+const mockCreateNotification = vi.mocked(createNotification);
 
 const prevState = { success: false, message: "" };
 
@@ -546,6 +548,19 @@ describe("toggleListSubscription", () => {
     expect(mockPrisma.userListSubscription.create).toHaveBeenCalled();
   });
 
+  it("sends LIST_SUBSCRIBE notification to list owner when subscribing", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "u1" } } as never);
+    mockPrisma.userList.findUnique.mockResolvedValue({ id: "l1", ownerId: "u2" } as never);
+    mockPrisma.userListSubscription.findUnique.mockResolvedValue(null);
+    mockPrisma.userListSubscription.create.mockResolvedValue({} as never);
+    await toggleListSubscription(prevState, makeFormData({ listId: "l1" }));
+    expect(mockCreateNotification).toHaveBeenCalledWith({
+      type: "LIST_SUBSCRIBE",
+      actorId: "u1",
+      targetUserId: "u2",
+    });
+  });
+
   it("unsubscribes when already subscribed", async () => {
     mockAuth.mockResolvedValue({ user: { id: "u1" } } as never);
     mockPrisma.userList.findUnique.mockResolvedValue({ id: "l1", ownerId: "u2" } as never);
@@ -555,5 +570,14 @@ describe("toggleListSubscription", () => {
     expect(result.success).toBe(true);
     expect(result.message).toBe("Unsubscribed");
     expect(mockPrisma.userListSubscription.delete).toHaveBeenCalled();
+  });
+
+  it("does not send notification when unsubscribing", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "u1" } } as never);
+    mockPrisma.userList.findUnique.mockResolvedValue({ id: "l1", ownerId: "u2" } as never);
+    mockPrisma.userListSubscription.findUnique.mockResolvedValue({ id: "s1" } as never);
+    mockPrisma.userListSubscription.delete.mockResolvedValue({} as never);
+    await toggleListSubscription(prevState, makeFormData({ listId: "l1" }));
+    expect(mockCreateNotification).not.toHaveBeenCalled();
   });
 });

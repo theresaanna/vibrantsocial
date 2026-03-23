@@ -4,14 +4,15 @@ import Link from "next/link";
 
 interface ProfileTabsProps {
   username: string;
-  activeTab: "posts" | "reposts" | "sensitive" | "nsfw" | "graphic";
+  activeTab: "posts" | "reposts" | "sensitive" | "nsfw" | "graphic" | "wall";
   hasCustomTheme: boolean;
   showSensitiveTab: boolean;
   showNsfwTab: boolean;
   showGraphicTab: boolean;
+  showWallTab?: boolean;
 }
 
-export function ProfileTabs({ username, activeTab, hasCustomTheme, showSensitiveTab, showNsfwTab, showGraphicTab }: ProfileTabsProps) {
+export function ProfileTabs({ username, activeTab, hasCustomTheme, showSensitiveTab, showNsfwTab, showGraphicTab, showWallTab }: ProfileTabsProps) {
   const baseClass = "px-2 sm:px-4 py-2 rounded-t-md text-sm font-medium border-b-2 transition-colors";
 
   const activeClass = hasCustomTheme
@@ -77,6 +78,15 @@ export function ProfileTabs({ username, activeTab, hasCustomTheme, showSensitive
             style={tabStyle(activeTab === "graphic")}
           >
             Graphic/Explicit
+          </Link>
+        )}
+        {showWallTab && (
+          <Link
+            href={`/${username}?tab=wall`}
+            className={`${baseClass} ${activeTab === "wall" ? activeClass : inactiveClass}`}
+            style={tabStyle(activeTab === "wall")}
+          >
+            Wall
           </Link>
         )}
       </div>

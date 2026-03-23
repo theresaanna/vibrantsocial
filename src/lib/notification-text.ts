@@ -32,6 +32,8 @@ export function getNotificationText(type: NotificationType): string {
       return "You have 500+ stars! Redeem them for a free month of premium.";
     case "LIST_ADD":
       return "added you to a list";
+    case "LIST_SUBSCRIBE":
+      return "subscribed to your list";
     default:
       return "";
   }

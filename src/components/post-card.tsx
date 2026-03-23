@@ -8,6 +8,7 @@ import { PostRevisionHistory } from "./post-revision-history";
 import { Editor } from "./editor/Editor";
 import { clearDraft } from "./editor/plugins/DraftPlugin";
 import { editPost, deletePost, updatePostChecklist, togglePinPost } from "@/app/feed/actions";
+import { updateWallPostStatus, deleteWallPost } from "@/app/feed/wall-post-actions";
 import { useRouter } from "next/navigation";
 import { TagInput } from "./tag-input";
 import { ContentFlagsInfoModal } from "./content-flags-info-modal";
@@ -74,6 +75,13 @@ interface PostCardProps {
   highlightCommentId?: string | null;
   showPinnedIndicator?: boolean;
   onDelete?: () => void;
+  wallOwner?: {
+    username: string;
+    displayName: string | null;
+  } | null;
+  wallPostId?: string;
+  wallPostStatus?: string;
+  isWallOwner?: boolean;
 }
 
 export function PostCard({
@@ -88,6 +96,10 @@ export function PostCard({
   highlightCommentId,
   showPinnedIndicator = false,
   onDelete,
+  wallOwner,
+  wallPostId,
+  wallPostStatus,
+  isWallOwner = false,
 }: PostCardProps) {
   const [showComments, setShowComments] = useState(defaultShowComments);
   const [commentCount, setCommentCount] = useCommentCount(post.id, post._count.comments);
@@ -262,8 +274,41 @@ export function PostCard({
           Pinned
         </div>
       )}
+      {/* Wall post banner */}
+      {wallOwner && (
+        <div
+          className="flex items-center gap-2 rounded-t-2xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 px-4 py-2 text-sm dark:from-indigo-500/20 dark:to-purple-500/20"
+          data-testid="wall-post-banner"
+        >
+          <svg className="h-4 w-4 text-indigo-500 dark:text-indigo-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+          </svg>
+          <span className="font-medium text-indigo-700 dark:text-indigo-300">
+            {post.author?.username ? (
+              <Link href={`/${post.author.username}`} className="hover:underline">
+                {post.author.displayName || post.author.name || post.author.username}
+              </Link>
+            ) : (
+              "Someone"
+            )}
+          </span>
+          <svg className="h-3.5 w-3.5 text-indigo-400 dark:text-indigo-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+          </svg>
+          <span className="text-indigo-600 dark:text-indigo-400">
+            <Link href={`/${wallOwner.username}`} className="hover:underline">
+              {wallOwner.displayName || wallOwner.username}&apos;s wall
+            </Link>
+          </span>
+          {wallPostStatus === "pending" && (
+            <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+              Pending
+            </span>
+          )}
+        </div>
+      )}
       {/* Author header — always visible */}
-      <div className="flex items-center gap-3 px-4 pt-4">
+      <div className={`flex items-center gap-3 px-4 ${wallOwner ? "pt-2" : "pt-4"}`}>
         <FramedAvatar src={avatarSrc} initial={authorInitial} size={50} frameId={post.author?.profileFrameId} referrerPolicy="no-referrer" />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-1.5">
@@ -654,6 +699,54 @@ export function PostCard({
       {/* Content flags info modal */}
       {showInfoModal && (
         <ContentFlagsInfoModal onClose={() => setShowInfoModal(false)} />
+      )}
+
+      {/* Wall post moderation controls */}
+      {wallPostId && isWallOwner && (
+        <div className="flex items-center gap-2 border-t border-zinc-100 px-4 py-2 dark:border-zinc-800" data-testid="wall-post-moderation">
+          {wallPostStatus === "pending" && (
+            <form action={async (formData: FormData) => {
+              await updateWallPostStatus({ success: false, message: "" }, formData);
+            }}>
+              <input type="hidden" name="wallPostId" value={wallPostId} />
+              <input type="hidden" name="status" value="accepted" />
+              <button
+                type="submit"
+                className="rounded-lg bg-green-500 px-3 py-1 text-xs font-medium text-white hover:bg-green-600"
+                data-testid="wall-post-accept-btn"
+              >
+                Accept
+              </button>
+            </form>
+          )}
+          {(wallPostStatus === "pending" || wallPostStatus === "accepted") && (
+            <form action={async (formData: FormData) => {
+              await updateWallPostStatus({ success: false, message: "" }, formData);
+            }}>
+              <input type="hidden" name="wallPostId" value={wallPostId} />
+              <input type="hidden" name="status" value="hidden" />
+              <button
+                type="submit"
+                className="rounded-lg bg-zinc-200 px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600"
+                data-testid="wall-post-hide-btn"
+              >
+                Hide
+              </button>
+            </form>
+          )}
+          <form action={async (formData: FormData) => {
+            await deleteWallPost({ success: false, message: "" }, formData);
+          }}>
+            <input type="hidden" name="wallPostId" value={wallPostId} />
+            <button
+              type="submit"
+              className="rounded-lg bg-red-100 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
+              data-testid="wall-post-delete-btn"
+            >
+              Remove
+            </button>
+          </form>
+        </div>
       )}
 
       <ReportModal
