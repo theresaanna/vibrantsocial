@@ -62,4 +62,5 @@ export const cacheKeys = {
   linkPreview: (url: string) => `linkpreview:${url}`,
   userLists: (userId: string) => `user:${userId}:lists`,
   userListMembers: (listId: string) => `list:${listId}:members`,
+  userListSubscriptions: (userId: string) => `user:${userId}:list-subs`,
 } as const;

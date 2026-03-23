@@ -448,6 +448,110 @@ export async function searchUsersForList(listId: string, query: string) {
 // ---------------------------------------------------------------------------
 // Feed actions (mirror feed-actions.ts but scoped to list members)
 // ---------------------------------------------------------------------------
+// Subscription actions
+// ---------------------------------------------------------------------------
+
+export async function toggleListSubscription(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `list-sub:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
+  const listId = formData.get("listId") as string;
+  if (!listId) {
+    return { success: false, message: "Missing list ID" };
+  }
+
+  const list = await prisma.userList.findUnique({ where: { id: listId } });
+  if (!list) {
+    return { success: false, message: "List not found" };
+  }
+
+  // Can't subscribe to your own list
+  if (list.ownerId === session.user.id) {
+    return { success: false, message: "You own this list" };
+  }
+
+  const existing = await prisma.userListSubscription.findUnique({
+    where: { listId_userId: { listId, userId: session.user.id } },
+  });
+
+  if (existing) {
+    await prisma.userListSubscription.delete({ where: { id: existing.id } });
+  } else {
+    await prisma.userListSubscription.create({
+      data: { listId, userId: session.user.id },
+    });
+  }
+
+  await invalidate(cacheKeys.userListSubscriptions(session.user.id));
+  revalidatePath("/feed");
+
+  return { success: true, message: existing ? "Unsubscribed" : "Subscribed" };
+}
+
+export async function getSubscribedLists() {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  return cached(
+    cacheKeys.userListSubscriptions(session.user.id),
+    async () => {
+      const subs = await prisma.userListSubscription.findMany({
+        where: { userId: session.user.id },
+        include: {
+          list: {
+            include: {
+              owner: { select: { username: true } },
+              _count: { select: { members: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: "asc" },
+      });
+      return subs.map((s) => ({
+        id: s.list.id,
+        name: s.list.name,
+        ownerUsername: s.list.owner.username,
+      }));
+    },
+    60
+  );
+}
+
+export async function isSubscribedToList(listId: string): Promise<boolean> {
+  const session = await auth();
+  if (!session?.user?.id) return false;
+
+  const sub = await prisma.userListSubscription.findUnique({
+    where: { listId_userId: { listId, userId: session.user.id } },
+  });
+  return !!sub;
+}
+
+export async function getListInfo(listId: string) {
+  const list = await prisma.userList.findUnique({
+    where: { id: listId },
+    select: {
+      id: true,
+      name: true,
+      ownerId: true,
+      owner: { select: { username: true } },
+    },
+  });
+  return list;
+}
+
+// ---------------------------------------------------------------------------
+// Feed actions (mirror feed-actions.ts but scoped to list members)
+// ---------------------------------------------------------------------------
 
 async function getListMemberIds(listId: string): Promise<string[]> {
   return cached(

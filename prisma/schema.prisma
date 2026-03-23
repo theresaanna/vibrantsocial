@@ -164,8 +164,9 @@ model User {
   blockedBy    Block[] @relation("blocked")
 
   // User lists
-  userLists       UserList[]       @relation("userListOwner")
-  userListMembers UserListMember[] @relation("userListMembership")
+  userLists              UserList[]             @relation("userListOwner")
+  userListMembers        UserListMember[]       @relation("userListMembership")
+  userListSubscriptions  UserListSubscription[] @relation("userListSubscriber")
 
   // Tag subscriptions
   tagSubscriptions TagSubscription[]
@@ -757,8 +758,9 @@ model UserList {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  owner   User             @relation("userListOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members UserListMember[]
+  owner         User                   @relation("userListOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members       UserListMember[]
+  subscriptions UserListSubscription[]
 
   @@unique([ownerId, name])
   @@index([ownerId])
@@ -772,6 +774,20 @@ model UserListMember {
 
   list UserList @relation(fields: [listId], references: [id], onDelete: Cascade)
   user User     @relation("userListMembership", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, userId])
+  @@index([listId])
+  @@index([userId])
+}
+
+model UserListSubscription {
+  id        String   @id @default(cuid())
+  listId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  list UserList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  user User     @relation("userListSubscriber", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([listId, userId])
   @@index([listId])
