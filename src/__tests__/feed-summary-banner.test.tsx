@@ -28,17 +28,26 @@ describe("FeedSummaryBanner", () => {
       <FeedSummaryBanner lastSeenFeedAt="2026-03-22T00:00:00Z" />
     );
 
-    // Header shows immediately
-    expect(screen.getByText(/While you were away/)).toBeInTheDocument();
-
-    // Button appears after loading
+    // Banner appears after check completes
     await waitFor(() => {
+      expect(screen.getByText(/While you were away/)).toBeInTheDocument();
       expect(screen.getByText(/3 new posts/)).toBeInTheDocument();
     });
 
     expect(
       screen.getByRole("button", { name: "Summarize what I missed" })
     ).toBeInTheDocument();
+  });
+
+  it("does not flash banner before check completes", () => {
+    mockFetchFeedSummary.mockReturnValue(new Promise(() => {})); // never resolves
+
+    const { container } = render(
+      <FeedSummaryBanner lastSeenFeedAt="2026-03-22T00:00:00Z" />
+    );
+
+    // Banner should not render while waiting for initial check
+    expect(container.innerHTML).toBe("");
   });
 
   it("renders nothing when no missed posts", async () => {
