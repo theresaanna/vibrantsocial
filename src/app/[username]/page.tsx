@@ -28,6 +28,7 @@ import { getUserListMemberships } from "@/app/lists/actions";
 import { AddToListButton } from "@/components/add-to-list-button";
 import { PremiumCrown } from "@/components/premium-crown";
 import { ProfileSparklefall } from "@/components/profile-sparklefall";
+import { isBirthday, getBirthdaySparkleConfig } from "@/lib/birthday";
 import { StyledName } from "@/components/styled-name";
 
 interface ProfilePageProps {
@@ -63,6 +64,8 @@ const profileSelect = {
   sparklefallMaxSparkles: true,
   sparklefallMinSize: true,
   sparklefallMaxSize: true,
+  birthdayMonth: true,
+  birthdayDay: true,
   isProfilePublic: true,
   hideWallFromFeed: true,
   tier: true,
@@ -467,6 +470,8 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
     user.profileContainerColor
   );
 
+  const userHasBirthday = isBirthday(user.birthdayMonth, user.birthdayDay);
+
   const themeStyle = hasCustomTheme
     ? (() => {
         const userColors = {
@@ -508,17 +513,38 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       className={hasCustomTheme ? "profile-themed" : ""}
       style={{ ...themeStyle, ...bgImageStyle }}
     >
-      {user.sparklefallEnabled && user.tier === "premium" && (
-        <ProfileSparklefall
-          sparkles={user.sparklefallSparkles}
-          colors={user.sparklefallColors}
-          interval={user.sparklefallInterval}
-          wind={user.sparklefallWind}
-          maxSparkles={user.sparklefallMaxSparkles}
-          minSize={user.sparklefallMinSize}
-          maxSize={user.sparklefallMaxSize}
-        />
-      )}
+      {(() => {
+        if (userHasBirthday) {
+          const config = getBirthdaySparkleConfig();
+          return (
+            <ProfileSparklefall
+              sparkles={config.sparkles}
+              colors={config.colors}
+              interval={config.interval}
+              wind={config.wind}
+              maxSparkles={config.maxSparkles}
+              minSize={config.minSize}
+              maxSize={config.maxSize}
+            />
+          );
+        }
+
+        if (user.sparklefallEnabled && user.tier === "premium") {
+          return (
+            <ProfileSparklefall
+              sparkles={user.sparklefallSparkles}
+              colors={user.sparklefallColors}
+              interval={user.sparklefallInterval}
+              wind={user.sparklefallWind}
+              maxSparkles={user.sparklefallMaxSparkles}
+              minSize={user.sparklefallMinSize}
+              maxSize={user.sparklefallMaxSize}
+            />
+          );
+        }
+
+        return null;
+      })()}
       <main className="mx-auto max-w-3xl px-4 py-6">
         {/* Profile header */}
         <div className={`relative rounded-2xl p-6 shadow-lg ${hasCustomTheme ? "profile-container" : "bg-white dark:bg-zinc-900"}`}>
@@ -617,6 +643,15 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
               {blockStatus === "none" && user.bio && (
                 <div className="mt-2">
                   <BioContent content={user.bio} />
+                </div>
+              )}
+
+              {blockStatus === "none" && userHasBirthday && (
+                <div className="mt-3 flex items-center gap-2 rounded-lg bg-gradient-to-r from-pink-50 to-purple-50 px-3 py-2 dark:from-pink-950/30 dark:to-purple-950/30" data-testid="birthday-banner">
+                  <span className="text-lg">🎂</span>
+                  <p className="text-sm font-medium text-pink-700 dark:text-pink-300">
+                    Happy birthday, {displayName}!
+                  </p>
                 </div>
               )}
 

@@ -55,6 +55,10 @@ model User {
   sparklefallMinSize     Int?
   sparklefallMaxSize     Int?
 
+  // Birthday (month/day only, for in-app celebrations)
+  birthdayMonth Int?
+  birthdayDay   Int?
+
   // Credentials auth
   passwordHash String?
   dateOfBirth  DateTime?

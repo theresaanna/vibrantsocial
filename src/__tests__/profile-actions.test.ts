@@ -631,6 +631,225 @@ describe("updateProfile", () => {
       where: { id: { in: ["oldest"] } },
     });
   });
+
+  describe("birthday fields", () => {
+    it("saves valid birthday month and day", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+      mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
+      mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+      const result = await updateProfile(
+        prevState,
+        makeFormData({ birthdayMonth: "3", birthdayDay: "15" })
+      );
+      expect(result.success).toBe(true);
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            birthdayMonth: 3,
+            birthdayDay: 15,
+          }),
+        })
+      );
+    });
+
+    it("saves null when birthday fields are empty", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+      mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
+      mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+      const result = await updateProfile(prevState, makeFormData({}));
+      expect(result.success).toBe(true);
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            birthdayMonth: null,
+            birthdayDay: null,
+          }),
+        })
+      );
+    });
+
+    it("saves null when only month is provided", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+      mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
+      mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+      const result = await updateProfile(
+        prevState,
+        makeFormData({ birthdayMonth: "6" })
+      );
+      expect(result.success).toBe(true);
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            birthdayMonth: null,
+            birthdayDay: null,
+          }),
+        })
+      );
+    });
+
+    it("rejects invalid month (0)", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+      mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
+      mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+      const result = await updateProfile(
+        prevState,
+        makeFormData({ birthdayMonth: "0", birthdayDay: "15" })
+      );
+      expect(result.success).toBe(true);
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            birthdayMonth: null,
+            birthdayDay: null,
+          }),
+        })
+      );
+    });
+
+    it("rejects invalid month (13)", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+      mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
+      mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+      const result = await updateProfile(
+        prevState,
+        makeFormData({ birthdayMonth: "13", birthdayDay: "15" })
+      );
+      expect(result.success).toBe(true);
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            birthdayMonth: null,
+            birthdayDay: null,
+          }),
+        })
+      );
+    });
+
+    it("rejects invalid day for February (30)", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+      mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
+      mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+      const result = await updateProfile(
+        prevState,
+        makeFormData({ birthdayMonth: "2", birthdayDay: "30" })
+      );
+      expect(result.success).toBe(true);
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            birthdayMonth: null,
+            birthdayDay: null,
+          }),
+        })
+      );
+    });
+
+    it("accepts February 28", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+      mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
+      mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+      const result = await updateProfile(
+        prevState,
+        makeFormData({ birthdayMonth: "2", birthdayDay: "28" })
+      );
+      expect(result.success).toBe(true);
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            birthdayMonth: 2,
+            birthdayDay: 28,
+          }),
+        })
+      );
+    });
+
+    it("rejects day 0", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+      mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
+      mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+      const result = await updateProfile(
+        prevState,
+        makeFormData({ birthdayMonth: "6", birthdayDay: "0" })
+      );
+      expect(result.success).toBe(true);
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            birthdayMonth: null,
+            birthdayDay: null,
+          }),
+        })
+      );
+    });
+
+    it("accepts December 31", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+      mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
+      mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+      const result = await updateProfile(
+        prevState,
+        makeFormData({ birthdayMonth: "12", birthdayDay: "31" })
+      );
+      expect(result.success).toBe(true);
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            birthdayMonth: 12,
+            birthdayDay: 31,
+          }),
+        })
+      );
+    });
+
+    it("rejects non-numeric birthday values", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+      mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
+      mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+      const result = await updateProfile(
+        prevState,
+        makeFormData({ birthdayMonth: "abc", birthdayDay: "xyz" })
+      );
+      expect(result.success).toBe(true);
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            birthdayMonth: null,
+            birthdayDay: null,
+          }),
+        })
+      );
+    });
+
+    it("rejects April 31 (April has only 30 days)", async () => {
+      mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+      mockPrisma.user.findUnique.mockResolvedValueOnce({ bio: null } as never);
+      mockPrisma.user.update.mockResolvedValueOnce({} as never);
+
+      const result = await updateProfile(
+        prevState,
+        makeFormData({ birthdayMonth: "4", birthdayDay: "31" })
+      );
+      expect(result.success).toBe(true);
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            birthdayMonth: null,
+            birthdayDay: null,
+          }),
+        })
+      );
+    });
+  });
 });
 
 describe("removeAvatar", () => {
