@@ -112,6 +112,7 @@ export async function createNotification(params: CreateNotificationParams) {
       STARS_MILESTONE: "You have 500+ stars! Redeem them for a free month of premium",
       LIST_ADD: "added you to a list",
       LIST_SUBSCRIBE: "subscribed to your list",
+      LIST_COLLABORATOR_ADD: "added you as a collaborator on a list",
     };
     const body = `${actorName} ${typeText[type] || "sent you a notification"}`;
     const url = postId ? `/notifications` : "/notifications";

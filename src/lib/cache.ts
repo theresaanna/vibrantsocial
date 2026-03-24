@@ -63,4 +63,5 @@ export const cacheKeys = {
   userLists: (userId: string) => `user:${userId}:lists`,
   userListMembers: (listId: string) => `list:${listId}:members`,
   userListSubscriptions: (userId: string) => `user:${userId}:list-subs`,
+  userListCollaborators: (listId: string) => `list:${listId}:collaborators`,
 } as const;

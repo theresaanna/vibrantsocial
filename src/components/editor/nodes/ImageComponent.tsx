@@ -18,6 +18,7 @@ import { $isImageNode } from "./ImageNode";
 import { ImageSidebar } from "./ImageSidebar";
 import { ImageResizeModal } from "./ImageResizeModal";
 import { ImageAltTextModal } from "./ImageAltTextModal";
+import { useIsPostAuthor } from "../PostAuthorContext";
 
 type ResizeDirection = "se" | "sw" | "ne" | "nw";
 
@@ -56,6 +57,10 @@ export default function ImageComponent({
   const [isResizing, setIsResizing] = useState(false);
   const [imgSize, setImgSize] = useState({ width, height });
   const isTouchDevice = useIsTouchDevice();
+  // In display mode (viewing a posted post), images should not be interactive
+  // even when the editor is editable (for checklist toggling)
+  const isDisplayMode = useIsPostAuthor();
+  const isImageEditable = editor.isEditable() && !isDisplayMode;
 
   const [imgAltText, setImgAltText] = useState(altText);
 
@@ -79,6 +84,8 @@ export default function ImageComponent({
   );
 
   useEffect(() => {
+    // Don't register interactive commands in display mode
+    if (isDisplayMode) return;
     return mergeRegister(
       editor.registerCommand(
         CLICK_COMMAND,
@@ -95,7 +102,7 @@ export default function ImageComponent({
       editor.registerCommand(KEY_DELETE_COMMAND, onDelete, COMMAND_PRIORITY_LOW),
       editor.registerCommand(KEY_BACKSPACE_COMMAND, onDelete, COMMAND_PRIORITY_LOW)
     );
-  }, [clearSelection, editor, isSelected, nodeKey, onDelete, setSelected]);
+  }, [clearSelection, editor, isDisplayMode, isSelected, nodeKey, onDelete, setSelected]);
 
   const handleResizeStart = useCallback(
     (direction: ResizeDirection) => (e: React.MouseEvent | React.TouchEvent) => {
@@ -195,7 +202,7 @@ export default function ImageComponent({
   };
 
   return (
-    <span className={`relative inline-block ${isSelected ? "ring-2 ring-blue-500" : ""}`}>
+    <span className={`relative inline-block ${isSelected && isImageEditable ? "ring-2 ring-blue-500" : ""}`}>
       <img
         ref={imgRef}
         src={src}
@@ -204,7 +211,7 @@ export default function ImageComponent({
         className="max-w-full rounded"
         draggable={false}
       />
-      {isSelected && editor.isEditable() && (
+      {isSelected && isImageEditable && (
         <>
           {/* Resize handles — larger on touch devices */}
           <span

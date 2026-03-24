@@ -149,14 +149,33 @@ export function SearchPageClient({
     }
   };
 
+  // Use refs for values that loadMore reads but shouldn't trigger observer recreation
+  const queryRef = useRef(query);
+  const activeTabRef = useRef(activeTab);
+  const usersRef = useRef(users);
+  const postsRef = useRef(posts);
+  const tagsRef = useRef(tags);
+  const usersHasMoreRef = useRef(usersHasMore);
+  const postsHasMoreRef = useRef(postsHasMore);
+  const tagsHasMoreRef = useRef(tagsHasMore);
+
+  useEffect(() => { queryRef.current = query; }, [query]);
+  useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
+  useEffect(() => { usersRef.current = users; }, [users]);
+  useEffect(() => { postsRef.current = posts; }, [posts]);
+  useEffect(() => { tagsRef.current = tags; }, [tags]);
+  useEffect(() => { usersHasMoreRef.current = usersHasMore; }, [usersHasMore]);
+  useEffect(() => { postsHasMoreRef.current = postsHasMore; }, [postsHasMore]);
+  useEffect(() => { tagsHasMoreRef.current = tagsHasMore; }, [tagsHasMore]);
+
   const loadMore = useCallback(() => {
     if (loadingRef.current) return;
-    const trimmed = query.trim();
+    const trimmed = queryRef.current.trim();
     if (!trimmed || trimmed.length < 2) return;
 
-    if (activeTab === "users") {
-      if (!usersHasMore) return;
-      const lastUser = users[users.length - 1];
+    if (activeTabRef.current === "users") {
+      if (!usersHasMoreRef.current) return;
+      const lastUser = usersRef.current[usersRef.current.length - 1];
       if (!lastUser) return;
       loadingRef.current = true;
 
@@ -169,9 +188,9 @@ export function SearchPageClient({
           loadingRef.current = false;
         }
       });
-    } else if (activeTab === "posts") {
-      if (!postsHasMore) return;
-      const lastPost = posts[posts.length - 1];
+    } else if (activeTabRef.current === "posts") {
+      if (!postsHasMoreRef.current) return;
+      const lastPost = postsRef.current[postsRef.current.length - 1];
       if (!lastPost) return;
       loadingRef.current = true;
 
@@ -188,8 +207,8 @@ export function SearchPageClient({
         }
       });
     } else {
-      if (!tagsHasMore) return;
-      const lastTag = tags[tags.length - 1];
+      if (!tagsHasMoreRef.current) return;
+      const lastTag = tagsRef.current[tagsRef.current.length - 1];
       if (!lastTag) return;
       loadingRef.current = true;
 
@@ -203,7 +222,7 @@ export function SearchPageClient({
         }
       });
     }
-  }, [query, activeTab, users, usersHasMore, posts, postsHasMore, tags, tagsHasMore]);
+  }, []); // Stable reference — reads from refs
 
   // IntersectionObserver for infinite scroll
   useEffect(() => {

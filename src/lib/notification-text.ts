@@ -34,6 +34,8 @@ export function getNotificationText(type: NotificationType): string {
       return "added you to a list";
     case "LIST_SUBSCRIBE":
       return "subscribed to your list";
+    case "LIST_COLLABORATOR_ADD":
+      return "added you as a collaborator on a list";
     case "WALL_POST":
       return "posted on your wall";
     default:

@@ -61,6 +61,7 @@ export default async function ProfilePage() {
       emailOnTagPost: true,
       pushEnabled: true,
       isProfilePublic: true,
+      hideWallFromFeed: true,
       tier: true,
       stars: true,
       starsSpent: true,
@@ -135,6 +136,7 @@ export default async function ProfilePage() {
           emailOnTagPost={user?.emailOnTagPost ?? true}
           pushEnabled={user?.pushEnabled ?? false}
           isProfilePublic={user?.isProfilePublic ?? true}
+          hideWallFromFeed={user?.hideWallFromFeed ?? false}
           email={user?.email ?? null}
           pendingEmail={user?.pendingEmail ?? null}
           phoneVerified={!!user?.phoneVerified}

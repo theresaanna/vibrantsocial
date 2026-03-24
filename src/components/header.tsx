@@ -24,18 +24,19 @@ export async function Header() {
   return (
     <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
       <nav className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-2 px-2 py-3 sm:px-4">
-        {/* Row 1: Logo left, chat/notifications/account switcher right */}
-        <Link
-          href="/"
-        >
-          <Image
-            src="/vibrantsocial-logo.png"
-            alt="VibrantSocial"
-            width={160}
-            height={40}
-            priority
-          />
-        </Link>
+        {/* Row 1: Logo + theme toggle left, chat/notifications/account switcher right */}
+        <div className="flex items-center gap-2">
+          <Link href="/">
+            <Image
+              src="/vibrantsocial-logo.png"
+              alt="VibrantSocial"
+              width={160}
+              height={40}
+              priority
+            />
+          </Link>
+          <ThemeToggle />
+        </div>
 
         {session?.user ? (
           <div className="order-2 flex items-center gap-1">
@@ -61,7 +62,6 @@ export async function Header() {
         {/* Row 2: Remaining nav icons aligned right */}
         {session?.user && (
           <div className="order-3 flex w-full items-center justify-end gap-1 border-t border-zinc-100 pt-2 dark:border-zinc-800">
-            <ThemeToggle />
             <NavLinks username={session.user.username} />
           </div>
         )}
