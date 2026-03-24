@@ -7,7 +7,6 @@ import { extractTextFromLexicalJson } from "@/lib/lexical-text";
 import { cached, cacheKeys } from "@/lib/cache";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 
-const ONE_HOUR_MS = 60 * 60 * 1000;
 const SUMMARY_POST_LIMIT = 50;
 const MAX_CONTENT_CHARS = 4000;
 
@@ -149,11 +148,6 @@ export async function fetchFeedSummary(
   }
 
   const since = new Date(lastSeenFeedAt);
-  const gap = Date.now() - since.getTime();
-
-  if (gap < ONE_HOUR_MS) {
-    return { summary: null, missedCount: 0, tooMany: false };
-  }
 
   try {
     const posts = await fetchMissedPosts(
@@ -166,12 +160,8 @@ export async function fetchFeedSummary(
       return { summary: null, missedCount: 0, tooMany: false };
     }
 
-    if (posts.length > SUMMARY_POST_LIMIT) {
-      return { summary: null, missedCount: posts.length, tooMany: true };
-    }
-
-    const summary = await generateSummary(posts, posts.length);
-    return { summary, missedCount: posts.length, tooMany: false };
+    // Always return the count and let the user choose to generate
+    return { summary: null, missedCount: posts.length, tooMany: posts.length > SUMMARY_POST_LIMIT };
   } catch (error) {
     console.error("Feed summary error:", error);
     return { summary: null, missedCount: 0, tooMany: false };

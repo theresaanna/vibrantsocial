@@ -86,16 +86,18 @@ describe("fetchFeedSummary", () => {
     expect(mockPostFindMany).not.toHaveBeenCalled();
   });
 
-  it("returns empty result if gap is less than 1 hour", async () => {
-    mockAuth.mockResolvedValue({ user: { id: "user1" } } as never);
+  it("fetches posts even for short gaps", async () => {
+    setupAuthenticatedUser();
+    mockPostFindMany.mockResolvedValue([makeMockPost()] as never);
 
     const thirtyMinutesAgo = new Date(
       Date.now() - 30 * 60 * 1000
     ).toISOString();
 
     const result = await fetchFeedSummary(thirtyMinutesAgo);
-    expect(result).toEqual({ summary: null, missedCount: 0, tooMany: false });
-    expect(mockPostFindMany).not.toHaveBeenCalled();
+    expect(result.missedCount).toBe(1);
+    expect(result.summary).toBeNull();
+    expect(mockPostFindMany).toHaveBeenCalled();
   });
 
   it("returns empty result if no posts found", async () => {
@@ -125,47 +127,25 @@ describe("fetchFeedSummary", () => {
     expect(mockAnthropicCreate).not.toHaveBeenCalled();
   });
 
-  it("generates summary for posts within limit", async () => {
+  it("returns count without generating summary for posts within limit", async () => {
     setupAuthenticatedUser();
     mockPostFindMany.mockResolvedValue([
       makeMockPost(),
       makeMockPost({ content: "Another post", author: { displayName: "Bob", username: "bob" } }),
     ] as never);
-    mockAnthropicCreate.mockResolvedValue({
-      content: [
-        { type: "text", text: "Alice and Bob were chatting! Alice's post got 5 likes." },
-      ],
-    } as never);
 
     const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
     const result = await fetchFeedSummary(dayAgo);
-    expect(result.summary).toBe(
-      "Alice and Bob were chatting! Alice's post got 5 likes."
-    );
+    expect(result.summary).toBeNull();
     expect(result.missedCount).toBe(2);
     expect(result.tooMany).toBe(false);
-
-    const call = mockAnthropicCreate.mock.calls[0][0];
-    expect(call.model).toBe("claude-haiku-4-5");
-    expect(call.max_tokens).toBe(200);
+    expect(mockAnthropicCreate).not.toHaveBeenCalled();
   });
 
-  it("returns fallback when Claude returns no text block", async () => {
+  it("handles query error gracefully", async () => {
     setupAuthenticatedUser();
-    mockPostFindMany.mockResolvedValue([makeMockPost()] as never);
-    mockAnthropicCreate.mockResolvedValue({ content: [] } as never);
-
-    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-
-    const result = await fetchFeedSummary(dayAgo);
-    expect(result.summary).toBe("You have 1 new posts in your feed!");
-  });
-
-  it("handles API error gracefully", async () => {
-    setupAuthenticatedUser();
-    mockPostFindMany.mockResolvedValue([makeMockPost()] as never);
-    mockAnthropicCreate.mockRejectedValue(new Error("API error"));
+    mockPostFindMany.mockRejectedValue(new Error("DB error"));
 
     const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 

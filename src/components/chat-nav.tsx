@@ -128,7 +128,7 @@ export function ChatNav({ initialConversations }: ChatNavProps) {
           />
         </svg>
         {totalUnread > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-green-500 px-1 text-[10px] font-medium text-white">
+          <span className="absolute -right-1.5 -top-1.5 z-10 flex h-4 min-w-4 items-center justify-center rounded-full bg-green-500 px-1 text-[10px] font-medium text-white">
             {totalUnread > 99 ? "99+" : totalUnread}
           </span>
         )}

@@ -19,6 +19,7 @@ import { Tooltip } from "@/components/tooltip";
 import type { NotificationType } from "@/generated/prisma/client";
 import { getNotificationText } from "@/lib/notification-text";
 import { FriendRequestNotificationActions } from "@/components/friend-request-notification-actions";
+import { StyledName } from "@/components/styled-name";
 
 interface NotificationActor {
   id: string;
@@ -28,6 +29,7 @@ interface NotificationActor {
   image: string | null;
   avatar: string | null;
   profileFrameId: string | null;
+  usernameFont: string | null;
 }
 
 interface NotificationItem {
@@ -201,7 +203,7 @@ export function NotificationBell({
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
         {unreadCount > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-500 px-1 text-[10px] font-medium text-white">
+          <span className="absolute -right-1.5 -top-1.5 z-10 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-500 px-1 text-[10px] font-medium text-white">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
@@ -283,7 +285,7 @@ export function NotificationBell({
                     >
                       <p className="text-xs text-zinc-700 dark:text-zinc-300">
                         <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                          {name}
+                          <StyledName fontId={notification.actor.usernameFont}>{name}</StyledName>
                         </span>{" "}
                         {text}
                       </p>

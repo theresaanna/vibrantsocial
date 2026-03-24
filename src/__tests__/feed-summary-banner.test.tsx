@@ -17,9 +17,9 @@ describe("FeedSummaryBanner", () => {
     vi.clearAllMocks();
   });
 
-  it("shows loading state then summary", async () => {
+  it("shows summarize button when posts are available", async () => {
     mockFetchFeedSummary.mockResolvedValue({
-      summary: "Alice posted about her trip and Bob shared some photos!",
+      summary: null,
       missedCount: 3,
       tooMany: false,
     });
@@ -31,14 +31,14 @@ describe("FeedSummaryBanner", () => {
     // Header shows immediately
     expect(screen.getByText(/While you were away/)).toBeInTheDocument();
 
-    // Summary appears after loading
+    // Button appears after loading
     await waitFor(() => {
-      expect(
-        screen.getByText(
-          "Alice posted about her trip and Bob shared some photos!"
-        )
-      ).toBeInTheDocument();
+      expect(screen.getByText(/3 new posts/)).toBeInTheDocument();
     });
+
+    expect(
+      screen.getByRole("button", { name: "Summarize what I missed" })
+    ).toBeInTheDocument();
   });
 
   it("renders nothing when no missed posts", async () => {
@@ -80,8 +80,8 @@ describe("FeedSummaryBanner", () => {
   it("generates summary on demand when button clicked", async () => {
     mockFetchFeedSummary.mockResolvedValue({
       summary: null,
-      missedCount: 51,
-      tooMany: true,
+      missedCount: 5,
+      tooMany: false,
     });
     mockGenerateFeedSummaryOnDemand.mockResolvedValue(
       "Lots of activity today!"
@@ -114,7 +114,7 @@ describe("FeedSummaryBanner", () => {
 
   it("hides when dismiss button clicked", async () => {
     mockFetchFeedSummary.mockResolvedValue({
-      summary: "Some summary",
+      summary: null,
       missedCount: 2,
       tooMany: false,
     });
@@ -124,14 +124,14 @@ describe("FeedSummaryBanner", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Some summary")).toBeInTheDocument();
+      expect(screen.getByText(/2 new posts/)).toBeInTheDocument();
     });
 
     await userEvent.click(
       screen.getByRole("button", { name: "Dismiss" })
     );
 
-    expect(screen.queryByText("Some summary")).not.toBeInTheDocument();
+    expect(screen.queryByText(/2 new posts/)).not.toBeInTheDocument();
   });
 
   it("calls fetchFeedSummary with the lastSeenFeedAt value", async () => {
