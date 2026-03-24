@@ -42,7 +42,7 @@ export function FeedSummaryBanner({ lastSeenFeedAt }: FeedSummaryBannerProps) {
   }
 
   if (dismissed) return null;
-  if (!loading && !summary && !tooMany) return null;
+  if (!loading && !summary && missedCount === 0) return null;
 
   return (
     <div className="mb-4 flex items-start gap-3 rounded-2xl bg-gradient-to-r from-fuchsia-50 to-blue-50 p-4 shadow-sm dark:from-fuchsia-950/30 dark:to-blue-950/30">
@@ -60,9 +60,9 @@ export function FeedSummaryBanner({ lastSeenFeedAt }: FeedSummaryBannerProps) {
 
         {!loading && summary && <p className="mt-1">{summary}</p>}
 
-        {!loading && tooMany && !summary && (
+        {!loading && !summary && missedCount > 0 && (
           <div className="mt-1">
-            <p>You have {missedCount}+ new posts in your feed!</p>
+            <p>You have {tooMany ? `${missedCount}+` : missedCount} new {missedCount === 1 ? "post" : "posts"} in your feed!</p>
             <button
               onClick={handleSummarize}
               className="mt-2 rounded-lg bg-fuchsia-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-fuchsia-700"
