@@ -7,6 +7,7 @@ import { ProfileForm } from "./profile-form";
 import { Suspense } from "react";
 import { AutoAccountSwitch } from "@/components/auto-account-switch";
 import { getProfileBackgrounds } from "@/lib/profile-backgrounds.server";
+import type { CustomPresetData } from "@/lib/profile-themes";
 
 export const metadata: Metadata = {
   title: "Edit Profile",
@@ -77,6 +78,33 @@ export default async function ProfilePage() {
   const isPremium = user?.tier === "premium";
   const oauthImage = user?.image ?? session.user.image ?? null;
   const backgrounds = getProfileBackgrounds();
+
+  const customPresets: CustomPresetData[] = isPremium
+    ? (
+        await prisma.customThemePreset.findMany({
+          where: { userId: session.user.id },
+          orderBy: { createdAt: "asc" },
+        })
+      ).map((p) => ({
+        id: p.id,
+        name: p.name,
+        prompt: p.prompt,
+        light: {
+          profileBgColor: p.lightBgColor,
+          profileTextColor: p.lightTextColor,
+          profileLinkColor: p.lightLinkColor,
+          profileSecondaryColor: p.lightSecondaryColor,
+          profileContainerColor: p.lightContainerColor,
+        },
+        dark: {
+          profileBgColor: p.darkBgColor,
+          profileTextColor: p.darkTextColor,
+          profileLinkColor: p.darkLinkColor,
+          profileSecondaryColor: p.darkSecondaryColor,
+          profileContainerColor: p.darkContainerColor,
+        },
+      }))
+    : [];
 
   return (
     <div className="flex min-h-[calc(100vh-57px)] items-center justify-center">
@@ -152,6 +180,7 @@ export default async function ProfilePage() {
           referralCode={user?.referralCode ?? ""}
           backgrounds={backgrounds}
           userEmail={user?.email ?? null}
+          customPresets={customPresets}
         />
 
         <form

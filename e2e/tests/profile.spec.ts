@@ -110,6 +110,91 @@ test.describe("Theme editor (premium)", () => {
   });
 });
 
+test.describe("AI theme generation (premium)", () => {
+  test.beforeEach(async () => {
+    await setTestUserTier("premium");
+  });
+
+  test.afterEach(async () => {
+    await setTestUserTier("free");
+  });
+
+  test("AI prompt input is visible for premium users", async ({ page }) => {
+    test.fixme();
+    await page.goto("/profile");
+
+    await expect(page.locator('input[name="username"]')).toBeVisible({
+      timeout: 10000,
+    });
+    // Expand theme editor
+    await page.getByRole("button", { name: /profile theme/i }).click();
+
+    // Scroll to see AI section
+    await page.evaluate(() =>
+      window.scrollTo(0, document.body.scrollHeight)
+    );
+    await page.waitForTimeout(300);
+
+    await expect(page.getByTestId("ai-prompt-input")).toBeVisible({
+      timeout: 5000,
+    });
+    await expect(page.getByTestId("ai-generate-button")).toBeVisible();
+  });
+
+  test("generates a theme, saves as preset, and selects it", async ({
+    page,
+  }) => {
+    test.fixme();
+    await page.goto("/profile");
+
+    await expect(page.locator('input[name="username"]')).toBeVisible({
+      timeout: 10000,
+    });
+    await page.getByRole("button", { name: /profile theme/i }).click();
+
+    await page.evaluate(() =>
+      window.scrollTo(0, document.body.scrollHeight)
+    );
+    await page.waitForTimeout(300);
+
+    // Type a prompt and generate
+    const promptInput = page.getByTestId("ai-prompt-input");
+    await promptInput.fill("warm autumn forest");
+    await page.getByTestId("ai-generate-button").click();
+
+    // Wait for generation to complete — save form should appear
+    await expect(page.getByTestId("save-preset-form")).toBeVisible({
+      timeout: 30000,
+    });
+
+    // Verify preset name was pre-filled
+    const nameInput = page.getByTestId("preset-name-input");
+    await expect(nameInput).not.toHaveValue("");
+
+    // Save the preset
+    await page.getByTestId("save-preset-button").click();
+
+    // Wait for the custom preset pill to appear
+    const presetName = await nameInput.inputValue();
+    const customPresetButton = page.getByTestId(
+      `custom-preset-${presetName}`
+    );
+    await expect(customPresetButton).toBeVisible({ timeout: 5000 });
+
+    // Click the custom preset to select it
+    await customPresetButton.click();
+    await expect(customPresetButton).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+
+    // Delete the custom preset
+    const deleteButton = page.getByTestId(`delete-preset-${presetName}`);
+    await deleteButton.click();
+    await expect(customPresetButton).not.toBeVisible({ timeout: 5000 });
+  });
+});
+
 test.describe("Theme editor gating (free tier)", () => {
   test.beforeEach(async () => {
     await setTestUserTier("free");
@@ -130,6 +215,20 @@ test.describe("Theme editor gating (free tier)", () => {
     await expect(
       page.locator("button[aria-pressed]", { hasText: "ocean" })
     ).toBeVisible();
+  });
+
+  test("free user sees disabled AI theme generator", async ({ page }) => {
+    test.fixme();
+    await page.goto("/profile");
+
+    await page.evaluate(() =>
+      window.scrollTo(0, document.body.scrollHeight)
+    );
+    await page.waitForTimeout(500);
+
+    // AI prompt should be disabled
+    await expect(page.getByTestId("ai-prompt-input")).toBeDisabled();
+    await expect(page.getByTestId("ai-generate-button")).toBeDisabled();
   });
 
   test("free user does not see custom color pickers", async ({ page }) => {

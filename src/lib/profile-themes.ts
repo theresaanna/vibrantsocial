@@ -6,6 +6,14 @@ export interface ProfileThemeColors {
   profileContainerColor: string;
 }
 
+export interface CustomPresetData {
+  id: string;
+  name: string;
+  prompt: string;
+  light: ProfileThemeColors;
+  dark: ProfileThemeColors;
+}
+
 export const THEME_COLOR_FIELDS = [
   "profileBgColor",
   "profileTextColor",
@@ -235,7 +243,7 @@ function invertLightness(hex: string): string {
   return rgbToHex(rgb.r, rgb.g, rgb.b);
 }
 
-function adjustForContrast(
+export function adjustForContrast(
   fgHex: string,
   bgHex: string,
   minRatio: number

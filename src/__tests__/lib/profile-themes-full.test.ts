@@ -8,6 +8,7 @@ import {
   contrastRatio,
   isLightBackground,
   generateAdaptiveTheme,
+  adjustForContrast,
   isValidHexColor,
   PROFILE_THEME_PRESETS,
   type ProfileThemeColors,
@@ -319,5 +320,48 @@ describe("generateAdaptiveTheme", () => {
     // Original is dark so it should be in the dark slot
     expect(dark).toEqual(custom);
     expect(isLightBackground(light.profileBgColor)).toBe(true);
+  });
+});
+
+/* ── adjustForContrast ──────────────────────────── */
+
+describe("adjustForContrast", () => {
+  it("returns foreground unchanged when contrast is already sufficient", () => {
+    // White text on black bg has 21:1 contrast (max possible)
+    const result = adjustForContrast("#ffffff", "#000000", 4.5);
+    expect(result).toBe("#ffffff");
+  });
+
+  it("adjusts low-contrast text to meet minimum ratio", () => {
+    // Light gray text on white bg: insufficient contrast
+    const adjusted = adjustForContrast("#aaaaaa", "#ffffff", 4.5);
+    const ratio = contrastRatio(adjusted, "#ffffff");
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("lightens foreground when background is dark", () => {
+    const adjusted = adjustForContrast("#333333", "#111111", 4.5);
+    const ratio = contrastRatio(adjusted, "#111111");
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+    // Result should be lighter than the dark bg
+    expect(relativeLuminance(adjusted)).toBeGreaterThan(
+      relativeLuminance("#111111")
+    );
+  });
+
+  it("darkens foreground when background is light", () => {
+    const adjusted = adjustForContrast("#cccccc", "#eeeeee", 4.5);
+    const ratio = contrastRatio(adjusted, "#eeeeee");
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+    // Result should be darker than the light bg
+    expect(relativeLuminance(adjusted)).toBeLessThan(
+      relativeLuminance("#eeeeee")
+    );
+  });
+
+  it("handles the 3.0 minimum ratio for links", () => {
+    const adjusted = adjustForContrast("#777777", "#888888", 3.0);
+    const ratio = contrastRatio(adjusted, "#888888");
+    expect(ratio).toBeGreaterThanOrEqual(3.0);
   });
 });
