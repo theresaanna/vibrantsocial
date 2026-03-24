@@ -30,16 +30,16 @@ describe("FollowButton", () => {
     render(<FollowButton userId="u1" isFollowing={false} />);
     const btn = screen.getByRole("button", { name: "Follow" });
     expect(btn).toBeInTheDocument();
-    expect(btn.className).toContain("border-blue-500");
-    expect(btn.className).toContain("bg-transparent");
+    expect(btn.className).toContain("rounded-full");
+    expect(btn.className).toContain("border");
   });
 
-  it("renders 'Following' with gradient styling when following", () => {
+  it("renders 'Following' with filled styling when following", () => {
     render(<FollowButton userId="u1" isFollowing={true} />);
     const btn = screen.getByRole("button", { name: "Following" });
     expect(btn).toBeInTheDocument();
-    expect(btn.className).toContain("bg-gradient-to-r");
-    expect(btn.className).toContain("from-blue-500");
+    expect(btn.className).toContain("bg-blue-600");
+    expect(btn.className).toContain("rounded-full");
   });
 
   it("shows confirmation dialog when clicking 'Following' (unfollow attempt)", async () => {

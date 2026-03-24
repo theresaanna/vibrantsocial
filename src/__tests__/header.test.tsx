@@ -13,6 +13,7 @@ vi.mock("@/app/chat/actions", () => ({
 vi.mock("@/app/notifications/actions", () => ({
   getUnreadNotificationCount: vi.fn().mockResolvedValue(0),
   getRecentNotifications: vi.fn().mockResolvedValue([]),
+  getLinkedAccountNotificationCounts: vi.fn().mockResolvedValue({}),
 }));
 
 vi.mock("@/lib/account-linking-db", () => ({
@@ -66,9 +67,6 @@ vi.mock("@/components/nav-links", () => ({
       <a href="/bookmarks" aria-label="Bookmarks"><svg /></a>
       <a href={username ? `/${username}` : "/profile"} aria-label="Profile"><svg /></a>
     </div>
-  ),
-  MobileProfileLink: ({ username }: { username?: string | null }) => (
-    <a href={username ? `/${username}` : "/profile"} aria-label="Mobile Profile"><svg /></a>
   ),
 }));
 

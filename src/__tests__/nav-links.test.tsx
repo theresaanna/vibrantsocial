@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { usePathname } from "next/navigation";
-import { NavLinks, MobileProfileLink } from "@/components/nav-links";
+import { NavLinks } from "@/components/nav-links";
 
 vi.mock("next/link", () => ({
   default: ({
@@ -168,36 +168,3 @@ describe("NavLinks", () => {
   });
 });
 
-describe("MobileProfileLink", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(usePathname).mockReturnValue("/");
-  });
-
-  it("uses username for href when provided", () => {
-    render(<MobileProfileLink username="alice" />);
-    expect(screen.getByLabelText("Profile")).toHaveAttribute("href", "/alice");
-  });
-
-  it("falls back to /profile when username is null", () => {
-    render(<MobileProfileLink username={null} />);
-    expect(screen.getByLabelText("Profile")).toHaveAttribute(
-      "href",
-      "/profile"
-    );
-  });
-
-  it("highlights when on own profile page", () => {
-    vi.mocked(usePathname).mockReturnValue("/alice");
-    render(<MobileProfileLink username="alice" />);
-    const profileLink = screen.getByLabelText("Profile");
-    expect(profileLink.className).toMatch(/(^| )text-orange-500( |$)/);
-  });
-
-  it("does not highlight when on different page", () => {
-    vi.mocked(usePathname).mockReturnValue("/feed");
-    render(<MobileProfileLink username="alice" />);
-    const profileLink = screen.getByLabelText("Profile");
-    expect(profileLink.className).toContain("text-zinc-600");
-  });
-});

@@ -7,7 +7,7 @@ import { ChatNav } from "@/components/chat-nav";
 import { DynamicFavicon } from "@/components/dynamic-favicon";
 import { NotificationBell } from "@/components/notification-bell";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { NavLinks, MobileProfileLink } from "@/components/nav-links";
+import { NavLinks } from "@/components/nav-links";
 import { AccountSwitcherWrapper } from "@/components/account-switcher-wrapper";
 import { loadLinkedAccounts } from "@/lib/account-linking-db";
 
@@ -24,6 +24,7 @@ export async function Header() {
   return (
     <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
       <nav className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-2 px-2 py-3 sm:px-4">
+        {/* Row 1: Logo left, chat/notifications/account switcher right */}
         <Link
           href="/"
         >
@@ -36,39 +37,34 @@ export async function Header() {
           />
         </Link>
 
-        {/* Mobile-only profile link + theme toggle next to logo */}
-        {session?.user && (
-          <div className="order-2 flex items-center gap-1 sm:hidden">
+        {session?.user ? (
+          <div className="order-2 flex items-center gap-1">
+            <DynamicFavicon
+              initialHasUnread={
+                unreadNotifications > 0 ||
+                conversations.some((c: { unreadCount: number }) => c.unreadCount > 0)
+              }
+            />
             <AccountSwitcherWrapper initialLinkedAccounts={linkedAccounts} initialNotificationCounts={linkedAccountNotifCounts} />
-            <ThemeToggle />
-            <MobileProfileLink username={session.user.username} />
+            <NotificationBell initialUnreadCount={unreadNotifications} initialNotifications={recentNotifications} />
+            <ChatNav initialConversations={conversations} />
           </div>
+        ) : (
+          <Link
+            href="/login"
+            className="order-2 rounded-lg bg-gradient-to-r from-fuchsia-600 to-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:from-fuchsia-500 hover:to-blue-500"
+          >
+            Sign In
+          </Link>
         )}
 
-        <div className="order-3 flex w-full items-center justify-between border-t border-zinc-100 pt-2 sm:order-2 sm:flex-1 sm:justify-end sm:gap-4 sm:border-0 sm:pt-0 dark:border-zinc-800">
-          <div className="hidden sm:inline-flex"><ThemeToggle /></div>
-          {session?.user ? (
-            <>
-              <DynamicFavicon
-                initialHasUnread={
-                  unreadNotifications > 0 ||
-                  conversations.some((c: { unreadCount: number }) => c.unreadCount > 0)
-                }
-              />
-              <NavLinks username={session.user.username} />
-              <div className="hidden sm:inline-flex"><AccountSwitcherWrapper initialLinkedAccounts={linkedAccounts} initialNotificationCounts={linkedAccountNotifCounts} /></div>
-              <NotificationBell initialUnreadCount={unreadNotifications} initialNotifications={recentNotifications} />
-              <ChatNav initialConversations={conversations} />
-            </>
-          ) : (
-            <Link
-              href="/login"
-              className="rounded-lg bg-gradient-to-r from-fuchsia-600 to-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:from-fuchsia-500 hover:to-blue-500"
-            >
-              Sign In
-            </Link>
-          )}
-        </div>
+        {/* Row 2: Remaining nav icons aligned right */}
+        {session?.user && (
+          <div className="order-3 flex w-full items-center justify-end gap-1 border-t border-zinc-100 pt-2 dark:border-zinc-800">
+            <ThemeToggle />
+            <NavLinks username={session.user.username} />
+          </div>
+        )}
       </nav>
     </header>
   );

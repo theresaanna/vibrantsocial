@@ -58,10 +58,11 @@ describe("SubscribeButton", () => {
       <SubscribeButton userId="user1" isSubscribed={false} />
     );
     const unsubButton = screen.getByRole("button");
-    expect(unsubButton.className).not.toContain("bg-indigo-50");
+    expect(unsubButton.className).toContain("rounded-full");
+    expect(unsubButton.className).toContain("border");
 
     rerender(<SubscribeButton userId="user1" isSubscribed={true} />);
     const subButton = screen.getByRole("button");
-    expect(subButton.className).toContain("bg-indigo-50");
+    expect(subButton.className).toContain("bg-indigo-600");
   });
 });

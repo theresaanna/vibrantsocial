@@ -9,7 +9,7 @@ interface SubscribeButtonProps {
   size?: "default" | "sm";
 }
 
-export function SubscribeButton({ userId, isSubscribed, size = "default" }: SubscribeButtonProps) {
+export function SubscribeButton({ userId, isSubscribed }: SubscribeButtonProps) {
   const [, formAction, isPending] = useActionState(togglePostSubscription, {
     success: false,
     message: "",
@@ -22,12 +22,10 @@ export function SubscribeButton({ userId, isSubscribed, size = "default" }: Subs
         type="submit"
         disabled={isPending}
         title={isSubscribed ? "Unsubscribe from new posts" : "Get notified of new posts"}
-        className={`rounded-lg whitespace-nowrap transition-colors disabled:opacity-50 ${
-          size === "sm" ? "px-2 py-1 text-xs font-medium" : "px-3 py-1.5 text-sm font-medium"
-        } ${
+        className={`rounded-full px-4 py-1.5 text-sm font-semibold whitespace-nowrap transition-all disabled:opacity-50 ${
           isSubscribed
-            ? "border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50"
-            : "border border-zinc-200 text-zinc-500 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+            ? "bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+            : "border border-zinc-300 bg-white text-zinc-700 hover:border-indigo-400 hover:text-indigo-600 dark:border-zinc-600 dark:bg-transparent dark:text-zinc-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400"
         }`}
       >
         {isPending ? "..." : isSubscribed ? (

@@ -37,7 +37,7 @@ export function FollowButton({ userId, isFollowing }: FollowButtonProps) {
             type="button"
             onClick={handleClick}
             disabled={isPending}
-            className="rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-white shadow-sm ring-2 ring-blue-400/30 transition-all hover:from-blue-600 hover:to-cyan-600 hover:shadow-md disabled:opacity-50"
+            className="rounded-full bg-blue-600 px-4 py-1.5 text-sm font-semibold whitespace-nowrap text-white transition-all hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
           >
             {isPending ? "..." : "Following"}
           </button>
@@ -45,7 +45,7 @@ export function FollowButton({ userId, isFollowing }: FollowButtonProps) {
           <button
             type="submit"
             disabled={isPending}
-            className="rounded-lg border-2 border-blue-500 bg-transparent px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-blue-600 transition-all hover:bg-blue-50 hover:shadow-sm disabled:opacity-50 dark:text-blue-400 dark:hover:bg-blue-950/30"
+            className="rounded-full border border-zinc-300 bg-white px-4 py-1.5 text-sm font-semibold whitespace-nowrap text-zinc-700 transition-all hover:border-blue-400 hover:text-blue-600 disabled:opacity-50 dark:border-zinc-600 dark:bg-transparent dark:text-zinc-300 dark:hover:border-blue-500 dark:hover:text-blue-400"
           >
             {isPending ? "..." : "Follow"}
           </button>
