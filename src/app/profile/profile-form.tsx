@@ -787,7 +787,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
             </select>
           </div>
           <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-            This is used for cute in-app purposes only, like sparkles on your profile page on your birthday!
+            This is used for cute in-app purposes only. 🥳
           </p>
         </div>
 
