@@ -80,6 +80,7 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, isAgeVerif
   const [draftStatus, setDraftStatus] = useState<DraftSaveStatus>("idle");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewDismissed, setPreviewDismissed] = useState(false);
+  const [previewStatus, setPreviewStatus] = useState<"loading" | "loaded" | "empty">("loading");
   const previewDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Debounced URL extraction for live link preview
@@ -214,18 +215,20 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, isAgeVerif
         </LexicalComposer>
         {previewUrl && !previewDismissed && (
           <div className="relative border-t border-zinc-200 px-4 py-2 dark:border-zinc-700">
-            <button
-              type="button"
-              onClick={() => setPreviewDismissed(true)}
-              className="absolute top-3 right-5 z-10 rounded-full bg-zinc-100 p-1 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-200"
-              title="Dismiss link preview"
-              data-testid="dismiss-link-preview"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            <LinkPreviewCard url={previewUrl} />
+            {previewStatus === "loaded" && (
+              <button
+                type="button"
+                onClick={() => setPreviewDismissed(true)}
+                className="absolute top-3 right-5 z-10 rounded-full bg-zinc-100 p-1 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-200"
+                title="Dismiss link preview"
+                data-testid="dismiss-link-preview"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+            <LinkPreviewCard url={previewUrl} onLoadChange={setPreviewStatus} />
           </div>
         )}
         <div className="flex min-h-[48px] items-center">

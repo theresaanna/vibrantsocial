@@ -62,6 +62,13 @@ export function MessageInput({
     }
   }, [replyingTo]);
 
+  // Re-focus textarea after sending completes
+  useEffect(() => {
+    if (!isSending) {
+      textareaRef.current?.focus();
+    }
+  }, [isSending]);
+
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     const trimmed = value.trim();

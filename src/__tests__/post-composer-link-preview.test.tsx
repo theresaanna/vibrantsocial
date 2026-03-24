@@ -138,11 +138,15 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-// Mock LinkPreviewCard to render a visible element
+// Mock LinkPreviewCard to render a visible element and call onLoadChange
 vi.mock("@/components/link-preview-card", () => ({
-  LinkPreviewCard: ({ url }: { url: string }) => (
-    <div data-testid="link-preview-card">{url}</div>
-  ),
+  LinkPreviewCard: ({ url, onLoadChange }: { url: string; onLoadChange?: (status: string) => void }) => {
+    // Simulate loaded state so dismiss button appears
+    if (onLoadChange) {
+      setTimeout(() => onLoadChange("loaded"), 0);
+    }
+    return <div data-testid="link-preview-card">{url}</div>;
+  },
 }));
 
 // Mock extractFirstUrl to return a URL we control
@@ -181,6 +185,12 @@ describe("PostComposer - link preview dismiss", () => {
     });
 
     expect(screen.getByTestId("link-preview-card")).toBeInTheDocument();
+
+    // Advance to let onLoadChange("loaded") fire
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+
     expect(screen.getByTestId("dismiss-link-preview")).toBeInTheDocument();
   });
 
@@ -197,6 +207,11 @@ describe("PostComposer - link preview dismiss", () => {
     });
 
     expect(screen.getByTestId("link-preview-card")).toBeInTheDocument();
+
+    // Advance to let onLoadChange("loaded") fire
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
 
     // Click dismiss
     fireEvent.click(screen.getByTestId("dismiss-link-preview"));
