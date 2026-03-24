@@ -75,6 +75,14 @@ interface RepostCardProps {
         createdAt: Date;
         author: RepostUser;
       }>;
+      wallPost?: {
+        id: string;
+        status: string;
+        wallOwner: {
+          username: string | null;
+          displayName: string | null;
+        };
+      } | null;
     };
   };
   currentUserId?: string;
