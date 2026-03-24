@@ -75,12 +75,13 @@ export function AddToListButton({ targetUserId, lists: initialLists }: AddToList
       <button
         type="button"
         onClick={handleOpen}
-        className="rounded-lg border-2 border-indigo-500 bg-transparent px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-indigo-600 transition-all hover:bg-indigo-50 hover:shadow-sm disabled:opacity-50 dark:text-indigo-400 dark:hover:bg-indigo-950/30"
+        className="rounded-full border border-zinc-300 bg-white px-4 py-1.5 text-sm font-semibold whitespace-nowrap text-zinc-700 transition-all hover:border-indigo-400 hover:text-indigo-600 disabled:opacity-50 dark:border-zinc-600 dark:bg-transparent dark:text-zinc-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400"
         title="Add to list"
       >
-        <svg className="inline-block h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+        <svg className="-ml-0.5 mr-1 inline-block h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
         </svg>
+        Lists
       </button>
 
       <dialog

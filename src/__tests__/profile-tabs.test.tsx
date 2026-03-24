@@ -3,10 +3,15 @@ import { render, screen } from "@testing-library/react";
 import { ProfileTabs } from "@/components/profile-tabs";
 
 describe("ProfileTabs", () => {
-  it("renders Posts and Reposts tabs", () => {
+  it("renders Posts tab", () => {
     render(<ProfileTabs username="alice" activeTab="posts" hasCustomTheme={false} showSensitiveTab={false} showNsfwTab={false} showGraphicTab={false} />);
     expect(screen.getByText("Posts")).toBeInTheDocument();
-    expect(screen.getByText("Reposts")).toBeInTheDocument();
+  });
+
+  it("does not render Reposts or Wall tabs", () => {
+    render(<ProfileTabs username="alice" activeTab="posts" hasCustomTheme={false} showSensitiveTab={false} showNsfwTab={false} showGraphicTab={false} />);
+    expect(screen.queryByText("Reposts")).not.toBeInTheDocument();
+    expect(screen.queryByText("Wall")).not.toBeInTheDocument();
   });
 
   it("Posts tab links to /{username}", () => {
@@ -15,22 +20,10 @@ describe("ProfileTabs", () => {
     expect(postsLink).toHaveAttribute("href", "/alice");
   });
 
-  it("Reposts tab links to /{username}?tab=reposts", () => {
-    render(<ProfileTabs username="alice" activeTab="posts" hasCustomTheme={false} showSensitiveTab={false} showNsfwTab={false} showGraphicTab={false} />);
-    const repostsLink = screen.getByText("Reposts").closest("a");
-    expect(repostsLink).toHaveAttribute("href", "/alice?tab=reposts");
-  });
-
   it("Posts tab has active styling when activeTab is posts", () => {
     render(<ProfileTabs username="alice" activeTab="posts" hasCustomTheme={false} showSensitiveTab={false} showNsfwTab={false} showGraphicTab={false} />);
     const postsLink = screen.getByText("Posts").closest("a");
-    expect(postsLink?.className).toContain("border-fuchsia-600");
-  });
-
-  it("Reposts tab has active styling when activeTab is reposts", () => {
-    render(<ProfileTabs username="alice" activeTab="reposts" hasCustomTheme={false} showSensitiveTab={false} showNsfwTab={false} showGraphicTab={false} />);
-    const repostsLink = screen.getByText("Reposts").closest("a");
-    expect(repostsLink?.className).toContain("border-fuchsia-600");
+    expect(postsLink?.className).toContain("bg-fuchsia-600");
   });
 
   it("does not show NSFW tab when showNsfwTab is false", () => {
@@ -52,7 +45,7 @@ describe("ProfileTabs", () => {
   it("NSFW tab has active styling when activeTab is nsfw", () => {
     render(<ProfileTabs username="alice" activeTab="nsfw" hasCustomTheme={false} showSensitiveTab={false} showNsfwTab={true} showGraphicTab={false} />);
     const nsfwLink = screen.getByText("NSFW").closest("a");
-    expect(nsfwLink?.className).toContain("border-fuchsia-600");
+    expect(nsfwLink?.className).toContain("bg-fuchsia-600");
   });
 
   it("does not show Sensitive tab when showSensitiveTab is false", () => {

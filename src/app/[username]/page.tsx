@@ -106,11 +106,9 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
 export default async function PublicProfilePage({ params, searchParams }: ProfilePageProps) {
   const { username } = await params;
   const { tab } = await searchParams;
-  const activeTab = tab === "reposts" ? "reposts" as const
-    : tab === "sensitive" ? "sensitive" as const
+  const activeTab = tab === "sensitive" ? "sensitive" as const
     : tab === "nsfw" ? "nsfw" as const
     : tab === "graphic" ? "graphic" as const
-    : tab === "wall" ? "wall" as const
     : "posts" as const;
 
   const user = await cached(
@@ -353,20 +351,11 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       })
     : [];
 
-  // Quote reposts (with content) also appear on the Posts tab
-  const quoteReposts = activeTab === "posts"
-    ? await prisma.repost.findMany({
-        where: { userId: user.id, content: { not: null }, ...closeFriendsFilter },
-        orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
-        take: 20,
-        include: repostInclude,
-      })
-    : [];
-
-  const userReposts = activeTab === "reposts"
+  // All reposts appear on the Posts tab
+  const allReposts = activeTab === "posts"
     ? await prisma.repost.findMany({
         where: { userId: user.id, ...closeFriendsFilter },
-        orderBy: { createdAt: "desc" },
+        orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
         take: 20,
         include: repostInclude,
       })
@@ -402,16 +391,15 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       })
     : [];
 
-  // Wall tab: posts from friends on this user's profile
+  // Wall posts are shown inline in the Posts tab
   const isFriend = friendshipStatus === "friends";
   const canSeeWall = isOwnProfile || isFriend;
-  const showWallTab = !!currentUserId && canSeeWall;
 
   const wallPostStatusFilter = isOwnProfile
     ? { status: { in: ["pending", "accepted"] } }
     : { status: "accepted" };
 
-  const wallPosts = activeTab === "wall" && canSeeWall && currentUserId
+  const wallPosts = activeTab === "posts" && canSeeWall && currentUserId
     ? await prisma.wallPost.findMany({
         where: {
           wallOwnerId: user.id,
@@ -433,15 +421,17 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       })
     : [];
 
-  // Merge posts and quote reposts chronologically for the Posts tab
+  // Merge posts, reposts, and wall posts chronologically for the Posts tab
   type FeedItem =
     | { type: "post"; data: (typeof posts)[number]; date: Date }
-    | { type: "repost"; data: (typeof quoteReposts)[number]; date: Date };
+    | { type: "repost"; data: (typeof allReposts)[number]; date: Date }
+    | { type: "wall"; data: (typeof wallPosts)[number]; date: Date };
 
   const feedItems: FeedItem[] = activeTab === "posts"
     ? [
         ...posts.map((p) => ({ type: "post" as const, data: p, date: p.createdAt })),
-        ...quoteReposts.map((r) => ({ type: "repost" as const, data: r, date: r.createdAt })),
+        ...allReposts.map((r) => ({ type: "repost" as const, data: r, date: r.createdAt })),
+        ...wallPosts.map((wp) => ({ type: "wall" as const, data: wp, date: wp.createdAt })),
       ].sort((a, b) => {
         // Pinned posts/reposts always come first
         const aPinned = (a.type === "post" && a.data.isPinned) || (a.type === "repost" && a.data.isPinned) ? 1 : 0;
@@ -562,10 +552,10 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                   {isOwnProfile && (
                     <Link
                       href="/profile"
-                      className={`rounded-lg border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                      className={`rounded-full border px-4 py-1.5 text-sm font-semibold whitespace-nowrap transition-all ${
                         hasCustomTheme
                           ? "profile-share-btn"
-                          : "border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                          : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-600 dark:bg-transparent dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-200"
                       }`}
                       style={
                         hasCustomTheme
@@ -585,11 +575,11 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                       <FollowButton userId={user.id} isFollowing={isFollowing} />
                       <FriendButton userId={user.id} friendshipStatus={friendshipStatus} requestId={friendRequestId} />
                       {/* Secondary actions — smaller, subtler */}
-                      <SubscribeButton userId={user.id} isSubscribed={isSubscribed} size="sm" />
+                      <SubscribeButton userId={user.id} isSubscribed={isSubscribed} />
                       <AddToListButton targetUserId={user.id} lists={listMemberships} />
                     </>
                   )}
-                  <ProfileShareButton username={user.username!} hasCustomTheme={hasCustomTheme} size="sm" />
+                  <ProfileShareButton username={user.username!} hasCustomTheme={hasCustomTheme} />
                 </div>
               </div>
 
@@ -675,7 +665,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
 
         {blockStatus === "none" && (
           <>
-        <ProfileTabs username={user.username!} activeTab={activeTab} hasCustomTheme={hasCustomTheme} showSensitiveTab={hasSensitivePosts} showNsfwTab={hasNsfwPosts} showGraphicTab={hasGraphicPosts} showWallTab={showWallTab} />
+        <ProfileTabs username={user.username!} activeTab={activeTab} hasCustomTheme={hasCustomTheme} showSensitiveTab={hasSensitivePosts} showNsfwTab={hasNsfwPosts} showGraphicTab={hasGraphicPosts} />
 
         {/* Tab content */}
         {activeTab === "posts" ? (
@@ -687,11 +677,20 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             </div>
           ) : (
             <div className="mt-6 space-y-4">
+              {/* Wall post composer — shown to friends on posts tab */}
+              {currentUserId && isFriend && !isOwnProfile && (
+                <WallPostComposer
+                  wallOwnerId={user.id}
+                  wallOwnerName={displayName || "this user"}
+                />
+              )}
               {feedItems.map((item) =>
                 item.type === "post" ? (
-                  <PostCard key={item.data.id} post={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator {...(item.data.wallPost && item.data.wallPost.wallOwner.username && { wallOwner: { username: item.data.wallPost.wallOwner.username, displayName: item.data.wallPost.wallOwner.displayName }, wallPostId: item.data.wallPost.id, wallPostStatus: item.data.wallPost.status })} />
+                  <PostCard key={`post-${item.data.id}`} post={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator {...(item.data.wallPost && item.data.wallPost.wallOwner.username && { wallOwner: { username: item.data.wallPost.wallOwner.username, displayName: item.data.wallPost.wallOwner.displayName }, wallPostId: item.data.wallPost.id, wallPostStatus: item.data.wallPost.status })} />
+                ) : item.type === "repost" ? (
+                  <RepostCard key={`repost-${item.data.id}`} repost={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator />
                 ) : (
-                  <RepostCard key={item.data.id} repost={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator />
+                  <PostCard key={`wall-${item.data.id}`} post={item.data.post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} wallOwner={{ username: item.data.wallOwner.username!, displayName: item.data.wallOwner.displayName }} wallPostId={item.data.id} wallPostStatus={item.data.status} isWallOwner={isOwnProfile} />
                 )
               )}
             </div>
@@ -736,7 +735,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
               ))}
             </div>
           )
-        ) : activeTab === "graphic" ? (
+        ) : (
           !currentUserId ? (
             <div className="mt-8 text-center">
               <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
@@ -753,64 +752,6 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             <div className="mt-6 space-y-4">
               {graphicPosts.map((post) => (
                 <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator {...(post.wallPost && post.wallPost.wallOwner.username && { wallOwner: { username: post.wallPost.wallOwner.username, displayName: post.wallPost.wallOwner.displayName }, wallPostId: post.wallPost.id, wallPostStatus: post.wallPost.status })} />
-              ))}
-            </div>
-          )
-        ) : activeTab === "wall" ? (
-          !canSeeWall ? (
-            <div className="mt-8 text-center">
-              <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
-                Only friends can see wall posts.
-              </p>
-            </div>
-          ) : (
-            <div className="mt-6 space-y-4">
-              {/* Wall post composer — shown to friends only */}
-              {currentUserId && isFriend && !isOwnProfile && (
-                <WallPostComposer
-                  wallOwnerId={user.id}
-                  wallOwnerName={displayName || "this user"}
-                />
-              )}
-              {wallPosts.length === 0 ? (
-                <div className="mt-4 text-center">
-                  <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
-                    No wall posts yet.{isFriend && !isOwnProfile ? " Be the first to write something!" : ""}
-                  </p>
-                </div>
-              ) : (
-                wallPosts.map((wp) => (
-                  <PostCard
-                    key={wp.id}
-                    post={wp.post}
-                    currentUserId={currentUserId}
-                    phoneVerified={phoneVerified}
-                    ageVerified={ageVerified}
-                    showGraphicByDefault={showGraphicByDefault}
-                    showNsfwContent={showNsfwContent}
-                    wallOwner={{
-                      username: wp.wallOwner.username!,
-                      displayName: wp.wallOwner.displayName,
-                    }}
-                    wallPostId={wp.id}
-                    wallPostStatus={wp.status}
-                    isWallOwner={isOwnProfile}
-                  />
-                ))
-              )}
-            </div>
-          )
-        ) : (
-          userReposts.length === 0 ? (
-            <div className="mt-8 text-center">
-              <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
-                No reposts yet.
-              </p>
-            </div>
-          ) : (
-            <div className="mt-6 space-y-4">
-              {userReposts.map((repost) => (
-                <RepostCard key={repost.id} repost={repost} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator />
               ))}
             </div>
           )

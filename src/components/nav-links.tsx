@@ -150,11 +150,9 @@ export function NavLinks({ username }: { username?: string | null }) {
           </Link>
         </Tooltip>
       ))}
-      {/* Desktop-only profile link */}
       <Tooltip label={profileLink.label}>
-        <ProfileLink link={profileLink} isActive={isActive(profileLink)} className="hidden sm:inline-flex" />
+        <ProfileLink link={profileLink} isActive={isActive(profileLink)} />
       </Tooltip>
-      {/* Mobile-only profile link (rendered in header row) is separate */}
     </>
   );
 }
@@ -174,24 +172,3 @@ function ProfileLink({ link, isActive, className }: { link: NavLink; isActive: b
   );
 }
 
-export function MobileProfileLink({ username }: { username?: string | null }) {
-  const pathname = usePathname();
-  const profileHref = username ? `/${username}` : "/profile";
-  const isActive = pathname === profileHref;
-
-  const baseClass = "rounded-lg p-1.5 transition-colors";
-  const activeColor = "bg-orange-50 text-orange-500 dark:bg-orange-900/20 dark:text-orange-500";
-  const inactiveColor = "text-zinc-600 hover:bg-orange-50 hover:text-orange-500 dark:text-zinc-400 dark:hover:bg-orange-900/20 dark:hover:text-orange-500";
-
-  return (
-    <Link
-      href={profileHref}
-      className={`${baseClass} ${isActive ? activeColor : inactiveColor}`}
-      aria-label="Profile"
-    >
-      <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-      </svg>
-    </Link>
-  );
-}

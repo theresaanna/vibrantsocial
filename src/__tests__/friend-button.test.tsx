@@ -43,11 +43,11 @@ describe("FriendButton", () => {
     ).toBeInTheDocument();
   });
 
-  it("'Add Friend' has border-fuchsia outline styling", () => {
+  it("'Add Friend' has outline pill styling", () => {
     render(<FriendButton userId="user2" friendshipStatus="none" />);
     const btn = screen.getByRole("button", { name: "Add Friend" });
-    expect(btn.className).toContain("border-fuchsia-500");
-    expect(btn.className).toContain("bg-transparent");
+    expect(btn.className).toContain("rounded-full");
+    expect(btn.className).toContain("border");
   });
 
   it("has submit type on Add Friend button", () => {
@@ -125,7 +125,7 @@ describe("FriendButton", () => {
     );
   });
 
-  it("Accept button has vibrant gradient styling", () => {
+  it("Accept button has filled fuchsia styling", () => {
     render(
       <FriendButton
         userId="user2"
@@ -134,9 +134,8 @@ describe("FriendButton", () => {
       />
     );
     const btn = screen.getByRole("button", { name: "Accept" });
-    expect(btn.className).toContain("bg-gradient-to-r");
-    expect(btn.className).toContain("from-fuchsia-500");
-    expect(btn.className).toContain("to-pink-500");
+    expect(btn.className).toContain("bg-fuchsia-600");
+    expect(btn.className).toContain("rounded-full");
   });
 
   it("includes hidden requestId input for pending_received forms", () => {
@@ -173,12 +172,11 @@ describe("FriendButton", () => {
     );
   });
 
-  it("'Friends' button has vibrant gradient styling", () => {
+  it("'Friends' button has filled fuchsia styling", () => {
     render(<FriendButton userId="user2" friendshipStatus="friends" />);
     const btn = screen.getByRole("button", { name: "Friends" });
-    expect(btn.className).toContain("bg-gradient-to-r");
-    expect(btn.className).toContain("from-fuchsia-500");
-    expect(btn.className).toContain("to-pink-500");
+    expect(btn.className).toContain("bg-fuchsia-600");
+    expect(btn.className).toContain("rounded-full");
   });
 
   it("shows confirmation dialog when clicking 'Friends' (unfriend attempt)", async () => {

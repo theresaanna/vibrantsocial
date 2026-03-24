@@ -8,7 +8,7 @@ interface ProfileShareButtonProps {
   size?: "default" | "sm";
 }
 
-export function ProfileShareButton({ username, hasCustomTheme, size = "default" }: ProfileShareButtonProps) {
+export function ProfileShareButton({ username, hasCustomTheme }: ProfileShareButtonProps) {
   const [copied, setCopied] = useState(false);
 
   async function handleShare() {
@@ -35,12 +35,10 @@ export function ProfileShareButton({ username, hasCustomTheme, size = "default" 
   return (
     <button
       onClick={handleShare}
-      className={`rounded-lg border font-medium transition-colors ${
-        size === "sm" ? "px-2 py-1 text-xs" : "px-3 py-1.5 text-sm"
-      } ${
+      className={`rounded-full px-4 py-1.5 text-sm font-semibold whitespace-nowrap transition-all ${
         hasCustomTheme
           ? "profile-share-btn"
-          : "border-zinc-200 text-zinc-500 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+          : "border border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-600 dark:bg-transparent dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-200"
       }`}
       style={
         hasCustomTheme

@@ -32,7 +32,7 @@ describe("AddToListButton", () => {
 
   it("renders the list icon button", () => {
     render(<AddToListButton targetUserId="u2" lists={lists} />);
-    const btn = screen.getByRole("button", { name: "Add to list" });
+    const btn = screen.getByRole("button", { name: /Lists/ });
     expect(btn).toBeInTheDocument();
   });
 
@@ -40,7 +40,7 @@ describe("AddToListButton", () => {
     const user = userEvent.setup();
     render(<AddToListButton targetUserId="u2" lists={lists} />);
 
-    await user.click(screen.getByRole("button", { name: "Add to list" }));
+    await user.click(screen.getByRole("button", { name: /Lists/ }));
 
     expect(screen.getByText("Add to Lists")).toBeInTheDocument();
     expect(screen.getByText("Tech")).toBeInTheDocument();
@@ -51,7 +51,7 @@ describe("AddToListButton", () => {
     const user = userEvent.setup();
     render(<AddToListButton targetUserId="u2" lists={lists} />);
 
-    await user.click(screen.getByRole("button", { name: "Add to list" }));
+    await user.click(screen.getByRole("button", { name: /Lists/ }));
 
     const checkboxes = screen.getAllByRole("checkbox");
     expect(checkboxes).toHaveLength(2);
@@ -63,7 +63,7 @@ describe("AddToListButton", () => {
     const user = userEvent.setup();
     render(<AddToListButton targetUserId="u2" lists={lists} />);
 
-    await user.click(screen.getByRole("button", { name: "Add to list" }));
+    await user.click(screen.getByRole("button", { name: /Lists/ }));
 
     const checkboxes = screen.getAllByRole("checkbox");
     await user.click(checkboxes[1]); // Toggle Friends on
@@ -77,7 +77,7 @@ describe("AddToListButton", () => {
     const user = userEvent.setup();
     render(<AddToListButton targetUserId="u2" lists={lists} />);
 
-    await user.click(screen.getByRole("button", { name: "Add to list" }));
+    await user.click(screen.getByRole("button", { name: /Lists/ }));
 
     expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
@@ -87,7 +87,7 @@ describe("AddToListButton", () => {
     const user = userEvent.setup();
     render(<AddToListButton targetUserId="u2" lists={lists} />);
 
-    await user.click(screen.getByRole("button", { name: "Add to list" }));
+    await user.click(screen.getByRole("button", { name: /Lists/ }));
 
     expect(screen.getByPlaceholderText("New list name...")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Create" })).toBeInTheDocument();

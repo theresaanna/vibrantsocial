@@ -98,10 +98,10 @@ test.describe("Follow & Friend Button UI", () => {
     const followButton = page.getByRole("button", { name: "Follow" });
     await expect(followButton).toBeVisible({ timeout: 5000 });
 
-    // Should have outline styling (border-2 border-blue-500, bg-transparent)
-    await expect(followButton).toHaveClass(/border-2/);
-    await expect(followButton).toHaveClass(/border-blue-500/);
-    await expect(followButton).toHaveClass(/bg-transparent/);
+    // Should have outline pill styling (rounded-full, border)
+    await expect(followButton).toHaveClass(/rounded-full/);
+    await expect(followButton).toHaveClass(/border/);
+    await expect(followButton).toHaveClass(/bg-white/);
   });
 
   test("Follow button shows 'Following' with gradient when already following", async ({
@@ -119,10 +119,9 @@ test.describe("Follow & Friend Button UI", () => {
     const followingButton = page.getByRole("button", { name: "Following" });
     await expect(followingButton).toBeVisible({ timeout: 5000 });
 
-    // Should have gradient styling
-    await expect(followingButton).toHaveClass(/bg-gradient-to-r/);
-    await expect(followingButton).toHaveClass(/from-blue-500/);
-    await expect(followingButton).toHaveClass(/to-cyan-500/);
+    // Should have filled pill styling
+    await expect(followingButton).toHaveClass(/rounded-full/);
+    await expect(followingButton).toHaveClass(/bg-blue-600/);
   });
 
   test("Friend button shows 'Add Friend' with outline fuchsia border", async ({
@@ -137,10 +136,10 @@ test.describe("Follow & Friend Button UI", () => {
     const addFriendButton = page.getByRole("button", { name: "Add Friend" });
     await expect(addFriendButton).toBeVisible({ timeout: 5000 });
 
-    // Should have outline fuchsia styling
-    await expect(addFriendButton).toHaveClass(/border-2/);
-    await expect(addFriendButton).toHaveClass(/border-fuchsia-500/);
-    await expect(addFriendButton).toHaveClass(/bg-transparent/);
+    // Should have outline pill styling (rounded-full, border)
+    await expect(addFriendButton).toHaveClass(/rounded-full/);
+    await expect(addFriendButton).toHaveClass(/border/);
+    await expect(addFriendButton).toHaveClass(/bg-white/);
   });
 
   test("Friend button shows 'Friends' with gradient when already friends", async ({
@@ -158,10 +157,9 @@ test.describe("Follow & Friend Button UI", () => {
     const friendsButton = page.getByRole("button", { name: "Friends" });
     await expect(friendsButton).toBeVisible({ timeout: 5000 });
 
-    // Should have gradient styling
-    await expect(friendsButton).toHaveClass(/bg-gradient-to-r/);
-    await expect(friendsButton).toHaveClass(/from-fuchsia-500/);
-    await expect(friendsButton).toHaveClass(/to-pink-500/);
+    // Should have filled pill styling
+    await expect(friendsButton).toHaveClass(/rounded-full/);
+    await expect(friendsButton).toHaveClass(/bg-fuchsia-600/);
   });
 
   test("clicking 'Following' shows confirmation dialog with 'Unfollow?' title", async ({

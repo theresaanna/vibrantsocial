@@ -329,7 +329,7 @@ export function PostCard({
                 href={`/${post.author.username}`}
                 className="truncate text-sm text-zinc-500 hover:underline"
               >
-                @{post.author.username}
+                <StyledName fontId={post.author?.usernameFont}>@{post.author.username}</StyledName>
               </Link>
             )}
           </div>
