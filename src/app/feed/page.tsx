@@ -4,8 +4,10 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { FeedContent } from "./feed-content";
 import { ListFeedContent } from "./list-feed-content";
+import { MediaFeedContent } from "./media-feed-content";
 import { FeedSkeleton } from "@/components/feed-skeleton";
 import { FeedTabs } from "@/components/feed-tabs";
+import { FeedViewToggleWrapper } from "@/components/feed-view-toggle-wrapper";
 import { getUserLists, getSubscribedLists, getListInfo } from "@/app/lists/actions";
 
 export const metadata: Metadata = {
@@ -14,14 +16,15 @@ export const metadata: Metadata = {
 };
 
 interface FeedPageProps {
-  searchParams: Promise<{ list?: string }>;
+  searchParams: Promise<{ list?: string; view?: string }>;
 }
 
 export default async function FeedPage({ searchParams }: FeedPageProps) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const { list: activeListId } = await searchParams;
+  const { list: activeListId, view } = await searchParams;
+  const activeView = view === "media" ? "media" : "posts";
   const [ownedLists, subscribedLists] = await Promise.all([
     getUserLists(),
     getSubscribedLists(),
@@ -57,9 +60,14 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
           ownerUsername: activeListInfo.owner.username,
         } : null}
       />
-      <Suspense key={activeListId ?? "main-feed"} fallback={<FeedSkeleton />}>
+      {!activeListId && (
+        <FeedViewToggleWrapper activeView={activeView} />
+      )}
+      <Suspense key={`${activeListId ?? "main-feed"}-${activeView}`} fallback={<FeedSkeleton />}>
         {activeListId ? (
           <ListFeedContent userId={session.user.id} listId={activeListId} />
+        ) : activeView === "media" ? (
+          <MediaFeedContent />
         ) : (
           <FeedContent userId={session.user.id} />
         )}
