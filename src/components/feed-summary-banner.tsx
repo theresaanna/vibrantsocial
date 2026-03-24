@@ -13,7 +13,8 @@ interface FeedSummaryBannerProps {
 export function FeedSummaryBanner({ lastSeenFeedAt }: FeedSummaryBannerProps) {
   const [dismissed, setDismissed] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [checked, setChecked] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [tooMany, setTooMany] = useState(false);
   const [missedCount, setMissedCount] = useState(0);
 
@@ -25,7 +26,7 @@ export function FeedSummaryBanner({ lastSeenFeedAt }: FeedSummaryBannerProps) {
       setSummary(result.summary);
       setTooMany(result.tooMany);
       setMissedCount(result.missedCount);
-      setLoading(false);
+      setChecked(true);
     });
 
     return () => {
@@ -34,15 +35,17 @@ export function FeedSummaryBanner({ lastSeenFeedAt }: FeedSummaryBannerProps) {
   }, [lastSeenFeedAt]);
 
   async function handleSummarize() {
-    setLoading(true);
+    setGenerating(true);
     const result = await generateFeedSummaryOnDemand(lastSeenFeedAt);
     setSummary(result);
     setTooMany(false);
-    setLoading(false);
+    setGenerating(false);
   }
 
+  // Don't render anything until the initial check completes
+  if (!checked) return null;
   if (dismissed) return null;
-  if (!loading && !summary && missedCount === 0) return null;
+  if (!summary && missedCount === 0) return null;
 
   return (
     <div className="mb-4 flex items-start gap-3 rounded-2xl bg-gradient-to-r from-fuchsia-50 to-blue-50 p-4 shadow-sm dark:from-fuchsia-950/30 dark:to-blue-950/30">
@@ -51,16 +54,16 @@ export function FeedSummaryBanner({ lastSeenFeedAt }: FeedSummaryBannerProps) {
           While you were away&hellip;
         </p>
 
-        {loading && (
+        {generating && (
           <div className="mt-2 space-y-2">
             <div className="h-3 w-3/4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
             <div className="h-3 w-1/2 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
           </div>
         )}
 
-        {!loading && summary && <p className="mt-1">{summary}</p>}
+        {!generating && summary && <p className="mt-1">{summary}</p>}
 
-        {!loading && !summary && missedCount > 0 && (
+        {!generating && !summary && missedCount > 0 && (
           <div className="mt-1">
             <p>You have {tooMany ? `${missedCount}+` : missedCount} new {missedCount === 1 ? "post" : "posts"} in your feed!</p>
             <button

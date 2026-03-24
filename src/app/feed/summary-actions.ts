@@ -147,14 +147,24 @@ export async function fetchFeedSummary(
     return { summary: null, missedCount: 0, tooMany: false };
   }
 
-  const since = new Date(lastSeenFeedAt);
+  let since = new Date(lastSeenFeedAt);
 
   try {
-    const posts = await fetchMissedPosts(
+    let posts = await fetchMissedPosts(
       session.user.id,
       since,
       SUMMARY_POST_LIMIT + 1
     );
+
+    // If no posts since last seen, fall back to the last 24 hours
+    if (posts.length === 0) {
+      since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      posts = await fetchMissedPosts(
+        session.user.id,
+        since,
+        SUMMARY_POST_LIMIT + 1
+      );
+    }
 
     if (posts.length === 0) {
       return { summary: null, missedCount: 0, tooMany: false };
@@ -175,11 +185,20 @@ export async function generateFeedSummaryOnDemand(
   if (!session?.user?.id) return null;
 
   try {
-    const posts = await fetchMissedPosts(
+    let posts = await fetchMissedPosts(
       session.user.id,
       new Date(lastSeenFeedAt),
       SUMMARY_POST_LIMIT
     );
+
+    // Fall back to last 24 hours if no posts since last seen
+    if (posts.length === 0) {
+      posts = await fetchMissedPosts(
+        session.user.id,
+        new Date(Date.now() - 24 * 60 * 60 * 1000),
+        SUMMARY_POST_LIMIT
+      );
+    }
 
     if (posts.length === 0) return null;
 
