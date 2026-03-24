@@ -7,7 +7,7 @@ import {
   useCallback,
   useTransition,
 } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { searchUsers, searchPosts, searchTagsForSearch } from "./actions";
 import { SearchPostCard } from "@/components/search-post-card";
@@ -40,8 +40,6 @@ export function SearchPageClient({
   initialTags,
 }: SearchPageClientProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-
   const [query, setQuery] = useState(initialQuery);
   const [activeTab, setActiveTab] = useState<SearchTab>(initialTab);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -96,10 +94,7 @@ export function SearchPageClient({
 
     debounceRef.current = setTimeout(() => {
       lastSearchedQuery.current = trimmed;
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("q", trimmed);
-      params.set("tab", activeTab);
-      router.replace(`/search?${params.toString()}`);
+      window.history.replaceState(null, "", `/search?q=${encodeURIComponent(trimmed)}&tab=${activeTab}`);
 
       startTransition(async () => {
         if (activeTab === "users") {
@@ -121,14 +116,12 @@ export function SearchPageClient({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query, activeTab, router, searchParams]);
+  }, [query, activeTab]);
 
   const handleTabChange = (tab: SearchTab) => {
     setActiveTab(tab);
     const trimmed = query.trim();
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("tab", tab);
-    router.replace(`/search?${params.toString()}`);
+    window.history.replaceState(null, "", `/search?q=${encodeURIComponent(trimmed)}&tab=${tab}`);
 
     if (trimmed.length >= 2) {
       startTransition(async () => {
