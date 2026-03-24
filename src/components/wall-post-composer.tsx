@@ -100,6 +100,7 @@ export function WallPostComposer({ wallOwnerId, wallOwnerName }: WallPostCompose
                   Write something on {wallOwnerName}&apos;s wall...
                 </div>
               }
+              ErrorBoundary={({ children }) => <>{children}</>}
             />
             <HistoryPlugin />
             <OnChangePlugin onChange={handleChange} />
