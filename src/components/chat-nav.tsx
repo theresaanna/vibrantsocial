@@ -11,6 +11,7 @@ import { timeAgo } from "@/lib/time";
 import { Tooltip } from "@/components/tooltip";
 import type { ConversationListItem } from "@/types/chat";
 import { StyledName } from "@/components/styled-name";
+import { FramedAvatar } from "@/components/framed-avatar";
 
 const PRESENCE_CHANNEL = "presence:global";
 const MAX_VISIBLE = 8;
@@ -215,17 +216,13 @@ function ChatPaneItem({
       className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
     >
       <div className="relative flex-shrink-0">
-        {avatar ? (
-          <img
-            src={avatar}
-            alt={displayName}
-            className="h-10 w-10 rounded-full object-cover"
-          />
-        ) : (
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-200 text-sm font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-            {isGroup ? "#" : displayName[0]?.toUpperCase()}
-          </div>
-        )}
+        <FramedAvatar
+          src={avatar}
+          alt={displayName}
+          initial={isGroup ? "#" : displayName[0]?.toUpperCase()}
+          size={40}
+          frameId={!isGroup ? participants[0]?.profileFrameId : undefined}
+        />
         {!isGroup && (
           <span className="absolute -bottom-0.5 -right-0.5">
             <PresenceIndicator isOnline={isOnline} size="sm" />
