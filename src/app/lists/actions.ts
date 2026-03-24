@@ -489,6 +489,13 @@ export async function toggleListSubscription(
     await prisma.userListSubscription.create({
       data: { listId, userId: session.user.id },
     });
+
+    // Notify the list owner that someone subscribed
+    await createNotification({
+      type: "LIST_SUBSCRIBE",
+      actorId: session.user.id,
+      targetUserId: list.ownerId,
+    });
   }
 
   await invalidate(cacheKeys.userListSubscriptions(session.user.id));

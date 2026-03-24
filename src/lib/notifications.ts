@@ -110,6 +110,8 @@ export async function createNotification(params: CreateNotificationParams) {
       TAG_POST: "posted in a tag you follow",
       REFERRAL_SIGNUP: "joined using your referral link! You earned 50 stars",
       STARS_MILESTONE: "You have 500+ stars! Redeem them for a free month of premium",
+      LIST_ADD: "added you to a list",
+      LIST_SUBSCRIBE: "subscribed to your list",
     };
     const body = `${actorName} ${typeText[type] || "sent you a notification"}`;
     const url = postId ? `/notifications` : "/notifications";

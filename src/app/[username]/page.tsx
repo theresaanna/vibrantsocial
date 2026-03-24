@@ -23,6 +23,7 @@ import { generateAdaptiveTheme } from "@/lib/profile-themes";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
 import { buildProfilePostsContentFilter } from "./profile-queries";
+import { WallPostComposer } from "@/components/wall-post-composer";
 import { getUserListMemberships } from "@/app/lists/actions";
 import { AddToListButton } from "@/components/add-to-list-button";
 import { PremiumCrown } from "@/components/premium-crown";
@@ -109,6 +110,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
     : tab === "sensitive" ? "sensitive" as const
     : tab === "nsfw" ? "nsfw" as const
     : tab === "graphic" ? "graphic" as const
+    : tab === "wall" ? "wall" as const
     : "posts" as const;
 
   const user = await cached(
@@ -388,6 +390,37 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       })
     : [];
 
+  // Wall tab: posts from friends on this user's profile
+  const isFriend = friendshipStatus === "friends";
+  const canSeeWall = isOwnProfile || isFriend;
+  const showWallTab = !!currentUserId && canSeeWall;
+
+  const wallPostStatusFilter = isOwnProfile
+    ? { status: { in: ["pending", "accepted"] } }
+    : { status: "accepted" };
+
+  const wallPosts = activeTab === "wall" && canSeeWall && currentUserId
+    ? await prisma.wallPost.findMany({
+        where: {
+          wallOwnerId: user.id,
+          ...wallPostStatusFilter,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        include: {
+          post: {
+            include: postInclude,
+          },
+          wallOwner: {
+            select: {
+              username: true,
+              displayName: true,
+            },
+          },
+        },
+      })
+    : [];
+
   // Merge posts and quote reposts chronologically for the Posts tab
   type FeedItem =
     | { type: "post"; data: (typeof posts)[number]; date: Date }
@@ -630,7 +663,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
 
         {blockStatus === "none" && (
           <>
-        <ProfileTabs username={user.username!} activeTab={activeTab} hasCustomTheme={hasCustomTheme} showSensitiveTab={hasSensitivePosts} showNsfwTab={hasNsfwPosts} showGraphicTab={hasGraphicPosts} />
+        <ProfileTabs username={user.username!} activeTab={activeTab} hasCustomTheme={hasCustomTheme} showSensitiveTab={hasSensitivePosts} showNsfwTab={hasNsfwPosts} showGraphicTab={hasGraphicPosts} showWallTab={showWallTab} />
 
         {/* Tab content */}
         {activeTab === "posts" ? (
@@ -709,6 +742,50 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
               {graphicPosts.map((post) => (
                 <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator />
               ))}
+            </div>
+          )
+        ) : activeTab === "wall" ? (
+          !canSeeWall ? (
+            <div className="mt-8 text-center">
+              <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                Only friends can see wall posts.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-6 space-y-4">
+              {/* Wall post composer — shown to friends only */}
+              {currentUserId && isFriend && !isOwnProfile && (
+                <WallPostComposer
+                  wallOwnerId={user.id}
+                  wallOwnerName={displayName || "this user"}
+                />
+              )}
+              {wallPosts.length === 0 ? (
+                <div className="mt-4 text-center">
+                  <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                    No wall posts yet.{isFriend && !isOwnProfile ? " Be the first to write something!" : ""}
+                  </p>
+                </div>
+              ) : (
+                wallPosts.map((wp) => (
+                  <PostCard
+                    key={wp.id}
+                    post={wp.post}
+                    currentUserId={currentUserId}
+                    phoneVerified={phoneVerified}
+                    ageVerified={ageVerified}
+                    showGraphicByDefault={showGraphicByDefault}
+                    showNsfwContent={showNsfwContent}
+                    wallOwner={{
+                      username: wp.wallOwner.username!,
+                      displayName: wp.wallOwner.displayName,
+                    }}
+                    wallPostId={wp.id}
+                    wallPostStatus={wp.status}
+                    isWallOwner={isOwnProfile}
+                  />
+                ))
+              )}
             </div>
           )
         ) : (
