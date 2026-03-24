@@ -487,7 +487,7 @@ export function RepostCard({
             ageVerified={ageVerified}
             showGraphicByDefault={showGraphicByDefault}
             showNsfwContent={showNsfwContent}
-            {...(repost.post.wallPost && {
+            {...(repost.post.wallPost && repost.post.wallPost.wallOwner.username && {
               wallOwner: {
                 username: repost.post.wallPost.wallOwner.username,
                 displayName: repost.post.wallPost.wallOwner.displayName,
