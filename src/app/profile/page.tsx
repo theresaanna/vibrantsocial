@@ -79,8 +79,10 @@ export default async function ProfilePage() {
   const oauthImage = user?.image ?? session.user.image ?? null;
   const backgrounds = getProfileBackgrounds();
 
-  const customPresets: CustomPresetData[] = isPremium
-    ? (
+  let customPresets: CustomPresetData[] = [];
+  if (isPremium) {
+    try {
+      customPresets = (
         await prisma.customThemePreset.findMany({
           where: { userId: session.user.id },
           orderBy: { createdAt: "asc" },
@@ -103,8 +105,11 @@ export default async function ProfilePage() {
           profileSecondaryColor: p.darkSecondaryColor,
           profileContainerColor: p.darkContainerColor,
         },
-      }))
-    : [];
+      }));
+    } catch {
+      // Table may not exist yet during migration rollout
+    }
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-57px)] items-center justify-center">

@@ -483,16 +483,27 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
         };
 
         // Check if the user's colors match a saved AI-generated preset
-        const customPreset = await prisma.customThemePreset.findFirst({
-          where: {
-            userId: user.id,
-            lightBgColor: userColors.profileBgColor,
-            lightTextColor: userColors.profileTextColor,
-            lightLinkColor: userColors.profileLinkColor,
-            lightSecondaryColor: userColors.profileSecondaryColor,
-            lightContainerColor: userColors.profileContainerColor,
-          },
-        });
+        let customPreset: {
+          darkBgColor: string;
+          darkTextColor: string;
+          darkLinkColor: string;
+          darkSecondaryColor: string;
+          darkContainerColor: string;
+        } | null = null;
+        try {
+          customPreset = await prisma.customThemePreset.findFirst({
+            where: {
+              userId: user.id,
+              lightBgColor: userColors.profileBgColor,
+              lightTextColor: userColors.profileTextColor,
+              lightLinkColor: userColors.profileLinkColor,
+              lightSecondaryColor: userColors.profileSecondaryColor,
+              lightContainerColor: userColors.profileContainerColor,
+            },
+          });
+        } catch {
+          // Table may not exist yet during migration rollout
+        }
 
         let light = userColors;
         let dark;
