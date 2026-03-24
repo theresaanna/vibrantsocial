@@ -7,7 +7,7 @@ import { FramedAvatar } from "@/components/framed-avatar";
 import { timeAgo } from "@/lib/time";
 import { fetchMediaFeedPage } from "@/app/feed/media-actions";
 
-interface MediaPost {
+export interface MediaPost {
   id: string;
   slug: string | null;
   content: string;
@@ -22,6 +22,8 @@ interface MediaPost {
     profileFrameId: string | null;
   } | null;
 }
+
+export type MediaFetchFn = (cursor?: string) => Promise<{ posts: MediaPost[]; hasMore: boolean }>;
 
 interface MediaGridItem {
   media: MediaItem;
@@ -120,9 +122,10 @@ function MediaThumbnail({ item }: { item: MediaGridItem }) {
 interface MediaGridProps {
   initialPosts: MediaPost[];
   initialHasMore: boolean;
+  fetchPage?: MediaFetchFn;
 }
 
-export function MediaGrid({ initialPosts, initialHasMore }: MediaGridProps) {
+export function MediaGrid({ initialPosts, initialHasMore, fetchPage = fetchMediaFeedPage }: MediaGridProps) {
   const [posts, setPosts] = useState(initialPosts);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [isPending, startTransition] = useTransition();
@@ -140,7 +143,7 @@ export function MediaGrid({ initialPosts, initialHasMore }: MediaGridProps) {
 
     startTransition(async () => {
       try {
-        const result = await fetchMediaFeedPage(lastPost.createdAt);
+        const result = await fetchPage(lastPost.createdAt);
         if (result.posts.length > 0) {
           setPosts((prev) => {
             const existingIds = new Set(prev.map((p) => p.id));
