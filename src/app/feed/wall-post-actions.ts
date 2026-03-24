@@ -122,7 +122,7 @@ export async function createWallPost(
   // Handle mentions
   const mentionedUsernames = extractMentionsFromLexicalJson(content);
   if (mentionedUsernames.length > 0) {
-    await createMentionNotifications(mentionedUsernames, session.user.id, post.id);
+    await createMentionNotifications({ usernames: mentionedUsernames, actorId: session.user.id, postId: post.id });
   }
 
   revalidatePath(`/${wallOwner.username}`);
