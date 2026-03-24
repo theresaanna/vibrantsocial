@@ -181,6 +181,9 @@ model User {
   linkedAccountGroup   LinkedAccountGroup? @relation(fields: [linkedAccountGroupId], references: [id])
 
   @@index([linkedAccountGroupId])
+  @@index([username])
+  @@index([displayName])
+  @@index([name])
 }
 
 model Account {

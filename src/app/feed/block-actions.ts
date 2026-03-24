@@ -28,14 +28,20 @@ export async function getBlockedUserIds(userId: string): Promise<string[]> {
 }
 
 /**
- * Get IDs of users who have blocked the given user.
+ * Get IDs of users who have blocked the given user (cached).
  */
 export async function getBlockedByUserIds(userId: string): Promise<string[]> {
-  const blocks = await prisma.block.findMany({
-    where: { blockedId: userId },
-    select: { blockerId: true },
-  });
-  return blocks.map((b: { blockerId: string }) => b.blockerId);
+  return cached(
+    `user:${userId}:blocked-by`,
+    async () => {
+      const blocks = await prisma.block.findMany({
+        where: { blockedId: userId },
+        select: { blockerId: true },
+      });
+      return blocks.map((b: { blockerId: string }) => b.blockerId);
+    },
+    60
+  );
 }
 
 /**
