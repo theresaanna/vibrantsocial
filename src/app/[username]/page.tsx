@@ -64,6 +64,7 @@ const profileSelect = {
   sparklefallMinSize: true,
   sparklefallMaxSize: true,
   isProfilePublic: true,
+  hideWallFromFeed: true,
   tier: true,
   _count: {
     select: {
@@ -106,7 +107,8 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
 export default async function PublicProfilePage({ params, searchParams }: ProfilePageProps) {
   const { username } = await params;
   const { tab } = await searchParams;
-  const activeTab = tab === "sensitive" ? "sensitive" as const
+  const activeTab = tab === "wall" ? "wall" as const
+    : tab === "sensitive" ? "sensitive" as const
     : tab === "nsfw" ? "nsfw" as const
     : tab === "graphic" ? "graphic" as const
     : "posts" as const;
@@ -391,15 +393,22 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       })
     : [];
 
-  // Wall posts are shown inline in the Posts tab
+  // Wall posts: shown inline in Posts tab (default) or in separate Wall tab (when hideWallFromFeed enabled)
   const isFriend = friendshipStatus === "friends";
   const canSeeWall = isOwnProfile || isFriend;
+  const showWallInSeparateTab = user.hideWallFromFeed;
+  const showWallOnPostsTab = !showWallInSeparateTab;
 
   const wallPostStatusFilter = isOwnProfile
     ? { status: { in: ["pending", "accepted"] } }
     : { status: "accepted" };
 
-  const wallPosts = activeTab === "posts" && canSeeWall && currentUserId
+  const shouldFetchWall = canSeeWall && currentUserId && (
+    (activeTab === "posts" && showWallOnPostsTab) ||
+    (activeTab === "wall" && showWallInSeparateTab)
+  );
+
+  const wallPosts = shouldFetchWall
     ? await prisma.wallPost.findMany({
         where: {
           wallOwnerId: user.id,
@@ -421,7 +430,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       })
     : [];
 
-  // Merge posts, reposts, and wall posts chronologically for the Posts tab
+  // Merge posts, reposts, and wall posts chronologically
   type FeedItem =
     | { type: "post"; data: (typeof posts)[number]; date: Date }
     | { type: "repost"; data: (typeof allReposts)[number]; date: Date }
@@ -431,7 +440,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
     ? [
         ...posts.map((p) => ({ type: "post" as const, data: p, date: p.createdAt })),
         ...allReposts.map((r) => ({ type: "repost" as const, data: r, date: r.createdAt })),
-        ...wallPosts.map((wp) => ({ type: "wall" as const, data: wp, date: wp.createdAt })),
+        ...(showWallOnPostsTab ? wallPosts : []).map((wp) => ({ type: "wall" as const, data: wp, date: wp.createdAt })),
       ].sort((a, b) => {
         // Pinned posts/reposts always come first
         const aPinned = (a.type === "post" && a.data.isPinned) || (a.type === "repost" && a.data.isPinned) ? 1 : 0;
@@ -439,6 +448,12 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
         if (aPinned !== bPinned) return bPinned - aPinned;
         return b.date.getTime() - a.date.getTime();
       })
+    : [];
+
+  // Wall tab items (only when wall is shown separately)
+  const wallFeedItems: FeedItem[] = activeTab === "wall" && showWallInSeparateTab
+    ? wallPosts.map((wp) => ({ type: "wall" as const, data: wp, date: wp.createdAt }))
+        .sort((a, b) => b.date.getTime() - a.date.getTime())
     : [];
 
   const displayName = user.displayName || user.name || user.username;
@@ -665,7 +680,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
 
         {blockStatus === "none" && (
           <>
-        <ProfileTabs username={user.username!} activeTab={activeTab} hasCustomTheme={hasCustomTheme} showSensitiveTab={hasSensitivePosts} showNsfwTab={hasNsfwPosts} showGraphicTab={hasGraphicPosts} />
+        <ProfileTabs username={user.username!} activeTab={activeTab} hasCustomTheme={hasCustomTheme} showWallTab={showWallInSeparateTab && canSeeWall} showSensitiveTab={hasSensitivePosts} showNsfwTab={hasNsfwPosts} showGraphicTab={hasGraphicPosts} />
 
         {/* Tab content */}
         {activeTab === "posts" ? (
@@ -677,8 +692,8 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             </div>
           ) : (
             <div className="mt-6 space-y-4">
-              {/* Wall post composer — shown to friends on posts tab */}
-              {currentUserId && isFriend && !isOwnProfile && (
+              {/* Wall post composer — shown to friends on posts tab (when wall is inline) */}
+              {currentUserId && isFriend && !isOwnProfile && showWallOnPostsTab && (
                 <WallPostComposer
                   wallOwnerId={user.id}
                   wallOwnerName={displayName || "this user"}
@@ -692,6 +707,28 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                 ) : (
                   <PostCard key={`wall-${item.data.id}`} post={item.data.post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} wallOwner={{ username: item.data.wallOwner.username!, displayName: item.data.wallOwner.displayName }} wallPostId={item.data.id} wallPostStatus={item.data.status} isWallOwner={isOwnProfile} />
                 )
+              )}
+            </div>
+          )
+        ) : activeTab === "wall" ? (
+          wallFeedItems.length === 0 ? (
+            <div className="mt-8 text-center">
+              <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                No wall posts yet.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-6 space-y-4">
+              {currentUserId && isFriend && !isOwnProfile && (
+                <WallPostComposer
+                  wallOwnerId={user.id}
+                  wallOwnerName={displayName || "this user"}
+                />
+              )}
+              {wallFeedItems.map((item) =>
+                item.type === "wall" ? (
+                  <PostCard key={`wall-${item.data.id}`} post={item.data.post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} wallOwner={{ username: item.data.wallOwner.username!, displayName: item.data.wallOwner.displayName }} wallPostId={item.data.id} wallPostStatus={item.data.status} isWallOwner={isOwnProfile} />
+                ) : null
               )}
             </div>
           )

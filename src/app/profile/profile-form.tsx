@@ -65,6 +65,7 @@ interface ProfileFormProps {
   emailOnTagPost: boolean;
   pushEnabled: boolean;
   isProfilePublic: boolean;
+  hideWallFromFeed: boolean;
   phoneVerified: boolean;
   phoneNumber: string | null;
   isCredentialsUser: boolean;
@@ -83,7 +84,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, phoneVerified, phoneNumber, isCredentialsUser, isPremium, stars, starsSpent, referralCode, backgrounds, userEmail }: ProfileFormProps) {
+export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, isPremium, stars, starsSpent, referralCode, backgrounds, userEmail }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [displayNameValue, setDisplayNameValue] = useState(user.displayName ?? "");
@@ -1012,6 +1013,25 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
           </label>
           <p className="mt-1 ml-6 text-xs text-zinc-500 dark:text-zinc-400">
             When disabled, only logged-in users can view your profile and posts.
+          </p>
+        </div>
+
+        {/* Wall posts visibility */}
+        <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              name="hideWallFromFeed"
+              value="true"
+              defaultChecked={hideWallFromFeed}
+              className="rounded"
+            />
+            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Show wall posts in a separate tab
+            </span>
+          </label>
+          <p className="mt-1 ml-6 text-xs text-zinc-500 dark:text-zinc-400">
+            When enabled, wall posts from friends will appear in a &ldquo;Wall&rdquo; tab instead of mixed into your main Posts feed.
           </p>
         </div>
 

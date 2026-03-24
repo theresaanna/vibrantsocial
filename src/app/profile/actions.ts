@@ -258,6 +258,7 @@ export async function updateProfile(
   const emailOnTagPost = formData.get("emailOnTagPost") === "true";
   const pushEnabled = formData.get("pushEnabled") === "true";
   let isProfilePublic = formData.get("isProfilePublic") === "true";
+  const hideWallFromFeed = formData.get("hideWallFromFeed") === "true";
 
   // Suspended users cannot make their profile public
   if (isProfilePublic && currentUser?.suspended) {
@@ -280,6 +281,7 @@ export async function updateProfile(
       emailOnTagPost,
       pushEnabled,
       isProfilePublic,
+      hideWallFromFeed,
       profileFrameId,
       usernameFont,
       ...themeColors,
