@@ -473,7 +473,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   const userHasBirthday = isBirthday(user.birthdayMonth, user.birthdayDay);
 
   const themeStyle = hasCustomTheme
-    ? (() => {
+    ? await (async () => {
         const userColors = {
           profileBgColor: user.profileBgColor ?? "#ffffff",
           profileTextColor: user.profileTextColor ?? "#18181b",
@@ -481,7 +481,35 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           profileSecondaryColor: user.profileSecondaryColor ?? "#71717a",
           profileContainerColor: user.profileContainerColor ?? "#f4f4f5",
         };
-        const { light, dark } = generateAdaptiveTheme(userColors);
+
+        // Check if the user's colors match a saved AI-generated preset
+        const customPreset = await prisma.customThemePreset.findFirst({
+          where: {
+            userId: user.id,
+            lightBgColor: userColors.profileBgColor,
+            lightTextColor: userColors.profileTextColor,
+            lightLinkColor: userColors.profileLinkColor,
+            lightSecondaryColor: userColors.profileSecondaryColor,
+            lightContainerColor: userColors.profileContainerColor,
+          },
+        });
+
+        let light = userColors;
+        let dark;
+        if (customPreset) {
+          dark = {
+            profileBgColor: customPreset.darkBgColor,
+            profileTextColor: customPreset.darkTextColor,
+            profileLinkColor: customPreset.darkLinkColor,
+            profileSecondaryColor: customPreset.darkSecondaryColor,
+            profileContainerColor: customPreset.darkContainerColor,
+          };
+        } else {
+          const adaptive = generateAdaptiveTheme(userColors);
+          light = adaptive.light;
+          dark = adaptive.dark;
+        }
+
         return {
           "--profile-bg-light": light.profileBgColor,
           "--profile-text-light": light.profileTextColor,

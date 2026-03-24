@@ -181,6 +181,9 @@ model User {
   // Wall posts (posts from friends on this user's profile)
   wallPosts WallPost[] @relation("wallPosts")
 
+  // AI-generated custom theme presets
+  customThemePresets CustomThemePreset[]
+
   // Linked accounts (multi-account switching)
   linkedAccountGroupId String?
   linkedAccountGroup   LinkedAccountGroup? @relation(fields: [linkedAccountGroupId], references: [id])
@@ -854,4 +857,32 @@ model WallPost {
   wallOwner User @relation("wallPosts", fields: [wallOwnerId], references: [id], onDelete: Cascade)
 
   @@index([wallOwnerId, status])
+}
+
+model CustomThemePreset {
+  id     String @id @default(cuid())
+  userId String
+  name   String
+  prompt String
+
+  // Light variant
+  lightBgColor        String
+  lightTextColor      String
+  lightLinkColor      String
+  lightSecondaryColor String
+  lightContainerColor String
+
+  // Dark variant
+  darkBgColor        String
+  darkTextColor      String
+  darkLinkColor      String
+  darkSecondaryColor String
+  darkContainerColor String
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@index([userId])
 }

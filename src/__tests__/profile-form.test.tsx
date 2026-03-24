@@ -161,6 +161,7 @@ function renderForm(options: RenderFormOptions = {}) {
       stars={stars}
       backgrounds={[{ id: "test-bg", name: "Test Background", src: "/backgrounds/test.jpg" }]}
       userEmail="test@example.com"
+      customPresets={[]}
     />
   );
 }

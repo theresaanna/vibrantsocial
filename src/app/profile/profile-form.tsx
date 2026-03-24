@@ -12,6 +12,7 @@ import { ThemeEditor } from "@/components/theme-editor";
 import { BackgroundEditor } from "@/components/background-editor";
 import { SparkleEditor } from "@/components/sparkle-editor";
 import type { BackgroundDefinition } from "@/lib/profile-backgrounds";
+import type { CustomPresetData } from "@/lib/profile-themes";
 import { FrameSelector } from "@/components/frame-selector";
 import { PremiumCrown } from "@/components/premium-crown";
 import { FramedAvatar } from "@/components/framed-avatar";
@@ -77,6 +78,7 @@ interface ProfileFormProps {
   referralCode: string;
   backgrounds: BackgroundDefinition[];
   userEmail: string | null;
+  customPresets: CustomPresetData[];
 }
 
 interface ProfileState {
@@ -86,7 +88,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, birthdayMonth: initialBirthdayMonth, birthdayDay: initialBirthdayDay, isPremium, stars, starsSpent, referralCode, backgrounds, userEmail }: ProfileFormProps) {
+export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, birthdayMonth: initialBirthdayMonth, birthdayDay: initialBirthdayDay, isPremium, stars, starsSpent, referralCode, backgrounds, userEmail, customPresets }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [displayNameValue, setDisplayNameValue] = useState(user.displayName ?? "");
@@ -834,6 +836,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
           onChange={scheduleAutosave}
           isPremium={isPremium}
           userEmail={userEmail}
+          customPresets={customPresets}
         />
 
         <BackgroundEditor
