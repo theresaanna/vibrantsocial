@@ -575,7 +575,7 @@ function CommentItem({
             <button
               type="button"
               onClick={() => { setEditContent(comment.content); setIsEditing(true); }}
-              className="text-xs font-medium text-zinc-500 opacity-0 transition-opacity hover:text-zinc-700 group-hover/comment:opacity-100 dark:hover:text-zinc-300"
+              className="text-xs font-medium text-zinc-500 transition-opacity hover:text-zinc-700 sm:opacity-0 sm:group-hover/comment:opacity-100 dark:hover:text-zinc-300"
               data-testid="comment-edit-button"
             >
               Edit
@@ -585,7 +585,7 @@ function CommentItem({
             <button
               type="button"
               onClick={() => setShowDeleteConfirm(true)}
-              className="text-xs font-medium text-zinc-500 opacity-0 transition-opacity hover:text-red-600 group-hover/comment:opacity-100 dark:hover:text-red-400"
+              className="text-xs font-medium text-zinc-500 transition-opacity hover:text-red-600 sm:opacity-0 sm:group-hover/comment:opacity-100 dark:hover:text-red-400"
               data-testid="comment-delete-button"
             >
               Delete
@@ -596,7 +596,7 @@ function CommentItem({
               <button
                 ref={emojiButtonRef}
                 onClick={openEmojiPicker}
-                className="rounded p-0.5 text-zinc-400 opacity-0 transition-opacity hover:bg-zinc-100 hover:text-zinc-600 group-hover/comment:opacity-100 dark:hover:bg-zinc-700 dark:hover:text-zinc-300"
+                className="rounded p-0.5 text-zinc-400 transition-opacity hover:bg-zinc-100 hover:text-zinc-600 sm:opacity-0 sm:group-hover/comment:opacity-100 dark:hover:bg-zinc-700 dark:hover:text-zinc-300"
                 aria-label="Add reaction"
                 data-testid="comment-add-reaction"
               >
@@ -641,7 +641,7 @@ function CommentItem({
             <button
               type="button"
               onClick={() => setShowReportModal(true)}
-              className="text-xs font-medium text-zinc-500 opacity-0 transition-opacity hover:text-red-600 group-hover/comment:opacity-100 dark:hover:text-red-400"
+              className="text-xs font-medium text-zinc-500 transition-opacity hover:text-red-600 sm:opacity-0 sm:group-hover/comment:opacity-100 dark:hover:text-red-400"
               data-testid="comment-report-button"
             >
               Report
