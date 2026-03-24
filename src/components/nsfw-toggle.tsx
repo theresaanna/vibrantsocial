@@ -22,7 +22,7 @@ export function NsfwToggle({ initialEnabled }: NsfwToggleProps) {
     });
   };
 
-  const label = enabled ? "NSFW on" : "NSFW off";
+  const label = enabled ? "Hide NSFW content" : "Show NSFW content";
 
   return (
     <Tooltip label={label}>

@@ -17,7 +17,7 @@ test.describe("NSFW Toggle in Navigation", () => {
 
     // Default should be off (aria-pressed=false)
     await expect(toggle).toHaveAttribute("aria-pressed", "false");
-    await expect(toggle).toHaveAttribute("aria-label", "NSFW off");
+    await expect(toggle).toHaveAttribute("aria-label", "Show NSFW content");
   });
 
   test("clicking NSFW toggle changes its state", async ({ page }) => {
@@ -73,15 +73,15 @@ test.describe("NSFW Toggle in Navigation", () => {
     );
   });
 
-  test("NSFW toggle is positioned next to theme toggle", async ({ page }) => {
+  test("NSFW toggle is in the header", async ({ page }) => {
     await page.goto("/feed");
 
     const toggle = page.getByTestId("nsfw-toggle");
     await expect(toggle).toBeVisible({ timeout: 10000 });
 
-    // Both should be in the same parent container
-    const toggleBox = await toggle.boundingBox();
-    expect(toggleBox).toBeTruthy();
+    // Verify the toggle is inside the header element
+    const headerToggle = page.locator("header").getByTestId("nsfw-toggle");
+    await expect(headerToggle).toBeVisible();
   });
 
   test("NSFW toggle is not visible when logged out", async ({ browser }) => {

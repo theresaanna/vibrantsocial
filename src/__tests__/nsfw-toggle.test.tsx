@@ -31,7 +31,7 @@ describe("NsfwToggle", () => {
 
     const button = screen.getByTestId("nsfw-toggle");
     expect(button).toBeInTheDocument();
-    expect(button).toHaveAttribute("aria-label", "NSFW off");
+    expect(button).toHaveAttribute("aria-label", "Show NSFW content");
     expect(button).toHaveAttribute("aria-pressed", "false");
   });
 
@@ -39,7 +39,7 @@ describe("NsfwToggle", () => {
     render(<NsfwToggle initialEnabled={true} />);
 
     const button = screen.getByTestId("nsfw-toggle");
-    expect(button).toHaveAttribute("aria-label", "NSFW on");
+    expect(button).toHaveAttribute("aria-label", "Hide NSFW content");
     expect(button).toHaveAttribute("aria-pressed", "true");
   });
 
@@ -88,13 +88,13 @@ describe("NsfwToggle", () => {
   it("shows correct tooltip label", () => {
     render(<NsfwToggle initialEnabled={false} />);
 
-    expect(screen.getByTestId("tooltip")).toHaveAttribute("data-label", "NSFW off");
+    expect(screen.getByTestId("tooltip")).toHaveAttribute("data-label", "Show NSFW content");
   });
 
   it("shows correct tooltip label when enabled", () => {
     render(<NsfwToggle initialEnabled={true} />);
 
-    expect(screen.getByTestId("tooltip")).toHaveAttribute("data-label", "NSFW on");
+    expect(screen.getByTestId("tooltip")).toHaveAttribute("data-label", "Hide NSFW content");
   });
 
   it("renders an SVG icon with circle and line (stop sign)", () => {
