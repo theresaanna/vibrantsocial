@@ -107,6 +107,7 @@ export async function createPost(
   const isCloseFriendsOnly = formData.get("isCloseFriendsOnly") === "true";
   const hasCustomAudience = formData.get("hasCustomAudience") === "true";
   const isLoggedInOnly = formData.get("isLoggedInOnly") === "true";
+  const hideLinkPreview = formData.get("hideLinkPreview") === "true";
 
   // Age verification required for sensitive/graphic content
   if (isSensitive || isGraphicNudity) {
@@ -162,7 +163,7 @@ export async function createPost(
   slug = await resolveUniqueSlug(session.user.id, slug);
 
   const post = await prisma.post.create({
-    data: { content, slug, authorId: session.user.id, isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly, hasCustomAudience, isLoggedInOnly },
+    data: { content, slug, authorId: session.user.id, isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly, hasCustomAudience, isLoggedInOnly, hideLinkPreview },
   });
 
   // Create custom audience records
@@ -304,6 +305,7 @@ export async function editPost(
   const isCloseFriendsOnly = formData.get("isCloseFriendsOnly") === "true";
   const hasCustomAudience = formData.get("hasCustomAudience") === "true";
   const isLoggedInOnly = formData.get("isLoggedInOnly") === "true";
+  const hideLinkPreview = formData.get("hideLinkPreview") === "true";
 
   // Custom audience: premium-only feature
   const rawEditAudienceIds = formData.get("customAudienceIds") as string;
@@ -330,7 +332,7 @@ export async function editPost(
 
   await prisma.post.update({
     where: { id: postId },
-    data: { content, editedAt: new Date(), isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly, hasCustomAudience, isLoggedInOnly, ...slugUpdate },
+    data: { content, editedAt: new Date(), isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly, hasCustomAudience, isLoggedInOnly, hideLinkPreview, ...slugUpdate },
   });
 
   // Update custom audience records

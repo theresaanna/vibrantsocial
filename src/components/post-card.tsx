@@ -52,6 +52,7 @@ interface PostCardProps {
     isCloseFriendsOnly?: boolean;
     isLoggedInOnly?: boolean;
     isPinned: boolean;
+    hideLinkPreview?: boolean;
     author: PostAuthor | null;
     tags?: Array<{ tag: { name: string } }>;
     _count: {
@@ -486,6 +487,7 @@ export function PostCard({
                 <input type="hidden" name="isGraphicNudity" value={editIsGraphicNudity ? "true" : "false"} />
                 <input type="hidden" name="isCloseFriendsOnly" value={editIsCloseFriendsOnly ? "true" : "false"} />
                 <input type="hidden" name="isLoggedInOnly" value={editIsLoggedInOnly ? "true" : "false"} />
+                <input type="hidden" name="hideLinkPreview" value={post.hideLinkPreview ? "true" : "false"} />
                 <div data-testid="post-edit-editor">
                   <Editor
                     initialContent={currentContent}
@@ -631,6 +633,7 @@ export function PostCard({
                   updatePostChecklist(post.id, json);
                 }}
                 isPostAuthor={isAuthor}
+                hideLinkPreview={post.hideLinkPreview}
               />
             )}
           </div>

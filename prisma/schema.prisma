@@ -235,6 +235,7 @@ model Post {
   hasCustomAudience  Boolean   @default(false)
   isLoggedInOnly     Boolean   @default(false)
   isPinned           Boolean   @default(false)
+  hideLinkPreview    Boolean   @default(false)
   editedAt           DateTime?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
