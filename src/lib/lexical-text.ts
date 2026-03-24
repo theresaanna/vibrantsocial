@@ -82,6 +82,66 @@ export function extractContentFromLexicalJson(
   }
 }
 
+export interface MediaItem {
+  type: "image" | "video" | "youtube";
+  src: string;
+  altText?: string;
+  width?: number | "inherit";
+  height?: number | "inherit";
+  fileName?: string;
+  mimeType?: string;
+  videoID?: string;
+}
+
+/**
+ * Walk the Lexical JSON tree and extract all media nodes (images, videos, YouTube embeds).
+ */
+export function extractMediaFromLexicalJson(jsonString: string): MediaItem[] {
+  try {
+    const parsed = JSON.parse(jsonString);
+    const media: MediaItem[] = [];
+
+    function walk(nodes: LexicalJsonNode[]) {
+      for (const node of nodes) {
+        if (node.type === "image" && typeof node.src === "string") {
+          media.push({
+            type: "image",
+            src: node.src,
+            altText: typeof node.altText === "string" ? node.altText : undefined,
+            width: node.width as number | "inherit" | undefined,
+            height: node.height as number | "inherit" | undefined,
+          });
+        }
+        if (node.type === "video" && typeof node.src === "string") {
+          media.push({
+            type: "video",
+            src: node.src,
+            fileName: typeof node.fileName === "string" ? node.fileName : undefined,
+            mimeType: typeof node.mimeType === "string" ? node.mimeType : undefined,
+          });
+        }
+        if (node.type === "youtube" && typeof node.videoID === "string") {
+          media.push({
+            type: "youtube",
+            src: `https://www.youtube.com/watch?v=${node.videoID}`,
+            videoID: node.videoID,
+          });
+        }
+        if (node.children) {
+          walk(node.children);
+        }
+      }
+    }
+
+    if (parsed?.root?.children) {
+      walk(parsed.root.children);
+    }
+    return media;
+  } catch {
+    return [];
+  }
+}
+
 const YOUTUBE_RE = /^https?:\/\/(?:www\.)?(?:youtube\.com\/watch|youtu\.be\/)/i;
 
 /**
