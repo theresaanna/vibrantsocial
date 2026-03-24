@@ -30,6 +30,23 @@ const memberUserSelect = {
 } as const;
 
 // ---------------------------------------------------------------------------
+// Permission helpers
+// ---------------------------------------------------------------------------
+
+async function isOwnerOrCollaborator(
+  listId: string,
+  userId: string
+): Promise<"owner" | "collaborator" | false> {
+  const list = await prisma.userList.findUnique({ where: { id: listId } });
+  if (!list) return false;
+  if (list.ownerId === userId) return "owner";
+  const collab = await prisma.userListCollaborator.findUnique({
+    where: { listId_userId: { listId, userId } },
+  });
+  return collab ? "collaborator" : false;
+}
+
+// ---------------------------------------------------------------------------
 // CRUD actions
 // ---------------------------------------------------------------------------
 
@@ -153,9 +170,9 @@ export async function addMemberToList(
     return { success: false, message: "Missing required fields" };
   }
 
-  const list = await prisma.userList.findUnique({ where: { id: listId } });
-  if (!list || list.ownerId !== session.user.id) {
-    return { success: false, message: "List not found or not owned by you" };
+  const role = await isOwnerOrCollaborator(listId, session.user.id);
+  if (!role) {
+    return { success: false, message: "List not found or you don't have permission" };
   }
 
   // Check blocks
@@ -212,9 +229,9 @@ export async function removeMemberFromList(
     return { success: false, message: "Missing required fields" };
   }
 
-  const list = await prisma.userList.findUnique({ where: { id: listId } });
-  if (!list || list.ownerId !== session.user.id) {
-    return { success: false, message: "List not found or not owned by you" };
+  const role = await isOwnerOrCollaborator(listId, session.user.id);
+  if (!role) {
+    return { success: false, message: "List not found or you don't have permission" };
   }
 
   const member = await prisma.userListMember.findUnique({
@@ -245,12 +262,22 @@ export async function addUserToMultipleLists(
     return { success: false, message: "Too many requests. Please try again later." };
   }
 
-  // Verify all lists belong to the user
-  const lists = await prisma.userList.findMany({
-    where: { ownerId: session.user.id },
-    select: { id: true },
-  });
-  const ownedIds = new Set(lists.map((l) => l.id));
+  // Verify all lists belong to the user or they collaborate on
+  const [ownedLists, collaboratingLists] = await Promise.all([
+    prisma.userList.findMany({
+      where: { ownerId: session.user.id },
+      select: { id: true },
+    }),
+    prisma.userListCollaborator.findMany({
+      where: { userId: session.user.id },
+      select: { listId: true },
+    }),
+  ]);
+  const lists = ownedLists;
+  const allowedIds = new Set([
+    ...ownedLists.map((l) => l.id),
+    ...collaboratingLists.map((c) => c.listId),
+  ]);
 
   // Check blocks
   const block = await prisma.block.findFirst({
@@ -265,13 +292,14 @@ export async function addUserToMultipleLists(
     return { success: false, message: "Cannot add this user" };
   }
 
-  // Get current memberships for this user across all owned lists
+  // Get current memberships for this user across all allowed lists
+  const allAllowedIds = [...allowedIds];
   const currentMemberships = await prisma.userListMember.findMany({
-    where: { userId: targetUserId, listId: { in: lists.map((l) => l.id) } },
+    where: { userId: targetUserId, listId: { in: allAllowedIds } },
     select: { listId: true },
   });
   const currentListIds = new Set(currentMemberships.map((m) => m.listId));
-  const desiredListIds = new Set(listIds.filter((id) => ownedIds.has(id)));
+  const desiredListIds = new Set(listIds.filter((id) => allowedIds.has(id)));
 
   // Add to new lists
   const toAdd = [...desiredListIds].filter((id) => !currentListIds.has(id));
@@ -360,7 +388,13 @@ export async function getListMembers(listId: string) {
     60
   );
 
-  return { list, members };
+  const isCollaborator = list.ownerId !== session.user.id
+    ? !!(await prisma.userListCollaborator.findUnique({
+        where: { listId_userId: { listId, userId: session.user.id } },
+      }))
+    : false;
+
+  return { list, members, isCollaborator };
 }
 
 export async function getListsForUser(userId: string) {
@@ -378,20 +412,41 @@ export async function getUserListMemberships(targetUserId: string) {
   const session = await auth();
   if (!session?.user?.id) return [];
 
-  const lists = await prisma.userList.findMany({
-    where: { ownerId: session.user.id },
-    select: {
-      id: true,
-      name: true,
-      members: {
-        where: { userId: targetUserId },
-        select: { id: true },
+  // Get lists the user owns or collaborates on
+  const [ownedLists, collaborations] = await Promise.all([
+    prisma.userList.findMany({
+      where: { ownerId: session.user.id },
+      select: {
+        id: true,
+        name: true,
+        members: {
+          where: { userId: targetUserId },
+          select: { id: true },
+        },
       },
-    },
-    orderBy: { createdAt: "asc" },
-  });
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.userListCollaborator.findMany({
+      where: { userId: session.user.id },
+      select: {
+        list: {
+          select: {
+            id: true,
+            name: true,
+            members: {
+              where: { userId: targetUserId },
+              select: { id: true },
+            },
+          },
+        },
+      },
+    }),
+  ]);
 
-  return lists.map((l) => ({
+  const collabLists = collaborations.map((c) => c.list);
+  const allLists = [...ownedLists, ...collabLists];
+
+  return allLists.map((l) => ({
     id: l.id,
     name: l.name,
     isMember: l.members.length > 0,
@@ -554,6 +609,179 @@ export async function getListInfo(listId: string) {
     },
   });
   return list;
+}
+
+// ---------------------------------------------------------------------------
+// Collaborator actions
+// ---------------------------------------------------------------------------
+
+export async function addCollaboratorToList(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `list-collab:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
+  const listId = formData.get("listId") as string;
+  const userId = formData.get("userId") as string;
+  if (!listId || !userId) {
+    return { success: false, message: "Missing required fields" };
+  }
+
+  if (userId === session.user.id) {
+    return { success: false, message: "You cannot add yourself as a collaborator" };
+  }
+
+  const list = await prisma.userList.findUnique({ where: { id: listId } });
+  if (!list || list.ownerId !== session.user.id) {
+    return { success: false, message: "List not found or not owned by you" };
+  }
+
+  // Check blocks
+  const block = await prisma.block.findFirst({
+    where: {
+      OR: [
+        { blockerId: session.user.id, blockedId: userId },
+        { blockerId: userId, blockedId: session.user.id },
+      ],
+    },
+  });
+  if (block) {
+    return { success: false, message: "Cannot add this user" };
+  }
+
+  const existing = await prisma.userListCollaborator.findUnique({
+    where: { listId_userId: { listId, userId } },
+  });
+  if (existing) {
+    return { success: false, message: "User is already a collaborator" };
+  }
+
+  await prisma.userListCollaborator.create({ data: { listId, userId } });
+
+  try {
+    await createNotification({
+      type: "LIST_COLLABORATOR_ADD",
+      actorId: session.user.id,
+      targetUserId: userId,
+    });
+  } catch {
+    // Non-critical
+  }
+
+  await invalidate(cacheKeys.userListCollaborators(listId));
+  revalidatePath(`/lists/${listId}`);
+
+  return { success: true, message: "Collaborator added" };
+}
+
+export async function removeCollaboratorFromList(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const listId = formData.get("listId") as string;
+  const userId = formData.get("userId") as string;
+  if (!listId || !userId) {
+    return { success: false, message: "Missing required fields" };
+  }
+
+  const list = await prisma.userList.findUnique({ where: { id: listId } });
+  if (!list || list.ownerId !== session.user.id) {
+    return { success: false, message: "List not found or not owned by you" };
+  }
+
+  const collab = await prisma.userListCollaborator.findUnique({
+    where: { listId_userId: { listId, userId } },
+  });
+  if (!collab) {
+    return { success: false, message: "User is not a collaborator" };
+  }
+
+  await prisma.userListCollaborator.delete({ where: { id: collab.id } });
+  await invalidate(cacheKeys.userListCollaborators(listId));
+  revalidatePath(`/lists/${listId}`);
+
+  return { success: true, message: "Collaborator removed" };
+}
+
+export async function getListCollaborators(listId: string) {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  return cached(
+    cacheKeys.userListCollaborators(listId),
+    async () => {
+      const collabs = await prisma.userListCollaborator.findMany({
+        where: { listId },
+        include: { user: { select: memberUserSelect } },
+        orderBy: { createdAt: "desc" },
+      });
+      return collabs.map((c) => ({
+        id: c.id,
+        userId: c.userId,
+        user: c.user,
+      }));
+    },
+    60
+  );
+}
+
+export async function searchUsersForCollaborator(listId: string, query: string) {
+  const session = await auth();
+  if (!session?.user?.id) return { users: [], hasMore: false };
+
+  const trimmed = query.trim();
+  if (!trimmed || trimmed.length < 2) return { users: [], hasMore: false };
+
+  const blockedIds = await getAllBlockRelatedIds(session.user.id);
+  const fetchCount = PAGE_SIZE + 1;
+
+  const users = await prisma.user.findMany({
+    where: {
+      id: { notIn: [...blockedIds, session.user.id] },
+      OR: [
+        { username: { contains: trimmed, mode: "insensitive" } },
+        { displayName: { contains: trimmed, mode: "insensitive" } },
+        { name: { contains: trimmed, mode: "insensitive" } },
+      ],
+    },
+    select: {
+      ...memberUserSelect,
+      userListCollaborations: {
+        where: { listId },
+        select: { id: true },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    take: fetchCount,
+  });
+
+  const hasMore = users.length > PAGE_SIZE;
+  return {
+    users: users.slice(0, PAGE_SIZE).map((u) => ({
+      id: u.id,
+      username: u.username,
+      displayName: u.displayName,
+      name: u.name,
+      avatar: u.avatar,
+      image: u.image,
+      profileFrameId: u.profileFrameId,
+      usernameFont: u.usernameFont,
+      isCollaborator: u.userListCollaborations.length > 0,
+    })),
+    hasMore,
+  };
 }
 
 // ---------------------------------------------------------------------------

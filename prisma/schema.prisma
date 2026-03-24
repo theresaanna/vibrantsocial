@@ -167,6 +167,7 @@ model User {
   userLists              UserList[]             @relation("userListOwner")
   userListMembers        UserListMember[]       @relation("userListMembership")
   userListSubscriptions  UserListSubscription[] @relation("userListSubscriber")
+  userListCollaborations UserListCollaborator[] @relation("userListCollaborator")
 
   // Tag subscriptions
   tagSubscriptions TagSubscription[]
@@ -649,6 +650,7 @@ enum NotificationType {
   STARS_MILESTONE
   LIST_ADD
   LIST_SUBSCRIBE
+  LIST_COLLABORATOR_ADD
   WALL_POST
 }
 
@@ -767,6 +769,7 @@ model UserList {
   owner         User                   @relation("userListOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   members       UserListMember[]
   subscriptions UserListSubscription[]
+  collaborators UserListCollaborator[]
 
   @@unique([ownerId, name])
   @@index([ownerId])
@@ -794,6 +797,20 @@ model UserListSubscription {
 
   list UserList @relation(fields: [listId], references: [id], onDelete: Cascade)
   user User     @relation("userListSubscriber", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, userId])
+  @@index([listId])
+  @@index([userId])
+}
+
+model UserListCollaborator {
+  id        String   @id @default(cuid())
+  listId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  list UserList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  user User     @relation("userListCollaborator", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([listId, userId])
   @@index([listId])

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { notFound } from "next/navigation";
-import { getListMembers, isSubscribedToList } from "../actions";
+import { getListMembers, getListCollaborators, isSubscribedToList } from "../actions";
 import { ListMembersClient } from "./list-members-client";
 import { SubscribeListButton } from "./subscribe-list-button";
 import { ShareListButton } from "@/components/share-list-button";
@@ -25,9 +25,13 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
   const result = await getListMembers(listId);
   if (!result) notFound();
 
-  const { list, members } = result;
+  const { list, members, isCollaborator } = result;
   const isOwner = list.ownerId === session.user.id;
-  const isSubscribed = !isOwner ? await isSubscribedToList(listId) : false;
+  const canManageMembers = isOwner || isCollaborator;
+  const [isSubscribed, collaborators] = await Promise.all([
+    !isOwner ? isSubscribedToList(listId) : Promise.resolve(false),
+    isOwner ? getListCollaborators(listId) : Promise.resolve([]),
+  ]);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
@@ -70,6 +74,8 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
         listName={list.name}
         members={JSON.parse(JSON.stringify(members))}
         isOwner={isOwner}
+        canManageMembers={canManageMembers}
+        collaborators={JSON.parse(JSON.stringify(collaborators))}
       />
     </main>
   );
