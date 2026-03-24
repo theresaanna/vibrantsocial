@@ -125,6 +125,14 @@ export function TagPostList({
                 ageVerified={ageVerified}
                 showGraphicByDefault={showGraphicByDefault}
                 showNsfwContent={showNsfwContent}
+                {...(post.wallPost && {
+                  wallOwner: {
+                    username: post.wallPost.wallOwner.username,
+                    displayName: post.wallPost.wallOwner.displayName,
+                  },
+                  wallPostId: post.wallPost.id,
+                  wallPostStatus: post.wallPost.status,
+                })}
               />
             </div>
           );

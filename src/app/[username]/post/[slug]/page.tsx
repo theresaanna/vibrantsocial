@@ -140,6 +140,18 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
           tag: { select: { name: true } },
         },
       },
+      wallPost: {
+        select: {
+          id: true,
+          status: true,
+          wallOwner: {
+            select: {
+              username: true,
+              displayName: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -193,6 +205,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
         showGraphicByDefault={showGraphicByDefault}
         showNsfwContent={showNsfwContent}
         highlightCommentId={commentId ?? null}
+        wallPost={post.wallPost}
       />
     </main>
   );

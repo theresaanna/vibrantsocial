@@ -153,6 +153,14 @@ function CloseFriendsFeed({
             ageVerified={ageVerified}
             showGraphicByDefault={showGraphicByDefault}
             showNsfwContent={showNsfwContent}
+            {...(item.data.wallPost && {
+              wallOwner: {
+                username: item.data.wallPost.wallOwner.username,
+                displayName: item.data.wallPost.wallOwner.displayName,
+              },
+              wallPostId: item.data.wallPost.id,
+              wallPostStatus: item.data.wallPost.status,
+            })}
           />
         ) : (
           <RepostCard

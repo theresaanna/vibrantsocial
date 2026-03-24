@@ -3,6 +3,15 @@
 import Link from "next/link";
 import { PostCard } from "@/components/post-card";
 
+interface WallPostData {
+  id: string;
+  status: string;
+  wallOwner: {
+    username: string | null;
+    displayName: string | null;
+  };
+}
+
 interface PostPageClientProps {
   post: React.ComponentProps<typeof PostCard>["post"];
   currentUserId?: string;
@@ -11,6 +20,7 @@ interface PostPageClientProps {
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
   highlightCommentId: string | null;
+  wallPost?: WallPostData | null;
 }
 
 export function PostPageClient({
@@ -21,6 +31,7 @@ export function PostPageClient({
   showGraphicByDefault,
   showNsfwContent,
   highlightCommentId,
+  wallPost,
 }: PostPageClientProps) {
   return (
     <div>
@@ -53,6 +64,14 @@ export function PostPageClient({
         defaultShowComments
         defaultExpanded
         highlightCommentId={highlightCommentId}
+        {...(wallPost && wallPost.wallOwner.username && {
+          wallOwner: {
+            username: wallPost.wallOwner.username,
+            displayName: wallPost.wallOwner.displayName,
+          },
+          wallPostId: wallPost.id,
+          wallPostStatus: wallPost.status,
+        })}
       />
     </div>
   );

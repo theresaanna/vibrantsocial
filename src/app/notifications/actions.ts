@@ -46,7 +46,18 @@ export async function getNotifications() {
           usernameFont: true,
         },
       },
-      post: { select: { id: true, content: true } },
+      post: {
+        select: {
+          id: true,
+          content: true,
+          wallPost: {
+            select: {
+              id: true,
+              status: true,
+            },
+          },
+        },
+      },
       message: { select: { id: true, conversationId: true } },
       tag: { select: { id: true, name: true } },
     },
@@ -144,7 +155,18 @@ export async function getRecentNotifications() {
           usernameFont: true,
         },
       },
-      post: { select: { id: true, content: true } },
+      post: {
+        select: {
+          id: true,
+          content: true,
+          wallPost: {
+            select: {
+              id: true,
+              status: true,
+            },
+          },
+        },
+      },
       message: { select: { id: true, conversationId: true } },
       tag: { select: { id: true, name: true } },
     },

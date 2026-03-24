@@ -179,6 +179,14 @@ export function FeedList({
                   showGraphicByDefault={showGraphicByDefault}
                   showNsfwContent={showNsfwContent}
                   onDelete={() => handleDelete("post", item.data.id)}
+                  {...(item.data.wallPost && {
+                    wallOwner: {
+                      username: item.data.wallPost.wallOwner.username,
+                      displayName: item.data.wallPost.wallOwner.displayName,
+                    },
+                    wallPostId: item.data.wallPost.id,
+                    wallPostStatus: item.data.wallPost.status,
+                  })}
                 />
               ) : (
                 <RepostCard

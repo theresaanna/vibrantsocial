@@ -75,6 +75,14 @@ interface RepostCardProps {
         createdAt: Date;
         author: RepostUser;
       }>;
+      wallPost?: {
+        id: string;
+        status: string;
+        wallOwner: {
+          username: string | null;
+          displayName: string | null;
+        };
+      } | null;
     };
   };
   currentUserId?: string;
@@ -479,6 +487,14 @@ export function RepostCard({
             ageVerified={ageVerified}
             showGraphicByDefault={showGraphicByDefault}
             showNsfwContent={showNsfwContent}
+            {...(repost.post.wallPost && repost.post.wallPost.wallOwner.username && {
+              wallOwner: {
+                username: repost.post.wallPost.wallOwner.username,
+                displayName: repost.post.wallPost.wallOwner.displayName,
+              },
+              wallPostId: repost.post.wallPost.id,
+              wallPostStatus: repost.post.wallPost.status,
+            })}
           />
         </div>
       ) : (

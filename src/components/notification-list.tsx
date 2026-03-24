@@ -14,6 +14,7 @@ import type { NotificationType } from "@/generated/prisma/client";
 import { getNotificationText } from "@/lib/notification-text";
 import { StyledName } from "@/components/styled-name";
 import { FriendRequestNotificationActions } from "@/components/friend-request-notification-actions";
+import { WallPostNotificationActions } from "@/components/wall-post-notification-actions";
 
 interface NotificationActor {
   id: string;
@@ -37,7 +38,7 @@ interface NotificationItem {
   readAt: Date | null;
   createdAt: Date;
   actor: NotificationActor;
-  post: { id: string; content: string } | null;
+  post: { id: string; content: string; wallPost?: { id: string; status: string } | null } | null;
   message: { id: string; conversationId: string } | null;
   tag: { id: string; name: string } | null;
   hasPendingFriendRequest?: boolean;
@@ -303,6 +304,13 @@ export function NotificationList({
                       notification.hasPendingFriendRequest && (
                         <FriendRequestNotificationActions
                           actorId={notification.actorId}
+                        />
+                      )}
+                    {notification.type === "WALL_POST" &&
+                      notification.post?.wallPost &&
+                      notification.post.wallPost.status === "pending" && (
+                        <WallPostNotificationActions
+                          wallPostId={notification.post.wallPost.id}
                         />
                       )}
                   </>
