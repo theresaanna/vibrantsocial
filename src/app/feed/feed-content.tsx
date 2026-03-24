@@ -25,7 +25,8 @@ export async function FeedContent({ userId }: { userId: string }) {
         ageVerified: true,
         showGraphicByDefault: true,
         showNsfwContent: true,
-      tier: true,
+        tier: true,
+        lastSeenFeedAt: true,
       },
     }),
     cached(
@@ -122,6 +123,16 @@ export async function FeedContent({ userId }: { userId: string }) {
   const hasMore = allItems.length > PAGE_SIZE;
   const initialItems = allItems.slice(0, PAGE_SIZE);
 
+  const lastSeenFeedAt = currentUser.lastSeenFeedAt?.toISOString() ?? null;
+
+  // Fire-and-forget: update lastSeenFeedAt for next visit
+  prisma.user
+    .update({
+      where: { id: userId },
+      data: { lastSeenFeedAt: new Date() },
+    })
+    .catch(() => {});
+
   return (
     <FeedClient
       phoneVerified={phoneVerified}
@@ -134,6 +145,7 @@ export async function FeedContent({ userId }: { userId: string }) {
       showNsfwContent={showNsfwContent}
       hasEmail={!!currentUser.email}
       isPremium={currentUser.tier === "premium"}
+      lastSeenFeedAt={lastSeenFeedAt}
     />
   );
 }

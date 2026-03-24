@@ -7,6 +7,7 @@ import { PostComposer } from "@/components/post-composer";
 import { FeedList } from "@/components/feed-list";
 import { fetchSinglePost, fetchNewFeedItems } from "@/app/feed/feed-actions";
 import { fetchNewListFeedItems } from "@/app/lists/actions";
+import { FeedSummaryBanner } from "@/components/feed-summary-banner";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FeedItem = { type: "post" | "repost"; data: any; date: string };
@@ -25,6 +26,7 @@ interface FeedClientProps {
   hasEmail: boolean;
   isPremium: boolean;
   listId?: string;
+  lastSeenFeedAt?: string | null;
 }
 
 export function FeedClient({
@@ -39,6 +41,7 @@ export function FeedClient({
   hasEmail,
   isPremium,
   listId,
+  lastSeenFeedAt,
 }: FeedClientProps) {
   const [newItems, setNewItems] = useState<FeedItem[]>([]);
   const newestDateRef = useRef<string>(
@@ -99,6 +102,9 @@ export function FeedClient({
     <>
       <AddToHomeBanner />
       <AddEmailBanner hasEmail={hasEmail} />
+      {!listId && lastSeenFeedAt && (
+        <FeedSummaryBanner lastSeenFeedAt={lastSeenFeedAt} />
+      )}
       {!listId && (
         <PostComposer
           phoneVerified={phoneVerified}

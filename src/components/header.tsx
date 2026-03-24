@@ -39,7 +39,7 @@ export async function Header() {
         </div>
 
         {session?.user ? (
-          <div className="order-2 flex items-center gap-1">
+          <div className="order-2 ml-auto flex items-center gap-1">
             <DynamicFavicon
               initialHasUnread={
                 unreadNotifications > 0 ||
