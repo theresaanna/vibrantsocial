@@ -6,12 +6,19 @@ import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
+import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { CheckListPlugin } from "@lexical/react/LexicalCheckListPlugin";
+import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
+import { HorizontalRulePlugin } from "@lexical/react/LexicalHorizontalRulePlugin";
+import { TablePlugin } from "@lexical/react/LexicalTablePlugin";
+import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $getRoot, type EditorState } from "lexical";
 import { createWallPost } from "@/app/feed/wall-post-actions";
 
 import { editorTheme } from "@/components/editor/theme";
 import { editorNodes } from "@/components/editor/nodes";
+import { Toolbar } from "@/components/editor/toolbar/Toolbar";
 import { AutoLinkPlugin } from "@/components/editor/plugins/AutoLinkPlugin";
 import { MentionsPlugin } from "@/components/editor/plugins/MentionsPlugin";
 import { HashtagPlugin } from "@/components/editor/plugins/HashtagPlugin";
@@ -90,29 +97,36 @@ export function WallPostComposer({ wallOwnerId, wallOwnerName }: WallPostCompose
         <input type="hidden" name="content" value={content} />
 
         <LexicalComposer initialConfig={initialConfig}>
-          <div className="relative min-h-[80px] rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-800">
+          <Toolbar />
+          <div className="relative px-4 py-3">
             <RichTextPlugin
               contentEditable={
-                <ContentEditable className="min-h-[60px] outline-none text-sm text-zinc-900 dark:text-zinc-100" />
+                <ContentEditable className="min-h-[80px] text-sm text-zinc-900 outline-none dark:text-zinc-100" />
               }
               placeholder={
-                <div className="pointer-events-none absolute top-3 left-3 text-sm text-zinc-400">
+                <div className="pointer-events-none absolute left-4 top-3 text-sm text-zinc-400">
                   Write something on {wallOwnerName}&apos;s wall...
                 </div>
               }
               ErrorBoundary={({ children }) => <>{children}</>}
             />
-            <HistoryPlugin />
             <OnChangePlugin onChange={handleChange} />
+            <HistoryPlugin />
+            <ListPlugin />
+            <CheckListPlugin />
+            <LinkPlugin />
             <AutoLinkPlugin />
+            <HorizontalRulePlugin />
+            <TablePlugin />
+            <TabIndentationPlugin />
             <MentionsPlugin />
             <HashtagPlugin />
             <HashtagLinkPlugin />
-            <ClearOnSuccess
-              shouldClear={shouldClear}
-              onCleared={() => setShouldClear(false)}
-            />
           </div>
+          <ClearOnSuccess
+            shouldClear={shouldClear}
+            onCleared={() => setShouldClear(false)}
+          />
         </LexicalComposer>
 
         {state.message && !state.success && (
