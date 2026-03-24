@@ -248,6 +248,29 @@ export async function updateProfile(
     await pruneOldRevisions(session.user.id);
   }
 
+  // Parse birthday (month/day only)
+  const rawBirthdayMonth = formData.get("birthdayMonth") as string | null;
+  const rawBirthdayDay = formData.get("birthdayDay") as string | null;
+  let birthdayMonth: number | null = null;
+  let birthdayDay: number | null = null;
+
+  if (rawBirthdayMonth && rawBirthdayDay) {
+    const month = parseInt(rawBirthdayMonth, 10);
+    const day = parseInt(rawBirthdayDay, 10);
+    if (
+      !isNaN(month) && !isNaN(day) &&
+      month >= 1 && month <= 12 &&
+      day >= 1 && day <= 31
+    ) {
+      // Validate day is valid for the given month (use a non-leap year)
+      const maxDay = new Date(2001, month, 0).getDate();
+      if (day <= maxDay) {
+        birthdayMonth = month;
+        birthdayDay = day;
+      }
+    }
+  }
+
   const showGraphicByDefault = formData.get("showGraphicByDefault") === "true";
   const showNsfwContent = formData.get("showNsfwContent") === "true";
   const emailOnComment = formData.get("emailOnComment") === "true";
@@ -282,6 +305,8 @@ export async function updateProfile(
       pushEnabled,
       isProfilePublic,
       hideWallFromFeed,
+      birthdayMonth,
+      birthdayDay,
       profileFrameId,
       usernameFont,
       ...themeColors,

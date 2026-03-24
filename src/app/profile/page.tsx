@@ -50,6 +50,8 @@ export default async function ProfilePage() {
       sparklefallMaxSparkles: true,
       sparklefallMinSize: true,
       sparklefallMaxSize: true,
+      birthdayMonth: true,
+      birthdayDay: true,
       ageVerified: true,
       showGraphicByDefault: true,
       showNsfwContent: true,
@@ -137,6 +139,8 @@ export default async function ProfilePage() {
           pushEnabled={user?.pushEnabled ?? false}
           isProfilePublic={user?.isProfilePublic ?? true}
           hideWallFromFeed={user?.hideWallFromFeed ?? false}
+          birthdayMonth={user?.birthdayMonth ?? null}
+          birthdayDay={user?.birthdayDay ?? null}
           email={user?.email ?? null}
           pendingEmail={user?.pendingEmail ?? null}
           phoneVerified={!!user?.phoneVerified}

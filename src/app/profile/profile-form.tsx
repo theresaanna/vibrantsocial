@@ -69,6 +69,8 @@ interface ProfileFormProps {
   phoneVerified: boolean;
   phoneNumber: string | null;
   isCredentialsUser: boolean;
+  birthdayMonth: number | null;
+  birthdayDay: number | null;
   isPremium: boolean;
   stars: number;
   starsSpent: number;
@@ -84,7 +86,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, isPremium, stars, starsSpent, referralCode, backgrounds, userEmail }: ProfileFormProps) {
+export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, birthdayMonth: initialBirthdayMonth, birthdayDay: initialBirthdayDay, isPremium, stars, starsSpent, referralCode, backgrounds, userEmail }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [displayNameValue, setDisplayNameValue] = useState(user.displayName ?? "");
@@ -115,6 +117,8 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
   const [frameId, setFrameId] = useState<string | null>(user.profileFrameId);
   const [showFrameSelector, setShowFrameSelector] = useState(false);
   const [usernameFont, setUsernameFont] = useState<string | null>(user.usernameFont);
+  const [birthdayMonth, setBirthdayMonth] = useState<string>(initialBirthdayMonth ? String(initialBirthdayMonth) : "");
+  const [birthdayDay, setBirthdayDay] = useState<string>(initialBirthdayDay ? String(initialBirthdayDay) : "");
   const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
 
   const displayedAvatar = avatarPreview || oauthImage;
@@ -741,6 +745,50 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
             onFocus={cancelAutosave}
             className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            Birthday
+          </label>
+          <div className="mt-1 flex gap-2">
+            <select
+              name="birthdayMonth"
+              value={birthdayMonth}
+              onChange={(e) => { setBirthdayMonth(e.target.value); }}
+              className="block w-1/2 rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+              data-testid="birthday-month"
+            >
+              <option value="">Month</option>
+              <option value="1">January</option>
+              <option value="2">February</option>
+              <option value="3">March</option>
+              <option value="4">April</option>
+              <option value="5">May</option>
+              <option value="6">June</option>
+              <option value="7">July</option>
+              <option value="8">August</option>
+              <option value="9">September</option>
+              <option value="10">October</option>
+              <option value="11">November</option>
+              <option value="12">December</option>
+            </select>
+            <select
+              name="birthdayDay"
+              value={birthdayDay}
+              onChange={(e) => { setBirthdayDay(e.target.value); }}
+              className="block w-1/2 rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+              data-testid="birthday-day"
+            >
+              <option value="">Day</option>
+              {Array.from({ length: 31 }, (_, i) => (
+                <option key={i + 1} value={String(i + 1)}>{i + 1}</option>
+              ))}
+            </select>
+          </div>
+          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+            This is used for cute in-app purposes only, like sparkles on your profile page on your birthday!
+          </p>
         </div>
 
         <FontSelector
