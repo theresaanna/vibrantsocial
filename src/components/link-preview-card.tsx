@@ -8,24 +8,28 @@ import {
 
 interface LinkPreviewCardProps {
   url: string;
+  onLoadChange?: (status: "loading" | "loaded" | "empty") => void;
 }
 
-export function LinkPreviewCard({ url }: LinkPreviewCardProps) {
+export function LinkPreviewCard({ url, onLoadChange }: LinkPreviewCardProps) {
   const [data, setData] = useState<LinkPreviewData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    onLoadChange?.("loading");
     fetchLinkPreview(url).then((result) => {
       if (!cancelled) {
         setData(result);
         setLoading(false);
+        onLoadChange?.(result ? "loaded" : "empty");
       }
     });
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]);
 
   if (loading) {
