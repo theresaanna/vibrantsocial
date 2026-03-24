@@ -83,6 +83,18 @@ export default async function BookmarksPage() {
               tag: { select: { name: true } },
             },
           },
+          wallPost: {
+            select: {
+              id: true,
+              status: true,
+              wallOwner: {
+                select: {
+                  username: true,
+                  displayName: true,
+                },
+              },
+            },
+          },
           comments: {
             where: { parentId: null },
             orderBy: { createdAt: "asc" as const },
@@ -160,6 +172,14 @@ export default async function BookmarksPage() {
               ageVerified={ageVerified}
               showGraphicByDefault={showGraphicByDefault}
               showNsfwContent={showNsfwContent}
+              {...(post.wallPost && post.wallPost.wallOwner.username && {
+                wallOwner: {
+                  username: post.wallPost.wallOwner.username,
+                  displayName: post.wallPost.wallOwner.displayName,
+                },
+                wallPostId: post.wallPost.id,
+                wallPostStatus: post.wallPost.status,
+              })}
             />
           ))}
         </div>

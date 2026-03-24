@@ -41,6 +41,18 @@ export function getPostInclude(userId: string) {
         },
       },
     },
+    wallPost: {
+      select: {
+        id: true,
+        status: true,
+        wallOwner: {
+          select: {
+            username: true,
+            displayName: true,
+          },
+        },
+      },
+    },
     // Comments are lazy-loaded via fetchComments() when expanded
   } as const;
 }

@@ -128,6 +128,18 @@ export default async function PostPage({ params, searchParams }: Props) {
           tag: { select: { name: true } },
         },
       },
+      wallPost: {
+        select: {
+          id: true,
+          status: true,
+          wallOwner: {
+            select: {
+              username: true,
+              displayName: true,
+            },
+          },
+        },
+      },
       // Comments are lazy-loaded by CommentSection via fetchComments
       // which builds the full nested tree (not just 2 levels)
     },
@@ -184,6 +196,7 @@ export default async function PostPage({ params, searchParams }: Props) {
         showGraphicByDefault={showGraphicByDefault}
         showNsfwContent={showNsfwContent}
         highlightCommentId={commentId ?? null}
+        wallPost={post.wallPost}
       />
     </main>
   );
