@@ -4,10 +4,8 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { FeedContent } from "./feed-content";
 import { ListFeedContent } from "./list-feed-content";
-import { MediaFeedContent } from "./media-feed-content";
 import { FeedSkeleton } from "@/components/feed-skeleton";
 import { FeedTabs } from "@/components/feed-tabs";
-import { FeedViewToggleWrapper } from "@/components/feed-view-toggle-wrapper";
 import { getUserLists, getSubscribedLists, getListInfo } from "@/app/lists/actions";
 
 export const metadata: Metadata = {
@@ -60,16 +58,11 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
           ownerUsername: activeListInfo.owner.username,
         } : null}
       />
-      {!activeListId && (
-        <FeedViewToggleWrapper activeView={activeView} />
-      )}
       <Suspense key={`${activeListId ?? "main-feed"}-${activeView}`} fallback={<FeedSkeleton />}>
         {activeListId ? (
           <ListFeedContent userId={session.user.id} listId={activeListId} />
-        ) : activeView === "media" ? (
-          <MediaFeedContent />
         ) : (
-          <FeedContent userId={session.user.id} />
+          <FeedContent userId={session.user.id} activeView={activeView} />
         )}
       </Suspense>
     </main>

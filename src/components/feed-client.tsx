@@ -8,6 +8,9 @@ import { FeedList } from "@/components/feed-list";
 import { fetchSinglePost, fetchNewFeedItems } from "@/app/feed/feed-actions";
 import { fetchNewListFeedItems } from "@/app/lists/actions";
 import { FeedSummaryBanner } from "@/components/feed-summary-banner";
+import { FeedViewToggleWrapper } from "@/components/feed-view-toggle-wrapper";
+import { MediaFeedClientContent } from "@/components/media-feed-client-content";
+import type { FeedView } from "@/components/feed-view-toggle";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FeedItem = { type: "post" | "repost"; data: any; date: string };
@@ -27,6 +30,7 @@ interface FeedClientProps {
   isPremium: boolean;
   listId?: string;
   lastSeenFeedAt?: string | null;
+  activeView?: FeedView;
 }
 
 export function FeedClient({
@@ -42,6 +46,7 @@ export function FeedClient({
   isPremium,
   listId,
   lastSeenFeedAt,
+  activeView = "posts",
 }: FeedClientProps) {
   const [newItems, setNewItems] = useState<FeedItem[]>([]);
   const newestDateRef = useRef<string>(
@@ -105,7 +110,7 @@ export function FeedClient({
       {!listId && lastSeenFeedAt && (
         <FeedSummaryBanner lastSeenFeedAt={lastSeenFeedAt} />
       )}
-      {!listId && (
+      {!listId && activeView === "posts" && (
         <PostComposer
           phoneVerified={phoneVerified}
           isOldEnough={isOldEnough}
@@ -114,16 +119,23 @@ export function FeedClient({
           onPostCreated={handlePostCreated}
         />
       )}
-      <FeedList
-        initialItems={initialItems}
-        initialHasMore={initialHasMore}
-        currentUserId={currentUserId}
-        phoneVerified={phoneVerified}
-        ageVerified={ageVerified}
-        showGraphicByDefault={showGraphicByDefault}
-        showNsfwContent={showNsfwContent}
-        newItems={newItems}
-      />
+      {!listId && (
+        <FeedViewToggleWrapper activeView={activeView} />
+      )}
+      {activeView === "media" ? (
+        <MediaFeedClientContent />
+      ) : (
+        <FeedList
+          initialItems={initialItems}
+          initialHasMore={initialHasMore}
+          currentUserId={currentUserId}
+          phoneVerified={phoneVerified}
+          ageVerified={ageVerified}
+          showGraphicByDefault={showGraphicByDefault}
+          showNsfwContent={showNsfwContent}
+          newItems={newItems}
+        />
+      )}
     </>
   );
 }
