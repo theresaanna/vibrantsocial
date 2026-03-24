@@ -17,6 +17,12 @@ vi.mock("@/app/feed/friend-actions", () => ({
     mockRespondToFriendRequestByActor(...args),
 }));
 
+const mockUpdateWallPostStatus = vi.fn();
+vi.mock("@/app/feed/wall-post-actions", () => ({
+  updateWallPostStatus: (...args: unknown[]) =>
+    mockUpdateWallPostStatus(...args),
+}));
+
 vi.mock("@/lib/time", () => ({
   timeAgo: vi.fn().mockReturnValue("1m ago"),
 }));
@@ -433,5 +439,140 @@ describe("NotificationList", () => {
     // Notifications should be removed from list
     expect(screen.getByText("No notifications yet")).toBeInTheDocument();
     expect(mockDeleteNotifications).toHaveBeenCalledWith(["n1", "n2"]);
+  });
+
+  it("renders WALL_POST notification with correct text", () => {
+    render(
+      <NotificationList
+        initialNotifications={[
+          {
+            id: "n-wall1",
+            type: "WALL_POST",
+            actorId: "actor1",
+            postId: "post-wall1",
+            commentId: null,
+            messageId: null,
+            repostId: null,
+            readAt: null,
+            createdAt: new Date(),
+            actor: baseActor,
+            post: { id: "post-wall1", content: "Hello!", wallPost: { id: "wp1", status: "pending" } },
+            message: null,
+            tag: null,
+          },
+        ]}
+      />
+    );
+    expect(screen.getByText("posted on your wall")).toBeInTheDocument();
+  });
+
+  it("shows Accept and Hide buttons for pending wall posts", () => {
+    render(
+      <NotificationList
+        initialNotifications={[
+          {
+            id: "n-wall2",
+            type: "WALL_POST",
+            actorId: "actor1",
+            postId: "post-wall2",
+            commentId: null,
+            messageId: null,
+            repostId: null,
+            readAt: null,
+            createdAt: new Date(),
+            actor: baseActor,
+            post: { id: "post-wall2", content: "Hello!", wallPost: { id: "wp2", status: "pending" } },
+            message: null,
+            tag: null,
+          },
+        ]}
+      />
+    );
+    expect(screen.getByText("Accept")).toBeInTheDocument();
+    expect(screen.getByText("Hide")).toBeInTheDocument();
+  });
+
+  it("does not show Accept/Hide for already accepted wall posts", () => {
+    render(
+      <NotificationList
+        initialNotifications={[
+          {
+            id: "n-wall3",
+            type: "WALL_POST",
+            actorId: "actor1",
+            postId: "post-wall3",
+            commentId: null,
+            messageId: null,
+            repostId: null,
+            readAt: null,
+            createdAt: new Date(),
+            actor: baseActor,
+            post: { id: "post-wall3", content: "Hello!", wallPost: { id: "wp3", status: "accepted" } },
+            message: null,
+            tag: null,
+          },
+        ]}
+      />
+    );
+    expect(screen.queryByText("Accept")).not.toBeInTheDocument();
+    expect(screen.queryByText("Hide")).not.toBeInTheDocument();
+  });
+
+  it("calls updateWallPostStatus and shows Accepted when Accept is clicked", async () => {
+    mockUpdateWallPostStatus.mockResolvedValue({ success: true, message: "Updated" });
+    render(
+      <NotificationList
+        initialNotifications={[
+          {
+            id: "n-wall4",
+            type: "WALL_POST",
+            actorId: "actor1",
+            postId: "post-wall4",
+            commentId: null,
+            messageId: null,
+            repostId: null,
+            readAt: null,
+            createdAt: new Date(),
+            actor: baseActor,
+            post: { id: "post-wall4", content: "Hello!", wallPost: { id: "wp4", status: "pending" } },
+            message: null,
+            tag: null,
+          },
+        ]}
+      />
+    );
+
+    await userEvent.click(screen.getByText("Accept"));
+    expect(mockUpdateWallPostStatus).toHaveBeenCalled();
+    expect(await screen.findByText("Accepted")).toBeInTheDocument();
+  });
+
+  it("calls updateWallPostStatus and shows Hidden when Hide is clicked", async () => {
+    mockUpdateWallPostStatus.mockResolvedValue({ success: true, message: "Updated" });
+    render(
+      <NotificationList
+        initialNotifications={[
+          {
+            id: "n-wall5",
+            type: "WALL_POST",
+            actorId: "actor1",
+            postId: "post-wall5",
+            commentId: null,
+            messageId: null,
+            repostId: null,
+            readAt: null,
+            createdAt: new Date(),
+            actor: baseActor,
+            post: { id: "post-wall5", content: "Hello!", wallPost: { id: "wp5", status: "pending" } },
+            message: null,
+            tag: null,
+          },
+        ]}
+      />
+    );
+
+    await userEvent.click(screen.getByText("Hide"));
+    expect(mockUpdateWallPostStatus).toHaveBeenCalled();
+    expect(await screen.findByText("Hidden")).toBeInTheDocument();
   });
 });
