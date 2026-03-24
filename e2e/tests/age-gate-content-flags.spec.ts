@@ -37,7 +37,7 @@ test.describe("Age-gated content flags in composer", () => {
     await page.waitForTimeout(300);
 
     // NSFW should be enabled
-    const nsfwCheckbox = page.getByLabel("NSFW");
+    const nsfwCheckbox = page.getByRole("checkbox", { name: "NSFW" });
     await expect(nsfwCheckbox).toBeVisible({ timeout: 5000 });
     await expect(nsfwCheckbox).toBeEnabled();
 

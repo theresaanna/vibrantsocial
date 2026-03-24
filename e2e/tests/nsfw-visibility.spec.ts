@@ -74,7 +74,7 @@ test.describe("NSFW Content Visibility", () => {
     await toggle.click();
     await page.waitForTimeout(300);
 
-    const nsfwLabel = page.getByLabel("NSFW");
+    const nsfwLabel = page.getByRole("checkbox", { name: "NSFW" });
     await expect(nsfwLabel).toBeVisible({ timeout: 5000 });
     await nsfwLabel.check();
 
