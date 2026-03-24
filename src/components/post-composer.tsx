@@ -250,6 +250,7 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, isAgeVerif
             </div>
           )}
         </div>
+        <input type="hidden" name="hideLinkPreview" value={previewDismissed ? "true" : "false"} />
         <input type="hidden" name="isGraphicNudity" value={isGraphicNudity ? "true" : "false"} />
         <input type="hidden" name="isCloseFriendsOnly" value={isCloseFriendsOnly ? "true" : "false"} />
         <input type="hidden" name="hasCustomAudience" value={customAudienceIds.length > 0 ? "true" : "false"} />

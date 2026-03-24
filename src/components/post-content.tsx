@@ -11,9 +11,10 @@ interface PostContentProps {
   allowChecklistToggle?: boolean;
   onContentChange?: (json: string) => void;
   isPostAuthor?: boolean;
+  hideLinkPreview?: boolean;
 }
 
-export function PostContent({ content, truncate = true, allowChecklistToggle, onContentChange, isPostAuthor }: PostContentProps) {
+export function PostContent({ content, truncate = true, allowChecklistToggle, onContentChange, isPostAuthor, hideLinkPreview }: PostContentProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [isOverflowing, setIsOverflowing] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -50,7 +51,7 @@ export function PostContent({ content, truncate = true, allowChecklistToggle, on
         className={shouldTruncate ? "max-h-[50vh] overflow-hidden" : ""}
       >
         <EditorContent content={content} allowChecklistToggle={allowChecklistToggle} onContentChange={onContentChange} isPostAuthor={isPostAuthor} />
-        {firstUrl && <LinkPreviewCard url={firstUrl} />}
+        {firstUrl && !hideLinkPreview && <LinkPreviewCard url={firstUrl} />}
       </div>
       {shouldTruncate && isOverflowing && (
         <>

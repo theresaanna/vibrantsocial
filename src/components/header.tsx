@@ -3,9 +3,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { getConversations } from "@/app/chat/actions";
 import { getUnreadNotificationCount, getRecentNotifications, getLinkedAccountNotificationCounts } from "@/app/notifications/actions";
+import { getNsfwContentSetting } from "@/app/profile/nsfw-actions";
 import { ChatNav } from "@/components/chat-nav";
 import { DynamicFavicon } from "@/components/dynamic-favicon";
 import { NotificationBell } from "@/components/notification-bell";
+import { NsfwToggle } from "@/components/nsfw-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NavLinks } from "@/components/nav-links";
 import { AccountSwitcherWrapper } from "@/components/account-switcher-wrapper";
@@ -13,12 +15,13 @@ import { loadLinkedAccounts } from "@/lib/account-linking-db";
 
 export async function Header() {
   const session = await auth();
-  const [conversations, unreadNotifications, recentNotifications, linkedAccounts, linkedAccountNotifCounts] = await Promise.all([
+  const [conversations, unreadNotifications, recentNotifications, linkedAccounts, linkedAccountNotifCounts, showNsfwContent] = await Promise.all([
     session?.user ? getConversations() : Promise.resolve([]),
     session?.user ? getUnreadNotificationCount() : Promise.resolve(0),
     session?.user ? getRecentNotifications() : Promise.resolve([]),
     session?.user?.id ? loadLinkedAccounts(session.user.id) : Promise.resolve([]),
     session?.user ? getLinkedAccountNotificationCounts() : Promise.resolve({}),
+    session?.user ? getNsfwContentSetting() : Promise.resolve(false),
   ]);
 
   return (
@@ -36,6 +39,7 @@ export async function Header() {
             />
           </Link>
           <ThemeToggle />
+          {session?.user && <NsfwToggle initialEnabled={showNsfwContent} />}
         </div>
 
         {session?.user ? (

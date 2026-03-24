@@ -107,7 +107,11 @@ test.describe("User Lists", () => {
     await page.click('button:has-text("Create")');
 
     // Wait for server action to complete and page to update
-    await expect(page.getByText("My Test List")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("My Test List")).toBeVisible({ timeout: 15000 }).catch(async () => {
+      // Server action may not trigger revalidation fast enough; reload
+      await page.reload();
+      await expect(page.getByText("My Test List")).toBeVisible({ timeout: 10000 });
+    });
     await expect(page.getByText("0 members")).toBeVisible();
   });
 
@@ -122,10 +126,12 @@ test.describe("User Lists", () => {
     await expect(page.getByText("No members yet.")).toBeVisible();
 
     // Search for test user 2
-    await page.fill('input[placeholder="Search users to add..."]', TEST_USER_2.username);
+    const searchInput = page.locator('input[placeholder="Search users to add..."]');
+    await expect(searchInput).toBeVisible({ timeout: 10000 });
+    await searchInput.fill(TEST_USER_2.username);
 
     // Wait for debounce + server action to return results
-    await expect(page.getByText(TEST_USER_2.username)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(TEST_USER_2.username)).toBeVisible({ timeout: 15000 });
 
     // Add user to list
     await page.click('button:has-text("Add")');

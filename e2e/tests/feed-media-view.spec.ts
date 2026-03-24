@@ -49,10 +49,16 @@ test.describe("Feed Media View", () => {
   test("media view shows grid or empty state", async ({ page }) => {
     await page.goto("/feed?view=media");
 
+    // Wait for loading spinner to disappear (data finished loading)
+    await page
+      .locator(".animate-spin")
+      .waitFor({ state: "hidden", timeout: 30000 })
+      .catch(() => {});
+
     // Should show either media grid or empty state message
     const hasGrid = await page
       .getByTestId("media-grid")
-      .isVisible({ timeout: 10000 })
+      .isVisible({ timeout: 5000 })
       .catch(() => false);
     const hasEmpty = await page
       .getByText("No media yet.")

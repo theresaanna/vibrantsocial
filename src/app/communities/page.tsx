@@ -1,15 +1,25 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getTagCloudData, getAllTagCloudData } from "@/app/tags/actions";
 import { TagCloud } from "./tag-cloud";
+import { CommunitiesViewToggle } from "./communities-view-toggle";
+import { CommunitiesMediaClient } from "./communities-media-client";
 
 export const metadata: Metadata = {
   title: "Communities",
   description: "Explore tags and communities on VibrantSocial.",
 };
 
-export default async function CommunitiesPage() {
+interface CommunitiesPageProps {
+  searchParams: Promise<{ view?: string }>;
+}
+
+export default async function CommunitiesPage({ searchParams }: CommunitiesPageProps) {
+  const { view } = await searchParams;
+  const activeView = view === "media" ? "media" : "tags";
+
   const session = await auth();
   let showNsfwContent = false;
 
@@ -43,7 +53,19 @@ export default async function CommunitiesPage() {
         </div>
       </div>
 
-      {tagData.length === 0 ? (
+      <CommunitiesViewToggle activeView={activeView} />
+
+      {activeView === "media" ? (
+        <Suspense
+          fallback={
+            <div className="mt-6 flex justify-center py-8">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-600 dark:border-t-zinc-100" />
+            </div>
+          }
+        >
+          <CommunitiesMediaClient />
+        </Suspense>
+      ) : tagData.length === 0 ? (
         <div className="rounded-2xl bg-white p-8 text-center shadow-lg dark:bg-zinc-900">
           <p className="text-sm text-zinc-500">
             No tags yet. Be the first to tag a post!
