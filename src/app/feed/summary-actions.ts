@@ -205,6 +205,7 @@ export async function generateFeedSummaryOnDemand(
     return await generateSummary(posts, posts.length);
   } catch (error) {
     console.error("Feed summary on-demand error:", error);
-    return null;
+    // Return a friendly fallback instead of null so the banner doesn't reset
+    return "Your friends have been posting! Scroll down to see what's new.";
   }
 }

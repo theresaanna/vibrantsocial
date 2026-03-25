@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
+import { apiLimiter, chatMessageLimiter, chatConversationLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { requirePhoneVerification } from "@/lib/phone-gate";
 import { requireNotSuspended } from "@/lib/suspension-gate";
@@ -228,7 +228,7 @@ export async function startConversation(
     return { success: false, message: "Not authenticated" };
   }
 
-  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
+  if (await isRateLimited(chatConversationLimiter, `chat-conv:${session.user.id}`)) {
     return { success: false, message: "Too many requests. Please try again later." };
   }
 
@@ -321,7 +321,7 @@ export async function createGroupConversation(data: {
     return { success: false, message: "Not authenticated" };
   }
 
-  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
+  if (await isRateLimited(chatConversationLimiter, `chat-conv:${session.user.id}`)) {
     return { success: false, message: "Too many requests. Please try again later." };
   }
 
@@ -394,7 +394,7 @@ export async function sendMessage(data: {
     return { success: false, message: "Not authenticated" };
   }
 
-  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
+  if (await isRateLimited(chatMessageLimiter, `chat-msg:${session.user.id}`)) {
     return { success: false, message: "Too many requests. Please try again later." };
   }
 
@@ -813,7 +813,7 @@ export async function toggleReaction(data: {
     return { success: false, message: "Not authenticated" };
   }
 
-  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
+  if (await isRateLimited(chatMessageLimiter, `chat-msg:${session.user.id}`)) {
     return { success: false, message: "Too many requests. Please try again later." };
   }
 

@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
+import { friendLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/notifications";
 import { inngest } from "@/lib/inngest";
@@ -50,7 +50,7 @@ export async function sendFriendRequest(
     return { success: false, message: "Not authenticated" };
   }
 
-  if (await isRateLimited(apiLimiter, `friend:${session.user.id}`)) {
+  if (await isRateLimited(friendLimiter, `friend:${session.user.id}`)) {
     return { success: false, message: "Too many requests. Please try again later." };
   }
 
@@ -171,7 +171,7 @@ export async function acceptFriendRequest(
     return { success: false, message: "Not authenticated" };
   }
 
-  if (await isRateLimited(apiLimiter, `friend:${session.user.id}`)) {
+  if (await isRateLimited(friendLimiter, `friend:${session.user.id}`)) {
     return { success: false, message: "Too many requests. Please try again later." };
   }
 
@@ -218,7 +218,7 @@ export async function declineFriendRequest(
     return { success: false, message: "Not authenticated" };
   }
 
-  if (await isRateLimited(apiLimiter, `friend:${session.user.id}`)) {
+  if (await isRateLimited(friendLimiter, `friend:${session.user.id}`)) {
     return { success: false, message: "Too many requests. Please try again later." };
   }
 
@@ -253,7 +253,7 @@ export async function removeFriend(
     return { success: false, message: "Not authenticated" };
   }
 
-  if (await isRateLimited(apiLimiter, `friend:${session.user.id}`)) {
+  if (await isRateLimited(friendLimiter, `friend:${session.user.id}`)) {
     return { success: false, message: "Too many requests. Please try again later." };
   }
 
@@ -314,7 +314,7 @@ export async function respondToFriendRequestByActor(
     return { success: false, message: "Not authenticated" };
   }
 
-  if (await isRateLimited(apiLimiter, `friend:${session.user.id}`)) {
+  if (await isRateLimited(friendLimiter, `friend:${session.user.id}`)) {
     return { success: false, message: "Too many requests. Please try again later." };
   }
 

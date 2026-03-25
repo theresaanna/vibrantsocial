@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { searchLimiter, isRateLimited } from "@/lib/rate-limit";
 import { PAGE_SIZE } from "@/app/feed/feed-queries";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 import { normalizeTag } from "@/lib/tags";
@@ -9,6 +10,10 @@ import { normalizeTag } from "@/lib/tags";
 export async function searchUsers(query: string, cursor?: string) {
   const session = await auth();
   if (!session?.user?.id) return { users: [], hasMore: false };
+
+  if (await isRateLimited(searchLimiter, `search:${session.user.id}`)) {
+    return { users: [], hasMore: false };
+  }
 
   const trimmed = query.trim();
   if (!trimmed || trimmed.length < 2) return { users: [], hasMore: false };
@@ -52,6 +57,10 @@ export async function searchUsers(query: string, cursor?: string) {
 export async function searchPosts(query: string, cursor?: string) {
   const session = await auth();
   if (!session?.user?.id) return { posts: [], hasMore: false };
+
+  if (await isRateLimited(searchLimiter, `search:${session.user.id}`)) {
+    return { posts: [], hasMore: false };
+  }
 
   const currentUser = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -126,6 +135,10 @@ export async function searchTagsForSearch(query: string, cursor?: string) {
   const session = await auth();
   if (!session?.user?.id) return { tags: [], hasMore: false };
 
+  if (await isRateLimited(searchLimiter, `search:${session.user.id}`)) {
+    return { tags: [], hasMore: false };
+  }
+
   const currentUser = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { showNsfwContent: true },
@@ -185,6 +198,10 @@ export async function searchTagsForSearch(query: string, cursor?: string) {
 export async function searchMarketplacePosts(query: string, cursor?: string) {
   const session = await auth();
   if (!session?.user?.id) return { posts: [], hasMore: false };
+
+  if (await isRateLimited(searchLimiter, `search:${session.user.id}`)) {
+    return { posts: [], hasMore: false };
+  }
 
   const currentUser = await prisma.user.findUnique({
     where: { id: session.user.id },
