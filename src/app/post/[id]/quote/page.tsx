@@ -43,6 +43,7 @@ export default async function QuotePage({ params }: Props) {
           image: true,
           avatar: true,
           profileFrameId: true,
+          usernameFont: true,
         },
       },
     },
