@@ -51,12 +51,14 @@ export async function askQuestion(
   });
 
   // Notify the seller about the new question
-  await createNotification({
-    type: "MARKETPLACE_QUESTION",
-    actorId: session.user.id,
-    targetUserId: marketplacePost.post.authorId,
-    postId: marketplacePost.postId,
-  });
+  if (marketplacePost.post.authorId) {
+    await createNotification({
+      type: "MARKETPLACE_QUESTION",
+      actorId: session.user.id,
+      targetUserId: marketplacePost.post.authorId,
+      postId: marketplacePost.postId,
+    });
+  }
 
   revalidatePath("/marketplace");
   return { success: true, message: "Question submitted" };
