@@ -112,6 +112,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
           image: true,
           avatar: true,
           profileFrameId: true,
+          usernameFont: true,
           isProfilePublic: true,
         },
       },

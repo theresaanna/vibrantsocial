@@ -112,6 +112,7 @@ export default async function MarketplaceSlugPage({ params, searchParams }: Prop
           image: true,
           avatar: true,
           profileFrameId: true,
+          usernameFont: true,
           isProfilePublic: true,
         },
       },
