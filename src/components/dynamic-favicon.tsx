@@ -6,8 +6,6 @@ import { usePathname } from "next/navigation";
 import type { InboundMessage } from "ably";
 import { useAblyReady } from "@/app/providers";
 import { getAblyRealtimeClient } from "@/lib/ably";
-import { getUnreadNotificationCount } from "@/app/notifications/actions";
-import { getConversations } from "@/app/chat/actions";
 
 /** Strip any existing "(N) " prefix from the title */
 function baseTitle(title: string): string {
@@ -17,18 +15,6 @@ function baseTitle(title: string): string {
 function updateTitle(count: number) {
   const base = baseTitle(document.title);
   document.title = count > 0 ? `(${count}) ${base}` : base;
-}
-
-async function fetchUnreadCount(): Promise<number> {
-  const [notifCount, convos] = await Promise.all([
-    getUnreadNotificationCount(),
-    getConversations(),
-  ]);
-  const chatUnread = convos.reduce(
-    (sum: number, c: { unreadCount: number }) => sum + c.unreadCount,
-    0,
-  );
-  return notifCount + chatUnread;
 }
 
 export function DynamicFavicon({
@@ -68,32 +54,19 @@ export function DynamicFavicon({
     updateTitle(unreadCount);
   }, [unreadCount, pathname]);
 
-  // Fetch real count on mount (initial value is just a boolean hint)
-  useEffect(() => {
-    fetchUnreadCount().then(setUnreadCount);
-  }, []);
-
-  // Re-check when leaving notifications or chat pages
+  // Reset count when visiting notifications or chat pages
   useEffect(() => {
     const prev = prevPathnameRef.current;
     prevPathnameRef.current = pathname;
 
-    const wasOnNotifs = prev === "/notifications";
-    const wasOnChat = prev.startsWith("/chat/");
-
-    if (wasOnNotifs || wasOnChat) {
-      fetchUnreadCount().then(setUnreadCount);
+    if (pathname === "/notifications" || pathname.startsWith("/chat/")) {
+      setUnreadCount(0);
+    } else if (prev === "/notifications" || prev.startsWith("/chat/")) {
+      // Count will rebuild from Ably events
     }
   }, [pathname]);
 
-  // Re-check on window focus
-  useEffect(() => {
-    const onFocus = () => fetchUnreadCount().then(setUnreadCount);
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, []);
-
-  // Subscribe to Ably for instant updates
+  // Subscribe to Ably for instant updates (single subscription point)
   useEffect(() => {
     if (!ablyReady || !session?.user?.id) return;
 

@@ -1,25 +1,27 @@
 "use client";
 
 import { useState, useRef, useEffect, useActionState } from "react";
+import dynamic from "next/dynamic";
 import { PostContent } from "./post-content";
 import { PostActions } from "./post-actions";
 import { CommentSection } from "./comment-section";
-import { PostRevisionHistory } from "./post-revision-history";
-import { Editor } from "./editor/Editor";
 import { clearDraft } from "./editor/plugins/DraftPlugin";
 import { editPost, deletePost, updatePostChecklist, togglePinPost } from "@/app/feed/actions";
 import { updateWallPostStatus, deleteWallPost } from "@/app/feed/wall-post-actions";
 import { useRouter } from "next/navigation";
 import { TagInput } from "./tag-input";
-import { ContentFlagsInfoModal } from "./content-flags-info-modal";
 import { timeAgo } from "@/lib/time";
 import { useCommentCount } from "@/hooks/use-comment-counts";
 import Link from "next/link";
 import { FramedAvatar } from "@/components/framed-avatar";
-import { ReportModal } from "@/components/report-modal";
-import { ConfirmDialog } from "@/components/confirm-dialog";
 import { StyledName } from "@/components/styled-name";
 import { MarketplaceQA } from "@/components/marketplace-qa";
+
+const Editor = dynamic(() => import("./editor/Editor").then((m) => ({ default: m.Editor })), { ssr: false });
+const PostRevisionHistory = dynamic(() => import("./post-revision-history").then((m) => ({ default: m.PostRevisionHistory })), { ssr: false });
+const ContentFlagsInfoModal = dynamic(() => import("./content-flags-info-modal").then((m) => ({ default: m.ContentFlagsInfoModal })), { ssr: false });
+const ReportModal = dynamic(() => import("@/components/report-modal").then((m) => ({ default: m.ReportModal })), { ssr: false });
+const ConfirmDialog = dynamic(() => import("@/components/confirm-dialog").then((m) => ({ default: m.ConfirmDialog })), { ssr: false });
 
 interface PostAuthor {
   id: string;

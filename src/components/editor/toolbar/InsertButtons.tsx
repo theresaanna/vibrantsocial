@@ -14,8 +14,6 @@ import { $createImageNode } from "../nodes/ImageNode";
 import { $createVideoNode } from "../nodes/VideoNode";
 import { $createFileNode } from "../nodes/FileNode";
 import { $createYouTubeNode } from "../nodes/YouTubeNode";
-import { $createEquationNode } from "../nodes/EquationNode";
-
 import { $createStickyNoteNode } from "../nodes/StickyNoteNode";
 import { $createPollNode, type PollOption } from "../nodes/PollNode";
 import { extractYouTubeVideoID } from "../utils/url";
@@ -160,31 +158,6 @@ export function PollButton() {
             editor.update(() => {
               const node = $createPollNode(question, options, expiresAt);
               $insertNodes([node, $createParagraphNode()]);
-            });
-            setModal(false);
-          }}
-        />
-      )}
-    </>
-  );
-}
-
-/* ── Equation ────────────────────────────────────── */
-export function EquationButton() {
-  const [editor] = useLexicalComposerContext();
-  const [modal, setModal] = useState(false);
-  return (
-    <>
-      <ToolbarButton onClick={() => setModal(true)} label="Equation">
-        <span className="text-sm font-serif italic leading-none">fx</span>
-      </ToolbarButton>
-      {modal && (
-        <EquationInsertModal
-          onClose={() => setModal(false)}
-          onInsert={(equation, inline) => {
-            editor.update(() => {
-              const node = $createEquationNode(equation, inline);
-              $insertNodes([node]);
             });
             setModal(false);
           }}
@@ -403,50 +376,6 @@ function YouTubeInsertModal({
   );
 }
 
-/* ── Equation Insert Modal ────────────────────────── */
-function EquationInsertModal({
-  onClose,
-  onInsert,
-}: {
-  onClose: () => void;
-  onInsert: (equation: string, inline: boolean) => void;
-}) {
-  const [equation, setEquation] = useState("");
-  const [inline, setInline] = useState(true);
-
-  return (
-    <Modal title="Insert Equation" onClose={onClose}>
-      <div className="space-y-3">
-        <textarea
-          value={equation}
-          onChange={(e) => setEquation(e.target.value)}
-          placeholder="e.g. E = mc^2"
-          className="w-full rounded border border-zinc-300 px-3 py-2 font-mono text-sm dark:border-zinc-600 dark:bg-zinc-800"
-          rows={3}
-          autoFocus
-        />
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={inline}
-            onChange={(e) => setInline(e.target.checked)}
-          />
-          Inline equation
-        </label>
-        <button
-          type="button"
-          onClick={() => {
-            if (equation.trim()) onInsert(equation.trim(), inline);
-          }}
-          disabled={!equation.trim()}
-          className="rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600 disabled:opacity-50"
-        >
-          Insert
-        </button>
-      </div>
-    </Modal>
-  );
-}
 
 /* ── Table Insert Modal ───────────────────────────── */
 function TableInsertModal({
