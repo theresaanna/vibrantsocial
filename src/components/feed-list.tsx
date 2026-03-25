@@ -187,6 +187,15 @@ export function FeedList({
                     wallPostId: item.data.wallPost.id,
                     wallPostStatus: item.data.wallPost.status,
                   })}
+                  {...(item.data.marketplacePost && {
+                    marketplacePostId: item.data.marketplacePost.id,
+                    marketplaceData: {
+                      price: item.data.marketplacePost.price,
+                      purchaseUrl: item.data.marketplacePost.purchaseUrl,
+                      shippingOption: item.data.marketplacePost.shippingOption,
+                      shippingPrice: item.data.marketplacePost.shippingPrice,
+                    },
+                  })}
                 />
               ) : (
                 <RepostCard

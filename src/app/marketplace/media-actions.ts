@@ -2,7 +2,6 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { extractMediaFromLexicalJson } from "@/lib/lexical-text";
 
 const MARKETPLACE_PAGE_SIZE = 30;
 
@@ -51,7 +50,7 @@ export async function fetchMarketplacePage(
 
   const dateFilter = cursor ? { lt: new Date(cursor) } : undefined;
 
-  const fetchCount = MARKETPLACE_PAGE_SIZE * 3;
+  const fetchCount = MARKETPLACE_PAGE_SIZE + 1;
 
   // Logged-out: only public profiles OR posts with publicListing enabled
   // Logged-in: all marketplace posts
@@ -104,28 +103,20 @@ export async function fetchMarketplacePage(
     },
   });
 
-  // Filter to posts that contain media for the grid view
-  const mediaPosts: MarketplaceMediaPost[] = [];
-  for (const post of posts) {
-    const media = extractMediaFromLexicalJson(post.content);
-    if (media.length > 0) {
-      mediaPosts.push({
-        id: post.id,
-        slug: post.slug,
-        content: post.content,
-        createdAt: post.createdAt.toISOString(),
-        isNsfw: post.isNsfw,
-        isGraphicNudity: post.isGraphicNudity,
-        author: post.author,
-        marketplacePost: post.marketplacePost,
-      });
-    }
-    if (mediaPosts.length >= MARKETPLACE_PAGE_SIZE + 1) break;
-  }
+  const resultPosts: MarketplaceMediaPost[] = posts.map((post) => ({
+    id: post.id,
+    slug: post.slug,
+    content: post.content,
+    createdAt: post.createdAt.toISOString(),
+    isNsfw: post.isNsfw,
+    isGraphicNudity: post.isGraphicNudity,
+    author: post.author,
+    marketplacePost: post.marketplacePost,
+  }));
 
-  const hasMore = mediaPosts.length > MARKETPLACE_PAGE_SIZE;
+  const hasMore = resultPosts.length > MARKETPLACE_PAGE_SIZE;
   return {
-    posts: mediaPosts.slice(0, MARKETPLACE_PAGE_SIZE),
+    posts: resultPosts.slice(0, MARKETPLACE_PAGE_SIZE),
     hasMore,
   };
 }
