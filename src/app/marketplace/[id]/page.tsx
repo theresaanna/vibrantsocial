@@ -141,7 +141,13 @@ export default async function MarketplaceIdPage({ params, searchParams }: Props)
         },
       },
       marketplacePost: {
-        select: { id: true },
+        select: {
+          id: true,
+          price: true,
+          purchaseUrl: true,
+          shippingOption: true,
+          shippingPrice: true,
+        },
       },
     },
   });
@@ -199,6 +205,12 @@ export default async function MarketplaceIdPage({ params, searchParams }: Props)
         highlightCommentId={commentId ?? null}
         wallPost={post.wallPost}
         marketplacePostId={post.marketplacePost?.id}
+        marketplaceData={post.marketplacePost ? {
+          price: post.marketplacePost.price,
+          purchaseUrl: post.marketplacePost.purchaseUrl,
+          shippingOption: post.marketplacePost.shippingOption,
+          shippingPrice: post.marketplacePost.shippingPrice,
+        } : undefined}
       />
     </main>
   );
