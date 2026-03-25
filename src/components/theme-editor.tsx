@@ -275,7 +275,7 @@ export function ThemeEditor({
               className={`space-y-2 ${!isPremium ? "pointer-events-none opacity-50" : ""}`}
             >
               <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                Generate with AI
+                Generate a color scheme
               </label>
               <div className="flex gap-2">
                 <input
