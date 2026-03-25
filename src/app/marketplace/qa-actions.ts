@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { apiLimiter, isRateLimited } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { createNotification } from "@/lib/notifications";
 
 interface QAState {
   success: boolean;
@@ -34,7 +35,7 @@ export async function askQuestion(
 
   const marketplacePost = await prisma.marketplacePost.findUnique({
     where: { id: marketplacePostId },
-    select: { id: true, post: { select: { authorId: true } } },
+    select: { id: true, postId: true, post: { select: { authorId: true } } },
   });
 
   if (!marketplacePost) {
@@ -47,6 +48,14 @@ export async function askQuestion(
       askerId: session.user.id,
       question: trimmed,
     },
+  });
+
+  // Notify the seller about the new question
+  await createNotification({
+    type: "MARKETPLACE_QUESTION",
+    actorId: session.user.id,
+    targetUserId: marketplacePost.post.authorId,
+    postId: marketplacePost.postId,
   });
 
   revalidatePath("/marketplace");
@@ -79,7 +88,7 @@ export async function answerQuestion(
     where: { id: questionId },
     include: {
       marketplacePost: {
-        select: { post: { select: { authorId: true } } },
+        select: { postId: true, post: { select: { authorId: true } } },
       },
     },
   });
@@ -99,6 +108,14 @@ export async function answerQuestion(
       answer: trimmed,
       answeredAt: new Date(),
     },
+  });
+
+  // Notify the question asker that their question was answered
+  await createNotification({
+    type: "MARKETPLACE_ANSWER",
+    actorId: session.user.id,
+    targetUserId: question.askerId,
+    postId: question.marketplacePost.postId,
   });
 
   revalidatePath("/marketplace");
