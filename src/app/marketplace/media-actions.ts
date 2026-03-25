@@ -35,27 +35,39 @@ export async function fetchMarketplacePage(
   cursor?: string
 ): Promise<{ posts: MarketplaceMediaPost[]; hasMore: boolean }> {
   const session = await auth();
-  if (!session?.user?.id) {
-    return { posts: [], hasMore: false };
+  const isLoggedIn = !!session?.user?.id;
+
+  let showNsfwContent = false;
+  let ageVerified = false;
+
+  if (session?.user?.id) {
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { showNsfwContent: true, ageVerified: true },
+    });
+    showNsfwContent = currentUser?.showNsfwContent ?? false;
+    ageVerified = !!currentUser?.ageVerified;
   }
-
-  const userId = session.user.id;
-
-  const currentUser = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { showNsfwContent: true, ageVerified: true },
-  });
-
-  const showNsfwContent = currentUser?.showNsfwContent ?? false;
-  const ageVerified = !!currentUser?.ageVerified;
 
   const dateFilter = cursor ? { lt: new Date(cursor) } : undefined;
 
   const fetchCount = MARKETPLACE_PAGE_SIZE * 3;
 
+  // Logged-out: only public profiles OR posts with publicListing enabled
+  // Logged-in: all marketplace posts
+  const visibilityFilter = isLoggedIn
+    ? {}
+    : {
+        OR: [
+          { author: { isProfilePublic: true } },
+          { marketplacePost: { publicListing: true } },
+        ],
+      };
+
   const posts = await prisma.post.findMany({
     where: {
       marketplacePost: { isNot: null },
+      ...visibilityFilter,
       ...(!showNsfwContent ? { isNsfw: false } : {}),
       ...(!ageVerified ? { isGraphicNudity: false } : {}),
       ...(dateFilter ? { createdAt: dateFilter } : {}),

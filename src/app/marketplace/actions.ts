@@ -179,6 +179,7 @@ export async function createMarketplacePost(
   });
 
   const promotedToFeed = formData.get("promotedToFeed") === "true";
+  const publicListing = formData.get("publicListing") === "true";
 
   await prisma.marketplacePost.create({
     data: {
@@ -188,6 +189,7 @@ export async function createMarketplacePost(
       shippingOption,
       shippingPrice: shippingOption === "FLAT_RATE" ? shippingPrice : null,
       promotedToFeed,
+      publicListing,
       agreedToTerms: true,
     },
   });

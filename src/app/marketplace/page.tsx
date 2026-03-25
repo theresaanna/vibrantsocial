@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { auth } from "@/auth";
-import { redirect } from "next/navigation";
 import { MarketplaceContent } from "./marketplace-content";
 import { FeedSkeleton } from "@/components/feed-skeleton";
 
@@ -12,7 +11,6 @@ export const metadata: Metadata = {
 
 export default async function MarketplacePage() {
   const session = await auth();
-  if (!session?.user?.id) redirect("/login");
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
@@ -27,7 +25,7 @@ export default async function MarketplacePage() {
         </h1>
       </div>
       <Suspense fallback={<FeedSkeleton />}>
-        <MarketplaceContent userId={session.user.id} />
+        <MarketplaceContent userId={session?.user?.id} />
       </Suspense>
     </main>
   );

@@ -56,6 +56,7 @@ interface MarketplacePostComposerProps {
   phoneVerified: boolean;
   isOldEnough: boolean;
   isAgeVerified?: boolean;
+  isProfilePublic?: boolean;
   onPostCreated?: (postId: string) => void;
 }
 
@@ -63,6 +64,7 @@ export function MarketplacePostComposer({
   phoneVerified,
   isOldEnough,
   isAgeVerified,
+  isProfilePublic = true,
   onPostCreated,
 }: MarketplacePostComposerProps) {
   const [editorJson, setEditorJson] = useState("");
@@ -86,6 +88,7 @@ export function MarketplacePostComposer({
   const [shippingOption, setShippingOption] = useState("CONTACT_SELLER");
   const [shippingPrice, setShippingPrice] = useState("");
   const [promotedToFeed, setPromotedToFeed] = useState(false);
+  const [publicListing, setPublicListing] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
 
@@ -127,6 +130,7 @@ export function MarketplacePostComposer({
         setShippingOption("CONTACT_SELLER");
         setShippingPrice("");
         setPromotedToFeed(false);
+        setPublicListing(false);
         setAgreedToTerms(false);
         clearDraft("marketplace-compose");
         if (result.postId) onPostCreated?.(result.postId);
@@ -448,7 +452,8 @@ export function MarketplacePostComposer({
 
         {/* Promote to feed */}
         <input type="hidden" name="promotedToFeed" value={promotedToFeed ? "true" : "false"} />
-        <div className="border-t border-zinc-200 px-4 py-3 dark:border-zinc-700">
+        <input type="hidden" name="publicListing" value={publicListing ? "true" : "false"} />
+        <div className="space-y-2 border-t border-zinc-200 px-4 py-3 dark:border-zinc-700">
           <label className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
             <input
               type="checkbox"
@@ -461,6 +466,20 @@ export function MarketplacePostComposer({
               Promote to feed so friends and followers can see this listing
             </span>
           </label>
+          {!isProfilePublic && (
+            <label className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+              <input
+                type="checkbox"
+                checked={publicListing}
+                onChange={(e) => setPublicListing(e.target.checked)}
+                className="rounded"
+                data-testid="marketplace-public-listing-checkbox"
+              />
+              <span>
+                Show this listing to visitors who aren&apos;t logged in
+              </span>
+            </label>
+          )}
         </div>
 
         {/* Terms agreement */}

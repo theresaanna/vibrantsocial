@@ -908,6 +908,7 @@ model MarketplacePost {
   shippingOption  ShippingOption  @default(CONTACT_SELLER)
   shippingPrice   Float?
   promotedToFeed  Boolean        @default(false)
+  publicListing   Boolean        @default(false)
   agreedToTerms   Boolean        @default(false)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
