@@ -150,6 +150,16 @@ export default async function PostPage({ params, searchParams }: Props) {
 
   if (!post) notFound();
 
+  // Redirect marketplace posts to their dedicated URL
+  if (post.marketplacePost) {
+    if (post.slug && post.author?.username) {
+      const queryString = commentId ? `?commentId=${commentId}` : "";
+      permanentRedirect(`/${post.author.username}/marketplace/${post.slug}${queryString}`);
+    }
+    const queryString = commentId ? `?commentId=${commentId}` : "";
+    permanentRedirect(`/marketplace/${post.id}${queryString}`);
+  }
+
   // Redirect to slug-based URL if available
   if (post.slug && post.author?.username) {
     const queryString = commentId ? `?commentId=${commentId}` : "";
@@ -200,7 +210,7 @@ export default async function PostPage({ params, searchParams }: Props) {
         showNsfwContent={showNsfwContent}
         highlightCommentId={commentId ?? null}
         wallPost={post.wallPost}
-        marketplacePostId={post.marketplacePost?.id}
+        marketplacePostId={undefined}
       />
     </main>
   );

@@ -6,10 +6,18 @@ import { fetchMarketplacePage } from "./media-actions";
 import { isProfileIncomplete } from "@/lib/require-profile";
 
 interface MarketplaceContentProps {
-  userId: string;
+  userId?: string;
 }
 
 export async function MarketplaceContent({ userId }: MarketplaceContentProps) {
+  const { posts, hasMore } = await fetchMarketplacePage();
+
+  // Logged-out users: show the grid only
+  if (!userId) {
+    return <MarketplaceGrid initialPosts={posts} initialHasMore={hasMore} />;
+  }
+
+  // Logged-in users: show composer + grid
   const currentUser = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -18,6 +26,7 @@ export async function MarketplaceContent({ userId }: MarketplaceContentProps) {
       ageVerified: true,
       username: true,
       email: true,
+      isProfilePublic: true,
     },
   });
 
@@ -30,8 +39,7 @@ export async function MarketplaceContent({ userId }: MarketplaceContentProps) {
     ? calculateAge(currentUser.dateOfBirth) >= 18
     : false;
   const isAgeVerified = !!currentUser.ageVerified;
-
-  const { posts, hasMore } = await fetchMarketplacePage();
+  const isProfilePublic = currentUser.isProfilePublic;
 
   return (
     <>
@@ -52,6 +60,7 @@ export async function MarketplaceContent({ userId }: MarketplaceContentProps) {
         phoneVerified={phoneVerified}
         isOldEnough={isOldEnough}
         isAgeVerified={isAgeVerified}
+        isProfilePublic={isProfilePublic}
       />
       <MarketplaceGrid initialPosts={posts} initialHasMore={hasMore} />
     </>

@@ -1,31 +1,26 @@
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { redirect, notFound } from "next/navigation";
+import { redirect, permanentRedirect, notFound } from "next/navigation";
 import { isProfileIncomplete } from "@/lib/require-profile";
 import { PostPageClient } from "@/app/post/[id]/post-page-client";
 import { extractContentFromLexicalJson } from "@/lib/lexical-text";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
 
 interface Props {
-  params: Promise<{ username: string; slug: string }>;
+  params: Promise<{ id: string }>;
   searchParams: Promise<{ commentId?: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { username, slug } = await params;
-
-  const user = await prisma.user.findUnique({
-    where: { username },
-    select: { id: true },
-  });
-  if (!user) return { title: "Post Not Found" };
-
-  const post = await prisma.post.findFirst({
-    where: { authorId: user.id, slug },
+  const { id } = await params;
+  const post = await prisma.post.findUnique({
+    where: { id },
     select: {
       id: true,
+      slug: true,
       content: true,
+      marketplacePost: { select: { id: true } },
       author: {
         select: {
           username: true,
@@ -39,38 +34,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
   });
 
-  if (!post?.author) return { title: "Post Not Found" };
+  if (!post?.author || !post.marketplacePost) return { title: "Listing Not Found" };
 
-  const displayName =
-    post.author.displayName || post.author.name || post.author.username;
+  const displayName = post.author.displayName || post.author.name || post.author.username;
   const { text, imageUrls } = extractContentFromLexicalJson(post.content);
   const description = text
     ? truncateText(text, 160)
-    : `A post by ${displayName} on ${SITE_NAME}.`;
+    : `A marketplace listing by ${displayName} on ${SITE_NAME}.`;
   const avatarUrl = post.author.avatar || post.author.image || undefined;
   const ogImage = imageUrls[0] ?? avatarUrl;
 
   return buildMetadata({
     title: `${displayName} on ${SITE_NAME}`,
     description,
-    path: `/${username}/post/${slug}`,
-    images: ogImage
-      ? [{ url: ogImage, alt: `Post by ${displayName}` }]
-      : undefined,
+    path: post.slug && post.author?.username
+      ? `/${post.author.username}/marketplace/${post.slug}`
+      : `/marketplace/${post.id}`,
+    images: ogImage ? [{ url: ogImage, alt: `Listing by ${displayName}` }] : undefined,
   });
 }
 
-export default async function SlugPostPage({ params, searchParams }: Props) {
-  const { username, slug } = await params;
+export default async function MarketplaceIdPage({ params, searchParams }: Props) {
+  const { id } = await params;
   const { commentId } = await searchParams;
   const session = await auth();
   const userId = session?.user?.id;
-
-  const author = await prisma.user.findUnique({
-    where: { username },
-    select: { id: true },
-  });
-  if (!author) notFound();
 
   let phoneVerified = false;
   let ageVerified = false;
@@ -91,8 +79,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
       },
     });
 
-    if (!currentUser || isProfileIncomplete(currentUser))
-      redirect("/complete-profile");
+    if (!currentUser || isProfileIncomplete(currentUser)) redirect("/complete-profile");
 
     phoneVerified = !!currentUser?.phoneVerified;
     ageVerified = !!currentUser?.ageVerified;
@@ -100,8 +87,8 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
     showNsfwContent = currentUser?.showNsfwContent ?? false;
   }
 
-  const post = await prisma.post.findFirst({
-    where: { authorId: author.id, slug },
+  const post = await prisma.post.findUnique({
+    where: { id },
     include: {
       author: {
         select: {
@@ -112,6 +99,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
           image: true,
           avatar: true,
           profileFrameId: true,
+          usernameFont: true,
           isProfilePublic: true,
         },
       },
@@ -158,23 +146,19 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
     },
   });
 
-  if (!post) notFound();
+  if (!post || !post.marketplacePost) notFound();
 
-  // Redirect marketplace posts to their dedicated URL
-  if (post.marketplacePost) {
-    redirect(`/${username}/marketplace/${slug}`);
+  // Redirect to slug-based marketplace URL if available
+  if (post.slug && post.author?.username) {
+    const queryString = commentId ? `?commentId=${commentId}` : "";
+    permanentRedirect(`/${post.author.username}/marketplace/${post.slug}${queryString}`);
   }
 
   // Redirect unauthenticated visitors if author's profile is private
-  if (post.author && !post.author.isProfilePublic && !userId)
-    redirect("/login");
+  if (post.author && !post.author.isProfilePublic && !userId) redirect("/login");
 
   // Redirect unauthenticated visitors away from flagged content
-  if (
-    !userId &&
-    (post.isSensitive || post.isNsfw || post.isGraphicNudity)
-  )
-    redirect("/login");
+  if (!userId && (post.isSensitive || post.isNsfw || post.isGraphicNudity)) redirect("/login");
 
   // Redirect unauthenticated visitors away from logged-in-only posts
   if (!userId && post.isLoggedInOnly) redirect("/login");
@@ -214,7 +198,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
         showNsfwContent={showNsfwContent}
         highlightCommentId={commentId ?? null}
         wallPost={post.wallPost}
-        marketplacePostId={undefined}
+        marketplacePostId={post.marketplacePost?.id}
       />
     </main>
   );

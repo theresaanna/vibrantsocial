@@ -45,9 +45,12 @@ export async function fetchCommunitiesMediaPage(
   // Fetch more posts than needed since many won't have media
   const fetchCount = MEDIA_PAGE_SIZE * 3;
 
+  const isLoggedIn = !!session?.user?.id;
+
   const posts = await prisma.post.findMany({
     where: {
-      author: { isProfilePublic: true },
+      ...(isLoggedIn ? {} : { author: { isProfilePublic: true } }),
+      marketplacePost: null,
       isSensitive: false,
       isGraphicNudity: false,
       ...(!showNsfwContent

@@ -26,9 +26,9 @@ function extractMarketplaceGridItems(posts: MarketplaceMediaPost[]): Marketplace
 
 function getPostHref(post: MarketplaceMediaPost): string {
   if (post.slug && post.author?.username) {
-    return `/${post.author.username}/post/${post.slug}`;
+    return `/${post.author.username}/marketplace/${post.slug}`;
   }
-  return `/post/${post.id}`;
+  return `/marketplace/${post.id}`;
 }
 
 function formatPrice(price: number): string {

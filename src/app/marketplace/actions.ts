@@ -53,7 +53,6 @@ async function resolveUniqueSlug(
 const VALID_SHIPPING_OPTIONS: ShippingOption[] = [
   "FREE",
   "FLAT_RATE",
-  "PICKUP_ONLY",
   "CONTACT_SELLER",
 ];
 
@@ -179,6 +178,9 @@ export async function createMarketplacePost(
     },
   });
 
+  const promotedToFeed = formData.get("promotedToFeed") === "true";
+  const publicListing = formData.get("publicListing") === "true";
+
   await prisma.marketplacePost.create({
     data: {
       postId: post.id,
@@ -186,6 +188,8 @@ export async function createMarketplacePost(
       price,
       shippingOption,
       shippingPrice: shippingOption === "FLAT_RATE" ? shippingPrice : null,
+      promotedToFeed,
+      publicListing,
       agreedToTerms: true,
     },
   });
