@@ -21,6 +21,7 @@ interface PostPageClientProps {
   showNsfwContent: boolean;
   highlightCommentId: string | null;
   wallPost?: WallPostData | null;
+  marketplacePostId?: string;
 }
 
 export function PostPageClient({
@@ -32,6 +33,7 @@ export function PostPageClient({
   showNsfwContent,
   highlightCommentId,
   wallPost,
+  marketplacePostId,
 }: PostPageClientProps) {
   return (
     <div>
@@ -72,6 +74,7 @@ export function PostPageClient({
           wallPostId: wallPost.id,
           wallPostStatus: wallPost.status,
         })}
+        marketplacePostId={marketplacePostId}
       />
     </div>
   );

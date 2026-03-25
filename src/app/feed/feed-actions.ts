@@ -77,9 +77,17 @@ export async function fetchFeedPage(cursor?: string) {
         ...(!showNsfwContent ? { isNsfw: false } : {}),
         ...(!ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
         OR: [
-          { isCloseFriendsOnly: false, hasCustomAudience: false },
-          { isCloseFriendsOnly: true, authorId: { in: closeFriendAuthors } },
-          { hasCustomAudience: true, audience: { some: { userId } } },
+          { marketplacePost: null },
+          { marketplacePost: { promotedToFeed: true } },
+        ],
+        AND: [
+          {
+            OR: [
+              { isCloseFriendsOnly: false, hasCustomAudience: false },
+              { isCloseFriendsOnly: true, authorId: { in: closeFriendAuthors } },
+              { hasCustomAudience: true, audience: { some: { userId } } },
+            ],
+          },
         ],
       },
       orderBy: { createdAt: "desc" },
@@ -183,9 +191,17 @@ export async function fetchNewFeedItems(sinceDate: string) {
         ...(!showNsfwContent ? { isNsfw: false } : {}),
         ...(!ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
         OR: [
-          { isCloseFriendsOnly: false, hasCustomAudience: false },
-          { isCloseFriendsOnly: true, authorId: { in: closeFriendAuthors } },
-          { hasCustomAudience: true, audience: { some: { userId } } },
+          { marketplacePost: null },
+          { marketplacePost: { promotedToFeed: true } },
+        ],
+        AND: [
+          {
+            OR: [
+              { isCloseFriendsOnly: false, hasCustomAudience: false },
+              { isCloseFriendsOnly: true, authorId: { in: closeFriendAuthors } },
+              { hasCustomAudience: true, audience: { some: { userId } } },
+            ],
+          },
         ],
       },
       orderBy: { createdAt: "desc" },

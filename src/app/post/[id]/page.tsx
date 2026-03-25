@@ -140,6 +140,9 @@ export default async function PostPage({ params, searchParams }: Props) {
           },
         },
       },
+      marketplacePost: {
+        select: { id: true },
+      },
       // Comments are lazy-loaded by CommentSection via fetchComments
       // which builds the full nested tree (not just 2 levels)
     },
@@ -197,6 +200,7 @@ export default async function PostPage({ params, searchParams }: Props) {
         showNsfwContent={showNsfwContent}
         highlightCommentId={commentId ?? null}
         wallPost={post.wallPost}
+        marketplacePostId={post.marketplacePost?.id}
       />
     </main>
   );
