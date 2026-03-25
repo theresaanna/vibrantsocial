@@ -19,6 +19,7 @@ import { FramedAvatar } from "@/components/framed-avatar";
 import { ReportModal } from "@/components/report-modal";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { StyledName } from "@/components/styled-name";
+import { MarketplaceQA } from "@/components/marketplace-qa";
 
 interface PostAuthor {
   id: string;
@@ -83,6 +84,7 @@ interface PostCardProps {
   wallPostId?: string;
   wallPostStatus?: string;
   isWallOwner?: boolean;
+  marketplacePostId?: string;
 }
 
 export function PostCard({
@@ -101,6 +103,7 @@ export function PostCard({
   wallPostId,
   wallPostStatus,
   isWallOwner = false,
+  marketplacePostId,
 }: PostCardProps) {
   const [showComments, setShowComments] = useState(defaultShowComments);
   const [commentCount, setCommentCount] = useCommentCount(post.id, post._count.comments);
@@ -681,6 +684,15 @@ export function PostCard({
               isAuthenticated={isAuthenticated}
               highlightCommentId={highlightCommentId}
               onCommentCountChange={setCommentCount}
+              currentUserId={currentUserId}
+            />
+          )}
+
+          {/* Marketplace Q&A */}
+          {marketplacePostId && (
+            <MarketplaceQA
+              marketplacePostId={marketplacePostId}
+              postAuthorId={post.author?.id ?? ""}
               currentUserId={currentUserId}
             />
           )}
