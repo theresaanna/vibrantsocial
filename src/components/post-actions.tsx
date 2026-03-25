@@ -21,6 +21,7 @@ interface PostActionsProps {
   onToggleComments: () => void;
   onQuotePost?: () => void;
   readOnly?: boolean;
+  isMarketplace?: boolean;
 }
 
 export function PostActions({
@@ -37,6 +38,7 @@ export function PostActions({
   onToggleComments,
   onQuotePost,
   readOnly,
+  isMarketplace,
 }: PostActionsProps) {
   const [liked, setLiked] = useState(isLiked);
   const [likes, setLikes] = useState(likeCount);
@@ -105,9 +107,10 @@ export function PostActions({
   };
 
   const handleShare = async () => {
+    const segment = isMarketplace ? "marketplace" : "post";
     const url = postSlug && authorUsername
-      ? `${window.location.origin}/${authorUsername}/post/${postSlug}`
-      : `${window.location.origin}/post/${postId}`;
+      ? `${window.location.origin}/${authorUsername}/${segment}/${postSlug}`
+      : `${window.location.origin}/${segment}/${postId}`;
 
     if (navigator.share) {
       try {

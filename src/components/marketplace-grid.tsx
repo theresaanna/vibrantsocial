@@ -2,33 +2,28 @@
 
 import { useState, useCallback, useEffect, useRef, useTransition } from "react";
 import Link from "next/link";
-import { extractMediaFromLexicalJson, type MediaItem } from "@/lib/lexical-text";
+import { extractMediaFromLexicalJson, extractTextFromLexicalJson, type MediaItem } from "@/lib/lexical-text";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { timeAgo } from "@/lib/time";
 import { fetchMarketplacePage, type MarketplaceMediaPost } from "@/app/marketplace/media-actions";
 
 interface MarketplaceGridItem {
-  media: MediaItem;
+  media: MediaItem | null;
   post: MarketplaceMediaPost;
 }
 
 function extractMarketplaceGridItems(posts: MarketplaceMediaPost[]): MarketplaceGridItem[] {
-  const items: MarketplaceGridItem[] = [];
-  for (const post of posts) {
+  return posts.map((post) => {
     const media = extractMediaFromLexicalJson(post.content);
-    // Only take the first media item per post for the grid
-    if (media.length > 0) {
-      items.push({ media: media[0], post });
-    }
-  }
-  return items;
+    return { media: media.length > 0 ? media[0] : null, post };
+  });
 }
 
 function getPostHref(post: MarketplaceMediaPost): string {
   if (post.slug && post.author?.username) {
-    return `/${post.author.username}/post/${post.slug}`;
+    return `/${post.author.username}/marketplace/${post.slug}`;
   }
-  return `/post/${post.id}`;
+  return `/marketplace/${post.id}`;
 }
 
 function formatPrice(price: number): string {
@@ -38,8 +33,31 @@ function formatPrice(price: number): string {
   }).format(price);
 }
 
+function TextPlaceholder({ item }: { item: MarketplaceGridItem }) {
+  const text = extractTextFromLexicalJson(item.post.content);
+  const snippet = text.length > 80 ? text.slice(0, 80) + "…" : text;
+
+  return (
+    <div className="flex h-full w-full flex-col justify-between bg-gradient-to-br from-pink-50 to-fuchsia-100 p-3 dark:from-pink-950/40 dark:to-fuchsia-950/40">
+      <p className="line-clamp-4 text-xs leading-relaxed text-zinc-700 dark:text-zinc-300">
+        {snippet || "Marketplace listing"}
+      </p>
+      <div className="mt-auto flex items-center gap-1 text-pink-600 dark:text-pink-400">
+        <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1.003 1.003 0 0020.01 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z" />
+        </svg>
+        <span className="text-xs font-medium">Listing</span>
+      </div>
+    </div>
+  );
+}
+
 function MediaThumbnail({ item }: { item: MarketplaceGridItem }) {
   const { media } = item;
+
+  if (!media) {
+    return <TextPlaceholder item={item} />;
+  }
 
   if (media.type === "image") {
     return (

@@ -92,6 +92,6 @@ describe("MarketplaceGrid", () => {
     const posts = [makePost("1", 15)];
     render(<MarketplaceGrid initialPosts={posts} initialHasMore={false} />);
     const link = screen.getByTestId("marketplace-grid-item");
-    expect(link).toHaveAttribute("href", "/seller1/post/listing-1");
+    expect(link).toHaveAttribute("href", "/seller1/marketplace/listing-1");
   });
 });

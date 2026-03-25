@@ -19,10 +19,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     where: { username },
     select: { id: true },
   });
-  if (!user) return { title: "Post Not Found" };
+  if (!user) return { title: "Listing Not Found" };
 
   const post = await prisma.post.findFirst({
-    where: { authorId: user.id, slug },
+    where: { authorId: user.id, slug, marketplacePost: { isNot: null } },
     select: {
       id: true,
       content: true,
@@ -39,28 +39,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
   });
 
-  if (!post?.author) return { title: "Post Not Found" };
+  if (!post?.author) return { title: "Listing Not Found" };
 
   const displayName =
     post.author.displayName || post.author.name || post.author.username;
   const { text, imageUrls } = extractContentFromLexicalJson(post.content);
   const description = text
     ? truncateText(text, 160)
-    : `A post by ${displayName} on ${SITE_NAME}.`;
+    : `A marketplace listing by ${displayName} on ${SITE_NAME}.`;
   const avatarUrl = post.author.avatar || post.author.image || undefined;
   const ogImage = imageUrls[0] ?? avatarUrl;
 
   return buildMetadata({
     title: `${displayName} on ${SITE_NAME}`,
     description,
-    path: `/${username}/post/${slug}`,
+    path: `/${username}/marketplace/${slug}`,
     images: ogImage
-      ? [{ url: ogImage, alt: `Post by ${displayName}` }]
+      ? [{ url: ogImage, alt: `Listing by ${displayName}` }]
       : undefined,
   });
 }
 
-export default async function SlugPostPage({ params, searchParams }: Props) {
+export default async function MarketplaceSlugPage({ params, searchParams }: Props) {
   const { username, slug } = await params;
   const { commentId } = await searchParams;
   const session = await auth();
@@ -101,7 +101,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
   }
 
   const post = await prisma.post.findFirst({
-    where: { authorId: author.id, slug },
+    where: { authorId: author.id, slug, marketplacePost: { isNot: null } },
     include: {
       author: {
         select: {
@@ -154,17 +154,18 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
         },
       },
       marketplacePost: {
-        select: { id: true },
+        select: {
+          id: true,
+          price: true,
+          purchaseUrl: true,
+          shippingOption: true,
+          shippingPrice: true,
+        },
       },
     },
   });
 
   if (!post) notFound();
-
-  // Redirect marketplace posts to their dedicated URL
-  if (post.marketplacePost) {
-    redirect(`/${username}/marketplace/${slug}`);
-  }
 
   // Redirect unauthenticated visitors if author's profile is private
   if (post.author && !post.author.isProfilePublic && !userId)
@@ -215,7 +216,13 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
         showNsfwContent={showNsfwContent}
         highlightCommentId={commentId ?? null}
         wallPost={post.wallPost}
-        marketplacePostId={undefined}
+        marketplacePostId={post.marketplacePost?.id}
+        marketplaceData={post.marketplacePost ? {
+          price: post.marketplacePost.price,
+          purchaseUrl: post.marketplacePost.purchaseUrl,
+          shippingOption: post.marketplacePost.shippingOption,
+          shippingPrice: post.marketplacePost.shippingPrice,
+        } : undefined}
       />
     </main>
   );

@@ -22,6 +22,12 @@ interface PostPageClientProps {
   highlightCommentId: string | null;
   wallPost?: WallPostData | null;
   marketplacePostId?: string;
+  marketplaceData?: {
+    price: number;
+    purchaseUrl: string;
+    shippingOption: string;
+    shippingPrice: number | null;
+  };
 }
 
 export function PostPageClient({
@@ -34,6 +40,7 @@ export function PostPageClient({
   highlightCommentId,
   wallPost,
   marketplacePostId,
+  marketplaceData,
 }: PostPageClientProps) {
   return (
     <div>
@@ -75,6 +82,7 @@ export function PostPageClient({
           wallPostStatus: wallPost.status,
         })}
         marketplacePostId={marketplacePostId}
+        marketplaceData={marketplaceData}
       />
     </div>
   );

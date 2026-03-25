@@ -2,7 +2,6 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { extractMediaFromLexicalJson } from "@/lib/lexical-text";
 
 const MARKETPLACE_PAGE_SIZE = 30;
 
@@ -35,27 +34,39 @@ export async function fetchMarketplacePage(
   cursor?: string
 ): Promise<{ posts: MarketplaceMediaPost[]; hasMore: boolean }> {
   const session = await auth();
-  if (!session?.user?.id) {
-    return { posts: [], hasMore: false };
+  const isLoggedIn = !!session?.user?.id;
+
+  let showNsfwContent = false;
+  let ageVerified = false;
+
+  if (session?.user?.id) {
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { showNsfwContent: true, ageVerified: true },
+    });
+    showNsfwContent = currentUser?.showNsfwContent ?? false;
+    ageVerified = !!currentUser?.ageVerified;
   }
-
-  const userId = session.user.id;
-
-  const currentUser = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { showNsfwContent: true, ageVerified: true },
-  });
-
-  const showNsfwContent = currentUser?.showNsfwContent ?? false;
-  const ageVerified = !!currentUser?.ageVerified;
 
   const dateFilter = cursor ? { lt: new Date(cursor) } : undefined;
 
-  const fetchCount = MARKETPLACE_PAGE_SIZE * 3;
+  const fetchCount = MARKETPLACE_PAGE_SIZE + 1;
+
+  // Logged-out: only public profiles OR posts with publicListing enabled
+  // Logged-in: all marketplace posts
+  const visibilityFilter = isLoggedIn
+    ? {}
+    : {
+        OR: [
+          { author: { isProfilePublic: true } },
+          { marketplacePost: { publicListing: true } },
+        ],
+      };
 
   const posts = await prisma.post.findMany({
     where: {
       marketplacePost: { isNot: null },
+      ...visibilityFilter,
       ...(!showNsfwContent ? { isNsfw: false } : {}),
       ...(!ageVerified ? { isGraphicNudity: false } : {}),
       ...(dateFilter ? { createdAt: dateFilter } : {}),
@@ -92,28 +103,20 @@ export async function fetchMarketplacePage(
     },
   });
 
-  // Filter to posts that contain media for the grid view
-  const mediaPosts: MarketplaceMediaPost[] = [];
-  for (const post of posts) {
-    const media = extractMediaFromLexicalJson(post.content);
-    if (media.length > 0) {
-      mediaPosts.push({
-        id: post.id,
-        slug: post.slug,
-        content: post.content,
-        createdAt: post.createdAt.toISOString(),
-        isNsfw: post.isNsfw,
-        isGraphicNudity: post.isGraphicNudity,
-        author: post.author,
-        marketplacePost: post.marketplacePost,
-      });
-    }
-    if (mediaPosts.length >= MARKETPLACE_PAGE_SIZE + 1) break;
-  }
+  const resultPosts: MarketplaceMediaPost[] = posts.map((post) => ({
+    id: post.id,
+    slug: post.slug,
+    content: post.content,
+    createdAt: post.createdAt.toISOString(),
+    isNsfw: post.isNsfw,
+    isGraphicNudity: post.isGraphicNudity,
+    author: post.author,
+    marketplacePost: post.marketplacePost,
+  }));
 
-  const hasMore = mediaPosts.length > MARKETPLACE_PAGE_SIZE;
+  const hasMore = resultPosts.length > MARKETPLACE_PAGE_SIZE;
   return {
-    posts: mediaPosts.slice(0, MARKETPLACE_PAGE_SIZE),
+    posts: resultPosts.slice(0, MARKETPLACE_PAGE_SIZE),
     hasMore,
   };
 }

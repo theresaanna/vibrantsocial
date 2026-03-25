@@ -85,6 +85,12 @@ interface PostCardProps {
   wallPostStatus?: string;
   isWallOwner?: boolean;
   marketplacePostId?: string;
+  marketplaceData?: {
+    price: number;
+    purchaseUrl: string;
+    shippingOption: string;
+    shippingPrice: number | null;
+  };
 }
 
 export function PostCard({
@@ -104,6 +110,7 @@ export function PostCard({
   wallPostStatus,
   isWallOwner = false,
   marketplacePostId,
+  marketplaceData,
 }: PostCardProps) {
   const [showComments, setShowComments] = useState(defaultShowComments);
   const [commentCount, setCommentCount] = useCommentCount(post.id, post._count.comments);
@@ -341,8 +348,8 @@ export function PostCard({
             <Link
               href={
                 post.slug && post.author?.username
-                  ? `/${post.author.username}/post/${post.slug}`
-                  : `/post/${post.id}`
+                  ? `/${post.author.username}/${marketplacePostId ? "marketplace" : "post"}/${post.slug}`
+                  : `/${marketplacePostId ? "marketplace" : "post"}/${post.id}`
               }
               className="text-xs text-zinc-400 hover:underline"
             >
@@ -641,6 +648,34 @@ export function PostCard({
             )}
           </div>
 
+          {/* Marketplace listing info */}
+          {!isEditing && marketplaceData && (
+            <div className="mx-4 mb-2 rounded-lg border border-pink-200 bg-pink-50 px-3 py-2.5 dark:border-pink-800 dark:bg-pink-950/30" data-testid="marketplace-info">
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-pink-500 px-2.5 py-0.5 text-sm font-bold text-white">
+                  {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(marketplaceData.price)}
+                </span>
+                <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                  {marketplaceData.shippingOption === "FREE" && "Free shipping"}
+                  {marketplaceData.shippingOption === "FLAT_RATE" && marketplaceData.shippingPrice != null && `+${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(marketplaceData.shippingPrice)} shipping`}
+                  {marketplaceData.shippingOption === "PICKUP_ONLY" && "Pickup only"}
+                  {marketplaceData.shippingOption === "CONTACT_SELLER" && "Contact seller for shipping"}
+                </span>
+              </div>
+              <a
+                href={marketplaceData.purchaseUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1.5 inline-flex items-center gap-1 text-sm font-medium text-pink-600 hover:text-pink-700 dark:text-pink-400 dark:hover:text-pink-300"
+              >
+                View listing
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            </div>
+          )}
+
           {/* Tags (hidden while editing) */}
           {!isEditing && currentTags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 px-4 pb-2" data-testid="post-tags">
@@ -672,11 +707,12 @@ export function PostCard({
               onToggleComments={() => setShowComments((prev) => !prev)}
               onQuotePost={isAuthenticated ? () => router.push(`/post/${post.id}/quote`) : undefined}
               readOnly={!isAuthenticated}
+              isMarketplace={!!marketplacePostId}
             />
           </div>
 
-          {/* Comments */}
-          {showComments && (
+          {/* Comments (hidden for marketplace posts — they use Q&A instead) */}
+          {showComments && !marketplacePostId && (
             <CommentSection
               postId={post.id}
               comments={post.comments}

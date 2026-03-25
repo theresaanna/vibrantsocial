@@ -53,6 +53,15 @@ export function getPostInclude(userId: string) {
         },
       },
     },
+    marketplacePost: {
+      select: {
+        id: true,
+        price: true,
+        purchaseUrl: true,
+        shippingOption: true,
+        shippingPrice: true,
+      },
+    },
     // Comments are lazy-loaded via fetchComments() when expanded
   } as const;
 }
