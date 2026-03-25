@@ -214,7 +214,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
         showNsfwContent={showNsfwContent}
         highlightCommentId={commentId ?? null}
         wallPost={post.wallPost}
-        marketplacePostId={post.marketplacePost?.id}
+        marketplacePostId={undefined}
       />
     </main>
   );
