@@ -711,8 +711,8 @@ export function PostCard({
             />
           </div>
 
-          {/* Comments */}
-          {showComments && (
+          {/* Comments (hidden for marketplace posts — they use Q&A instead) */}
+          {showComments && !marketplacePostId && (
             <CommentSection
               postId={post.id}
               comments={post.comments}

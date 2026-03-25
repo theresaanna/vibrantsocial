@@ -245,7 +245,13 @@ export async function searchMarketplacePosts(query: string, cursor?: string) {
         },
       },
       marketplacePost: {
-        select: { id: true, price: true, shippingOption: true },
+        select: {
+          id: true,
+          price: true,
+          purchaseUrl: true,
+          shippingOption: true,
+          shippingPrice: true,
+        },
       },
     },
   });
