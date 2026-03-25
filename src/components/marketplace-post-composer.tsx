@@ -85,6 +85,7 @@ export function MarketplacePostComposer({
   const [price, setPrice] = useState("");
   const [shippingOption, setShippingOption] = useState("CONTACT_SELLER");
   const [shippingPrice, setShippingPrice] = useState("");
+  const [promotedToFeed, setPromotedToFeed] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
 
@@ -125,6 +126,7 @@ export function MarketplacePostComposer({
         setPrice("");
         setShippingOption("CONTACT_SELLER");
         setShippingPrice("");
+        setPromotedToFeed(false);
         setAgreedToTerms(false);
         clearDraft("marketplace-compose");
         if (result.postId) onPostCreated?.(result.postId);
@@ -318,7 +320,6 @@ export function MarketplacePostComposer({
                 <option value="CONTACT_SELLER">Contact Seller</option>
                 <option value="FREE">Free Shipping</option>
                 <option value="FLAT_RATE">Flat Rate</option>
-                <option value="PICKUP_ONLY">Pickup Only</option>
               </select>
             </div>
           </div>
@@ -444,6 +445,23 @@ export function MarketplacePostComposer({
           )}
         </div>
         {showInfoModal && <MarketplaceContentFlagsInfoModal onClose={() => setShowInfoModal(false)} />}
+
+        {/* Promote to feed */}
+        <input type="hidden" name="promotedToFeed" value={promotedToFeed ? "true" : "false"} />
+        <div className="border-t border-zinc-200 px-4 py-3 dark:border-zinc-700">
+          <label className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+            <input
+              type="checkbox"
+              checked={promotedToFeed}
+              onChange={(e) => setPromotedToFeed(e.target.checked)}
+              className="rounded"
+              data-testid="marketplace-promote-checkbox"
+            />
+            <span>
+              Promote to feed so friends and followers can see this listing
+            </span>
+          </label>
+        </div>
 
         {/* Terms agreement */}
         <div className="border-t border-zinc-200 px-4 py-3 dark:border-zinc-700">

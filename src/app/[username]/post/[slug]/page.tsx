@@ -160,6 +160,11 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
 
   if (!post) notFound();
 
+  // Redirect marketplace posts to their dedicated URL
+  if (post.marketplacePost) {
+    redirect(`/${username}/marketplace/${slug}`);
+  }
+
   // Redirect unauthenticated visitors if author's profile is private
   if (post.author && !post.author.isProfilePublic && !userId)
     redirect("/login");

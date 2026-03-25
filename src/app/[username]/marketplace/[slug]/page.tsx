@@ -1,24 +1,30 @@
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { redirect, permanentRedirect, notFound } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 import { isProfileIncomplete } from "@/lib/require-profile";
-import { PostPageClient } from "./post-page-client";
+import { PostPageClient } from "@/app/post/[id]/post-page-client";
 import { extractContentFromLexicalJson } from "@/lib/lexical-text";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
 
 interface Props {
-  params: Promise<{ id: string }>;
+  params: Promise<{ username: string; slug: string }>;
   searchParams: Promise<{ commentId?: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
-  const post = await prisma.post.findUnique({
-    where: { id },
+  const { username, slug } = await params;
+
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: { id: true },
+  });
+  if (!user) return { title: "Listing Not Found" };
+
+  const post = await prisma.post.findFirst({
+    where: { authorId: user.id, slug, marketplacePost: { isNot: null } },
     select: {
       id: true,
-      slug: true,
       content: true,
       author: {
         select: {
@@ -28,37 +34,43 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           avatar: true,
           profileFrameId: true,
           image: true,
-          usernameFont: true,
         },
       },
     },
   });
 
-  if (!post?.author) return { title: "Post Not Found" };
+  if (!post?.author) return { title: "Listing Not Found" };
 
-  const displayName = post.author.displayName || post.author.name || post.author.username;
+  const displayName =
+    post.author.displayName || post.author.name || post.author.username;
   const { text, imageUrls } = extractContentFromLexicalJson(post.content);
   const description = text
     ? truncateText(text, 160)
-    : `A post by ${displayName} on ${SITE_NAME}.`;
+    : `A marketplace listing by ${displayName} on ${SITE_NAME}.`;
   const avatarUrl = post.author.avatar || post.author.image || undefined;
   const ogImage = imageUrls[0] ?? avatarUrl;
 
   return buildMetadata({
     title: `${displayName} on ${SITE_NAME}`,
     description,
-    path: post.slug && post.author?.username
-      ? `/${post.author.username}/post/${post.slug}`
-      : `/post/${post.id}`,
-    images: ogImage ? [{ url: ogImage, alt: `Post by ${displayName}` }] : undefined,
+    path: `/${username}/marketplace/${slug}`,
+    images: ogImage
+      ? [{ url: ogImage, alt: `Listing by ${displayName}` }]
+      : undefined,
   });
 }
 
-export default async function PostPage({ params, searchParams }: Props) {
-  const { id } = await params;
+export default async function MarketplaceSlugPage({ params, searchParams }: Props) {
+  const { username, slug } = await params;
   const { commentId } = await searchParams;
   const session = await auth();
   const userId = session?.user?.id;
+
+  const author = await prisma.user.findUnique({
+    where: { username },
+    select: { id: true },
+  });
+  if (!author) notFound();
 
   let phoneVerified = false;
   let ageVerified = false;
@@ -79,7 +91,8 @@ export default async function PostPage({ params, searchParams }: Props) {
       },
     });
 
-    if (!currentUser || isProfileIncomplete(currentUser)) redirect("/complete-profile");
+    if (!currentUser || isProfileIncomplete(currentUser))
+      redirect("/complete-profile");
 
     phoneVerified = !!currentUser?.phoneVerified;
     ageVerified = !!currentUser?.ageVerified;
@@ -87,8 +100,8 @@ export default async function PostPage({ params, searchParams }: Props) {
     showNsfwContent = currentUser?.showNsfwContent ?? false;
   }
 
-  const post = await prisma.post.findUnique({
-    where: { id },
+  const post = await prisma.post.findFirst({
+    where: { authorId: author.id, slug, marketplacePost: { isNot: null } },
     include: {
       author: {
         select: {
@@ -99,7 +112,6 @@ export default async function PostPage({ params, searchParams }: Props) {
           image: true,
           avatar: true,
           profileFrameId: true,
-          usernameFont: true,
           isProfilePublic: true,
         },
       },
@@ -143,34 +155,21 @@ export default async function PostPage({ params, searchParams }: Props) {
       marketplacePost: {
         select: { id: true },
       },
-      // Comments are lazy-loaded by CommentSection via fetchComments
-      // which builds the full nested tree (not just 2 levels)
     },
   });
 
   if (!post) notFound();
 
-  // Redirect marketplace posts to their dedicated URL
-  if (post.marketplacePost) {
-    if (post.slug && post.author?.username) {
-      const queryString = commentId ? `?commentId=${commentId}` : "";
-      permanentRedirect(`/${post.author.username}/marketplace/${post.slug}${queryString}`);
-    }
-    const queryString = commentId ? `?commentId=${commentId}` : "";
-    permanentRedirect(`/marketplace/${post.id}${queryString}`);
-  }
-
-  // Redirect to slug-based URL if available
-  if (post.slug && post.author?.username) {
-    const queryString = commentId ? `?commentId=${commentId}` : "";
-    permanentRedirect(`/${post.author.username}/post/${post.slug}${queryString}`);
-  }
-
   // Redirect unauthenticated visitors if author's profile is private
-  if (post.author && !post.author.isProfilePublic && !userId) redirect("/login");
+  if (post.author && !post.author.isProfilePublic && !userId)
+    redirect("/login");
 
   // Redirect unauthenticated visitors away from flagged content
-  if (!userId && (post.isSensitive || post.isNsfw || post.isGraphicNudity)) redirect("/login");
+  if (
+    !userId &&
+    (post.isSensitive || post.isNsfw || post.isGraphicNudity)
+  )
+    redirect("/login");
 
   // Redirect unauthenticated visitors away from logged-in-only posts
   if (!userId && post.isLoggedInOnly) redirect("/login");

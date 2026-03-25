@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, permanentRedirect, notFound } from "next/navigation";
 import { isProfileIncomplete } from "@/lib/require-profile";
-import { PostPageClient } from "./post-page-client";
+import { PostPageClient } from "@/app/post/[id]/post-page-client";
 import { extractContentFromLexicalJson } from "@/lib/lexical-text";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
 
@@ -20,6 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       id: true,
       slug: true,
       content: true,
+      marketplacePost: { select: { id: true } },
       author: {
         select: {
           username: true,
@@ -28,19 +29,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           avatar: true,
           profileFrameId: true,
           image: true,
-          usernameFont: true,
         },
       },
     },
   });
 
-  if (!post?.author) return { title: "Post Not Found" };
+  if (!post?.author || !post.marketplacePost) return { title: "Listing Not Found" };
 
   const displayName = post.author.displayName || post.author.name || post.author.username;
   const { text, imageUrls } = extractContentFromLexicalJson(post.content);
   const description = text
     ? truncateText(text, 160)
-    : `A post by ${displayName} on ${SITE_NAME}.`;
+    : `A marketplace listing by ${displayName} on ${SITE_NAME}.`;
   const avatarUrl = post.author.avatar || post.author.image || undefined;
   const ogImage = imageUrls[0] ?? avatarUrl;
 
@@ -48,13 +48,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${displayName} on ${SITE_NAME}`,
     description,
     path: post.slug && post.author?.username
-      ? `/${post.author.username}/post/${post.slug}`
-      : `/post/${post.id}`,
-    images: ogImage ? [{ url: ogImage, alt: `Post by ${displayName}` }] : undefined,
+      ? `/${post.author.username}/marketplace/${post.slug}`
+      : `/marketplace/${post.id}`,
+    images: ogImage ? [{ url: ogImage, alt: `Listing by ${displayName}` }] : undefined,
   });
 }
 
-export default async function PostPage({ params, searchParams }: Props) {
+export default async function MarketplaceIdPage({ params, searchParams }: Props) {
   const { id } = await params;
   const { commentId } = await searchParams;
   const session = await auth();
@@ -143,27 +143,15 @@ export default async function PostPage({ params, searchParams }: Props) {
       marketplacePost: {
         select: { id: true },
       },
-      // Comments are lazy-loaded by CommentSection via fetchComments
-      // which builds the full nested tree (not just 2 levels)
     },
   });
 
-  if (!post) notFound();
+  if (!post || !post.marketplacePost) notFound();
 
-  // Redirect marketplace posts to their dedicated URL
-  if (post.marketplacePost) {
-    if (post.slug && post.author?.username) {
-      const queryString = commentId ? `?commentId=${commentId}` : "";
-      permanentRedirect(`/${post.author.username}/marketplace/${post.slug}${queryString}`);
-    }
-    const queryString = commentId ? `?commentId=${commentId}` : "";
-    permanentRedirect(`/marketplace/${post.id}${queryString}`);
-  }
-
-  // Redirect to slug-based URL if available
+  // Redirect to slug-based marketplace URL if available
   if (post.slug && post.author?.username) {
     const queryString = commentId ? `?commentId=${commentId}` : "";
-    permanentRedirect(`/${post.author.username}/post/${post.slug}${queryString}`);
+    permanentRedirect(`/${post.author.username}/marketplace/${post.slug}${queryString}`);
   }
 
   // Redirect unauthenticated visitors if author's profile is private

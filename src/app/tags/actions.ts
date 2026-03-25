@@ -34,8 +34,8 @@ export async function searchTags(query: string, includeNsfw?: boolean) {
   if (!normalized) return [];
 
   const postFilter = includeNsfw
-    ? { isSensitive: false, isGraphicNudity: false, author: { isProfilePublic: true } }
-    : { isSensitive: false, isNsfw: false, isGraphicNudity: false, author: { isProfilePublic: true } };
+    ? { isSensitive: false, isGraphicNudity: false, author: { isProfilePublic: true }, marketplacePost: null }
+    : { isSensitive: false, isNsfw: false, isGraphicNudity: false, author: { isProfilePublic: true }, marketplacePost: null };
 
   const tags = await prisma.tag.findMany({
     where: {
@@ -92,6 +92,7 @@ export async function getTagCloudData() {
                     isNsfw: false,
                     isGraphicNudity: false,
                     author: { isProfilePublic: true },
+                    marketplacePost: null,
                   },
                 },
               },
@@ -127,6 +128,7 @@ export async function getNsfwTagCloudData() {
                     isSensitive: false,
                     isGraphicNudity: false,
                     author: { isProfilePublic: true },
+                    marketplacePost: null,
                   },
                 },
               },
@@ -143,6 +145,7 @@ export async function getNsfwTagCloudData() {
                     isSensitive: false,
                     isGraphicNudity: false,
                     author: { isProfilePublic: true },
+                    marketplacePost: null,
                   },
                 },
               },
@@ -177,6 +180,7 @@ export async function getAllTagCloudData() {
                     isSensitive: false,
                     isGraphicNudity: false,
                     author: { isProfilePublic: true },
+                    marketplacePost: null,
                   },
                 },
               },
@@ -205,13 +209,15 @@ export async function getPostsByTag(
 ) {
   const session = await auth();
   const currentUserId = userId || session?.user?.id || "";
+  const isLoggedIn = !!currentUserId;
 
   const normalized = normalizeTag(tagName);
   if (!normalized) return { posts: [], hasMore: false, totalCount: 0 };
 
+  const authorFilter = isLoggedIn ? {} : { author: { isProfilePublic: true } };
   const postFilter = includeNsfw
-    ? { isSensitive: false, isGraphicNudity: false, author: { isProfilePublic: true } }
-    : { isSensitive: false, isNsfw: false, isGraphicNudity: false, author: { isProfilePublic: true } };
+    ? { isSensitive: false, isGraphicNudity: false, ...authorFilter, marketplacePost: null }
+    : { isSensitive: false, isNsfw: false, isGraphicNudity: false, ...authorFilter, marketplacePost: null };
 
   const fetchCount = PAGE_SIZE + 1;
 

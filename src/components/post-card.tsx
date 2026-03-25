@@ -341,8 +341,8 @@ export function PostCard({
             <Link
               href={
                 post.slug && post.author?.username
-                  ? `/${post.author.username}/post/${post.slug}`
-                  : `/post/${post.id}`
+                  ? `/${post.author.username}/${marketplacePostId ? "marketplace" : "post"}/${post.slug}`
+                  : `/${marketplacePostId ? "marketplace" : "post"}/${post.id}`
               }
               className="text-xs text-zinc-400 hover:underline"
             >
@@ -672,6 +672,7 @@ export function PostCard({
               onToggleComments={() => setShowComments((prev) => !prev)}
               onQuotePost={isAuthenticated ? () => router.push(`/post/${post.id}/quote`) : undefined}
               readOnly={!isAuthenticated}
+              isMarketplace={!!marketplacePostId}
             />
           </div>
 
