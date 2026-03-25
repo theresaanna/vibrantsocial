@@ -7,7 +7,6 @@ import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode";
 import { TableNode, TableCellNode, TableRowNode } from "@lexical/table";
 import { ImageNode } from "./nodes/ImageNode";
 import { YouTubeNode } from "./nodes/YouTubeNode";
-import { EquationNode } from "./nodes/EquationNode";
 import { PageBreakNode } from "./nodes/PageBreakNode";
 
 import { StickyNoteNode } from "./nodes/StickyNoteNode";
@@ -34,7 +33,6 @@ export const editorNodes: Array<Klass<LexicalNode>> = [
   TableRowNode,
   ImageNode,
   YouTubeNode,
-  EquationNode,
   PageBreakNode,
 
   StickyNoteNode,
