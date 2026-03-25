@@ -135,7 +135,7 @@ export function parseFormData<T>(
   }
   const result = schema.safeParse(raw);
   if (!result.success) {
-    return { success: false, error: result.error.errors[0].message };
+    return { success: false, error: result.error.issues[0].message };
   }
   return { success: true, data: result.data };
 }
