@@ -75,13 +75,18 @@ export async function fetchUserMediaPosts(
       authorId: userId,
       ...loggedOutFilter,
       ...closeFriendsFilter,
-      ...audienceFilter,
-      // Exclude marketplace posts unless promoted
-      OR: [
-        { marketplacePost: null },
-        { marketplacePost: { promotedToFeed: true } },
-      ],
       ...(dateFilter ? { createdAt: dateFilter } : {}),
+      AND: [
+        // Audience visibility
+        audienceFilter,
+        // Exclude marketplace posts unless promoted
+        {
+          OR: [
+            { marketplacePost: null },
+            { marketplacePost: { promotedToFeed: true } },
+          ],
+        },
+      ],
     },
     orderBy: { createdAt: "desc" },
     take: fetchCount,
