@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { ThemeEditor } from "@/components/theme-editor";
 import { PROFILE_THEME_PRESETS } from "@/lib/profile-themes";
 import type { CustomPresetData } from "@/lib/profile-themes";
+import type { BackgroundDefinition } from "@/lib/profile-backgrounds";
 
 // Mock ThemePreview to keep tests focused
 vi.mock("@/components/theme-preview", () => ({
@@ -31,12 +32,30 @@ const mockGenerateTheme = vi.mocked(generateTheme);
 const mockSavePreset = vi.mocked(saveCustomPreset);
 const mockDeletePreset = vi.mocked(deleteCustomPreset);
 
+const sampleBackgrounds: BackgroundDefinition[] = [
+  {
+    id: "blue-waves",
+    name: "Blue Waves",
+    src: "/backgrounds/blue-waves.jpg",
+    thumbSrc: "/backgrounds/thumbs/blue-waves.webp",
+    category: "photo",
+  },
+  {
+    id: "checkered-pattern",
+    name: "Checkered Pattern",
+    src: "/backgrounds/checkered-pattern.jpg",
+    thumbSrc: "/backgrounds/thumbs/checkered-pattern.webp",
+    category: "pattern",
+  },
+];
+
 const defaultProps = {
   initialColors: {},
   username: "testuser",
   displayName: "Test User",
   bio: null,
   avatarSrc: null,
+  backgrounds: sampleBackgrounds,
 };
 
 const sampleCustomPreset: CustomPresetData = {
@@ -87,16 +106,6 @@ describe("ThemeEditor", () => {
         screen.getByRole("button", { name: new RegExp(name, "i") })
       ).toBeInTheDocument();
     }
-  });
-
-  it("renders 5 color picker inputs", async () => {
-    render(<ThemeEditor {...defaultProps} />);
-    await expandSection();
-    expect(screen.getByLabelText("Background")).toBeInTheDocument();
-    expect(screen.getByLabelText("Text")).toBeInTheDocument();
-    expect(screen.getByLabelText("Links")).toBeInTheDocument();
-    expect(screen.getByLabelText("Secondary Text")).toBeInTheDocument();
-    expect(screen.getByLabelText("Container")).toBeInTheDocument();
   });
 
   it("selecting a preset updates hidden form inputs", async () => {
@@ -202,30 +211,38 @@ describe("ThemeEditor", () => {
   });
 });
 
-describe("ThemeEditor — AI generation", () => {
+describe("ThemeEditor — AI generation from background", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("renders AI prompt input for premium users", async () => {
+  it("renders background selection grid for premium users", async () => {
     render(<ThemeEditor {...defaultProps} isPremium={true} />);
     await expandSection();
-    expect(screen.getByTestId("ai-prompt-input")).toBeInTheDocument();
+    expect(screen.getByTestId("theme-bg-blue-waves")).toBeInTheDocument();
+    expect(screen.getByTestId("theme-bg-checkered-pattern")).toBeInTheDocument();
+  });
+
+  it("renders generate button", async () => {
+    render(<ThemeEditor {...defaultProps} isPremium={true} />);
+    await expandSection();
     expect(screen.getByTestId("ai-generate-button")).toBeInTheDocument();
   });
 
-  it("disables AI prompt for non-premium users", async () => {
-    render(<ThemeEditor {...defaultProps} isPremium={false} />);
-    await expandSection();
-    expect(screen.getByTestId("ai-prompt-input")).toBeDisabled();
-    expect(screen.getByTestId("ai-generate-button")).toBeDisabled();
-  });
-
-  it("disables generate button when prompt is empty", async () => {
+  it("disables generate button when no background is selected", async () => {
     render(<ThemeEditor {...defaultProps} isPremium={true} />);
     await expandSection();
     const generateButton = screen.getByTestId("ai-generate-button");
     expect(generateButton).toBeDisabled();
+  });
+
+  it("enables generate button after selecting a background", async () => {
+    render(<ThemeEditor {...defaultProps} isPremium={true} />);
+    await expandSection();
+
+    await userEvent.click(screen.getByTestId("theme-bg-blue-waves"));
+    const generateButton = screen.getByTestId("ai-generate-button");
+    expect(generateButton).not.toBeDisabled();
   });
 
   it("shows error from failed generation", async () => {
@@ -237,11 +254,8 @@ describe("ThemeEditor — AI generation", () => {
     render(<ThemeEditor {...defaultProps} isPremium={true} />);
     await expandSection();
 
-    const input = screen.getByTestId("ai-prompt-input");
-    await userEvent.type(input, "cyberpunk");
-
-    const button = screen.getByTestId("ai-generate-button");
-    await userEvent.click(button);
+    await userEvent.click(screen.getByTestId("theme-bg-blue-waves"));
+    await userEvent.click(screen.getByTestId("ai-generate-button"));
 
     expect(await screen.findByTestId("ai-generation-error")).toHaveTextContent(
       "API error occurred"
@@ -251,7 +265,7 @@ describe("ThemeEditor — AI generation", () => {
   it("shows save preset form after successful generation", async () => {
     mockGenerateTheme.mockResolvedValue({
       success: true,
-      name: "Neon Dreams",
+      name: "Ocean Breeze",
       light: sampleCustomPreset.light,
       dark: sampleCustomPreset.dark,
     });
@@ -259,20 +273,20 @@ describe("ThemeEditor — AI generation", () => {
     render(<ThemeEditor {...defaultProps} isPremium={true} />);
     await expandSection();
 
-    await userEvent.type(screen.getByTestId("ai-prompt-input"), "cyberpunk");
+    await userEvent.click(screen.getByTestId("theme-bg-blue-waves"));
     await userEvent.click(screen.getByTestId("ai-generate-button"));
 
     expect(await screen.findByTestId("save-preset-form")).toBeInTheDocument();
     const nameInput = screen.getByTestId(
       "preset-name-input"
     ) as HTMLInputElement;
-    expect(nameInput.value).toBe("Neon Dreams");
+    expect(nameInput.value).toBe("Ocean Breeze");
   });
 
-  it("updates color pickers after successful generation", async () => {
+  it("updates hidden inputs after successful generation", async () => {
     mockGenerateTheme.mockResolvedValue({
       success: true,
-      name: "Neon Dreams",
+      name: "Ocean Breeze",
       light: sampleCustomPreset.light,
       dark: sampleCustomPreset.dark,
     });
@@ -282,16 +296,33 @@ describe("ThemeEditor — AI generation", () => {
     );
     await expandSection();
 
-    await userEvent.type(screen.getByTestId("ai-prompt-input"), "cyberpunk");
+    await userEvent.click(screen.getByTestId("theme-bg-blue-waves"));
     await userEvent.click(screen.getByTestId("ai-generate-button"));
 
-    // Wait for state update
     await screen.findByTestId("save-preset-form");
 
     const bgInput = container.querySelector(
       'input[name="profileBgColor"]'
     ) as HTMLInputElement;
     expect(bgInput.value).toBe(sampleCustomPreset.light.profileBgColor);
+  });
+
+  it("calls generateTheme with background image URL", async () => {
+    mockGenerateTheme.mockResolvedValue({
+      success: true,
+      name: "Ocean Breeze",
+      light: sampleCustomPreset.light,
+      dark: sampleCustomPreset.dark,
+    });
+
+    render(<ThemeEditor {...defaultProps} isPremium={true} />);
+    await expandSection();
+
+    await userEvent.click(screen.getByTestId("theme-bg-blue-waves"));
+    await userEvent.click(screen.getByTestId("ai-generate-button"));
+
+    await screen.findByTestId("save-preset-form");
+    expect(mockGenerateTheme).toHaveBeenCalledWith("/backgrounds/blue-waves.jpg");
   });
 });
 
