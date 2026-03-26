@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useTransition } from "react";
-import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { PostCard } from "@/components/post-card";
 import { getPostsByTag } from "@/app/tags/actions";
 
@@ -40,23 +39,6 @@ export function TagPostList({
   const hasMoreRef = useRef(hasMore);
   hasMoreRef.current = hasMore;
 
-  // Virtualizer for window-based scrolling
-  const virtualizer = useWindowVirtualizer({
-    count: posts.length,
-    estimateSize: () => 250,
-    overscan: 5,
-    gap: 16,
-  });
-
-  // Invalidate measurements after React commits DOM changes
-  const prevCountRef = useRef(posts.length);
-  useEffect(() => {
-    if (posts.length !== prevCountRef.current) {
-      prevCountRef.current = posts.length;
-      virtualizer.measure();
-    }
-  }, [posts.length, virtualizer]);
-
   const loadMore = useCallback(() => {
     if (loadingRef.current || !hasMoreRef.current) return;
     const currentPosts = postsRef.current;
@@ -80,20 +62,23 @@ export function TagPostList({
     });
   }, [tagName, currentUserId, showNsfwContent]);
 
-  const virtualItems = virtualizer.getVirtualItems();
-
-  // Trigger loadMore when nearing the end of the list
+  // IntersectionObserver for infinite scroll
+  const sentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (virtualItems.length === 0) return;
-    const lastVirtualItem = virtualItems[virtualItems.length - 1];
-    if (
-      lastVirtualItem.index >= posts.length - 3 &&
-      hasMoreRef.current &&
-      !loadingRef.current
-    ) {
-      loadMore();
-    }
-  }, [virtualItems, posts.length, loadMore]);
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMoreRef.current && !loadingRef.current) {
+          loadMore();
+        }
+      },
+      { rootMargin: "600px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMore]);
 
   if (posts.length === 0) {
     return (
@@ -104,50 +89,30 @@ export function TagPostList({
   }
 
   return (
-    <div>
-      <div
-        style={{
-          height: virtualizer.getTotalSize(),
-          width: "100%",
-          position: "relative",
-        }}
-      >
-        {virtualItems.map((virtualRow) => {
-          const post = posts[virtualRow.index];
-          return (
-            <div
-              key={post.id}
-              data-index={virtualRow.index}
-              ref={virtualizer.measureElement}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                transform: `translateY(${virtualRow.start}px)`,
-              }}
-            >
-              <PostCard
-                post={post}
-                currentUserId={currentUserId}
-                phoneVerified={phoneVerified}
-                ageVerified={ageVerified}
-                showGraphicByDefault={showGraphicByDefault}
-                showNsfwContent={showNsfwContent}
-                {...(post.wallPost && {
-                  wallOwner: {
-                    username: post.wallPost.wallOwner.username,
-                    displayName: post.wallPost.wallOwner.displayName,
-                    usernameFont: post.wallPost.wallOwner.usernameFont,
-                  },
-                  wallPostId: post.wallPost.id,
-                  wallPostStatus: post.wallPost.status,
-                })}
-              />
-            </div>
-          );
-        })}
-      </div>
+    <div className="flex flex-col gap-4">
+      {posts.map((post) => (
+        <PostCard
+          key={post.id}
+          post={post}
+          currentUserId={currentUserId}
+          phoneVerified={phoneVerified}
+          ageVerified={ageVerified}
+          showGraphicByDefault={showGraphicByDefault}
+          showNsfwContent={showNsfwContent}
+          {...(post.wallPost && {
+            wallOwner: {
+              username: post.wallPost.wallOwner.username,
+              displayName: post.wallPost.wallOwner.displayName,
+              usernameFont: post.wallPost.wallOwner.usernameFont,
+            },
+            wallPostId: post.wallPost.id,
+            wallPostStatus: post.wallPost.status,
+          })}
+        />
+      ))}
+
+      {/* Sentinel element for infinite scroll */}
+      <div ref={sentinelRef} aria-hidden="true" />
 
       {isPending && (
         <div className="flex justify-center py-4">
