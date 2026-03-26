@@ -9,6 +9,7 @@ const PATTERN_IDS = new Set([
   "checkered-pattern",
   "citrus-slices",
   "crown-pattern",
+  "free-ouija-vector-background",
   "leopard-fur-pattern",
   "pattern-1",
   "pink-hearts",
@@ -28,32 +29,64 @@ function fileNameToDisplayName(filename: string): string {
 }
 
 /**
- * Scans the public/backgrounds directory and returns all image files
- * as background definitions. Server-only (uses fs).
+ * Scans a backgrounds directory and returns image files as background definitions.
+ * Shared scanner used by both free and premium background loaders.
  */
-export function getProfileBackgrounds(): BackgroundDefinition[] {
+function scanBackgroundDir(
+  dirPath: string,
+  urlPrefix: string,
+  options?: { premiumOnly?: boolean },
+): BackgroundDefinition[] {
   try {
-    const bgDir = path.join(process.cwd(), "public", "backgrounds");
-    const files = fs.readdirSync(bgDir);
+    const files = fs.readdirSync(dirPath);
     return files
       .filter((f) => SUPPORTED_EXTENSIONS.has(path.extname(f).toLowerCase()))
       .sort((a, b) => a.localeCompare(b))
       .map((f) => {
         const id = path.parse(f).name;
-        const thumbPath = path.join(bgDir, "thumbs", `${id}.webp`);
+        const thumbPath = path.join(dirPath, "thumbs", `${id}.webp`);
         const hasThumb = fs.existsSync(thumbPath);
-        const category: BgCategory = PATTERN_IDS.has(id) ? "pattern" : "photo";
+        // All premium backgrounds are patterns (tiling seamless)
+        const category: BgCategory = options?.premiumOnly
+          ? "pattern"
+          : PATTERN_IDS.has(id)
+            ? "pattern"
+            : "photo";
         return {
           id,
           name: fileNameToDisplayName(f),
-          src: `/backgrounds/${f}`,
-          thumbSrc: hasThumb ? `/backgrounds/thumbs/${id}.webp` : `/backgrounds/${f}`,
+          src: `${urlPrefix}/${f}`,
+          thumbSrc: hasThumb ? `${urlPrefix}/thumbs/${id}.webp` : `${urlPrefix}/${f}`,
           category,
+          ...(options?.premiumOnly ? { premiumOnly: true } : {}),
         };
       });
   } catch {
     return [];
   }
+}
+
+/**
+ * Returns all free (non-premium) preset backgrounds.
+ */
+export function getProfileBackgrounds(): BackgroundDefinition[] {
+  const bgDir = path.join(process.cwd(), "public", "backgrounds");
+  return scanBackgroundDir(bgDir, "/backgrounds");
+}
+
+/**
+ * Returns premium-only preset backgrounds.
+ */
+export function getPremiumProfileBackgrounds(): BackgroundDefinition[] {
+  const bgDir = path.join(process.cwd(), "public", "backgrounds", "premium");
+  return scanBackgroundDir(bgDir, "/backgrounds/premium", { premiumOnly: true });
+}
+
+/**
+ * Returns all preset backgrounds (free + premium).
+ */
+export function getAllProfileBackgrounds(): BackgroundDefinition[] {
+  return [...getProfileBackgrounds(), ...getPremiumProfileBackgrounds()];
 }
 
 /**
@@ -68,4 +101,11 @@ export function isPresetBackgroundSrc(src: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Checks if a src path points to a premium-only background.
+ */
+export function isPremiumBackgroundSrc(src: string): boolean {
+  return src.startsWith("/backgrounds/premium/") && isPresetBackgroundSrc(src);
 }
