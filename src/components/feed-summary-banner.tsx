@@ -24,19 +24,12 @@ export function FeedSummaryBanner({ lastSeenFeedAt }: FeedSummaryBannerProps) {
     if (fetchedRef.current) return;
     fetchedRef.current = true;
 
-    let cancelled = false;
-
     fetchFeedSummary(lastSeenFeedAt).then((result) => {
-      if (cancelled) return;
       setSummary(result.summary);
       setTooMany(result.tooMany);
       setMissedCount(result.missedCount);
       setChecked(true);
     });
-
-    return () => {
-      cancelled = true;
-    };
   }, [lastSeenFeedAt]);
 
   async function handleSummarize() {
