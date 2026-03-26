@@ -245,6 +245,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           select: {
             username: true,
             displayName: true,
+            usernameFont: true,
           },
         },
       },
@@ -436,6 +437,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             select: {
               username: true,
               displayName: true,
+              usernameFont: true,
             },
           },
         },
@@ -788,7 +790,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                 ) : item.type === "repost" ? (
                   <RepostCard key={`repost-${item.data.id}`} repost={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator />
                 ) : (
-                  <PostCard key={`wall-${item.data.id}`} post={item.data.post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} wallOwner={{ username: item.data.wallOwner.username!, displayName: item.data.wallOwner.displayName }} wallPostId={item.data.id} wallPostStatus={item.data.status} isWallOwner={isOwnProfile} />
+                  <PostCard key={`wall-${item.data.id}`} post={item.data.post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} wallOwner={{ username: item.data.wallOwner.username!, displayName: item.data.wallOwner.displayName, usernameFont: item.data.wallOwner.usernameFont }} wallPostId={item.data.id} wallPostStatus={item.data.status} isWallOwner={isOwnProfile} />
                 )
               )}
             </div>
@@ -810,7 +812,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
               )}
               {wallFeedItems.map((item) =>
                 item.type === "wall" ? (
-                  <PostCard key={`wall-${item.data.id}`} post={item.data.post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} wallOwner={{ username: item.data.wallOwner.username!, displayName: item.data.wallOwner.displayName }} wallPostId={item.data.id} wallPostStatus={item.data.status} isWallOwner={isOwnProfile} />
+                  <PostCard key={`wall-${item.data.id}`} post={item.data.post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} wallOwner={{ username: item.data.wallOwner.username!, displayName: item.data.wallOwner.displayName, usernameFont: item.data.wallOwner.usernameFont }} wallPostId={item.data.id} wallPostStatus={item.data.status} isWallOwner={isOwnProfile} />
                 ) : null
               )}
             </div>
@@ -831,7 +833,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           ) : (
             <div className="mt-6 space-y-4">
               {sensitivePosts.map((post) => (
-                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator {...(post.wallPost && post.wallPost.wallOwner.username && { wallOwner: { username: post.wallPost.wallOwner.username, displayName: post.wallPost.wallOwner.displayName }, wallPostId: post.wallPost.id, wallPostStatus: post.wallPost.status })} />
+                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator {...(post.wallPost && post.wallPost.wallOwner.username && { wallOwner: { username: post.wallPost.wallOwner.username, displayName: post.wallPost.wallOwner.displayName, usernameFont: post.wallPost.wallOwner.usernameFont }, wallPostId: post.wallPost.id, wallPostStatus: post.wallPost.status })} />
               ))}
             </div>
           )
@@ -851,7 +853,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           ) : (
             <div className="mt-6 space-y-4">
               {nsfwPosts.map((post) => (
-                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator {...(post.wallPost && post.wallPost.wallOwner.username && { wallOwner: { username: post.wallPost.wallOwner.username, displayName: post.wallPost.wallOwner.displayName }, wallPostId: post.wallPost.id, wallPostStatus: post.wallPost.status })} />
+                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator {...(post.wallPost && post.wallPost.wallOwner.username && { wallOwner: { username: post.wallPost.wallOwner.username, displayName: post.wallPost.wallOwner.displayName, usernameFont: post.wallPost.wallOwner.usernameFont }, wallPostId: post.wallPost.id, wallPostStatus: post.wallPost.status })} />
               ))}
             </div>
           )
@@ -871,7 +873,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           ) : (
             <div className="mt-6 space-y-4">
               {graphicPosts.map((post) => (
-                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator {...(post.wallPost && post.wallPost.wallOwner.username && { wallOwner: { username: post.wallPost.wallOwner.username, displayName: post.wallPost.wallOwner.displayName }, wallPostId: post.wallPost.id, wallPostStatus: post.wallPost.status })} />
+                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator {...(post.wallPost && post.wallPost.wallOwner.username && { wallOwner: { username: post.wallPost.wallOwner.username, displayName: post.wallPost.wallOwner.displayName, usernameFont: post.wallPost.wallOwner.usernameFont }, wallPostId: post.wallPost.id, wallPostStatus: post.wallPost.status })} />
               ))}
             </div>
           )
