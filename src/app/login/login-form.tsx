@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { loginWithCredentials } from "./actions";
+import { TurnstileWidget } from "@/components/turnstile-widget";
 
 export function LoginForm() {
   const [state, formAction, isPending] = useActionState(
@@ -53,6 +54,8 @@ export function LoginForm() {
           Forgot password?
         </Link>
       </div>
+
+      <TurnstileWidget />
 
       <button
         type="submit"
