@@ -21,6 +21,16 @@ const PATTERN_IDS = new Set([
   "yellow-triangles",
 ]);
 
+/**
+ * Premium backgrounds that are static/panoramic photos rather than tiling patterns.
+ * These use photo defaults (no-repeat, cover, center) instead of pattern defaults.
+ */
+const PREMIUM_PHOTO_IDS = new Set([
+  "palm-leaves-background-10-b-SH_generated",
+  "RR-v-july-2020-2",
+  "vecteezy_abstract-blue-geometric-background-with-triangle-shape_21571985-1",
+]);
+
 function fileNameToDisplayName(filename: string): string {
   const name = path.parse(filename).name;
   return name
@@ -46,9 +56,8 @@ function scanBackgroundDir(
         const id = path.parse(f).name;
         const thumbPath = path.join(dirPath, "thumbs", `${id}.webp`);
         const hasThumb = fs.existsSync(thumbPath);
-        // All premium backgrounds are patterns (tiling seamless)
         const category: BgCategory = options?.premiumOnly
-          ? "pattern"
+          ? PREMIUM_PHOTO_IDS.has(id) ? "photo" : "pattern"
           : PATTERN_IDS.has(id)
             ? "pattern"
             : "photo";

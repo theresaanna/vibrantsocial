@@ -211,8 +211,8 @@ export function BackgroundEditor({
       {/* Premium backgrounds */}
       {premiumBackgrounds.length > 0 && (
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <PremiumCrown href="/premium" />
+          <div className="flex items-center gap-1.5">
+            <PremiumCrown href="/premium" inline />
             <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
               Premium Backgrounds
             </span>

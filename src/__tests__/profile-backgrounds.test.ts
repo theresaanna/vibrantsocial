@@ -165,11 +165,22 @@ describe("getPremiumProfileBackgrounds", () => {
     }
   });
 
-  it("all premium backgrounds are categorized as patterns", () => {
+  it("most premium backgrounds are categorized as patterns", () => {
     const premiumBgs = getPremiumProfileBackgrounds();
+    const patterns = premiumBgs.filter((bg) => bg.category === "pattern");
+    const photos = premiumBgs.filter((bg) => bg.category === "photo");
+    expect(patterns.length).toBeGreaterThan(photos.length);
+    // Every premium bg should be one of the two valid categories
     for (const bg of premiumBgs) {
-      expect(bg.category).toBe("pattern");
+      expect(["pattern", "photo"]).toContain(bg.category);
     }
+  });
+
+  it("panoramic premium backgrounds are categorized as photos", () => {
+    const premiumBgs = getPremiumProfileBackgrounds();
+    const palmLeaves = premiumBgs.find((bg) => bg.id === "palm-leaves-background-10-b-SH_generated");
+    expect(palmLeaves).toBeDefined();
+    expect(palmLeaves!.category).toBe("photo");
   });
 
   it("premium background srcs use the /backgrounds/premium/ path", () => {
