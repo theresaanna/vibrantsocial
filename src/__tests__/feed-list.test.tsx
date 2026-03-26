@@ -32,6 +32,7 @@ vi.mock("@tanstack/react-virtual", () => ({
       })),
     getTotalSize: () => options.count * 250,
     measureElement: () => {},
+    measure: () => {},
   }),
 }));
 
