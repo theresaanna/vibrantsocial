@@ -428,6 +428,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             select: {
               username: true,
               displayName: true,
+              usernameFont: true,
             },
           },
         },
