@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { searchLimiter, isRateLimited } from "@/lib/rate-limit";
 import { PAGE_SIZE } from "@/app/feed/feed-queries";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 import { normalizeTag } from "@/lib/tags";
@@ -9,6 +10,10 @@ import { normalizeTag } from "@/lib/tags";
 export async function searchUsers(query: string, cursor?: string) {
   const session = await auth();
   if (!session?.user?.id) return { users: [], hasMore: false };
+
+  if (await isRateLimited(searchLimiter, `search:${session.user.id}`)) {
+    return { users: [], hasMore: false };
+  }
 
   const trimmed = query.trim();
   if (!trimmed || trimmed.length < 2) return { users: [], hasMore: false };
@@ -53,6 +58,10 @@ export async function searchPosts(query: string, cursor?: string) {
   const session = await auth();
   if (!session?.user?.id) return { posts: [], hasMore: false };
 
+  if (await isRateLimited(searchLimiter, `search:${session.user.id}`)) {
+    return { posts: [], hasMore: false };
+  }
+
   const currentUser = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { ageVerified: true, showNsfwContent: true },
@@ -78,6 +87,7 @@ export async function searchPosts(query: string, cursor?: string) {
   const posts = await prisma.post.findMany({
     where: {
       content: { contains: trimmed, mode: "insensitive" },
+      marketplacePost: null,
       ...(blockedIds.length > 0 ? { authorId: { notIn: blockedIds } } : {}),
       ...(cursor ? { createdAt: { lt: new Date(cursor) } } : {}),
       ...(contentFilters.length > 0 ? { AND: contentFilters } : {}),
@@ -125,6 +135,10 @@ export async function searchTagsForSearch(query: string, cursor?: string) {
   const session = await auth();
   if (!session?.user?.id) return { tags: [], hasMore: false };
 
+  if (await isRateLimited(searchLimiter, `search:${session.user.id}`)) {
+    return { tags: [], hasMore: false };
+  }
+
   const currentUser = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { showNsfwContent: true },
@@ -135,8 +149,8 @@ export async function searchTagsForSearch(query: string, cursor?: string) {
 
   const includeNsfw = !!currentUser?.showNsfwContent;
   const postFilter = includeNsfw
-    ? { isSensitive: false, isGraphicNudity: false, author: { isProfilePublic: true } }
-    : { isSensitive: false, isNsfw: false, isGraphicNudity: false, author: { isProfilePublic: true } };
+    ? { isSensitive: false, isGraphicNudity: false, author: { isProfilePublic: true }, marketplacePost: null }
+    : { isSensitive: false, isNsfw: false, isGraphicNudity: false, author: { isProfilePublic: true }, marketplacePost: null };
 
   const fetchCount = PAGE_SIZE + 1;
 
@@ -177,6 +191,91 @@ export async function searchTagsForSearch(query: string, cursor?: string) {
       isNsfw: t.isNsfw,
       postCount: t._count.posts,
     })),
+    hasMore,
+  };
+}
+
+export async function searchMarketplacePosts(query: string, cursor?: string) {
+  const session = await auth();
+  if (!session?.user?.id) return { posts: [], hasMore: false };
+
+  if (await isRateLimited(searchLimiter, `search:${session.user.id}`)) {
+    return { posts: [], hasMore: false };
+  }
+
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { ageVerified: true, showNsfwContent: true },
+  });
+
+  const trimmed = query.trim();
+  if (!trimmed || trimmed.length < 2) return { posts: [], hasMore: false };
+
+  const blockedIds = await getAllBlockRelatedIds(session.user.id);
+
+  const contentFilters: Record<string, boolean>[] = [];
+  if (!currentUser?.ageVerified) {
+    contentFilters.push({ isGraphicNudity: false });
+    contentFilters.push({ isSensitive: false });
+  }
+  if (!currentUser?.showNsfwContent) {
+    contentFilters.push({ isNsfw: false });
+  }
+
+  const fetchCount = PAGE_SIZE + 1;
+
+  const posts = await prisma.post.findMany({
+    where: {
+      content: { contains: trimmed, mode: "insensitive" },
+      marketplacePost: { isNot: null },
+      ...(blockedIds.length > 0 ? { authorId: { notIn: blockedIds } } : {}),
+      ...(cursor ? { createdAt: { lt: new Date(cursor) } } : {}),
+      ...(contentFilters.length > 0 ? { AND: contentFilters } : {}),
+    },
+    orderBy: { createdAt: "desc" },
+    take: fetchCount,
+    include: {
+      author: {
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          name: true,
+          avatar: true,
+          profileFrameId: true,
+          image: true,
+          usernameFont: true,
+        },
+      },
+      _count: {
+        select: {
+          likes: true,
+          comments: true,
+          reposts: true,
+        },
+      },
+      tags: {
+        include: {
+          tag: {
+            select: { name: true },
+          },
+        },
+      },
+      marketplacePost: {
+        select: {
+          id: true,
+          price: true,
+          purchaseUrl: true,
+          shippingOption: true,
+          shippingPrice: true,
+        },
+      },
+    },
+  });
+
+  const hasMore = posts.length > PAGE_SIZE;
+  return {
+    posts: posts.slice(0, PAGE_SIZE),
     hasMore,
   };
 }

@@ -11,7 +11,7 @@ import { isValidFrameId } from "@/lib/profile-frames";
 import { isValidFontId, getFontById } from "@/lib/profile-fonts";
 import { checkAndExpirePremium } from "@/lib/premium";
 import { isValidBgRepeat, isValidBgAttachment, isValidBgSize, isValidBgPosition } from "@/lib/profile-backgrounds";
-import { isPresetBackgroundSrc } from "@/lib/profile-backgrounds.server";
+import { isPresetBackgroundSrc, isPremiumBackgroundSrc } from "@/lib/profile-backgrounds.server";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { sendEmailVerificationEmail } from "@/lib/email";
 import { inngest } from "@/lib/inngest";
@@ -155,7 +155,7 @@ export async function updateProfile(
       return { success: false, message: "Invalid background image." };
     }
 
-    if (!isPremium && !isPreset) {
+    if (!isPremium && (!isPreset || isPremiumBackgroundSrc(rawBgImage))) {
       bgData.profileBgImage = null;
     } else {
       bgData.profileBgImage = rawBgImage;

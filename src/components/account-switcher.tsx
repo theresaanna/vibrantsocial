@@ -8,33 +8,26 @@ import { useAblyReady } from "@/app/providers";
 import { getAblyRealtimeClient } from "@/lib/ably";
 import type { LinkedAccount } from "@/types/next-auth";
 import { Tooltip } from "@/components/tooltip";
+import { FramedAvatar } from "@/components/framed-avatar";
+import { StyledName } from "@/components/styled-name";
 
 function AccountAvatar({
   account,
   size = "sm",
 }: {
-  account: { avatar: string | null; displayName: string | null; username: string | null };
+  account: { avatar: string | null; displayName: string | null; username: string | null; profileFrameId?: string | null };
   size?: "sm" | "md";
 }) {
-  const sizeClass = size === "sm" ? "h-6 w-6 text-xs" : "h-8 w-8 text-sm";
-
-  if (account.avatar) {
-    return (
-      <img
-        src={account.avatar}
-        alt=""
-        className={`${sizeClass} rounded-full object-cover`}
-      />
-    );
-  }
-
+  const px = size === "sm" ? 24 : 32;
   const initial = (account.displayName || account.username || "?")[0].toUpperCase();
+
   return (
-    <div
-      className={`${sizeClass} flex items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-blue-500 font-medium text-white`}
-    >
-      {initial}
-    </div>
+    <FramedAvatar
+      src={account.avatar}
+      initial={initial}
+      size={px}
+      frameId={account.profileFrameId}
+    />
   );
 }
 
@@ -214,7 +207,7 @@ export function AccountSwitcher({
                 <AccountAvatar account={session.user} size="md" />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                    {session.user.displayName || session.user.username}
+                    <StyledName fontId={session.user.usernameFont}>{session.user.displayName || session.user.username}</StyledName>
                   </p>
                   {session.user.username && (
                     <p className="truncate text-xs text-zinc-500">
@@ -239,7 +232,7 @@ export function AccountSwitcher({
                 <AccountAvatar account={account} size="md" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                    {account.displayName || account.username}
+                    <StyledName fontId={account.usernameFont}>{account.displayName || account.username}</StyledName>
                   </p>
                   {account.username && (
                     <p className="truncate text-xs text-zinc-500">

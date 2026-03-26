@@ -398,3 +398,143 @@ describe("ThemeEditor — custom presets", () => {
     expect(mockDeletePreset).toHaveBeenCalledWith("preset1");
   });
 });
+
+describe("ThemeEditor — save current theme", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("shows save current theme button for premium users", async () => {
+    render(<ThemeEditor {...defaultProps} isPremium={true} />);
+    await expandSection();
+    expect(
+      screen.getByRole("button", { name: /save current theme as preset/i })
+    ).toBeInTheDocument();
+  });
+
+  it("does not show save current theme button for non-premium users", async () => {
+    render(<ThemeEditor {...defaultProps} isPremium={false} />);
+    await expandSection();
+    expect(
+      screen.queryByRole("button", { name: /save current theme as preset/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows save form when button is clicked", async () => {
+    render(<ThemeEditor {...defaultProps} isPremium={true} />);
+    await expandSection();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /save current theme as preset/i })
+    );
+
+    expect(screen.getByTestId("save-current-theme-form")).toBeInTheDocument();
+    expect(screen.getByTestId("save-current-name-input")).toBeInTheDocument();
+  });
+
+  it("hides save form when cancel is clicked", async () => {
+    render(<ThemeEditor {...defaultProps} isPremium={true} />);
+    await expandSection();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /save current theme as preset/i })
+    );
+    expect(screen.getByTestId("save-current-theme-form")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /cancel/i }));
+    expect(screen.queryByTestId("save-current-theme-form")).not.toBeInTheDocument();
+  });
+
+  it("save button is disabled when name is empty", async () => {
+    render(<ThemeEditor {...defaultProps} isPremium={true} />);
+    await expandSection();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /save current theme as preset/i })
+    );
+
+    expect(screen.getByTestId("save-current-button")).toBeDisabled();
+  });
+
+  it("calls saveCustomPreset with current colors and name", async () => {
+    mockSavePreset.mockResolvedValue({
+      success: true,
+      preset: {
+        id: "new-preset",
+        name: "My Theme",
+        imageUrl: "",
+        light: PROFILE_THEME_PRESETS.default,
+        dark: PROFILE_THEME_PRESETS.midnight,
+      },
+    });
+
+    render(<ThemeEditor {...defaultProps} isPremium={true} />);
+    await expandSection();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /save current theme as preset/i })
+    );
+
+    await userEvent.type(screen.getByTestId("save-current-name-input"), "My Theme");
+    await userEvent.click(screen.getByTestId("save-current-button"));
+
+    expect(mockSavePreset).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "My Theme",
+        imageUrl: "",
+        light: expect.objectContaining({ profileBgColor: expect.any(String) }),
+        dark: expect.objectContaining({ profileBgColor: expect.any(String) }),
+      })
+    );
+  });
+
+  it("adds saved preset as a custom preset pill", async () => {
+    mockSavePreset.mockResolvedValue({
+      success: true,
+      preset: {
+        id: "new-preset",
+        name: "My Theme",
+        imageUrl: "",
+        light: PROFILE_THEME_PRESETS.default,
+        dark: PROFILE_THEME_PRESETS.midnight,
+      },
+    });
+
+    render(<ThemeEditor {...defaultProps} isPremium={true} />);
+    await expandSection();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /save current theme as preset/i })
+    );
+
+    await userEvent.type(screen.getByTestId("save-current-name-input"), "My Theme");
+    await userEvent.click(screen.getByTestId("save-current-button"));
+
+    expect(
+      await screen.findByTestId("custom-preset-My Theme")
+    ).toBeInTheDocument();
+    // Form should be hidden after successful save
+    expect(screen.queryByTestId("save-current-theme-form")).not.toBeInTheDocument();
+  });
+
+  it("shows error when save fails", async () => {
+    mockSavePreset.mockResolvedValue({
+      success: false,
+      error: "Maximum of 10 custom presets reached. Delete one first.",
+    });
+
+    render(<ThemeEditor {...defaultProps} isPremium={true} />);
+    await expandSection();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /save current theme as preset/i })
+    );
+
+    await userEvent.type(screen.getByTestId("save-current-name-input"), "My Theme");
+    await userEvent.click(screen.getByTestId("save-current-button"));
+
+    expect(
+      await screen.findByText(/maximum of 10 custom presets/i)
+    ).toBeInTheDocument();
+  });
+});

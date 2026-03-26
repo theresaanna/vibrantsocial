@@ -6,6 +6,7 @@ import {
   type CustomPresetData,
   PROFILE_THEME_PRESETS,
   THEME_COLOR_FIELDS,
+  generateAdaptiveTheme,
 } from "@/lib/profile-themes";
 import type { BackgroundDefinition } from "@/lib/profile-backgrounds";
 import {
@@ -77,6 +78,9 @@ export function ThemeEditor({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [saveCurrentName, setSaveCurrentName] = useState("");
+  const [showSaveCurrent, setShowSaveCurrent] = useState(false);
+  const [saveCurrentError, setSaveCurrentError] = useState<string | null>(null);
 
   const handlePresetSelect = useCallback(
     (presetName: string) => {
@@ -188,6 +192,38 @@ export function ThemeEditor({
       }
     });
   }, [generatedTheme, presetName, selectedBgImage, isSaving]);
+
+  const handleSaveCurrentTheme = useCallback(() => {
+    if (!saveCurrentName.trim() || isSaving) return;
+    setSaveCurrentError(null);
+
+    const { light, dark } = generateAdaptiveTheme(colors);
+
+    startSaveTransition(async () => {
+      const result = await saveCustomPreset({
+        name: saveCurrentName.trim(),
+        imageUrl: "",
+        light,
+        dark,
+      });
+      if (result.success && result.preset) {
+        setCustomPresets((prev) => {
+          const existing = prev.findIndex((p) => p.name === result.preset!.name);
+          if (existing >= 0) {
+            const updated = [...prev];
+            updated[existing] = result.preset!;
+            return updated;
+          }
+          return [...prev, result.preset!];
+        });
+        setActivePreset(`custom:${result.preset.id}`);
+        setShowSaveCurrent(false);
+        setSaveCurrentName("");
+      } else {
+        setSaveCurrentError(result.error ?? "Failed to save preset");
+      }
+    });
+  }, [colors, saveCurrentName, isSaving]);
 
   const handleDeletePreset = useCallback(
     (presetId: string) => {
@@ -416,6 +452,67 @@ export function ThemeEditor({
               )}
             </div>
           </div>
+
+          {/* Save current theme as preset — premium only */}
+          {isPremium && (
+            <div>
+              {!showSaveCurrent ? (
+                <button
+                  type="button"
+                  onClick={() => setShowSaveCurrent(true)}
+                  className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                >
+                  Save Current Theme as Preset
+                </button>
+              ) : (
+                <div className="space-y-2">
+                  <div
+                    className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-2 dark:border-zinc-700 dark:bg-zinc-800"
+                    data-testid="save-current-theme-form"
+                  >
+                    <input
+                      type="text"
+                      value={saveCurrentName}
+                      onChange={(e) => setSaveCurrentName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleSaveCurrentTheme();
+                        }
+                      }}
+                      placeholder="Preset name"
+                      className="flex-1 rounded border border-zinc-300 bg-transparent px-2 py-1 text-sm dark:border-zinc-600 dark:text-zinc-100"
+                      maxLength={30}
+                      data-testid="save-current-name-input"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSaveCurrentTheme}
+                      disabled={isSaving || !saveCurrentName.trim()}
+                      className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+                      data-testid="save-current-button"
+                    >
+                      {isSaving ? "Saving..." : "Save Preset"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSaveCurrent(false);
+                        setSaveCurrentName("");
+                        setSaveCurrentError(null);
+                      }}
+                      className="rounded-lg px-2 py-1 text-sm text-zinc-500 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  {saveCurrentError && (
+                    <p className="text-xs text-red-500">{saveCurrentError}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Preview button */}
           <button

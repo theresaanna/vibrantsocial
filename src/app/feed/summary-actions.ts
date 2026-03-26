@@ -91,6 +91,12 @@ async function fetchMissedPosts(userId: string, since: Date, limit: number) {
   });
 }
 
+/** Strip lone surrogates that would produce invalid JSON. */
+function sanitizeText(str: string): string {
+  // eslint-disable-next-line no-control-regex
+  return str.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "\uFFFD");
+}
+
 function buildPostsText(posts: SummaryPost[]): string {
   let totalChars = 0;
   const lines: string[] = [];
@@ -100,9 +106,9 @@ function buildPostsText(posts: SummaryPost[]): string {
       post.author?.displayName || post.author?.username || "Someone";
     let text = extractTextFromLexicalJson(post.content);
     if (!text) text = "(media post)";
-    if (text.length > 200) text = text.slice(0, 200) + "...";
+    if (text.length > 200) text = [...text].slice(0, 200).join("") + "...";
 
-    const line = `@${name}: ${text} (${post._count.likes} likes, ${post._count.comments} comments, ${post._count.reposts} reposts)`;
+    const line = `@${sanitizeText(name)}: ${sanitizeText(text)} (${post._count.likes} likes, ${post._count.comments} comments, ${post._count.reposts} reposts)`;
 
     if (totalChars + line.length > MAX_CONTENT_CHARS) break;
     lines.push(line);
@@ -118,8 +124,10 @@ async function generateSummary(
 ): Promise<string> {
   const postsText = buildPostsText(posts);
 
+  console.log("[FeedSummary] Calling Anthropic API with", count, "posts,", postsText.length, "chars");
+
   const response = await anthropic.messages.create({
-    model: "claude-haiku-4-5",
+    model: "claude-haiku-4-5-20251001",
     max_tokens: 200,
     system:
       "You are a friendly social media assistant. Summarize what happened in a user's feed while they were away. Be brief, warm, and highlight the most interesting or popular posts. 2-4 sentences max.",
@@ -130,6 +138,8 @@ async function generateSummary(
       },
     ],
   });
+
+  console.log("[FeedSummary] Anthropic API responded successfully");
 
   const textBlock = response.content.find((block) => block.type === "text");
   if (!textBlock || textBlock.type !== "text") {
@@ -204,7 +214,12 @@ export async function generateFeedSummaryOnDemand(
 
     return await generateSummary(posts, posts.length);
   } catch (error) {
-    console.error("Feed summary on-demand error:", error);
-    return null;
+    console.error("[FeedSummary] on-demand error:", error);
+    if (error instanceof Error) {
+      console.error("[FeedSummary] error name:", error.name);
+      console.error("[FeedSummary] error message:", error.message);
+    }
+    // Return a friendly fallback instead of null so the banner doesn't reset
+    return "Your friends have been posting! Scroll down to see what's new.";
   }
 }

@@ -77,6 +77,7 @@ interface ProfileFormProps {
   starsSpent: number;
   referralCode: string;
   backgrounds: BackgroundDefinition[];
+  premiumBackgrounds: BackgroundDefinition[];
   userEmail: string | null;
   customPresets: CustomPresetData[];
 }
@@ -88,7 +89,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, birthdayMonth: initialBirthdayMonth, birthdayDay: initialBirthdayDay, isPremium, stars, starsSpent, referralCode, backgrounds, userEmail, customPresets }: ProfileFormProps) {
+export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, birthdayMonth: initialBirthdayMonth, birthdayDay: initialBirthdayDay, isPremium, stars, starsSpent, referralCode, backgrounds, premiumBackgrounds, userEmail, customPresets }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [displayNameValue, setDisplayNameValue] = useState(user.displayName ?? "");
@@ -842,6 +843,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
 
         <BackgroundEditor
           backgrounds={backgrounds}
+          premiumBackgrounds={premiumBackgrounds}
           initialBackground={{
             profileBgImage: user.profileBgImage,
             profileBgRepeat: user.profileBgRepeat,

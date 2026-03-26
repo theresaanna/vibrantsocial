@@ -74,10 +74,19 @@ export async function FeedContent({ userId, activeView = "posts" }: { userId: st
         authorId: { in: [...followingIds, userId] },
         ...(!showNsfwContent ? { isNsfw: false } : {}),
         ...(!ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
+        // Exclude marketplace posts unless promoted to feed
         OR: [
-          { isCloseFriendsOnly: false, hasCustomAudience: false },
-          { isCloseFriendsOnly: true, authorId: { in: closeFriendAuthors } },
-          { hasCustomAudience: true, audience: { some: { userId } } },
+          { marketplacePost: null },
+          { marketplacePost: { promotedToFeed: true } },
+        ],
+        AND: [
+          {
+            OR: [
+              { isCloseFriendsOnly: false, hasCustomAudience: false },
+              { isCloseFriendsOnly: true, authorId: { in: closeFriendAuthors } },
+              { hasCustomAudience: true, audience: { some: { userId } } },
+            ],
+          },
         ],
       },
       orderBy: { createdAt: "desc" },

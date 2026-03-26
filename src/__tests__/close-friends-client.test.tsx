@@ -39,13 +39,15 @@ vi.mock("react", async () => {
 
 import { CloseFriendsClient } from "@/app/close-friends/close-friends-client";
 
-const makeFriend = (id: string, username: string, displayName: string | null = null, avatar: string | null = null) => ({
+const makeFriend = (id: string, username: string, displayName: string | null = null, avatar: string | null = null, usernameFont: string | null = null) => ({
   id,
   username,
   displayName,
   name: displayName,
   avatar,
   image: null,
+  profileFrameId: null as string | null,
+  usernameFont,
 });
 
 const makeCloseFriendEntry = (id: string, friendId: string, friend: ReturnType<typeof makeFriend>) => ({
@@ -242,6 +244,8 @@ describe("CloseFriendsClient", () => {
       name: "Eve Name",
       avatar: null,
       image: null,
+      profileFrameId: null,
+      usernameFont: null,
     };
     render(
       <CloseFriendsClient closeFriends={[]} availableFriends={[friend]} />
@@ -257,6 +261,8 @@ describe("CloseFriendsClient", () => {
       name: null,
       avatar: null,
       image: null,
+      profileFrameId: null,
+      usernameFont: null,
     };
     render(
       <CloseFriendsClient closeFriends={[]} availableFriends={[friend]} />

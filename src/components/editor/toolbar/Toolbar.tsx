@@ -14,7 +14,6 @@ import {
   YouTubeButton,
   TableButton,
   PollButton,
-  EquationButton,
   StickyNoteButton,
 } from "./InsertButtons";
 import { SpeechToTextButton } from "./SpeechToTextButton";
@@ -47,7 +46,6 @@ export function Toolbar() {
         <HorizontalRuleButton />
         <TableButton />
         <PollButton />
-        <EquationButton />
         <CodeFormatButtons />
         <StickyNoteButton />
       </span>

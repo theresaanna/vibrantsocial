@@ -38,6 +38,10 @@ export function getNotificationText(type: NotificationType): string {
       return "added you as a collaborator on a list";
     case "WALL_POST":
       return "posted on your wall";
+    case "MARKETPLACE_QUESTION":
+      return "asked a question on your listing";
+    case "MARKETPLACE_ANSWER":
+      return "answered your question on a listing";
     default:
       return "";
   }
