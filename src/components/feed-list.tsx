@@ -29,6 +29,32 @@ export function FeedList({
   newItems?: FeedItem[];
 }) {
   const [items, setItems] = useState(initialItems);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [isPending, startTransition] = useTransition();
+  const loadingRef = useRef(false);
+
+  // Keep items and hasMore in refs so loadMore stays stable
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  const hasMoreRef = useRef(hasMore);
+  hasMoreRef.current = hasMore;
+
+  const getItemKey = useCallback(
+    (index: number) => {
+      const item = items[index];
+      return item.type === "post" ? item.data.id : `repost-${item.data.id}`;
+    },
+    [items]
+  );
+
+  // Virtualizer for window-based scrolling
+  const virtualizer = useWindowVirtualizer({
+    count: items.length,
+    estimateSize: () => 250,
+    overscan: 5,
+    gap: 16,
+    getItemKey,
+  });
 
   // Prepend newly created posts
   useEffect(() => {
@@ -44,19 +70,14 @@ export function FeedList({
           item.type === "post" ? item.data.id : `repost-${item.data.id}`;
         return !existingIds.has(key);
       });
-      return toAdd.length > 0 ? [...toAdd, ...prev] : prev;
+      if (toAdd.length > 0) {
+        // Invalidate cached measurements after prepend shifts indices
+        requestAnimationFrame(() => virtualizer.measure());
+        return [...toAdd, ...prev];
+      }
+      return prev;
     });
-  }, [newItems]);
-
-  const [hasMore, setHasMore] = useState(initialHasMore);
-  const [isPending, startTransition] = useTransition();
-  const loadingRef = useRef(false);
-
-  // Keep items and hasMore in refs so loadMore stays stable
-  const itemsRef = useRef(items);
-  itemsRef.current = items;
-  const hasMoreRef = useRef(hasMore);
-  hasMoreRef.current = hasMore;
+  }, [newItems, virtualizer]);
 
   const loadMore = useCallback(() => {
     if (loadingRef.current || !hasMoreRef.current) return;
@@ -84,28 +105,13 @@ export function FeedList({
 
         setItems((prev) => [...prev, ...freshItems]);
         setHasMore(result.hasMore);
+        // Invalidate measurements so new items are positioned correctly
+        requestAnimationFrame(() => virtualizer.measure());
       } finally {
         loadingRef.current = false;
       }
     });
-  }, []);
-
-  const getItemKey = useCallback(
-    (index: number) => {
-      const item = items[index];
-      return item.type === "post" ? item.data.id : `repost-${item.data.id}`;
-    },
-    [items]
-  );
-
-  // Virtualizer for window-based scrolling
-  const virtualizer = useWindowVirtualizer({
-    count: items.length,
-    estimateSize: () => 250,
-    overscan: 5,
-    gap: 16,
-    getItemKey,
-  });
+  }, [virtualizer]);
 
   const handleDelete = useCallback((type: "post" | "repost", id: string) => {
     setItems((prev) => {
