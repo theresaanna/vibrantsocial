@@ -136,6 +136,7 @@ export default async function MarketplaceIdPage({ params, searchParams }: Props)
             select: {
               username: true,
               displayName: true,
+              usernameFont: true,
             },
           },
         },
