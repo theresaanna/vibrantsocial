@@ -21,9 +21,7 @@ export const signupSchema = z
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string().min(1, "Please confirm your password"),
     agreeToTos: z.literal("true", {
-      errorMap: () => ({
-        message: "You must agree to the Terms of Service and Privacy Policy",
-      }),
+      message: "You must agree to the Terms of Service and Privacy Policy",
     }),
     referralCode: z.string().trim().optional().default(""),
     "cf-turnstile-response": z.string().optional().default(""),
@@ -111,7 +109,7 @@ export const searchQuerySchema = z.object({
 export const wallPostStatusSchema = z.object({
   wallPostId: cuidSchema,
   status: z.enum(["accepted", "hidden"], {
-    errorMap: () => ({ message: "Invalid status" }),
+    message: "Invalid status",
   }),
 });
 
