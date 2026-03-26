@@ -12,6 +12,7 @@ import {
   adjustForContrast,
   THEME_COLOR_FIELDS,
 } from "@/lib/profile-themes";
+import { headers } from "next/headers";
 
 const MAX_PROMPT_LENGTH = 200;
 const MAX_PRESETS_PER_USER = 10;
@@ -33,6 +34,15 @@ interface SavePresetResult {
 interface DeletePresetResult {
   success: boolean;
   error?: string;
+}
+
+async function resolveImageUrl(imageUrl: string): Promise<string> {
+  if (/^https?:\/\//.test(imageUrl)) return imageUrl;
+  // Relative path — resolve using the request host
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "vibrantsocial.app";
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  return `${proto}://${host}${imageUrl.startsWith("/") ? "" : "/"}${imageUrl}`;
 }
 
 function enforceContrast(colors: ProfileThemeColors): ProfileThemeColors {
@@ -103,6 +113,7 @@ export async function generateTheme(
   }
 
   try {
+    const absoluteUrl = await resolveImageUrl(imageUrl);
     const response = await anthropic.messages.create({
       model: "claude-haiku-4-5",
       max_tokens: 512,
@@ -114,7 +125,7 @@ export async function generateTheme(
           content: [
             {
               type: "image",
-              source: { type: "url", url: imageUrl },
+              source: { type: "url", url: absoluteUrl },
             },
             {
               type: "text",
