@@ -142,7 +142,7 @@ describe("ThemeEditor", () => {
     }
   });
 
-  it("renders hidden inputs for all 5 color fields", () => {
+  it("renders hidden inputs for all 5 color fields and background fields", () => {
     const { container } = render(<ThemeEditor {...defaultProps} />);
     expect(
       container.querySelector('input[name="profileBgColor"]')
@@ -158,6 +158,9 @@ describe("ThemeEditor", () => {
     ).toBeInTheDocument();
     expect(
       container.querySelector('input[name="profileContainerColor"]')
+    ).toBeInTheDocument();
+    expect(
+      container.querySelector('input[name="profileBgImage"]')
     ).toBeInTheDocument();
   });
 
@@ -211,38 +214,68 @@ describe("ThemeEditor", () => {
   });
 });
 
+describe("ThemeEditor — background selection", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("renders background thumbnails", async () => {
+    render(<ThemeEditor {...defaultProps} />);
+    await expandSection();
+    expect(screen.getByTitle("Blue Waves")).toBeInTheDocument();
+    expect(screen.getByTitle("Checkered Pattern")).toBeInTheDocument();
+  });
+
+  it("renders None button to clear background", async () => {
+    render(<ThemeEditor {...defaultProps} />);
+    await expandSection();
+    expect(screen.getByRole("button", { name: /none/i })).toBeInTheDocument();
+  });
+
+  it("selecting a background updates hidden bg image input", async () => {
+    const { container } = render(<ThemeEditor {...defaultProps} />);
+    await expandSection();
+    await userEvent.click(screen.getByTitle("Blue Waves"));
+
+    const hiddenInput = container.querySelector(
+      'input[name="profileBgImage"]'
+    ) as HTMLInputElement;
+    expect(hiddenInput.value).toBe("/backgrounds/blue-waves.jpg");
+  });
+
+  it("clearing background sets hidden input to empty", async () => {
+    const { container } = render(
+      <ThemeEditor
+        {...defaultProps}
+        initialBackground={{ profileBgImage: "/backgrounds/blue-waves.jpg", profileBgRepeat: null, profileBgAttachment: null, profileBgSize: null, profileBgPosition: null }}
+      />
+    );
+    await expandSection();
+    await userEvent.click(screen.getByRole("button", { name: /none/i }));
+
+    const hiddenInput = container.querySelector(
+      'input[name="profileBgImage"]'
+    ) as HTMLInputElement;
+    expect(hiddenInput.value).toBe("");
+  });
+});
+
 describe("ThemeEditor — AI generation from background", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("renders background selection grid for premium users", async () => {
+  it("does not show generate button when no background is selected", async () => {
     render(<ThemeEditor {...defaultProps} isPremium={true} />);
     await expandSection();
-    expect(screen.getByTestId("theme-bg-blue-waves")).toBeInTheDocument();
-    expect(screen.getByTestId("theme-bg-checkered-pattern")).toBeInTheDocument();
+    expect(screen.queryByTestId("ai-generate-button")).not.toBeInTheDocument();
   });
 
-  it("renders generate button", async () => {
+  it("shows generate button after selecting a background", async () => {
     render(<ThemeEditor {...defaultProps} isPremium={true} />);
     await expandSection();
+    await userEvent.click(screen.getByTitle("Blue Waves"));
     expect(screen.getByTestId("ai-generate-button")).toBeInTheDocument();
-  });
-
-  it("disables generate button when no background is selected", async () => {
-    render(<ThemeEditor {...defaultProps} isPremium={true} />);
-    await expandSection();
-    const generateButton = screen.getByTestId("ai-generate-button");
-    expect(generateButton).toBeDisabled();
-  });
-
-  it("enables generate button after selecting a background", async () => {
-    render(<ThemeEditor {...defaultProps} isPremium={true} />);
-    await expandSection();
-
-    await userEvent.click(screen.getByTestId("theme-bg-blue-waves"));
-    const generateButton = screen.getByTestId("ai-generate-button");
-    expect(generateButton).not.toBeDisabled();
   });
 
   it("shows error from failed generation", async () => {
@@ -254,7 +287,7 @@ describe("ThemeEditor — AI generation from background", () => {
     render(<ThemeEditor {...defaultProps} isPremium={true} />);
     await expandSection();
 
-    await userEvent.click(screen.getByTestId("theme-bg-blue-waves"));
+    await userEvent.click(screen.getByTitle("Blue Waves"));
     await userEvent.click(screen.getByTestId("ai-generate-button"));
 
     expect(await screen.findByTestId("ai-generation-error")).toHaveTextContent(
@@ -273,7 +306,7 @@ describe("ThemeEditor — AI generation from background", () => {
     render(<ThemeEditor {...defaultProps} isPremium={true} />);
     await expandSection();
 
-    await userEvent.click(screen.getByTestId("theme-bg-blue-waves"));
+    await userEvent.click(screen.getByTitle("Blue Waves"));
     await userEvent.click(screen.getByTestId("ai-generate-button"));
 
     expect(await screen.findByTestId("save-preset-form")).toBeInTheDocument();
@@ -296,7 +329,7 @@ describe("ThemeEditor — AI generation from background", () => {
     );
     await expandSection();
 
-    await userEvent.click(screen.getByTestId("theme-bg-blue-waves"));
+    await userEvent.click(screen.getByTitle("Blue Waves"));
     await userEvent.click(screen.getByTestId("ai-generate-button"));
 
     await screen.findByTestId("save-preset-form");
@@ -318,7 +351,7 @@ describe("ThemeEditor — AI generation from background", () => {
     render(<ThemeEditor {...defaultProps} isPremium={true} />);
     await expandSection();
 
-    await userEvent.click(screen.getByTestId("theme-bg-blue-waves"));
+    await userEvent.click(screen.getByTitle("Blue Waves"));
     await userEvent.click(screen.getByTestId("ai-generate-button"));
 
     await screen.findByTestId("save-preset-form");
@@ -462,7 +495,7 @@ describe("ThemeEditor — save current theme", () => {
       preset: {
         id: "new-preset",
         name: "My Theme",
-        imageUrl: "",
+        prompt: "",
         light: PROFILE_THEME_PRESETS.default,
         dark: PROFILE_THEME_PRESETS.midnight,
       },
@@ -494,7 +527,7 @@ describe("ThemeEditor — save current theme", () => {
       preset: {
         id: "new-preset",
         name: "My Theme",
-        imageUrl: "",
+        prompt: "",
         light: PROFILE_THEME_PRESETS.default,
         dark: PROFILE_THEME_PRESETS.midnight,
       },

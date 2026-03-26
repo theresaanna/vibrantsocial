@@ -9,7 +9,6 @@ import { unlinkAccount, getLinkedAccounts } from "./account-linking-actions";
 import { BioEditor } from "@/components/bio-editor";
 import { BioRevisionHistory } from "@/components/bio-revision-history";
 import { ThemeEditor } from "@/components/theme-editor";
-import { BackgroundEditor } from "@/components/background-editor";
 import { SparkleEditor } from "@/components/sparkle-editor";
 import type { BackgroundDefinition } from "@/lib/profile-backgrounds";
 import type { CustomPresetData } from "@/lib/profile-themes";
@@ -839,10 +838,6 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
           userEmail={userEmail}
           customPresets={customPresets}
           backgrounds={backgrounds}
-        />
-
-        <BackgroundEditor
-          backgrounds={backgrounds}
           premiumBackgrounds={premiumBackgrounds}
           initialBackground={{
             profileBgImage: user.profileBgImage,
@@ -851,9 +846,6 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
             profileBgSize: user.profileBgSize,
             profileBgPosition: user.profileBgPosition,
           }}
-          isPremium={isPremium}
-          userEmail={userEmail}
-          onChange={scheduleAutosave}
         />
 
         <SparkleEditor
