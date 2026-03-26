@@ -19,6 +19,7 @@ export interface CommunitiesMediaPost {
     image: string | null;
     avatar: string | null;
     profileFrameId: string | null;
+    usernameFont: string | null;
   } | null;
 }
 
@@ -82,6 +83,7 @@ export async function fetchCommunitiesMediaPage(
           image: true,
           avatar: true,
           profileFrameId: true,
+          usernameFont: true,
         },
       },
     },

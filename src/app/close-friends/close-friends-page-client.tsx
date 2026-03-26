@@ -16,6 +16,7 @@ interface FriendUser {
   avatar: string | null;
   image: string | null;
   profileFrameId: string | null;
+  usernameFont: string | null;
 }
 
 interface CloseFriendEntry {
