@@ -21,6 +21,7 @@ interface MediaPost {
     image: string | null;
     avatar: string | null;
     profileFrameId: string | null;
+    usernameFont: string | null;
   } | null;
 }
 
@@ -110,6 +111,7 @@ export async function fetchMediaFeedPage(
           image: true,
           avatar: true,
           profileFrameId: true,
+          usernameFont: true,
         },
       },
     },
