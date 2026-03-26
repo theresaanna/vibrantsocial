@@ -66,7 +66,11 @@ export function SparkleEditor({
 
   const getSparklesJson = (): string => {
     if (customSparkles.trim()) {
-      const chars = [...customSparkles.trim()].filter((c) => c.trim());
+      // Use Intl.Segmenter to correctly split ZWJ emoji sequences (e.g. 🐈‍⬛)
+      const segmenter = new Intl.Segmenter("en", { granularity: "grapheme" });
+      const chars = [...segmenter.segment(customSparkles.trim())]
+        .map((s) => s.segment)
+        .filter((c) => c.trim());
       return JSON.stringify(chars);
     }
     if (activePreset && SPARKLEFALL_PRESETS[activePreset]) {
