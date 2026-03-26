@@ -25,6 +25,8 @@ import { extractTextFromLexicalJson } from "@/lib/lexical-text";
 import { buildProfilePostsContentFilter } from "./profile-queries";
 import { MarketplaceGrid } from "@/components/marketplace-grid";
 import { fetchUserMarketplacePosts } from "@/app/marketplace/media-actions";
+import { fetchUserMediaPosts } from "./media-actions";
+import { MediaGrid } from "@/components/media-grid";
 import { WallPostComposer } from "@/components/wall-post-composer";
 import { getUserListMemberships } from "@/app/lists/actions";
 import { AddToListButton } from "@/components/add-to-list-button";
@@ -112,7 +114,8 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
 export default async function PublicProfilePage({ params, searchParams }: ProfilePageProps) {
   const { username } = await params;
   const { tab } = await searchParams;
-  const activeTab = tab === "wall" ? "wall" as const
+  const activeTab = tab === "media" ? "media" as const
+    : tab === "wall" ? "wall" as const
     : tab === "sensitive" ? "sensitive" as const
     : tab === "nsfw" ? "nsfw" as const
     : tab === "graphic" ? "graphic" as const
@@ -137,6 +140,9 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
     prisma.post.count({ where: { authorId: user.id, isGraphicNudity: true }, take: 1 }).then(c => c > 0),
     prisma.post.count({ where: { authorId: user.id, marketplacePost: { isNot: null } }, take: 1 }).then(c => c > 0),
   ]);
+
+  // Always show media tab — user has posts with images/videos
+  const hasMediaPosts = user._count.posts > 0;
 
   const session = await auth();
   const currentUserId = session?.user?.id;
@@ -769,7 +775,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
 
         {blockStatus === "none" && (
           <>
-        <ProfileTabs username={user.username!} activeTab={activeTab} hasCustomTheme={hasCustomTheme} showWallTab={showWallInSeparateTab && canSeeWall} showSensitiveTab={hasSensitivePosts} showNsfwTab={hasNsfwPosts} showGraphicTab={hasGraphicPosts} showMarketplaceTab={hasMarketplacePosts} />
+        <ProfileTabs username={user.username!} activeTab={activeTab} hasCustomTheme={hasCustomTheme} showMediaTab={hasMediaPosts} showWallTab={showWallInSeparateTab && canSeeWall} showSensitiveTab={hasSensitivePosts} showNsfwTab={hasNsfwPosts} showGraphicTab={hasGraphicPosts} showMarketplaceTab={hasMarketplacePosts} />
 
         {/* Tab content */}
         {activeTab === "posts" ? (
@@ -881,6 +887,8 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
               ))}
             </div>
           )
+        ) : activeTab === "media" ? (
+          <ProfileMediaTab userId={user.id} />
         ) : activeTab === "marketplace" ? (
           <ProfileMarketplaceTab userId={user.id} />
         ) : null}
@@ -888,6 +896,27 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
         )}
       </main>
     </div>
+  );
+}
+
+async function ProfileMediaTab({ userId }: { userId: string }) {
+  const { posts, hasMore } = await fetchUserMediaPosts(userId);
+  if (posts.length === 0) {
+    return (
+      <div className="mt-8 text-center">
+        <p className="text-zinc-500">No media yet.</p>
+        <p className="mt-1 text-sm text-zinc-400">
+          Images and videos from posts will appear here.
+        </p>
+      </div>
+    );
+  }
+  return (
+    <MediaGrid
+      initialPosts={posts}
+      initialHasMore={hasMore}
+      fetchPage={(cursor) => fetchUserMediaPosts(userId, cursor)}
+    />
   );
 }
 
