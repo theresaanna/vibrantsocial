@@ -2,7 +2,6 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { anthropic } from "@/lib/anthropic";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
 import { cached, cacheKeys } from "@/lib/cache";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
@@ -118,21 +117,42 @@ async function generateSummary(
 ): Promise<string> {
   const postsText = buildPostsText(posts);
 
-  const response = await anthropic.messages.create({
-    model: "claude-haiku-4-5",
-    max_tokens: 200,
-    system:
-      "You are a friendly social media assistant. Summarize what happened in a user's feed while they were away. Be brief, warm, and highlight the most interesting or popular posts. 2-4 sentences max.",
-    messages: [
-      {
-        role: "user",
-        content: `Here are ${count} posts from my feed since I was last online:\n\n${postsText}\n\nGive me a quick, friendly summary of what I missed.`,
-      },
-    ],
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return `You have ${count} new posts in your feed!`;
+  }
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 200,
+      system:
+        "You are a friendly social media assistant. Summarize what happened in a user's feed while they were away. Be brief, warm, and highlight the most interesting or popular posts. 2-4 sentences max.",
+      messages: [
+        {
+          role: "user",
+          content: `Here are ${count} posts from my feed since I was last online:\n\n${postsText}\n\nGive me a quick, friendly summary of what I missed.`,
+        },
+      ],
+    }),
   });
 
-  const textBlock = response.content.find((block) => block.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Anthropic API error ${res.status}: ${errText}`);
+  }
+
+  const data = await res.json();
+  const textBlock = data.content?.find(
+    (block: { type: string }) => block.type === "text"
+  );
+  if (!textBlock) {
     return `You have ${count} new posts in your feed!`;
   }
 
