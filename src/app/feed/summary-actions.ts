@@ -91,6 +91,12 @@ async function fetchMissedPosts(userId: string, since: Date, limit: number) {
   });
 }
 
+/** Strip lone surrogates that would produce invalid JSON. */
+function sanitizeText(str: string): string {
+  // eslint-disable-next-line no-control-regex
+  return str.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "\uFFFD");
+}
+
 function buildPostsText(posts: SummaryPost[]): string {
   let totalChars = 0;
   const lines: string[] = [];
@@ -100,9 +106,9 @@ function buildPostsText(posts: SummaryPost[]): string {
       post.author?.displayName || post.author?.username || "Someone";
     let text = extractTextFromLexicalJson(post.content);
     if (!text) text = "(media post)";
-    if (text.length > 200) text = text.slice(0, 200) + "...";
+    if (text.length > 200) text = [...text].slice(0, 200).join("") + "...";
 
-    const line = `@${name}: ${text} (${post._count.likes} likes, ${post._count.comments} comments, ${post._count.reposts} reposts)`;
+    const line = `@${sanitizeText(name)}: ${sanitizeText(text)} (${post._count.likes} likes, ${post._count.comments} comments, ${post._count.reposts} reposts)`;
 
     if (totalChars + line.length > MAX_CONTENT_CHARS) break;
     lines.push(line);
