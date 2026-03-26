@@ -49,6 +49,7 @@ export function getPostInclude(userId: string) {
           select: {
             username: true,
             displayName: true,
+            usernameFont: true,
           },
         },
       },

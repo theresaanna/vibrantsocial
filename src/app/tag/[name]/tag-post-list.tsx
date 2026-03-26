@@ -129,6 +129,7 @@ export function TagPostList({
                   wallOwner: {
                     username: post.wallPost.wallOwner.username,
                     displayName: post.wallPost.wallOwner.displayName,
+                    usernameFont: post.wallPost.wallOwner.usernameFont,
                   },
                   wallPostId: post.wallPost.id,
                   wallPostStatus: post.wallPost.status,

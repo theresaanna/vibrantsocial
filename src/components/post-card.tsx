@@ -79,6 +79,7 @@ interface PostCardProps {
   wallOwner?: {
     username: string;
     displayName: string | null;
+    usernameFont?: string | null;
   } | null;
   wallPostId?: string;
   wallPostStatus?: string;
@@ -287,7 +288,7 @@ export function PostCard({
           <span className="font-medium text-indigo-700 dark:text-indigo-300">
             {post.author?.username ? (
               <Link href={`/${post.author.username}`} className="hover:underline">
-                {post.author.displayName || post.author.name || post.author.username}
+                <StyledName fontId={post.author?.usernameFont}>{post.author.displayName || post.author.name || post.author.username}</StyledName>
               </Link>
             ) : (
               "Someone"
@@ -298,7 +299,7 @@ export function PostCard({
           </svg>
           <span className="text-indigo-600 dark:text-indigo-400">
             <Link href={`/${wallOwner.username}`} className="hover:underline">
-              {wallOwner.displayName || wallOwner.username}&apos;s wall
+              <StyledName fontId={wallOwner.usernameFont}>{wallOwner.displayName || wallOwner.username}</StyledName>&apos;s wall
             </Link>
           </span>
           {wallPostStatus === "pending" && (

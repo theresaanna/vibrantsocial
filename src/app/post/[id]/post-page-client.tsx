@@ -9,6 +9,7 @@ interface WallPostData {
   wallOwner: {
     username: string | null;
     displayName: string | null;
+    usernameFont: string | null;
   };
 }
 
@@ -68,6 +69,7 @@ export function PostPageClient({
           wallOwner: {
             username: wallPost.wallOwner.username,
             displayName: wallPost.wallOwner.displayName,
+            usernameFont: wallPost.wallOwner.usernameFont,
           },
           wallPostId: wallPost.id,
           wallPostStatus: wallPost.status,

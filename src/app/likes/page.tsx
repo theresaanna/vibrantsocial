@@ -88,6 +88,7 @@ export default async function LikesPage() {
                 select: {
                   username: true,
                   displayName: true,
+                  usernameFont: true,
                 },
               },
             },
@@ -173,6 +174,7 @@ export default async function LikesPage() {
                 wallOwner: {
                   username: post.wallPost.wallOwner.username,
                   displayName: post.wallPost.wallOwner.displayName,
+                  usernameFont: post.wallPost.wallOwner.usernameFont,
                 },
                 wallPostId: post.wallPost.id,
                 wallPostStatus: post.wallPost.status,
