@@ -149,6 +149,7 @@ export default async function MarketplaceSlugPage({ params, searchParams }: Prop
             select: {
               username: true,
               displayName: true,
+              usernameFont: true,
             },
           },
         },
