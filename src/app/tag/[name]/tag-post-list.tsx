@@ -40,6 +40,14 @@ export function TagPostList({
   const hasMoreRef = useRef(hasMore);
   hasMoreRef.current = hasMore;
 
+  // Virtualizer for window-based scrolling
+  const virtualizer = useWindowVirtualizer({
+    count: posts.length,
+    estimateSize: () => 250,
+    overscan: 5,
+    gap: 16,
+  });
+
   const loadMore = useCallback(() => {
     if (loadingRef.current || !hasMoreRef.current) return;
     const currentPosts = postsRef.current;
@@ -57,19 +65,13 @@ export function TagPostList({
         );
         setPosts((prev) => [...prev, ...result.posts]);
         setHasMore(result.hasMore);
+        // Invalidate measurements so new items are positioned correctly
+        requestAnimationFrame(() => virtualizer.measure());
       } finally {
         loadingRef.current = false;
       }
     });
-  }, [tagName, currentUserId, showNsfwContent]);
-
-  // Virtualizer for window-based scrolling
-  const virtualizer = useWindowVirtualizer({
-    count: posts.length,
-    estimateSize: () => 250,
-    overscan: 5,
-    gap: 16,
-  });
+  }, [tagName, currentUserId, showNsfwContent, virtualizer]);
 
   const virtualItems = virtualizer.getVirtualItems();
 
