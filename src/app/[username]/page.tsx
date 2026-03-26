@@ -208,6 +208,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
         image: true,
         avatar: true,
         profileFrameId: true,
+        usernameFont: true,
       },
     },
     _count: {
@@ -264,6 +265,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             image: true,
             avatar: true,
             profileFrameId: true,
+            usernameFont: true,
           },
         },
         replies: {
@@ -278,6 +280,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                 image: true,
                 avatar: true,
                 profileFrameId: true,
+                usernameFont: true,
               },
             },
           },
@@ -296,6 +299,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
         image: true,
         avatar: true,
         profileFrameId: true,
+        usernameFont: true,
       },
     },
     post: { include: postInclude },
