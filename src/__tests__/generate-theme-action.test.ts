@@ -32,6 +32,15 @@ vi.mock("@/lib/rate-limit", () => ({
   isRateLimited: vi.fn(),
 }));
 
+vi.mock("next/headers", () => ({
+  headers: vi.fn().mockResolvedValue(
+    new Map([
+      ["host", "vibrantsocial.app"],
+      ["x-forwarded-proto", "https"],
+    ])
+  ),
+}));
+
 import { auth } from "@/auth";
 import { anthropic } from "@/lib/anthropic";
 import { prisma } from "@/lib/prisma";
@@ -129,7 +138,7 @@ describe("generateTheme", () => {
       (b: { type: string }) => b.type === "image"
     );
     expect(imageBlock).toBeDefined();
-    expect(imageBlock!.source!.url).toBe("/backgrounds/blue-waves.jpg");
+    expect(imageBlock!.source!.url).toBe("https://vibrantsocial.app/backgrounds/blue-waves.jpg");
   });
 
   it("handles malformed JSON from AI", async () => {

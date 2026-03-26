@@ -358,7 +358,7 @@ export function ThemeEditor({
         className="flex w-full items-center justify-between p-4 text-left"
       >
         <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          Profile Theme &amp; Background
+          Profile Theme {"&"} Background
         </h2>
         <svg
           className={`h-4 w-4 text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
@@ -715,7 +715,7 @@ export function ThemeEditor({
             onClick={() => setShowPreview(true)}
             className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
           >
-            Preview Light &amp; Dark
+            Preview Light {"&"} Dark
           </button>
 
           {/* Preview modal */}
