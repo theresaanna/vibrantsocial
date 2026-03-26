@@ -48,6 +48,15 @@ export function TagPostList({
     gap: 16,
   });
 
+  // Invalidate measurements after React commits DOM changes
+  const prevCountRef = useRef(posts.length);
+  useEffect(() => {
+    if (posts.length !== prevCountRef.current) {
+      prevCountRef.current = posts.length;
+      virtualizer.measure();
+    }
+  }, [posts.length, virtualizer]);
+
   const loadMore = useCallback(() => {
     if (loadingRef.current || !hasMoreRef.current) return;
     const currentPosts = postsRef.current;
@@ -65,13 +74,11 @@ export function TagPostList({
         );
         setPosts((prev) => [...prev, ...result.posts]);
         setHasMore(result.hasMore);
-        // Invalidate measurements so new items are positioned correctly
-        requestAnimationFrame(() => virtualizer.measure());
       } finally {
         loadingRef.current = false;
       }
     });
-  }, [tagName, currentUserId, showNsfwContent, virtualizer]);
+  }, [tagName, currentUserId, showNsfwContent]);
 
   const virtualItems = virtualizer.getVirtualItems();
 

@@ -56,6 +56,16 @@ export function FeedList({
     getItemKey,
   });
 
+  // Track item count so we can invalidate measurements after DOM commits
+  const prevCountRef = useRef(items.length);
+  useEffect(() => {
+    if (items.length !== prevCountRef.current) {
+      prevCountRef.current = items.length;
+      // Invalidate after React has committed new DOM elements
+      virtualizer.measure();
+    }
+  }, [items.length, virtualizer]);
+
   // Prepend newly created posts
   useEffect(() => {
     if (newItems.length === 0) return;
@@ -70,14 +80,9 @@ export function FeedList({
           item.type === "post" ? item.data.id : `repost-${item.data.id}`;
         return !existingIds.has(key);
       });
-      if (toAdd.length > 0) {
-        // Invalidate cached measurements after prepend shifts indices
-        requestAnimationFrame(() => virtualizer.measure());
-        return [...toAdd, ...prev];
-      }
-      return prev;
+      return toAdd.length > 0 ? [...toAdd, ...prev] : prev;
     });
-  }, [newItems, virtualizer]);
+  }, [newItems]);
 
   const loadMore = useCallback(() => {
     if (loadingRef.current || !hasMoreRef.current) return;
@@ -105,22 +110,17 @@ export function FeedList({
 
         setItems((prev) => [...prev, ...freshItems]);
         setHasMore(result.hasMore);
-        // Invalidate measurements so new items are positioned correctly
-        requestAnimationFrame(() => virtualizer.measure());
       } finally {
         loadingRef.current = false;
       }
     });
-  }, [virtualizer]);
+  }, []);
 
   const handleDelete = useCallback((type: "post" | "repost", id: string) => {
-    setItems((prev) => {
-      const next = prev.filter((i) => !(i.type === type && i.data.id === id));
-      // Schedule measurement invalidation after React re-renders with new items
-      requestAnimationFrame(() => virtualizer.measure());
-      return next;
-    });
-  }, [virtualizer]);
+    setItems((prev) =>
+      prev.filter((i) => !(i.type === type && i.data.id === id))
+    );
+  }, []);
 
   const virtualItems = virtualizer.getVirtualItems();
 
