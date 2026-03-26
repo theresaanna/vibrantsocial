@@ -838,6 +838,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
           isPremium={isPremium}
           userEmail={userEmail}
           customPresets={customPresets}
+          backgrounds={backgrounds}
         />
 
         <BackgroundEditor

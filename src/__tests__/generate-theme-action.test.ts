@@ -82,7 +82,7 @@ describe("generateTheme", () => {
 
   it("rejects unauthenticated users", async () => {
     mockAuth.mockResolvedValue(null as never);
-    const result = await generateTheme("cyberpunk");
+    const result = await generateTheme("/backgrounds/test.jpg");
     expect(result.success).toBe(false);
     expect(result.error).toBe("Not authenticated");
     expect(mockAnthropicCreate).not.toHaveBeenCalled();
@@ -90,38 +90,27 @@ describe("generateTheme", () => {
 
   it("rejects non-premium users", async () => {
     mockCheckPremium.mockResolvedValue(false);
-    const result = await generateTheme("cyberpunk");
+    const result = await generateTheme("/backgrounds/test.jpg");
     expect(result.success).toBe(false);
     expect(result.error).toBe("Premium subscription required");
   });
 
   it("rejects rate-limited users", async () => {
     mockIsRateLimited.mockResolvedValue(true);
-    const result = await generateTheme("cyberpunk");
+    const result = await generateTheme("/backgrounds/test.jpg");
     expect(result.success).toBe(false);
     expect(result.error).toMatch(/too many requests/i);
   });
 
-  it("rejects empty prompts", async () => {
+  it("rejects empty image URL", async () => {
     const result = await generateTheme("   ");
     expect(result.success).toBe(false);
-    expect(result.error).toMatch(/enter a theme description/i);
-  });
-
-  it("truncates long prompts to 200 chars", async () => {
-    mockAiSuccess();
-    const longPrompt = "a".repeat(300);
-    await generateTheme(longPrompt);
-    const callArg = mockAnthropicCreate.mock.calls[0][0] as {
-      messages: Array<{ content: string }>;
-    };
-    expect(callArg.messages[0].content).toContain("a".repeat(200));
-    expect(callArg.messages[0].content).not.toContain("a".repeat(201));
+    expect(result.error).toMatch(/select a background/i);
   });
 
   it("returns generated theme with valid AI response", async () => {
     mockAiSuccess();
-    const result = await generateTheme("cyberpunk neon");
+    const result = await generateTheme("/backgrounds/blue-waves.jpg");
     expect(result.success).toBe(true);
     expect(result.name).toBe("Neon Dreams");
     expect(result.light).toBeDefined();
@@ -130,11 +119,24 @@ describe("generateTheme", () => {
     expect(result.dark!.profileBgColor).toMatch(/^#[0-9a-f]{6}$/);
   });
 
+  it("sends image content to AI", async () => {
+    mockAiSuccess();
+    await generateTheme("/backgrounds/blue-waves.jpg");
+    const callArg = mockAnthropicCreate.mock.calls[0][0] as {
+      messages: Array<{ content: Array<{ type: string; source?: { url: string } }> }>;
+    };
+    const imageBlock = callArg.messages[0].content.find(
+      (b: { type: string }) => b.type === "image"
+    );
+    expect(imageBlock).toBeDefined();
+    expect(imageBlock!.source!.url).toBe("/backgrounds/blue-waves.jpg");
+  });
+
   it("handles malformed JSON from AI", async () => {
     mockAnthropicCreate.mockResolvedValue({
       content: [{ type: "text", text: "Sorry, I cannot generate that." }],
     } as never);
-    const result = await generateTheme("cyberpunk");
+    const result = await generateTheme("/backgrounds/blue-waves.jpg");
     expect(result.success).toBe(false);
     expect(result.error).toMatch(/failed to generate/i);
   });
@@ -151,7 +153,7 @@ describe("generateTheme", () => {
       },
       dark: validAiResponse.dark,
     });
-    const result = await generateTheme("cyberpunk");
+    const result = await generateTheme("/backgrounds/blue-waves.jpg");
     expect(result.success).toBe(false);
     expect(result.error).toMatch(/invalid colors/i);
   });
@@ -162,20 +164,20 @@ describe("generateTheme", () => {
       light: { profileBgColor: "#ffffff" },
       dark: validAiResponse.dark,
     });
-    const result = await generateTheme("cyberpunk");
+    const result = await generateTheme("/backgrounds/blue-waves.jpg");
     expect(result.success).toBe(false);
   });
 
   it("handles API errors gracefully", async () => {
     mockAnthropicCreate.mockRejectedValue(new Error("API timeout"));
-    const result = await generateTheme("cyberpunk");
+    const result = await generateTheme("/backgrounds/blue-waves.jpg");
     expect(result.success).toBe(false);
     expect(result.error).toMatch(/failed to generate/i);
   });
 
   it("uses claude-haiku-4-5 model", async () => {
     mockAiSuccess();
-    await generateTheme("cyberpunk");
+    await generateTheme("/backgrounds/blue-waves.jpg");
     expect(mockAnthropicCreate).toHaveBeenCalledWith(
       expect.objectContaining({ model: "claude-haiku-4-5" })
     );
@@ -193,7 +195,7 @@ describe("saveCustomPreset", () => {
     mockAuth.mockResolvedValue(null as never);
     const result = await saveCustomPreset({
       name: "Test",
-      prompt: "test",
+      imageUrl: "/backgrounds/test.jpg",
       light: validAiResponse.light,
       dark: validAiResponse.dark,
     });
@@ -205,7 +207,7 @@ describe("saveCustomPreset", () => {
     mockCheckPremium.mockResolvedValue(false);
     const result = await saveCustomPreset({
       name: "Test",
-      prompt: "test",
+      imageUrl: "/backgrounds/test.jpg",
       light: validAiResponse.light,
       dark: validAiResponse.dark,
     });
@@ -216,7 +218,7 @@ describe("saveCustomPreset", () => {
   it("rejects empty name", async () => {
     const result = await saveCustomPreset({
       name: "   ",
-      prompt: "test",
+      imageUrl: "/backgrounds/test.jpg",
       light: validAiResponse.light,
       dark: validAiResponse.dark,
     });
@@ -230,7 +232,7 @@ describe("saveCustomPreset", () => {
 
     const result = await saveCustomPreset({
       name: "New Preset",
-      prompt: "test",
+      imageUrl: "/backgrounds/test.jpg",
       light: validAiResponse.light,
       dark: validAiResponse.dark,
     });
@@ -245,7 +247,7 @@ describe("saveCustomPreset", () => {
       id: "preset1",
       userId: "user1",
       name: "Neon Dreams",
-      prompt: "cyberpunk neon",
+      imageUrl: "/backgrounds/blue-waves.jpg",
       lightBgColor: validAiResponse.light.profileBgColor,
       lightTextColor: validAiResponse.light.profileTextColor,
       lightLinkColor: validAiResponse.light.profileLinkColor,
@@ -261,7 +263,7 @@ describe("saveCustomPreset", () => {
 
     const result = await saveCustomPreset({
       name: "Neon Dreams",
-      prompt: "cyberpunk neon",
+      imageUrl: "/backgrounds/blue-waves.jpg",
       light: validAiResponse.light,
       dark: validAiResponse.dark,
     });
@@ -283,7 +285,7 @@ describe("saveCustomPreset", () => {
       id: "existing",
       userId: "user1",
       name: "Neon Dreams",
-      prompt: "cyberpunk neon",
+      imageUrl: "/backgrounds/blue-waves.jpg",
       lightBgColor: validAiResponse.light.profileBgColor,
       lightTextColor: validAiResponse.light.profileTextColor,
       lightLinkColor: validAiResponse.light.profileLinkColor,
@@ -299,7 +301,7 @@ describe("saveCustomPreset", () => {
 
     const result = await saveCustomPreset({
       name: "Neon Dreams",
-      prompt: "cyberpunk neon",
+      imageUrl: "/backgrounds/blue-waves.jpg",
       light: validAiResponse.light,
       dark: validAiResponse.dark,
     });
