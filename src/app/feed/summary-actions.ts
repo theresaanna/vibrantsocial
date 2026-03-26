@@ -145,8 +145,11 @@ async function generateSummary(
 
   if (!res.ok) {
     const errText = await res.text();
+    console.error("[FeedSummary] Anthropic API failed:", res.status, errText);
     throw new Error(`Anthropic API error ${res.status}: ${errText}`);
   }
+
+  console.log("[FeedSummary] Anthropic API success, status:", res.status);
 
   const data = await res.json();
   const textBlock = data.content?.find(
@@ -224,7 +227,12 @@ export async function generateFeedSummaryOnDemand(
 
     return await generateSummary(posts, posts.length);
   } catch (error) {
-    console.error("Feed summary on-demand error:", error);
+    console.error("[FeedSummary] on-demand error:", error);
+    console.error("[FeedSummary] error details:", {
+      name: error instanceof Error ? error.name : "unknown",
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack?.split("\n").slice(0, 3).join("\n") : undefined,
+    });
     // Return a friendly fallback instead of null so the banner doesn't reset
     return "Your friends have been posting! Scroll down to see what's new.";
   }
