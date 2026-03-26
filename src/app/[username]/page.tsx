@@ -901,6 +901,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
 
 async function ProfileMediaTab({ userId }: { userId: string }) {
   const { posts, hasMore } = await fetchUserMediaPosts(userId);
+  const boundFetchPage = fetchUserMediaPosts.bind(null, userId);
   if (posts.length === 0) {
     return (
       <div className="mt-8 text-center">
@@ -915,13 +916,14 @@ async function ProfileMediaTab({ userId }: { userId: string }) {
     <MediaGrid
       initialPosts={posts}
       initialHasMore={hasMore}
-      fetchPage={(cursor) => fetchUserMediaPosts(userId, cursor)}
+      fetchPage={boundFetchPage}
     />
   );
 }
 
 async function ProfileMarketplaceTab({ userId }: { userId: string }) {
   const { posts, hasMore } = await fetchUserMarketplacePosts(userId);
+  const boundFetchPage = fetchUserMarketplacePosts.bind(null, userId);
   if (posts.length === 0) {
     return (
       <div className="mt-8 text-center">
@@ -933,7 +935,7 @@ async function ProfileMarketplaceTab({ userId }: { userId: string }) {
     <MarketplaceGrid
       initialPosts={posts}
       initialHasMore={hasMore}
-      fetchPage={(cursor) => fetchUserMarketplacePosts(userId, cursor)}
+      fetchPage={boundFetchPage}
     />
   );
 }
