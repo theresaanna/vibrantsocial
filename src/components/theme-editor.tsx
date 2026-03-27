@@ -97,7 +97,7 @@ export function ThemeEditor({
   initialBackground,
 }: ThemeEditorProps) {
   const defaultPreset = PROFILE_THEME_PRESETS.default;
-  const [colors, setColors] = useState<ProfileThemeColors>({
+  const savedColors = useRef<ProfileThemeColors>({
     profileBgColor:
       initialColors.profileBgColor ?? defaultPreset.profileBgColor,
     profileTextColor:
@@ -111,7 +111,12 @@ export function ThemeEditor({
       initialColors.profileContainerColor ??
       defaultPreset.profileContainerColor,
   });
+  const [colors, setColors] = useState<ProfileThemeColors>({ ...savedColors.current });
   const [activePreset, setActivePreset] = useState<string | null>(null);
+
+  const hasUnsavedThemeChange = THEME_COLOR_FIELDS.some(
+    (f) => colors[f] !== savedColors.current[f]
+  );
   const [showPreview, setShowPreview] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const contentId = useId();
@@ -587,6 +592,60 @@ export function ThemeEditor({
             )}
           </div>
 
+          {/* Unsaved theme indicator + Preview button */}
+          {hasUnsavedThemeChange && (
+            <div
+              className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 dark:border-blue-800 dark:bg-blue-950"
+              data-testid="unsaved-theme-indicator"
+            >
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                  Theme changed — preview below or save your profile to apply
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Preview Light & Dark */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowPreview(true)}
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                hasUnsavedThemeChange
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              }`}
+            >
+              Preview Light {"&"} Dark
+            </button>
+            {hasUnsavedThemeChange && (
+              <div className="flex gap-1.5">
+                {THEME_COLOR_FIELDS.map((field) => (
+                  <span
+                    key={field}
+                    className="inline-block h-4 w-4 rounded-full border border-zinc-300 dark:border-zinc-600"
+                    style={{ backgroundColor: colors[field] }}
+                    title={field.replace("profile", "").replace("Color", "")}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Preview modal */}
+          {showPreview && (
+            <ThemePreview
+              colors={colors}
+              username={username}
+              displayName={displayName}
+              bio={bio}
+              avatarSrc={avatarSrc}
+              onClose={() => setShowPreview(false)}
+            />
+          )}
+
           {/* Generate theme from background — premium only */}
           {bgImage && (
             <div
@@ -709,26 +768,6 @@ export function ThemeEditor({
             </div>
           )}
 
-          {/* Preview button */}
-          <button
-            type="button"
-            onClick={() => setShowPreview(true)}
-            className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-          >
-            Preview Light {"&"} Dark
-          </button>
-
-          {/* Preview modal */}
-          {showPreview && (
-            <ThemePreview
-              colors={colors}
-              username={username}
-              displayName={displayName}
-              bio={bio}
-              avatarSrc={avatarSrc}
-              onClose={() => setShowPreview(false)}
-            />
-          )}
         </div>
       )}
 
