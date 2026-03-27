@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getAblyRestClient } from "@/lib/ably";
 import { sendPushNotification } from "@/lib/web-push";
 import type { NotificationType } from "@/generated/prisma/client";
+import { invalidateMany, cacheKeys } from "@/lib/cache";
 
 const MAX_NOTIFICATIONS = 50;
 
@@ -67,6 +68,17 @@ export async function createNotification(params: CreateNotificationParams) {
     await prisma.notification.deleteMany({
       where: { id: { in: oldest.map((n: { id: string }) => n.id) } },
     });
+  }
+
+  // Invalidate notification caches for the target user
+  try {
+    await invalidateMany([
+      cacheKeys.userNotifications(targetUserId),
+      cacheKeys.userRecentNotifications(targetUserId),
+      cacheKeys.unreadNotificationCount(targetUserId),
+    ]);
+  } catch {
+    // Non-critical
   }
 
   // Publish to Ably for real-time delivery

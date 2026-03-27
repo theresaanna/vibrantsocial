@@ -204,6 +204,9 @@ export async function checkVerificationStatus(): Promise<ActionState> {
         data: { ageVerified: new Date() },
       });
 
+      const { invalidateUserPrefs } = await import("@/lib/user-prefs");
+      await invalidateUserPrefs(session.user.id);
+
       revalidatePath("/profile");
       revalidatePath("/feed");
 

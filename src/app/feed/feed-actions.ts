@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { getPostInclude, getRepostInclude, PAGE_SIZE } from "./feed-queries";
 import { cached, cacheKeys } from "@/lib/cache";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
+import { getUserPrefs } from "@/lib/user-prefs";
+import { getCachedCloseFriendOfIds } from "@/app/feed/close-friends-actions";
 
 export async function fetchSinglePost(postId: string) {
   const session = await auth();
@@ -49,20 +51,13 @@ export async function fetchFeedPage(cursor?: string) {
   const blockedSet = new Set(blockedIds);
   const followingIds = allFollowingIds.filter((id: string) => !blockedSet.has(id));
 
-  // Fetch user preferences and close-friend-of data in parallel
-  const [currentUser, closeFriendOfRows] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { showNsfwContent: true, ageVerified: true },
-    }),
-    prisma.closeFriend.findMany({
-      where: { friendId: userId },
-      select: { userId: true },
-    }),
+  // Fetch user preferences and close-friend-of data in parallel (both cached)
+  const [prefs, closeFriendOfIds] = await Promise.all([
+    getUserPrefs(userId),
+    getCachedCloseFriendOfIds(userId),
   ]);
-  const showNsfwContent = currentUser?.showNsfwContent ?? false;
-  const ageVerified = !!currentUser?.ageVerified;
-  const closeFriendAuthors = [...closeFriendOfRows.map((r: { userId: string }) => r.userId), userId];
+  const { showNsfwContent, ageVerified } = prefs;
+  const closeFriendAuthors = [...closeFriendOfIds, userId];
 
   const postInclude = getPostInclude(userId);
   const dateFilter = cursor ? { lt: new Date(cursor) } : undefined;
@@ -158,19 +153,13 @@ export async function fetchNewFeedItems(sinceDate: string) {
   const blockedSet = new Set(blockedIds);
   const followingIds = allFollowingIds.filter((id: string) => !blockedSet.has(id));
 
-  const [currentUser, closeFriendOfRows] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { showNsfwContent: true, ageVerified: true },
-    }),
-    prisma.closeFriend.findMany({
-      where: { friendId: userId },
-      select: { userId: true },
-    }),
+  const [prefs2, closeFriendOfIds2] = await Promise.all([
+    getUserPrefs(userId),
+    getCachedCloseFriendOfIds(userId),
   ]);
-  const showNsfwContent = currentUser?.showNsfwContent ?? false;
-  const ageVerified = !!currentUser?.ageVerified;
-  const closeFriendAuthors = [...closeFriendOfRows.map((r: { userId: string }) => r.userId), userId];
+  const showNsfwContent = prefs2.showNsfwContent;
+  const ageVerified = prefs2.ageVerified;
+  const closeFriendAuthors = [...closeFriendOfIds2, userId];
 
   const postInclude = getPostInclude(userId);
   const since = new Date(sinceDate);
