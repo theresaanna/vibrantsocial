@@ -18,17 +18,22 @@ function updateTitle(count: number) {
 }
 
 export function DynamicFavicon({
-  initialHasUnread,
+  initialNotifCount,
+  initialChatCount,
 }: {
-  initialHasUnread: boolean;
+  initialNotifCount: number;
+  initialChatCount: number;
 }) {
-  const [unreadCount, setUnreadCount] = useState(initialHasUnread ? 1 : 0);
+  const [notifCount, setNotifCount] = useState(initialNotifCount);
+  const [chatCount, setChatCount] = useState(initialChatCount);
   const { data: session } = useSession();
   const ablyReady = useAblyReady();
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
   pathnameRef.current = pathname;
   const prevPathnameRef = useRef(pathname);
+
+  const totalCount = notifCount + chatCount;
 
   // Set the favicon to the static PNG on mount
   useEffect(() => {
@@ -49,24 +54,26 @@ export function DynamicFavicon({
     }
   }, [pathname]);
 
-  // Update page title when unread count changes
+  // Update page title when total count changes
   useEffect(() => {
-    updateTitle(unreadCount);
-  }, [unreadCount, pathname]);
+    updateTitle(totalCount);
+  }, [totalCount, pathname]);
 
-  // Reset count when visiting notifications or chat pages
+  // Reset the appropriate counter when visiting notifications or chat
   useEffect(() => {
     const prev = prevPathnameRef.current;
     prevPathnameRef.current = pathname;
 
-    if (pathname === "/notifications" || pathname.startsWith("/chat/")) {
-      setUnreadCount(0);
-    } else if (prev === "/notifications" || prev.startsWith("/chat/")) {
-      // Count will rebuild from Ably events
+    if (pathname === "/notifications") {
+      setNotifCount(0);
+    } else if (pathname.startsWith("/chat/") || pathname === "/chat") {
+      setChatCount(0);
     }
+    // When leaving these pages, counts rebuild from Ably events
+    void prev; // suppress unused lint
   }, [pathname]);
 
-  // Subscribe to Ably for instant updates (single subscription point)
+  // Subscribe to Ably for instant updates
   useEffect(() => {
     if (!ablyReady || !session?.user?.id) return;
 
@@ -80,14 +87,14 @@ export function DynamicFavicon({
 
     const handleNotif = () => {
       if (pathnameRef.current === "/notifications") return;
-      setUnreadCount((prev) => prev + 1);
+      setNotifCount((prev) => prev + 1);
     };
 
     const handleChat = (msg: InboundMessage) => {
       if (msg.data?.senderId === session?.user?.id) return;
       const convId = msg.data?.conversationId;
       if (pathnameRef.current === `/chat/${convId}`) return;
-      setUnreadCount((prev) => prev + 1);
+      setChatCount((prev) => prev + 1);
     };
 
     notifChannel.subscribe("new", handleNotif);

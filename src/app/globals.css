@@ -110,6 +110,7 @@ h6 {
   --chat-bubble-text: var(--chat-bubble-text-light);
   --chat-active-bg: var(--chat-active-bg-light);
   --chat-active-text: var(--chat-active-text-light);
+  --chat-link-color: var(--chat-link-color-light);
 }
 
 /* Chat theme overrides — dark mode */
@@ -118,20 +119,33 @@ h6 {
   --chat-bubble-text: var(--chat-bubble-text-dark);
   --chat-active-bg: var(--chat-active-bg-dark);
   --chat-active-text: var(--chat-active-text-dark);
+  --chat-link-color: var(--chat-link-color-dark);
 }
 
 .chat-themed .chat-input-themed:focus {
-  border-color: var(--chat-bubble-text);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--chat-bubble-text) 20%, transparent);
+  border-color: var(--chat-link-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--chat-link-color) 20%, transparent);
 }
 
 .chat-themed .chat-btn-themed {
-  background-color: var(--chat-bubble-text);
+  background-color: var(--chat-link-color);
   color: var(--chat-bubble-bg);
 }
 
 .chat-themed .chat-btn-themed:hover {
   filter: brightness(0.9);
+}
+
+/* Themed unread badge */
+.chat-themed .chat-unread-badge {
+  background-color: var(--chat-link-color);
+}
+
+/* Themed reaction button (reacted state) */
+.chat-themed .chat-reaction-active {
+  border-color: color-mix(in srgb, var(--chat-link-color) 50%, transparent);
+  background-color: color-mix(in srgb, var(--chat-link-color) 10%, transparent);
+  color: var(--chat-link-color);
 }
 
 /* Collapsible section delete button — show on hover */
