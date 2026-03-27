@@ -54,9 +54,8 @@ export function FontSelector({
   const freeFonts = USERNAME_FONTS.filter((f) => f.tier === "free");
   const premiumFonts = USERNAME_FONTS.filter((f) => f.tier === "premium");
 
-  // Lazy-load all fonts for the selector preview
-  const fontsToLoad = isPremium ? USERNAME_FONTS : freeFonts;
-  useLazyFonts(fontsToLoad);
+  // Lazy-load all fonts so previews render for all users
+  useLazyFonts(USERNAME_FONTS);
 
   const selectedFont = getFontById(selectedFontId);
   const previewFontFamily = selectedFont ? `'${selectedFont.name}', sans-serif` : undefined;
@@ -169,7 +168,7 @@ export function FontSelector({
             >
               <span
                 className="block text-base text-zinc-900 dark:text-zinc-100"
-                style={isPremium ? { fontFamily: `'${font.name}', sans-serif` } : undefined}
+                style={{ fontFamily: `'${font.name}', sans-serif` }}
               >
                 {font.name}
               </span>
