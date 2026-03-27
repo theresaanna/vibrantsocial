@@ -62,6 +62,7 @@ export function SearchPageClient({
   const loadingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastSearchedQuery = useRef(initialQuery);
+  const searchIdRef = useRef(0);
 
   // Auto-focus the search input on mount
   useEffect(() => {
@@ -103,21 +104,26 @@ export function SearchPageClient({
       lastSearchedQuery.current = trimmed;
       window.history.replaceState(null, "", `/search?q=${encodeURIComponent(trimmed)}&tab=${activeTab}`);
 
+      const id = ++searchIdRef.current;
       startTransition(async () => {
         if (activeTab === "users") {
           const result = await searchUsers(trimmed);
+          if (searchIdRef.current !== id) return;
           setUsers(result.users);
           setUsersHasMore(result.hasMore);
         } else if (activeTab === "posts") {
           const result = await searchPosts(trimmed);
+          if (searchIdRef.current !== id) return;
           setPosts(result.posts);
           setPostsHasMore(result.hasMore);
         } else if (activeTab === "marketplace") {
           const result = await searchMarketplacePosts(trimmed);
+          if (searchIdRef.current !== id) return;
           setMarketplacePosts(result.posts);
           setMarketplaceHasMore(result.hasMore);
         } else {
           const result = await searchTagsForSearch(trimmed);
+          if (searchIdRef.current !== id) return;
           setTags(result.tags);
           setTagsHasMore(result.hasMore);
         }
@@ -135,21 +141,26 @@ export function SearchPageClient({
     window.history.replaceState(null, "", `/search?q=${encodeURIComponent(trimmed)}&tab=${tab}`);
 
     if (trimmed.length >= 2) {
+      const id = ++searchIdRef.current;
       startTransition(async () => {
         if (tab === "users") {
           const result = await searchUsers(trimmed);
+          if (searchIdRef.current !== id) return;
           setUsers(result.users);
           setUsersHasMore(result.hasMore);
         } else if (tab === "posts") {
           const result = await searchPosts(trimmed);
+          if (searchIdRef.current !== id) return;
           setPosts(result.posts);
           setPostsHasMore(result.hasMore);
         } else if (tab === "marketplace") {
           const result = await searchMarketplacePosts(trimmed);
+          if (searchIdRef.current !== id) return;
           setMarketplacePosts(result.posts);
           setMarketplaceHasMore(result.hasMore);
         } else {
           const result = await searchTagsForSearch(trimmed);
+          if (searchIdRef.current !== id) return;
           setTags(result.tags);
           setTagsHasMore(result.hasMore);
         }

@@ -312,6 +312,22 @@ export async function getUserLists() {
   );
 }
 
+export async function getCollaboratingLists() {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  return prisma.userList.findMany({
+    where: {
+      collaborators: { some: { userId: session.user.id } },
+    },
+    include: {
+      _count: { select: { members: true } },
+      owner: { select: { username: true, displayName: true, name: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
 export async function getListMembers(listId: string) {
   const session = await auth();
   if (!session?.user?.id) return null;

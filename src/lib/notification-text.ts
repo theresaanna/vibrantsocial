@@ -20,6 +20,8 @@ export function getNotificationText(type: NotificationType): string {
       return "mentioned you";
     case "FRIEND_REQUEST":
       return "sent you a friend request";
+    case "FRIEND_REQUEST_ACCEPTED":
+      return "accepted your friend request";
     case "NEW_POST":
       return "published a new post";
     case "TAG_POST":

@@ -31,15 +31,19 @@ export function UserSearch({
       return;
     }
 
+    let cancelled = false;
+
     debounceRef.current = setTimeout(async () => {
       setIsLoading(true);
       const users = await searchUsers(query);
+      if (cancelled) return;
       setResults(users.filter((u) => !excludeIds.includes(u.id)));
       setIsLoading(false);
       setShowResults(true);
     }, 300);
 
     return () => {
+      cancelled = true;
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [query, excludeIds]);

@@ -187,7 +187,7 @@ export async function acceptFriendRequest(
   await invalidate(cacheKeys.friendshipStatus(session.user.id, request.senderId));
 
   await createNotificationSafe({
-    type: "FRIEND_REQUEST",
+    type: "FRIEND_REQUEST_ACCEPTED",
     actorId: session.user.id,
     targetUserId: request.senderId,
   });
@@ -315,7 +315,7 @@ export async function respondToFriendRequestByActor(
     await invalidate(cacheKeys.friendshipStatus(session.user.id, actorId));
 
     await createNotificationSafe({
-      type: "FRIEND_REQUEST",
+      type: "FRIEND_REQUEST_ACCEPTED",
       actorId: session.user.id,
       targetUserId: request.senderId,
     });
