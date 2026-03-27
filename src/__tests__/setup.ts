@@ -6,6 +6,16 @@ import { vi } from "vitest";
 process.env.UPSTASH_REDIS_REST_URL ??= "http://localhost:0";
 process.env.UPSTASH_REDIS_REST_TOKEN ??= "test-token";
 
+// Mock rate-limit globally so that server actions using requireAuthWithRateLimit
+// don't attempt real Redis calls in tests. Individual tests can override this.
+vi.mock("@/lib/rate-limit", () => ({
+  apiLimiter: null,
+  authLimiter: null,
+  uploadLimiter: null,
+  isRateLimited: vi.fn().mockResolvedValue(false),
+  checkRateLimit: vi.fn().mockResolvedValue(null),
+}));
+
 // Polyfill ResizeObserver for jsdom
 global.ResizeObserver = class ResizeObserver {
   observe() {}

@@ -1,27 +1,19 @@
 "use server";
 
 import { auth } from "@/auth";
-import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { cached, invalidate, cacheKeys } from "@/lib/cache";
-
-interface CloseFriendActionState {
-  success: boolean;
-  message: string;
-}
+import { requireAuthWithRateLimit, isActionError, areFriends, USER_PROFILE_SELECT } from "@/lib/action-utils";
+import type { ActionState } from "@/lib/action-utils";
 
 export async function addCloseFriend(
-  _prevState: CloseFriendActionState,
+  _prevState: ActionState,
   formData: FormData
-): Promise<CloseFriendActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `close-friend:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+): Promise<ActionState> {
+  const result = await requireAuthWithRateLimit("close-friend");
+  if (isActionError(result)) return result;
+  const session = result;
 
   const friendId = formData.get("friendId") as string;
   if (!friendId) {
@@ -33,17 +25,7 @@ export async function addCloseFriend(
   }
 
   // Verify they are actually friends (accepted friend request)
-  const friendship = await prisma.friendRequest.findFirst({
-    where: {
-      status: "ACCEPTED",
-      OR: [
-        { senderId: session.user.id, receiverId: friendId },
-        { senderId: friendId, receiverId: session.user.id },
-      ],
-    },
-  });
-
-  if (!friendship) {
+  if (!(await areFriends(session.user.id, friendId))) {
     return { success: false, message: "You must be friends first" };
   }
 
@@ -69,17 +51,12 @@ export async function addCloseFriend(
 }
 
 export async function removeCloseFriend(
-  _prevState: CloseFriendActionState,
+  _prevState: ActionState,
   formData: FormData
-): Promise<CloseFriendActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `close-friend:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+): Promise<ActionState> {
+  const result = await requireAuthWithRateLimit("close-friend");
+  if (isActionError(result)) return result;
+  const session = result;
 
   const friendId = formData.get("friendId") as string;
   if (!friendId) {
@@ -113,16 +90,7 @@ export async function getCloseFriends() {
     where: { userId: session.user.id },
     include: {
       friend: {
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          name: true,
-          avatar: true,
-          profileFrameId: true,
-          usernameFont: true,
-          image: true,
-        },
+        select: USER_PROFILE_SELECT,
       },
     },
     orderBy: { createdAt: "desc" },
@@ -185,28 +153,10 @@ export async function getAcceptedFriends() {
     },
     include: {
       sender: {
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          name: true,
-          avatar: true,
-          profileFrameId: true,
-          usernameFont: true,
-          image: true,
-        },
+        select: USER_PROFILE_SELECT,
       },
       receiver: {
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          name: true,
-          avatar: true,
-          profileFrameId: true,
-          usernameFont: true,
-          image: true,
-        },
+        select: USER_PROFILE_SELECT,
       },
     },
     orderBy: { updatedAt: "desc" },

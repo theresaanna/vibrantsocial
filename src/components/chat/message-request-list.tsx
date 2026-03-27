@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { MessageRequestCard } from "./message-request-card";
 import { bulkDeclineMessageRequests } from "@/app/chat/actions";
 import type { MessageRequestData } from "@/types/chat";
+import { useSelectionSet } from "@/hooks/use-selection-set";
 
 interface MessageRequestListProps {
   requests: MessageRequestData[];
@@ -11,44 +12,18 @@ interface MessageRequestListProps {
 
 export function MessageRequestList({ requests }: MessageRequestListProps) {
   const [isExpanded, setIsExpanded] = useState(true);
-  const [selectMode, setSelectMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const selection = useSelectionSet();
   const [isPending, startTransition] = useTransition();
 
   if (requests.length === 0) return null;
 
-  const allSelected = requests.length > 0 && selectedIds.size === requests.length;
-
-  function toggleSelect(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }
-
-  function toggleSelectAll() {
-    if (allSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(requests.map((r) => r.id)));
-    }
-  }
-
-  function exitSelectMode() {
-    setSelectMode(false);
-    setSelectedIds(new Set());
-  }
+  const allSelected = requests.length > 0 && selection.selectedIds.size === requests.length;
 
   function handleBulkDelete() {
-    if (selectedIds.size === 0) return;
+    if (selection.selectedIds.size === 0) return;
     startTransition(async () => {
-      await bulkDeclineMessageRequests(Array.from(selectedIds));
-      exitSelectMode();
+      await bulkDeclineMessageRequests(Array.from(selection.selectedIds));
+      selection.exit();
     });
   }
 
@@ -81,29 +56,29 @@ export function MessageRequestList({ requests }: MessageRequestListProps) {
         <div className="px-3 pb-3">
           {/* Select mode toolbar */}
           <div className="mb-2 flex items-center justify-between">
-            {selectMode ? (
+            {selection.active ? (
               <>
                 <label className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
                   <input
                     type="checkbox"
                     checked={allSelected}
-                    onChange={toggleSelectAll}
+                    onChange={() => selection.selectAll(requests.map(r => r.id))}
                     className="h-3.5 w-3.5 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 dark:border-zinc-600"
                   />
                   Select all
                 </label>
                 <div className="flex items-center gap-2">
-                  {selectedIds.size > 0 && (
+                  {selection.selectedIds.size > 0 && (
                     <button
                       onClick={handleBulkDelete}
                       disabled={isPending}
                       className="rounded-lg bg-red-600 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
                     >
-                      {isPending ? "..." : `Delete (${selectedIds.size})`}
+                      {isPending ? "..." : `Delete (${selection.selectedIds.size})`}
                     </button>
                   )}
                   <button
-                    onClick={exitSelectMode}
+                    onClick={selection.exit}
                     className="rounded-lg border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
                   >
                     Cancel
@@ -113,7 +88,7 @@ export function MessageRequestList({ requests }: MessageRequestListProps) {
             ) : (
               <div className="ml-auto">
                 <button
-                  onClick={() => setSelectMode(true)}
+                  onClick={selection.enter}
                   className="text-xs font-medium text-zinc-500 transition-colors hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
                 >
                   Select
@@ -126,9 +101,9 @@ export function MessageRequestList({ requests }: MessageRequestListProps) {
               <MessageRequestCard
                 key={request.id}
                 request={request}
-                selectMode={selectMode}
-                isSelected={selectedIds.has(request.id)}
-                onToggleSelect={toggleSelect}
+                selectMode={selection.active}
+                isSelected={selection.selectedIds.has(request.id)}
+                onToggleSelect={selection.toggle}
               />
             ))}
           </div>

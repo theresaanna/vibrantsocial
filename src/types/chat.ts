@@ -73,10 +73,7 @@ export interface ChatThemeColors {
   secondaryColor: string | null;
 }
 
-export interface ActionState {
-  success: boolean;
-  message: string;
-}
+export type { ActionState } from "@/lib/action-utils";
 
 export interface ConversationWithParticipants {
   id: string;
