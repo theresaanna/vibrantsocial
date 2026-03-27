@@ -2,7 +2,6 @@
 
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $insertNodes, $createParagraphNode } from "lexical";
-import { INSERT_HORIZONTAL_RULE_COMMAND } from "@lexical/react/LexicalHorizontalRuleNode";
 import {
   INSERT_TABLE_COMMAND,
   type InsertTableCommandPayload,
@@ -14,7 +13,6 @@ import { $createImageNode } from "../nodes/ImageNode";
 import { $createVideoNode } from "../nodes/VideoNode";
 import { $createFileNode } from "../nodes/FileNode";
 import { $createYouTubeNode } from "../nodes/YouTubeNode";
-import { $createStickyNoteNode } from "../nodes/StickyNoteNode";
 import { $createPollNode, type PollOption } from "../nodes/PollNode";
 import { extractYouTubeVideoID } from "../utils/url";
 import { upload } from "@vercel/blob/client";
@@ -67,21 +65,6 @@ export function FileUploadButton() {
         />
       )}
     </>
-  );
-}
-
-/* ── Horizontal Rule ─────────────────────────────── */
-export function HorizontalRuleButton() {
-  const [editor] = useLexicalComposerContext();
-  return (
-    <ToolbarButton
-      onClick={() => editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined)}
-      label="Horizontal rule"
-    >
-      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12h16" />
-      </svg>
-    </ToolbarButton>
   );
 }
 
@@ -164,26 +147,6 @@ export function PollButton() {
         />
       )}
     </>
-  );
-}
-
-/* ── Sticky Note ─────────────────────────────────── */
-export function StickyNoteButton() {
-  const [editor] = useLexicalComposerContext();
-  return (
-    <ToolbarButton
-      onClick={() => {
-        editor.update(() => {
-          const node = $createStickyNoteNode();
-          $insertNodes([node, $createParagraphNode()]);
-        });
-      }}
-      label="Sticky note"
-    >
-      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-      </svg>
-    </ToolbarButton>
   );
 }
 

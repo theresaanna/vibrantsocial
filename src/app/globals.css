@@ -104,6 +104,48 @@ h6 {
   background-color: var(--profile-container);
 }
 
+/* Poll theme overrides inside profile pages */
+.profile-themed .poll-border {
+  border-color: color-mix(in srgb, var(--profile-text) 20%, transparent);
+}
+
+.profile-themed .poll-question {
+  color: var(--profile-text);
+}
+
+.profile-themed .poll-option {
+  border-color: color-mix(in srgb, var(--profile-text) 25%, transparent);
+}
+
+.profile-themed .poll-option:not(:disabled):hover {
+  border-color: var(--profile-link);
+  background-color: color-mix(in srgb, var(--profile-link) 10%, transparent);
+}
+
+.profile-themed .poll-option-result {
+  border-color: color-mix(in srgb, var(--profile-text) 20%, transparent);
+}
+
+.profile-themed .poll-bar-voted {
+  background-color: color-mix(in srgb, var(--profile-link) 25%, transparent);
+}
+
+.profile-themed .poll-bar-default {
+  background-color: color-mix(in srgb, var(--profile-text) 10%, transparent);
+}
+
+.profile-themed .poll-meta {
+  color: var(--profile-secondary);
+}
+
+.profile-themed .poll-option-text {
+  color: var(--profile-text);
+}
+
+.profile-themed .poll-pct {
+  color: var(--profile-secondary);
+}
+
 /* Chat theme overrides — light mode (default) */
 .chat-themed {
   --chat-bubble-bg: var(--chat-bubble-bg-light);
