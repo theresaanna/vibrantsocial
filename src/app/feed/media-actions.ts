@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { extractMediaFromLexicalJson } from "@/lib/lexical-text";
 import { cached, cacheKeys } from "@/lib/cache";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
+import { getUserPrefs } from "@/lib/user-prefs";
+import { getCachedCloseFriendOfIds } from "@/app/feed/close-friends-actions";
 
 const MEDIA_PAGE_SIZE = 30;
 
@@ -60,23 +62,13 @@ export async function fetchMediaFeedPage(
     (id: string) => !blockedSet.has(id)
   );
 
-  const [currentUser, closeFriendOfRows] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { showNsfwContent: true, ageVerified: true },
-    }),
-    prisma.closeFriend.findMany({
-      where: { friendId: userId },
-      select: { userId: true },
-    }),
+  const [prefs, closeFriendOfIds] = await Promise.all([
+    getUserPrefs(userId),
+    getCachedCloseFriendOfIds(userId),
   ]);
 
-  const showNsfwContent = currentUser?.showNsfwContent ?? false;
-  const ageVerified = !!currentUser?.ageVerified;
-  const closeFriendAuthors = [
-    ...closeFriendOfRows.map((r: { userId: string }) => r.userId),
-    userId,
-  ];
+  const { showNsfwContent, ageVerified } = prefs;
+  const closeFriendAuthors = [...closeFriendOfIds, userId];
 
   const dateFilter = cursor ? { lt: new Date(cursor) } : undefined;
 

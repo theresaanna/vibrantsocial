@@ -6,6 +6,8 @@ import { anthropic } from "@/lib/anthropic";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
 import { cached, cacheKeys } from "@/lib/cache";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
+import { getUserPrefs } from "@/lib/user-prefs";
+import { getCachedCloseFriendOfIds } from "@/app/feed/close-friends-actions";
 
 const SUMMARY_POST_LIMIT = 50;
 const MAX_CONTENT_CHARS = 4000;
@@ -46,23 +48,13 @@ async function fetchMissedPosts(userId: string, since: Date, limit: number) {
 
   if (followingIds.length === 0) return [];
 
-  const [closeFriendOfRows, currentUser] = await Promise.all([
-    prisma.closeFriend.findMany({
-      where: { friendId: userId },
-      select: { userId: true },
-    }),
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { showNsfwContent: true, ageVerified: true },
-    }),
+  const [prefs, closeFriendOfIds] = await Promise.all([
+    getUserPrefs(userId),
+    getCachedCloseFriendOfIds(userId),
   ]);
 
-  const showNsfwContent = currentUser?.showNsfwContent ?? false;
-  const ageVerified = !!currentUser?.ageVerified;
-  const closeFriendAuthors = [
-    ...closeFriendOfRows.map((r: { userId: string }) => r.userId),
-    userId,
-  ];
+  const { showNsfwContent, ageVerified } = prefs;
+  const closeFriendAuthors = [...closeFriendOfIds, userId];
 
   return prisma.post.findMany({
     where: {

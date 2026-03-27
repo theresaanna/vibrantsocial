@@ -3,7 +3,7 @@
 import { auth } from "@/auth";
 import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { cached, invalidate, cacheKeys } from "@/lib/cache";
+import { cached, invalidate, invalidateMany, cacheKeys } from "@/lib/cache";
 
 interface BlockState {
   success: boolean;
@@ -32,7 +32,7 @@ export async function getBlockedUserIds(userId: string): Promise<string[]> {
  */
 export async function getBlockedByUserIds(userId: string): Promise<string[]> {
   return cached(
-    `user:${userId}:blocked-by`,
+    cacheKeys.userBlockedByIds(userId),
     async () => {
       const blocks = await prisma.block.findMany({
         where: { blockedId: userId },
@@ -46,14 +46,32 @@ export async function getBlockedByUserIds(userId: string): Promise<string[]> {
 
 /**
  * Get all user IDs involved in any block relationship with the given user
- * (either direction). Used for filtering feeds, search, etc.
+ * (either direction). Cached as a single key to avoid 2 sequential lookups.
  */
 export async function getAllBlockRelatedIds(userId: string): Promise<string[]> {
-  const [blockedIds, blockedByIds] = await Promise.all([
-    getBlockedUserIds(userId),
-    getBlockedByUserIds(userId),
+  return cached(
+    cacheKeys.userAllBlocks(userId),
+    async () => {
+      const [blockedIds, blockedByIds] = await Promise.all([
+        getBlockedUserIds(userId),
+        getBlockedByUserIds(userId),
+      ]);
+      return [...new Set([...blockedIds, ...blockedByIds])];
+    },
+    120
+  );
+}
+
+/**
+ * Instantly invalidate all block-related caches for a user.
+ * Called on block/unblock to ensure real-time accuracy.
+ */
+export async function invalidateBlockCaches(userId: string) {
+  await invalidateMany([
+    cacheKeys.userBlockedIds(userId),
+    cacheKeys.userBlockedByIds(userId),
+    cacheKeys.userAllBlocks(userId),
   ]);
-  return [...new Set([...blockedIds, ...blockedByIds])];
 }
 
 /**
@@ -159,26 +177,31 @@ export async function toggleBlock(
     ]);
   }
 
-  // Invalidate caches for both users
+  // Instantly invalidate all block + relationship caches for both users
   try {
     const [currentUserData, targetUserData] = await Promise.all([
       prisma.user.findUnique({ where: { id: session.user.id }, select: { username: true } }),
       prisma.user.findUnique({ where: { id: targetUserId }, select: { username: true } }),
     ]);
 
-    const invalidations = [
-      invalidate(cacheKeys.userBlockedIds(session.user.id)),
-      invalidate(cacheKeys.userBlockedIds(targetUserId)),
+    await Promise.all([
+      // Block caches — instant invalidation for both users
+      invalidateBlockCaches(session.user.id),
+      invalidateBlockCaches(targetUserId),
+      // Follow caches
       invalidate(cacheKeys.userFollowing(session.user.id)),
       invalidate(cacheKeys.userFollowing(targetUserId)),
-    ];
-    if (currentUserData?.username) {
-      invalidations.push(invalidate(cacheKeys.userProfile(currentUserData.username)));
-    }
-    if (targetUserData?.username) {
-      invalidations.push(invalidate(cacheKeys.userProfile(targetUserData.username)));
-    }
-    await Promise.all(invalidations);
+      // Close friend caches (block also removes close friends)
+      invalidate(cacheKeys.userCloseFriendIds(session.user.id)),
+      invalidate(cacheKeys.userCloseFriendIds(targetUserId)),
+      invalidate(cacheKeys.userCloseFriendOf(session.user.id)),
+      invalidate(cacheKeys.userCloseFriendOf(targetUserId)),
+      // Friendship cache
+      invalidate(cacheKeys.friendshipStatus(session.user.id, targetUserId)),
+      // Profile caches
+      ...(currentUserData?.username ? [invalidate(cacheKeys.userProfile(currentUserData.username))] : []),
+      ...(targetUserData?.username ? [invalidate(cacheKeys.userProfile(targetUserData.username))] : []),
+    ]);
   } catch {
     // Non-critical
   }

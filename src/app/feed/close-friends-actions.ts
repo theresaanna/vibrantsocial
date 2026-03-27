@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { cached, invalidate, cacheKeys } from "@/lib/cache";
 
 interface CloseFriendActionState {
   success: boolean;
@@ -58,6 +59,11 @@ export async function addCloseFriend(
     data: { userId: session.user.id, friendId },
   });
 
+  await Promise.all([
+    invalidate(cacheKeys.userCloseFriendIds(session.user.id)),
+    invalidate(cacheKeys.userCloseFriendOf(friendId)),
+  ]);
+
   revalidatePath("/close-friends");
   return { success: true, message: "Added to close friends" };
 }
@@ -90,6 +96,11 @@ export async function removeCloseFriend(
 
   await prisma.closeFriend.delete({ where: { id: existing.id } });
 
+  await Promise.all([
+    invalidate(cacheKeys.userCloseFriendIds(session.user.id)),
+    invalidate(cacheKeys.userCloseFriendOf(friendId)),
+  ]);
+
   revalidatePath("/close-friends");
   return { success: true, message: "Removed from close friends" };
 }
@@ -119,11 +130,35 @@ export async function getCloseFriends() {
 }
 
 export async function getCloseFriendIds(userId: string): Promise<string[]> {
-  const rows = await prisma.closeFriend.findMany({
-    where: { userId },
-    select: { friendId: true },
-  });
-  return rows.map((r) => r.friendId);
+  return cached(
+    cacheKeys.userCloseFriendIds(userId),
+    async () => {
+      const rows = await prisma.closeFriend.findMany({
+        where: { userId },
+        select: { friendId: true },
+      });
+      return rows.map((r: { friendId: string }) => r.friendId);
+    },
+    120
+  );
+}
+
+/**
+ * Get IDs of users who have added the given user as a close friend (cached).
+ * Used to determine which close-friends-only posts the user can see.
+ */
+export async function getCachedCloseFriendOfIds(userId: string): Promise<string[]> {
+  return cached(
+    cacheKeys.userCloseFriendOf(userId),
+    async () => {
+      const rows = await prisma.closeFriend.findMany({
+        where: { friendId: userId },
+        select: { userId: true },
+      });
+      return rows.map((r: { userId: string }) => r.userId);
+    },
+    120
+  );
 }
 
 export async function isCloseFriend(

@@ -33,42 +33,46 @@ export async function searchTags(query: string, includeNsfw?: boolean) {
   const normalized = normalizeTag(query);
   if (!normalized) return [];
 
-  const postFilter = includeNsfw
-    ? { isSensitive: false, isGraphicNudity: false, author: { isProfilePublic: true }, marketplacePost: null }
-    : { isSensitive: false, isNsfw: false, isGraphicNudity: false, author: { isProfilePublic: true }, marketplacePost: null };
+  const cacheKey = cacheKeys.tagSearch(normalized, !!includeNsfw);
 
-  const tags = await prisma.tag.findMany({
-    where: {
-      name: { startsWith: normalized },
-      ...(!includeNsfw ? { isNsfw: false } : {}),
-      posts: {
-        some: {
-          post: postFilter,
+  return cached(cacheKey, async () => {
+    const postFilter = includeNsfw
+      ? { isSensitive: false, isGraphicNudity: false, author: { isProfilePublic: true }, marketplacePost: null as null }
+      : { isSensitive: false, isNsfw: false, isGraphicNudity: false, author: { isProfilePublic: true }, marketplacePost: null as null };
+
+    const tags = await prisma.tag.findMany({
+      where: {
+        name: { startsWith: normalized },
+        ...(!includeNsfw ? { isNsfw: false } : {}),
+        posts: {
+          some: {
+            post: postFilter,
+          },
         },
       },
-    },
-    select: {
-      id: true,
-      name: true,
-      _count: {
-        select: {
-          posts: {
-            where: {
-              post: postFilter,
+      select: {
+        id: true,
+        name: true,
+        _count: {
+          select: {
+            posts: {
+              where: {
+                post: postFilter,
+              },
             },
           },
         },
       },
-    },
-    orderBy: { name: "asc" },
-    take: 20,
-  });
+      orderBy: { name: "asc" },
+      take: 20,
+    });
 
-  // Only return tags used on 2+ posts
-  return (tags as (TagWithCount & { id: string })[])
-    .filter((t) => t._count.posts >= 2)
-    .slice(0, 10)
-    .map((t) => ({ id: t.id, name: t.name, count: t._count.posts }));
+    // Only return tags used on 2+ posts
+    return (tags as (TagWithCount & { id: string })[])
+      .filter((t) => t._count.posts >= 2)
+      .slice(0, 10)
+      .map((t) => ({ id: t.id, name: t.name, count: t._count.posts }));
+  }, 180);
 }
 
 /**
