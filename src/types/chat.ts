@@ -68,6 +68,7 @@ export interface MessageRequestData {
 export interface ChatThemeColors {
   bgColor: string | null;
   textColor: string | null;
+  linkColor: string | null;
   containerColor: string | null;
   secondaryColor: string | null;
 }

@@ -14,6 +14,8 @@ import {
   USER_PROFILE_SELECT,
 } from "@/lib/action-utils";
 import type { ActionState } from "@/lib/action-utils";
+import { getUserPrefs } from "@/lib/user-prefs";
+import { getCachedCloseFriendOfIds } from "@/app/feed/close-friends-actions";
 
 // ---------------------------------------------------------------------------
 // Permission helpers
@@ -743,19 +745,12 @@ export async function fetchListFeedPage(listId: string, cursor?: string) {
     return { items: [], hasMore: false };
   }
 
-  const [currentUser, closeFriendOfRows] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { showNsfwContent: true, ageVerified: true },
-    }),
-    prisma.closeFriend.findMany({
-      where: { friendId: userId },
-      select: { userId: true },
-    }),
+  const [prefs, closeFriendOfIds] = await Promise.all([
+    getUserPrefs(userId),
+    getCachedCloseFriendOfIds(userId),
   ]);
-  const showNsfwContent = currentUser?.showNsfwContent ?? false;
-  const ageVerified = !!currentUser?.ageVerified;
-  const closeFriendAuthors = [...closeFriendOfRows.map((r: { userId: string }) => r.userId), userId];
+  const { showNsfwContent, ageVerified } = prefs;
+  const closeFriendAuthors = [...closeFriendOfIds, userId];
 
   const postInclude = getPostInclude(userId);
   const dateFilter = cursor ? { lt: new Date(cursor) } : undefined;
@@ -834,19 +829,12 @@ export async function fetchNewListFeedItems(listId: string, sinceDate: string) {
 
   if (memberIds.length === 0) return [];
 
-  const [currentUser, closeFriendOfRows] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { showNsfwContent: true, ageVerified: true },
-    }),
-    prisma.closeFriend.findMany({
-      where: { friendId: userId },
-      select: { userId: true },
-    }),
+  const [prefs, closeFriendOfIds] = await Promise.all([
+    getUserPrefs(userId),
+    getCachedCloseFriendOfIds(userId),
   ]);
-  const showNsfwContent = currentUser?.showNsfwContent ?? false;
-  const ageVerified = !!currentUser?.ageVerified;
-  const closeFriendAuthors = [...closeFriendOfRows.map((r: { userId: string }) => r.userId), userId];
+  const { showNsfwContent, ageVerified } = prefs;
+  const closeFriendAuthors = [...closeFriendOfIds, userId];
 
   const postInclude = getPostInclude(userId);
   const since = new Date(sinceDate);

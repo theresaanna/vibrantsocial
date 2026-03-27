@@ -14,6 +14,7 @@ export interface BackgroundDefinition {
   thumbSrc: string;
   category: BgCategory;
   defaults?: BgDefaults;
+  premiumOnly?: boolean;
 }
 
 export const VALID_BG_REPEAT = ["repeat", "repeat-x", "repeat-y", "no-repeat"] as const;
@@ -33,7 +34,7 @@ export type BgPosition = (typeof VALID_BG_POSITION)[number];
 
 const CATEGORY_DEFAULTS: Record<BgCategory, Required<BgDefaults>> = {
   pattern: { repeat: "repeat", size: "auto", position: "top left", attachment: "scroll" },
-  photo: { repeat: "no-repeat", size: "cover", position: "center", attachment: "scroll" },
+  photo: { repeat: "no-repeat", size: "contain", position: "center", attachment: "scroll" },
 };
 
 export function getDefaultsForBackground(bg: BackgroundDefinition): Required<BgDefaults> {

@@ -40,8 +40,8 @@ const mockUseSession = vi.mocked(useSession);
 const mockSwitchAccount = vi.mocked(switchAccount);
 
 const linkedAccounts = [
-  { id: "user2", username: "user_two", displayName: "User Two", avatar: null },
-  { id: "user3", username: "user_three", displayName: "User Three", avatar: "https://example.com/avatar.jpg" },
+  { id: "user2", username: "user_two", displayName: "User Two", avatar: null, profileFrameId: null, usernameFont: null },
+  { id: "user3", username: "user_three", displayName: "User Three", avatar: "https://example.com/avatar.jpg", profileFrameId: "spring-1", usernameFont: "sofadi-one" },
 ];
 
 // Save/restore the real location so we can spy on reload()
@@ -60,6 +60,8 @@ function setupSession(overrides: Record<string, unknown> = {}) {
         isEmailVerified: true,
         authProvider: "credentials",
         linkedAccounts,
+        profileFrameId: null,
+        usernameFont: null,
         ...overrides,
       },
       expires: "2026-12-31",
@@ -98,6 +100,8 @@ describe("AccountSwitcher", () => {
           tier: "free",
           isEmailVerified: true,
           authProvider: "credentials",
+          profileFrameId: null,
+          usernameFont: null,
           linkedAccounts: [],
         },
         expires: "2026-12-31",
@@ -154,6 +158,8 @@ describe("AccountSwitcher", () => {
           tier: "free",
           isEmailVerified: true,
           authProvider: "credentials",
+          profileFrameId: null,
+          usernameFont: null,
           linkedAccounts,
         },
         expires: "2026-12-31",
@@ -195,6 +201,8 @@ describe("AccountSwitcher", () => {
           tier: "free",
           isEmailVerified: true,
           authProvider: "credentials",
+          profileFrameId: null,
+          usernameFont: null,
           linkedAccounts,
         },
         expires: "2026-12-31",

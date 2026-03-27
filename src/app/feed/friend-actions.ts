@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { inngest } from "@/lib/inngest";
-import { invalidate, cacheKeys } from "@/lib/cache";
+import { invalidate, cached, cacheKeys } from "@/lib/cache";
 import {
   requireAuthWithRateLimit,
   isActionError,
@@ -28,20 +28,26 @@ export async function getFriendshipStatus(
   const session = await auth();
   if (!session?.user?.id) return { status: "none" };
 
-  const request = await prisma.friendRequest.findFirst({
-    where: {
-      OR: [
-        { senderId: session.user.id, receiverId: targetUserId },
-        { senderId: targetUserId, receiverId: session.user.id },
-      ],
-    },
-    select: { id: true, senderId: true, status: true },
-  });
+  return cached(
+    cacheKeys.friendshipStatus(session.user.id, targetUserId),
+    async () => {
+      const request = await prisma.friendRequest.findFirst({
+        where: {
+          OR: [
+            { senderId: session.user.id, receiverId: targetUserId },
+            { senderId: targetUserId, receiverId: session.user.id },
+          ],
+        },
+        select: { id: true, senderId: true, status: true },
+      });
 
-  if (!request) return { status: "none" };
-  if (request.status === "ACCEPTED") return { status: "friends", requestId: request.id };
-  if (request.senderId === session.user.id) return { status: "pending_sent", requestId: request.id };
-  return { status: "pending_received", requestId: request.id };
+      if (!request) return { status: "none" as const };
+      if (request.status === "ACCEPTED") return { status: "friends" as const, requestId: request.id };
+      if (request.senderId === session.user.id) return { status: "pending_sent" as const, requestId: request.id };
+      return { status: "pending_received" as const, requestId: request.id };
+    },
+    120
+  );
 }
 
 export async function sendFriendRequest(
@@ -81,6 +87,9 @@ export async function sendFriendRequest(
   await prisma.friendRequest.create({
     data: { senderId: session.user.id, receiverId: targetUserId },
   });
+
+  // Invalidate friendship cache
+  await invalidate(cacheKeys.friendshipStatus(session.user.id, targetUserId));
 
   // Auto-follow the target user when sending a friend request
   try {
@@ -175,6 +184,8 @@ export async function acceptFriendRequest(
     data: { status: "ACCEPTED" },
   });
 
+  await invalidate(cacheKeys.friendshipStatus(session.user.id, request.senderId));
+
   await createNotificationSafe({
     type: "FRIEND_REQUEST",
     actorId: session.user.id,
@@ -211,6 +222,8 @@ export async function declineFriendRequest(
   // Delete so the sender can re-request later
   await prisma.friendRequest.delete({ where: { id: requestId } });
 
+  await invalidate(cacheKeys.friendshipStatus(session.user.id, request.senderId));
+
   revalidatePath("/");
   return { success: true, message: "Friend request declined" };
 }
@@ -240,6 +253,8 @@ export async function removeFriend(
   }
 
   await prisma.friendRequest.delete({ where: { id: friendship.id } });
+
+  await invalidate(cacheKeys.friendshipStatus(session.user.id, targetUserId));
 
   // Also unfollow the target user when unfriending
   try {
@@ -297,6 +312,8 @@ export async function respondToFriendRequestByActor(
       data: { status: "ACCEPTED" },
     });
 
+    await invalidate(cacheKeys.friendshipStatus(session.user.id, actorId));
+
     await createNotificationSafe({
       type: "FRIEND_REQUEST",
       actorId: session.user.id,
@@ -309,6 +326,7 @@ export async function respondToFriendRequestByActor(
 
   // Decline: delete so sender can re-request later
   await prisma.friendRequest.delete({ where: { id: request.id } });
+  await invalidate(cacheKeys.friendshipStatus(session.user.id, actorId));
   revalidatePath("/");
   return { success: true, message: "Friend request declined" };
 }

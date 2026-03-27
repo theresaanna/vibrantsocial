@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { cached, invalidate, invalidateMany, cacheKeys } from "@/lib/cache";
 import { requireAuthWithRateLimit, isActionError } from "@/lib/action-utils";
 
 async function enrichWithPendingFriendRequests(
@@ -30,52 +31,54 @@ export async function getNotifications() {
   const session = await auth();
   if (!session?.user?.id) return [];
 
-  const notifications = await prisma.notification.findMany({
-    where: { targetUserId: session.user.id },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-    include: {
-      actor: {
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          name: true,
-          image: true,
-          avatar: true,
-          profileFrameId: true,
-          usernameFont: true,
+  return cached(cacheKeys.userNotifications(session.user.id), async () => {
+    const notifications = await prisma.notification.findMany({
+      where: { targetUserId: session.user.id },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: {
+        actor: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            name: true,
+            image: true,
+            avatar: true,
+            profileFrameId: true,
+            usernameFont: true,
+          },
         },
-      },
-      post: {
-        select: {
-          id: true,
-          content: true,
-          wallPost: {
-            select: {
-              id: true,
-              status: true,
+        post: {
+          select: {
+            id: true,
+            content: true,
+            wallPost: {
+              select: {
+                id: true,
+                status: true,
+              },
             },
           },
         },
+        message: { select: { id: true, conversationId: true } },
+        tag: { select: { id: true, name: true } },
       },
-      message: { select: { id: true, conversationId: true } },
-      tag: { select: { id: true, name: true } },
-    },
-  });
+    });
 
-  const pendingActorIds = await enrichWithPendingFriendRequests(
-    notifications,
-    session.user.id
-  );
+    const pendingActorIds = await enrichWithPendingFriendRequests(
+      notifications,
+      session.user.id
+    );
 
-  return notifications.map((n) => ({
-    ...n,
-    hasPendingFriendRequest:
-      n.type === "FRIEND_REQUEST"
-        ? pendingActorIds.has(n.actorId)
-        : undefined,
-  }));
+    return JSON.parse(JSON.stringify(notifications.map((n) => ({
+      ...n,
+      hasPendingFriendRequest:
+        n.type === "FRIEND_REQUEST"
+          ? pendingActorIds.has(n.actorId)
+          : undefined,
+    }))));
+  }, 30);
 }
 
 export async function markNotificationRead(notificationId: string) {
@@ -87,6 +90,12 @@ export async function markNotificationRead(notificationId: string) {
     where: { id: notificationId, targetUserId: session.user.id },
     data: { readAt: new Date() },
   });
+
+  await invalidateMany([
+    cacheKeys.userNotifications(session.user.id),
+    cacheKeys.userRecentNotifications(session.user.id),
+    cacheKeys.unreadNotificationCount(session.user.id),
+  ]);
 
   return { success: true, message: "Marked as read" };
 }
@@ -100,6 +109,12 @@ export async function markAllNotificationsRead() {
     where: { targetUserId: session.user.id, readAt: null },
     data: { readAt: new Date() },
   });
+
+  await invalidateMany([
+    cacheKeys.userNotifications(session.user.id),
+    cacheKeys.userRecentNotifications(session.user.id),
+    cacheKeys.unreadNotificationCount(session.user.id),
+  ]);
 
   return { success: true, message: "All marked as read" };
 }
@@ -117,6 +132,12 @@ export async function deleteNotifications(ids: string[]) {
     where: { id: { in: ids }, targetUserId: session.user.id },
   });
 
+  await invalidateMany([
+    cacheKeys.userNotifications(session.user.id),
+    cacheKeys.userRecentNotifications(session.user.id),
+    cacheKeys.unreadNotificationCount(session.user.id),
+  ]);
+
   return { success: true, message: "Notifications deleted", deletedCount: deleteResult.count };
 }
 
@@ -124,63 +145,67 @@ export async function getRecentNotifications() {
   const session = await auth();
   if (!session?.user?.id) return [];
 
-  const notifications = await prisma.notification.findMany({
-    where: { targetUserId: session.user.id },
-    orderBy: { createdAt: "desc" },
-    take: 8,
-    include: {
-      actor: {
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          name: true,
-          image: true,
-          avatar: true,
-          profileFrameId: true,
-          usernameFont: true,
+  return cached(cacheKeys.userRecentNotifications(session.user.id), async () => {
+    const notifications = await prisma.notification.findMany({
+      where: { targetUserId: session.user.id },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      include: {
+        actor: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            name: true,
+            image: true,
+            avatar: true,
+            profileFrameId: true,
+            usernameFont: true,
+          },
         },
-      },
-      post: {
-        select: {
-          id: true,
-          content: true,
-          wallPost: {
-            select: {
-              id: true,
-              status: true,
+        post: {
+          select: {
+            id: true,
+            content: true,
+            wallPost: {
+              select: {
+                id: true,
+                status: true,
+              },
             },
           },
         },
+        message: { select: { id: true, conversationId: true } },
+        tag: { select: { id: true, name: true } },
       },
-      message: { select: { id: true, conversationId: true } },
-      tag: { select: { id: true, name: true } },
-    },
-  });
+    });
 
-  const pendingActorIds = await enrichWithPendingFriendRequests(
-    notifications,
-    session.user.id
-  );
+    const pendingActorIds = await enrichWithPendingFriendRequests(
+      notifications,
+      session.user.id
+    );
 
-  const enriched = notifications.map((n) => ({
-    ...n,
-    hasPendingFriendRequest:
-      n.type === "FRIEND_REQUEST"
-        ? pendingActorIds.has(n.actorId)
-        : undefined,
-  }));
+    const enriched = notifications.map((n) => ({
+      ...n,
+      hasPendingFriendRequest:
+        n.type === "FRIEND_REQUEST"
+          ? pendingActorIds.has(n.actorId)
+          : undefined,
+    }));
 
-  return JSON.parse(JSON.stringify(enriched));
+    return JSON.parse(JSON.stringify(enriched));
+  }, 30);
 }
 
 export async function getUnreadNotificationCount() {
   const session = await auth();
   if (!session?.user?.id) return 0;
 
-  return prisma.notification.count({
-    where: { targetUserId: session.user.id, readAt: null },
-  });
+  return cached(cacheKeys.unreadNotificationCount(session.user.id), async () => {
+    return prisma.notification.count({
+      where: { targetUserId: session.user.id, readAt: null },
+    });
+  }, 30);
 }
 
 /**

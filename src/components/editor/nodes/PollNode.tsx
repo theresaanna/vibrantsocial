@@ -84,8 +84,8 @@ function PollComponent({
   const showResults = !!votedId || isExpired || isPostAuthor;
 
   return (
-    <div className="my-2 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-      <p className="mb-3 font-medium text-zinc-900 dark:text-zinc-100">{question}</p>
+    <div className="poll-border my-2 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+      <p className="poll-question mb-3 font-medium text-zinc-900 dark:text-zinc-100">{question}</p>
       <div className="space-y-2">
         {options.map((option) => {
           const pct = totalVotes > 0 ? Math.round((option.votes / (totalVotes + (showResults ? 0 : 1))) * 100) : 0;
@@ -97,33 +97,35 @@ function PollComponent({
               disabled={showResults}
               className={`relative w-full overflow-hidden rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
                 showResults
-                  ? "cursor-default border-zinc-200 dark:border-zinc-700"
-                  : "border-zinc-300 hover:border-blue-400 hover:bg-blue-50 dark:border-zinc-600 dark:hover:border-blue-500 dark:hover:bg-blue-900/20"
+                  ? `poll-option-result cursor-default border-zinc-200 dark:border-zinc-700`
+                  : `poll-option border-zinc-300 hover:border-blue-400 hover:bg-blue-50 dark:border-zinc-600 dark:hover:border-blue-500 dark:hover:bg-blue-900/20`
               }`}
             >
               {showResults && (
                 <div
                   className={`absolute inset-y-0 left-0 ${
-                    votedId === option.id ? "bg-blue-100 dark:bg-blue-900/30" : "bg-zinc-100 dark:bg-zinc-800"
+                    votedId === option.id
+                      ? "poll-bar-voted bg-blue-100 dark:bg-blue-900/30"
+                      : "poll-bar-default bg-zinc-100 dark:bg-zinc-800"
                   }`}
                   style={{ width: `${pct}%` }}
                 />
               )}
               <span className="relative flex justify-between">
-                <span>{option.text}</span>
-                {showResults && <span className="text-zinc-500">{pct}%</span>}
+                <span className="poll-option-text">{option.text}</span>
+                {showResults && <span className="poll-pct text-zinc-500">{pct}%</span>}
               </span>
             </button>
           );
         })}
       </div>
       {showResults && (
-        <p className="mt-2 text-xs text-zinc-500">
+        <p className="poll-meta mt-2 text-xs text-zinc-500">
           {totalVotes} vote{totalVotes !== 1 ? "s" : ""}
         </p>
       )}
       {expiresAt && (
-        <p className={`mt-1 text-xs ${isExpired ? "text-red-500" : "text-zinc-500"}`}>
+        <p className={`poll-meta mt-1 text-xs ${isExpired ? "text-red-500" : "text-zinc-500"}`}>
           {getTimeRemaining()}
         </p>
       )}

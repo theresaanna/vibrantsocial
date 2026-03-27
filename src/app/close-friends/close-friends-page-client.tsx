@@ -16,6 +16,7 @@ interface FriendUser {
   avatar: string | null;
   image: string | null;
   profileFrameId: string | null;
+  usernameFont: string | null;
 }
 
 interface CloseFriendEntry {
@@ -157,6 +158,7 @@ function CloseFriendsFeed({
               wallOwner: {
                 username: item.data.wallPost.wallOwner.username,
                 displayName: item.data.wallPost.wallOwner.displayName,
+                usernameFont: item.data.wallPost.wallOwner.usernameFont,
               },
               wallPostId: item.data.wallPost.id,
               wallPostStatus: item.data.wallPost.status,

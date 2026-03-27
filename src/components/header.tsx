@@ -45,10 +45,8 @@ export async function Header() {
         {session?.user ? (
           <div className="order-2 ml-auto flex items-center gap-1">
             <DynamicFavicon
-              initialHasUnread={
-                unreadNotifications > 0 ||
-                conversations.some((c: { unreadCount: number }) => c.unreadCount > 0)
-              }
+              initialNotifCount={unreadNotifications}
+              initialChatCount={conversations.reduce((sum: number, c: { unreadCount: number }) => sum + c.unreadCount, 0)}
             />
             <AccountSwitcherWrapper initialLinkedAccounts={linkedAccounts} initialNotificationCounts={linkedAccountNotifCounts} />
             <NotificationBell initialUnreadCount={unreadNotifications} initialNotifications={recentNotifications} />
