@@ -17,7 +17,7 @@ import { $createFileNode } from "../nodes/FileNode";
 import { $createYouTubeNode } from "../nodes/YouTubeNode";
 import { $createEquationNode } from "../nodes/EquationNode";
 
-import { $createStickyNoteNode } from "../nodes/StickyNoteNode";
+
 import { $createPollNode, type PollOption } from "../nodes/PollNode";
 import { extractYouTubeVideoID } from "../utils/url";
 import { upload } from "@vercel/blob/client";
@@ -44,13 +44,6 @@ export function InsertDropdown() {
     editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined);
   }
 
-  function insertStickyNote() {
-    editor.update(() => {
-      const node = $createStickyNoteNode();
-      $insertNodes([node, $createParagraphNode()]);
-    });
-  }
-
   return (
     <>
       <DropdownMenu
@@ -74,7 +67,6 @@ export function InsertDropdown() {
         <DropdownItem label="Poll" onClick={() => setModal("poll")} />
         <div className="my-1 border-t border-zinc-200 dark:border-zinc-700" />
         <DropdownItem label="Equation" onClick={() => setModal("equation")} />
-        <DropdownItem label="Sticky Note" onClick={insertStickyNote} />
       </DropdownMenu>
 
       {modal === "image" && (

@@ -4,7 +4,7 @@ import { UndoRedoButtons } from "./UndoRedoButtons";
 import { BlockFormatDropdown } from "./BlockFormatDropdown";
 
 import { FontSizeControls } from "./FontSizeControls";
-import { TextFormatButtons, CodeFormatButtons } from "./TextFormatButtons";
+import { TextFormatButtons } from "./TextFormatButtons";
 import { LinkButton } from "./LinkButton";
 import { ColorPicker } from "./ColorPicker";
 import { AlignmentDropdown } from "./AlignmentDropdown";
@@ -15,7 +15,6 @@ import {
   TableButton,
   PollButton,
   EquationButton,
-  StickyNoteButton,
 } from "./InsertButtons";
 import { SpeechToTextButton } from "./SpeechToTextButton";
 
@@ -48,8 +47,6 @@ export function Toolbar() {
         <TableButton />
         <PollButton />
         <EquationButton />
-        <CodeFormatButtons />
-        <StickyNoteButton />
       </span>
       <SpeechToTextButton />
       <span className="hidden sm:contents">

@@ -505,7 +505,7 @@ describe("MentionNode", () => {
 describe("editorNodes registry", () => {
   it("exports all node types", async () => {
     const { editorNodes } = await import("@/components/editor/nodes");
-    expect(editorNodes.length).toBeGreaterThanOrEqual(14);
+    expect(editorNodes.length).toBeGreaterThanOrEqual(11);
 
     const types = editorNodes.map((n) => n.getType());
     expect(types).toContain("image");
@@ -513,12 +513,10 @@ describe("editorNodes registry", () => {
     expect(types).toContain("equation");
     expect(types).toContain("page-break");
     expect(types).toContain("date");
-    expect(types).toContain("sticky-note");
     expect(types).toContain("poll");
 
     expect(types).toContain("heading");
     expect(types).toContain("quote");
-    expect(types).toContain("code");
     expect(types).toContain("link");
     expect(types).toContain("table");
     expect(types).toContain("horizontalrule");
