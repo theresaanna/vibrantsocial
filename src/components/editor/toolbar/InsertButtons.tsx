@@ -2,7 +2,6 @@
 
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $insertNodes, $createParagraphNode } from "lexical";
-import { INSERT_HORIZONTAL_RULE_COMMAND } from "@lexical/react/LexicalHorizontalRuleNode";
 import {
   INSERT_TABLE_COMMAND,
   type InsertTableCommandPayload,
@@ -66,21 +65,6 @@ export function FileUploadButton() {
         />
       )}
     </>
-  );
-}
-
-/* ── Horizontal Rule ─────────────────────────────── */
-export function HorizontalRuleButton() {
-  const [editor] = useLexicalComposerContext();
-  return (
-    <ToolbarButton
-      onClick={() => editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined)}
-      label="Horizontal rule"
-    >
-      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12h16" />
-      </svg>
-    </ToolbarButton>
   );
 }
 

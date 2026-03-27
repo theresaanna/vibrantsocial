@@ -10,7 +10,7 @@ import { ColorPicker } from "./ColorPicker";
 import { AlignmentDropdown } from "./AlignmentDropdown";
 import {
   FileUploadButton,
-  HorizontalRuleButton,
+
   YouTubeButton,
   TableButton,
   PollButton,
@@ -42,7 +42,6 @@ export function Toolbar() {
       <FileUploadButton />
       <YouTubeButton />
       <span className="hidden sm:contents">
-        <HorizontalRuleButton />
         <TableButton />
         <PollButton />
       </span>

@@ -3,7 +3,7 @@ import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 
 import { ListNode, ListItemNode } from "@lexical/list";
 import { LinkNode, AutoLinkNode } from "@lexical/link";
-import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode";
+
 import { TableNode, TableCellNode, TableRowNode } from "@lexical/table";
 import { ImageNode } from "./nodes/ImageNode";
 import { YouTubeNode } from "./nodes/YouTubeNode";
@@ -26,7 +26,7 @@ export const editorNodes: Array<Klass<LexicalNode>> = [
   ListItemNode,
   LinkNode,
   AutoLinkNode,
-  HorizontalRuleNode,
+
   TableNode,
   TableCellNode,
   TableRowNode,
