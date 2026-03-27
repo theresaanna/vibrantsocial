@@ -1,36 +1,30 @@
 "use server";
 
 import { auth } from "@/auth";
-import { apiLimiter, isRateLimited } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { requirePhoneVerification } from "@/lib/phone-gate";
 import { requireMinimumAge } from "@/lib/age-gate";
 import { requireNotSuspended } from "@/lib/suspension-gate";
 import { revalidatePath } from "next/cache";
-import { createNotification } from "@/lib/notifications";
 import {
   extractMentionsFromLexicalJson,
   createMentionNotifications,
 } from "@/lib/mentions";
-
-interface WallPostState {
-  success: boolean;
-  message: string;
-  postId?: string;
-}
+import {
+  requireAuthWithRateLimit,
+  isActionError,
+  areFriends,
+  createNotificationSafe,
+} from "@/lib/action-utils";
+import type { ActionState } from "@/lib/action-utils";
 
 export async function createWallPost(
-  _prevState: WallPostState,
+  _prevState: ActionState & { postId?: string },
   formData: FormData
-): Promise<WallPostState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `feed:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+): Promise<ActionState & { postId?: string }> {
+  const result = await requireAuthWithRateLimit("feed");
+  if (isActionError(result)) return result;
+  const session = result;
 
   const isNotSuspended = await requireNotSuspended(session.user.id);
   if (!isNotSuspended) {
@@ -72,17 +66,9 @@ export async function createWallPost(
   }
 
   // Check friendship
-  const friendship = await prisma.friendRequest.findFirst({
-    where: {
-      status: "ACCEPTED",
-      OR: [
-        { senderId: session.user.id, receiverId: wallOwnerId },
-        { senderId: wallOwnerId, receiverId: session.user.id },
-      ],
-    },
-  });
+  const isFriend = await areFriends(session.user.id, wallOwnerId);
 
-  if (!friendship) {
+  if (!isFriend) {
     return { success: false, message: "Only friends can post on each other's walls" };
   }
 
@@ -112,7 +98,7 @@ export async function createWallPost(
   });
 
   // Send notification to wall owner
-  await createNotification({
+  await createNotificationSafe({
     type: "WALL_POST",
     actorId: session.user.id,
     targetUserId: wallOwnerId,
@@ -131,9 +117,9 @@ export async function createWallPost(
 }
 
 export async function updateWallPostStatus(
-  _prevState: WallPostState,
+  _prevState: ActionState,
   formData: FormData
-): Promise<WallPostState> {
+): Promise<ActionState> {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
@@ -176,9 +162,9 @@ export async function updateWallPostStatus(
 }
 
 export async function deleteWallPost(
-  _prevState: WallPostState,
+  _prevState: ActionState,
   formData: FormData
-): Promise<WallPostState> {
+): Promise<ActionState> {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };

@@ -1,14 +1,11 @@
 "use server";
 
 import { auth } from "@/auth";
-import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { cached, invalidate, cacheKeys } from "@/lib/cache";
-
-interface BlockState {
-  success: boolean;
-  message: string;
-}
+import { requireAuthWithRateLimit, isActionError } from "@/lib/action-utils";
+import type { ActionState } from "@/lib/action-utils";
 
 /**
  * Get IDs of users the given user has blocked (cached).
@@ -84,17 +81,12 @@ export async function getBlockStatus(
  * friend requests, post subscriptions, and close friend entries.
  */
 export async function toggleBlock(
-  _prevState: BlockState,
+  _prevState: ActionState,
   formData: FormData
-): Promise<BlockState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `block:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+): Promise<ActionState> {
+  const result = await requireAuthWithRateLimit("block");
+  if (isActionError(result)) return result;
+  const session = result;
 
   const targetUserId = formData.get("userId") as string;
 

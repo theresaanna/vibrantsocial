@@ -1,7 +1,8 @@
 "use server";
 
 import { auth } from "@/auth";
-import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
+import { requireAuthWithRateLimit, isActionError } from "@/lib/action-utils";
 
 async function enrichWithPendingFriendRequests(
   notifications: Array<{ type: string; actorId: string }>,
@@ -78,14 +79,9 @@ export async function getNotifications() {
 }
 
 export async function markNotificationRead(notificationId: string) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `notif:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const result = await requireAuthWithRateLimit("notif");
+  if (isActionError(result)) return result;
+  const session = result;
 
   await prisma.notification.updateMany({
     where: { id: notificationId, targetUserId: session.user.id },
@@ -96,14 +92,9 @@ export async function markNotificationRead(notificationId: string) {
 }
 
 export async function markAllNotificationsRead() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `notif:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const result = await requireAuthWithRateLimit("notif");
+  if (isActionError(result)) return result;
+  const session = result;
 
   await prisma.notification.updateMany({
     where: { targetUserId: session.user.id, readAt: null },
@@ -114,24 +105,19 @@ export async function markAllNotificationsRead() {
 }
 
 export async function deleteNotifications(ids: string[]) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated", deletedCount: 0 };
-  }
-
-  if (await isRateLimited(apiLimiter, `notif:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later.", deletedCount: 0 };
-  }
+  const result = await requireAuthWithRateLimit("notif");
+  if (isActionError(result)) return { ...result, deletedCount: 0 };
+  const session = result;
 
   if (ids.length === 0) {
     return { success: true, message: "Nothing to delete", deletedCount: 0 };
   }
 
-  const result = await prisma.notification.deleteMany({
+  const deleteResult = await prisma.notification.deleteMany({
     where: { id: { in: ids }, targetUserId: session.user.id },
   });
 
-  return { success: true, message: "Notifications deleted", deletedCount: result.count };
+  return { success: true, message: "Notifications deleted", deletedCount: deleteResult.count };
 }
 
 export async function getRecentNotifications() {
