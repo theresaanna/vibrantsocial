@@ -362,11 +362,11 @@ export function ThemeEditor({
         aria-controls={contentId}
         className="flex w-full items-center justify-between p-4 text-left"
       >
-        <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
           Profile Theme {"&"} Background
         </h2>
         <svg
-          className={`h-4 w-4 text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`h-5 w-5 text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           strokeWidth={2}
