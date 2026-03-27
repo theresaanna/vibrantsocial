@@ -197,7 +197,7 @@ export async function acceptFriendRequest(
 
   try {
     await createNotification({
-      type: "FRIEND_REQUEST",
+      type: "FRIEND_REQUEST_ACCEPTED",
       actorId: session.user.id,
       targetUserId: request.senderId,
     });
@@ -338,7 +338,7 @@ export async function respondToFriendRequestByActor(
 
     try {
       await createNotification({
-        type: "FRIEND_REQUEST",
+        type: "FRIEND_REQUEST_ACCEPTED",
         actorId: session.user.id,
         targetUserId: request.senderId,
       });

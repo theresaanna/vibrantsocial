@@ -106,6 +106,7 @@ export async function createNotification(params: CreateNotificationParams) {
       REACTION: "reacted to your message",
       MENTION: "mentioned you",
       FRIEND_REQUEST: "sent you a friend request",
+      FRIEND_REQUEST_ACCEPTED: "accepted your friend request",
       NEW_POST: "published a new post",
       TAG_POST: "posted in a tag you follow",
       REFERRAL_SIGNUP: "joined using your referral link! You earned 50 stars",

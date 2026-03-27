@@ -205,7 +205,7 @@ export function NotificationList({
             href = `/post/${notification.postId}?commentId=${notification.commentId}`;
           } else if (notification.type === "REACTION" && notification.message) {
             href = `/chat/${notification.message.conversationId}`;
-          } else if (notification.type === "FRIEND_REQUEST") {
+          } else if (notification.type === "FRIEND_REQUEST" || notification.type === "FRIEND_REQUEST_ACCEPTED") {
             href = `/${notification.actor.username}`;
           } else if (notification.type === "MENTION" && notification.repostId) {
             href = `/quote/${notification.repostId}`;
