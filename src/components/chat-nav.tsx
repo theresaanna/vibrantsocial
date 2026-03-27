@@ -74,10 +74,13 @@ export function ChatNav({ initialConversations }: ChatNavProps) {
 
   // Refresh conversations on window focus and periodically
   useEffect(() => {
-    const refresh = () => getConversations().then(setConversations);
+    const refresh = () => {
+      if (document.hidden) return;
+      getConversations().then(setConversations);
+    };
     const handleFocus = () => refresh();
     window.addEventListener("focus", handleFocus);
-    const interval = setInterval(refresh, 30000);
+    const interval = setInterval(refresh, 60_000);
     return () => {
       window.removeEventListener("focus", handleFocus);
       clearInterval(interval);

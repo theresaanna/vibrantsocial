@@ -66,7 +66,11 @@ export function SparkleEditor({
 
   const getSparklesJson = (): string => {
     if (customSparkles.trim()) {
-      const chars = [...customSparkles.trim()].filter((c) => c.trim());
+      // Use Intl.Segmenter to correctly split ZWJ emoji sequences (e.g. 🐈‍⬛)
+      const segmenter = new Intl.Segmenter("en", { granularity: "grapheme" });
+      const chars = [...segmenter.segment(customSparkles.trim())]
+        .map((s) => s.segment)
+        .filter((c) => c.trim());
       return JSON.stringify(chars);
     }
     if (activePreset && SPARKLEFALL_PRESETS[activePreset]) {
@@ -94,13 +98,13 @@ export function SparkleEditor({
         className="flex w-full items-center justify-between p-4 text-left"
       >
         <span className="relative flex items-center gap-1">
-          <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
             Raining Emoji
           </h2>
           <PremiumCrown inline href="/premium" />
         </span>
         <svg
-          className={`h-4 w-4 text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`h-5 w-5 text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           strokeWidth={2}

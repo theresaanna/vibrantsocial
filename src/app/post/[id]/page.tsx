@@ -136,9 +136,13 @@ export default async function PostPage({ params, searchParams }: Props) {
             select: {
               username: true,
               displayName: true,
+              usernameFont: true,
             },
           },
         },
+      },
+      marketplacePost: {
+        select: { id: true },
       },
       // Comments are lazy-loaded by CommentSection via fetchComments
       // which builds the full nested tree (not just 2 levels)
@@ -146,6 +150,16 @@ export default async function PostPage({ params, searchParams }: Props) {
   });
 
   if (!post) notFound();
+
+  // Redirect marketplace posts to their dedicated URL
+  if (post.marketplacePost) {
+    if (post.slug && post.author?.username) {
+      const queryString = commentId ? `?commentId=${commentId}` : "";
+      permanentRedirect(`/${post.author.username}/marketplace/${post.slug}${queryString}`);
+    }
+    const queryString = commentId ? `?commentId=${commentId}` : "";
+    permanentRedirect(`/marketplace/${post.id}${queryString}`);
+  }
 
   // Redirect to slug-based URL if available
   if (post.slug && post.author?.username) {
@@ -197,6 +211,7 @@ export default async function PostPage({ params, searchParams }: Props) {
         showNsfwContent={showNsfwContent}
         highlightCommentId={commentId ?? null}
         wallPost={post.wallPost}
+        marketplacePostId={undefined}
       />
     </main>
   );

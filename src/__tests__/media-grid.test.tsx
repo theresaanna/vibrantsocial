@@ -57,6 +57,7 @@ function makePost(overrides: Record<string, unknown> = {}) {
       image: null,
       avatar: "https://example.com/avatar.jpg",
       profileFrameId: null,
+      usernameFont: null,
     },
     ...overrides,
   };
