@@ -332,12 +332,37 @@ describe("VideoNode", () => {
     expect(json.src).toBe("https://example.com/video.mp4");
     expect(json.fileName).toBe("video.mp4");
     expect(json.mimeType).toBe("video/mp4");
+    expect(json.width).toBe("inherit");
+    expect(json.height).toBe("inherit");
 
     const restoredJson = withEditor(editor, () => {
       const restored = VideoNode.importJSON(json);
       return restored.exportJSON();
     });
     expect(restoredJson).toEqual(json);
+  });
+
+  it("serializes width and height when set", () => {
+    const json = withEditor(editor, () => {
+      const node = new VideoNode(
+        "https://example.com/video.mp4",
+        "video.mp4",
+        "video/mp4",
+        400,
+        225
+      );
+      return node.exportJSON();
+    });
+
+    expect(json.width).toBe(400);
+    expect(json.height).toBe(225);
+
+    const restoredJson = withEditor(editor, () => {
+      const restored = VideoNode.importJSON(json);
+      return restored.exportJSON();
+    });
+    expect(restoredJson.width).toBe(400);
+    expect(restoredJson.height).toBe(225);
   });
 
   it("exports to DOM with video element", () => {
@@ -354,6 +379,21 @@ describe("VideoNode", () => {
         "https://example.com/video.mp4"
       );
       expect((element as HTMLElement).getAttribute("controls")).toBe("true");
+    });
+  });
+
+  it("exports to DOM with width and height styles when set", () => {
+    withEditor(editor, () => {
+      const node = new VideoNode(
+        "https://example.com/video.mp4",
+        "video.mp4",
+        "video/mp4",
+        400,
+        225
+      );
+      const { element } = node.exportDOM();
+      expect((element as HTMLElement).style.width).toBe("400px");
+      expect((element as HTMLElement).style.height).toBe("225px");
     });
   });
 });

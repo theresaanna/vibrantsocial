@@ -19,6 +19,8 @@ export type SerializedVideoNode = Spread<
     src: string;
     fileName: string;
     mimeType: string;
+    width: number | "inherit";
+    height: number | "inherit";
   },
   SerializedLexicalNode
 >;
@@ -27,6 +29,8 @@ export class VideoNode extends DecoratorNode<ReactNode> {
   __src: string;
   __fileName: string;
   __mimeType: string;
+  __width: number | "inherit";
+  __height: number | "inherit";
 
   static getType(): string {
     return "video";
@@ -37,15 +41,26 @@ export class VideoNode extends DecoratorNode<ReactNode> {
       node.__src,
       node.__fileName,
       node.__mimeType,
+      node.__width,
+      node.__height,
       node.__key
     );
   }
 
-  constructor(src: string, fileName: string, mimeType: string, key?: NodeKey) {
+  constructor(
+    src: string,
+    fileName: string,
+    mimeType: string,
+    width?: number | "inherit",
+    height?: number | "inherit",
+    key?: NodeKey
+  ) {
     super(key);
     this.__src = src;
     this.__fileName = fileName;
     this.__mimeType = mimeType;
+    this.__width = width ?? "inherit";
+    this.__height = height ?? "inherit";
   }
 
   static importJSON(json: SerializedVideoNode): VideoNode {
@@ -53,6 +68,8 @@ export class VideoNode extends DecoratorNode<ReactNode> {
       src: json.src,
       fileName: json.fileName,
       mimeType: json.mimeType,
+      width: json.width,
+      height: json.height,
     });
   }
 
@@ -63,6 +80,8 @@ export class VideoNode extends DecoratorNode<ReactNode> {
       src: this.__src,
       fileName: this.__fileName,
       mimeType: this.__mimeType,
+      width: this.__width,
+      height: this.__height,
     };
   }
 
@@ -71,6 +90,12 @@ export class VideoNode extends DecoratorNode<ReactNode> {
     video.setAttribute("src", this.__src);
     video.setAttribute("controls", "true");
     video.style.maxWidth = "100%";
+    if (typeof this.__width === "number") {
+      video.style.width = `${this.__width}px`;
+    }
+    if (typeof this.__height === "number") {
+      video.style.height = `${this.__height}px`;
+    }
     return { element: video };
   }
 
@@ -87,6 +112,12 @@ export class VideoNode extends DecoratorNode<ReactNode> {
     return false;
   }
 
+  setWidthAndHeight(width: number | "inherit", height: number | "inherit"): void {
+    const writable = this.getWritable();
+    writable.__width = width;
+    writable.__height = height;
+  }
+
   decorate(): ReactNode {
     return (
       <Suspense fallback={null}>
@@ -94,6 +125,8 @@ export class VideoNode extends DecoratorNode<ReactNode> {
           src={this.__src}
           fileName={this.__fileName}
           mimeType={this.__mimeType}
+          width={this.__width}
+          height={this.__height}
           nodeKey={this.__key}
         />
       </Suspense>
@@ -105,10 +138,12 @@ export function $createVideoNode(payload: {
   src: string;
   fileName: string;
   mimeType: string;
+  width?: number | "inherit";
+  height?: number | "inherit";
   key?: NodeKey;
 }): VideoNode {
   return $applyNodeReplacement(
-    new VideoNode(payload.src, payload.fileName, payload.mimeType, payload.key)
+    new VideoNode(payload.src, payload.fileName, payload.mimeType, payload.width, payload.height, payload.key)
   );
 }
 
