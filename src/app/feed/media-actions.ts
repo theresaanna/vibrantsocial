@@ -21,6 +21,7 @@ interface MediaPost {
     image: string | null;
     avatar: string | null;
     profileFrameId: string | null;
+    usernameFont: string | null;
   } | null;
 }
 
@@ -88,10 +89,19 @@ export async function fetchMediaFeedPage(
       ...(dateFilter ? { createdAt: dateFilter } : {}),
       ...(!showNsfwContent ? { isNsfw: false } : {}),
       ...(!ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
+      // Exclude marketplace posts unless promoted to feed
       OR: [
-        { isCloseFriendsOnly: false, hasCustomAudience: false },
-        { isCloseFriendsOnly: true, authorId: { in: closeFriendAuthors } },
-        { hasCustomAudience: true, audience: { some: { userId } } },
+        { marketplacePost: null },
+        { marketplacePost: { promotedToFeed: true } },
+      ],
+      AND: [
+        {
+          OR: [
+            { isCloseFriendsOnly: false, hasCustomAudience: false },
+            { isCloseFriendsOnly: true, authorId: { in: closeFriendAuthors } },
+            { hasCustomAudience: true, audience: { some: { userId } } },
+          ],
+        },
       ],
     },
     orderBy: { createdAt: "desc" },
@@ -110,6 +120,7 @@ export async function fetchMediaFeedPage(
           image: true,
           avatar: true,
           profileFrameId: true,
+          usernameFont: true,
         },
       },
     },

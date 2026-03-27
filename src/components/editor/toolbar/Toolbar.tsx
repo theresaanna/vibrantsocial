@@ -14,7 +14,6 @@ import {
   YouTubeButton,
   TableButton,
   PollButton,
-  EquationButton,
 } from "./InsertButtons";
 import { SpeechToTextButton } from "./SpeechToTextButton";
 
@@ -46,7 +45,6 @@ export function Toolbar() {
         <HorizontalRuleButton />
         <TableButton />
         <PollButton />
-        <EquationButton />
       </span>
       <SpeechToTextButton />
       <span className="hidden sm:contents">

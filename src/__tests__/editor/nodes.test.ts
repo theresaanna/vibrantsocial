@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { createEditor, type LexicalEditor } from "lexical";
 import { ImageNode } from "@/components/editor/nodes/ImageNode";
 import { YouTubeNode } from "@/components/editor/nodes/YouTubeNode";
-import { EquationNode } from "@/components/editor/nodes/EquationNode";
 import { PageBreakNode } from "@/components/editor/nodes/PageBreakNode";
 import { DateNode } from "@/components/editor/nodes/DateNode";
 import { StickyNoteNode } from "@/components/editor/nodes/StickyNoteNode";
@@ -15,7 +14,6 @@ import { MentionNode } from "@/components/editor/nodes/MentionNode";
 const allNodes = [
   ImageNode,
   YouTubeNode,
-  EquationNode,
   PageBreakNode,
   DateNode,
   StickyNoteNode,
@@ -133,40 +131,6 @@ describe("YouTubeNode", () => {
       expect(iframe).toBeTruthy();
       expect(iframe?.getAttribute("src")).toContain("dQw4w9WgXcQ");
     });
-  });
-});
-
-describe("EquationNode", () => {
-  let editor: LexicalEditor;
-  beforeEach(() => {
-    editor = createTestEditor();
-  });
-
-  it("has correct type", () => {
-    expect(EquationNode.getType()).toBe("equation");
-  });
-
-  it("serializes inline and block equations", () => {
-    const inlineJson = withEditor(editor, () => {
-      return new EquationNode("E = mc^2", true).exportJSON();
-    });
-    const blockJson = withEditor(editor, () => {
-      return new EquationNode("\\sum_{i=0}^n x_i", false).exportJSON();
-    });
-
-    expect(inlineJson.inline).toBe(true);
-    expect(inlineJson.equation).toBe("E = mc^2");
-
-    expect(blockJson.inline).toBe(false);
-    expect(blockJson.equation).toBe("\\sum_{i=0}^n x_i");
-  });
-
-  it("can read equation text", () => {
-    const eq = withEditor(editor, () => {
-      const node = new EquationNode("x^2", true);
-      return node.getEquation();
-    });
-    expect(eq).toBe("x^2");
   });
 });
 
@@ -510,7 +474,6 @@ describe("editorNodes registry", () => {
     const types = editorNodes.map((n) => n.getType());
     expect(types).toContain("image");
     expect(types).toContain("youtube");
-    expect(types).toContain("equation");
     expect(types).toContain("page-break");
     expect(types).toContain("date");
     expect(types).toContain("poll");

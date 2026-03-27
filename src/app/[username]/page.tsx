@@ -18,11 +18,16 @@ import { ProfileTabs } from "@/components/profile-tabs";
 import { RepostCard } from "@/components/repost-card";
 import { ReportButton } from "@/components/report-button";
 import { BlockButton } from "@/components/block-button";
+import { MessageButton } from "@/components/message-button";
 import { getBlockStatus } from "@/app/feed/block-actions";
 import { generateAdaptiveTheme } from "@/lib/profile-themes";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
 import { buildProfilePostsContentFilter } from "./profile-queries";
+import { MarketplaceGrid } from "@/components/marketplace-grid";
+import { fetchUserMarketplacePosts } from "@/app/marketplace/media-actions";
+import { fetchUserMediaPosts } from "./media-actions";
+import { MediaGrid } from "@/components/media-grid";
 import { WallPostComposer } from "@/components/wall-post-composer";
 import { getUserListMemberships } from "@/app/lists/actions";
 import { AddToListButton } from "@/components/add-to-list-button";
@@ -110,10 +115,12 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
 export default async function PublicProfilePage({ params, searchParams }: ProfilePageProps) {
   const { username } = await params;
   const { tab } = await searchParams;
-  const activeTab = tab === "wall" ? "wall" as const
+  const activeTab = tab === "media" ? "media" as const
+    : tab === "wall" ? "wall" as const
     : tab === "sensitive" ? "sensitive" as const
     : tab === "nsfw" ? "nsfw" as const
     : tab === "graphic" ? "graphic" as const
+    : tab === "marketplace" ? "marketplace" as const
     : "posts" as const;
 
   const user = await cached(
@@ -128,11 +135,15 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   if (!user) notFound();
 
   // Check if profile owner has content of each sensitivity type (for tab visibility)
-  const [hasSensitivePosts, hasNsfwPosts, hasGraphicPosts] = await Promise.all([
+  const [hasSensitivePosts, hasNsfwPosts, hasGraphicPosts, hasMarketplacePosts] = await Promise.all([
     prisma.post.count({ where: { authorId: user.id, isSensitive: true }, take: 1 }).then(c => c > 0),
     prisma.post.count({ where: { authorId: user.id, isNsfw: true }, take: 1 }).then(c => c > 0),
     prisma.post.count({ where: { authorId: user.id, isGraphicNudity: true }, take: 1 }).then(c => c > 0),
+    prisma.post.count({ where: { authorId: user.id, marketplacePost: { isNot: null } }, take: 1 }).then(c => c > 0),
   ]);
+
+  // Always show media tab — user has posts with images/videos
+  const hasMediaPosts = user._count.posts > 0;
 
   const session = await auth();
   const currentUserId = session?.user?.id;
@@ -204,6 +215,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
         image: true,
         avatar: true,
         profileFrameId: true,
+        usernameFont: true,
       },
     },
     _count: {
@@ -241,6 +253,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           select: {
             username: true,
             displayName: true,
+            usernameFont: true,
           },
         },
       },
@@ -259,6 +272,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             image: true,
             avatar: true,
             profileFrameId: true,
+            usernameFont: true,
           },
         },
         replies: {
@@ -273,6 +287,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                 image: true,
                 avatar: true,
                 profileFrameId: true,
+                usernameFont: true,
               },
             },
           },
@@ -291,6 +306,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
         image: true,
         avatar: true,
         profileFrameId: true,
+        usernameFont: true,
       },
     },
     post: { include: postInclude },
@@ -349,6 +365,11 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           ...audienceFilter,
           // Flagged posts go to their own tabs (NSFW shown here when viewer opted in)
           ...buildProfilePostsContentFilter(currentUserId, showNsfwContent),
+          // Marketplace posts only show on their own tab unless promoted
+          OR: [
+            { marketplacePost: null },
+            { marketplacePost: { promotedToFeed: true } },
+          ],
         },
         orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
         take: 20,
@@ -427,6 +448,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             select: {
               username: true,
               displayName: true,
+              usernameFont: true,
             },
           },
         },
@@ -654,6 +676,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                       {/* Primary actions — prominent */}
                       <FollowButton userId={user.id} isFollowing={isFollowing} />
                       <FriendButton userId={user.id} friendshipStatus={friendshipStatus} requestId={friendRequestId} />
+                      {isFriend && <MessageButton userId={user.id} hasCustomTheme={hasCustomTheme} />}
                       {/* Secondary actions — smaller, subtler */}
                       <SubscribeButton userId={user.id} isSubscribed={isSubscribed} />
                       <AddToListButton targetUserId={user.id} lists={listMemberships} />
@@ -754,7 +777,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
 
         {blockStatus === "none" && (
           <>
-        <ProfileTabs username={user.username!} activeTab={activeTab} hasCustomTheme={hasCustomTheme} showWallTab={showWallInSeparateTab && canSeeWall} showSensitiveTab={hasSensitivePosts} showNsfwTab={hasNsfwPosts} showGraphicTab={hasGraphicPosts} />
+        <ProfileTabs username={user.username!} activeTab={activeTab} hasCustomTheme={hasCustomTheme} showMediaTab={hasMediaPosts} showWallTab={showWallInSeparateTab && canSeeWall} showSensitiveTab={hasSensitivePosts} showNsfwTab={hasNsfwPosts} showGraphicTab={hasGraphicPosts} showMarketplaceTab={hasMarketplacePosts} />
 
         {/* Tab content */}
         {activeTab === "posts" ? (
@@ -779,7 +802,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                 ) : item.type === "repost" ? (
                   <RepostCard key={`repost-${item.data.id}`} repost={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator />
                 ) : (
-                  <PostCard key={`wall-${item.data.id}`} post={item.data.post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} wallOwner={{ username: item.data.wallOwner.username!, displayName: item.data.wallOwner.displayName }} wallPostId={item.data.id} wallPostStatus={item.data.status} isWallOwner={isOwnProfile} />
+                  <PostCard key={`wall-${item.data.id}`} post={item.data.post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} wallOwner={{ username: item.data.wallOwner.username!, displayName: item.data.wallOwner.displayName, usernameFont: item.data.wallOwner.usernameFont }} wallPostId={item.data.id} wallPostStatus={item.data.status} isWallOwner={isOwnProfile} />
                 )
               )}
             </div>
@@ -801,7 +824,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
               )}
               {wallFeedItems.map((item) =>
                 item.type === "wall" ? (
-                  <PostCard key={`wall-${item.data.id}`} post={item.data.post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} wallOwner={{ username: item.data.wallOwner.username!, displayName: item.data.wallOwner.displayName }} wallPostId={item.data.id} wallPostStatus={item.data.status} isWallOwner={isOwnProfile} />
+                  <PostCard key={`wall-${item.data.id}`} post={item.data.post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} wallOwner={{ username: item.data.wallOwner.username!, displayName: item.data.wallOwner.displayName, usernameFont: item.data.wallOwner.usernameFont }} wallPostId={item.data.id} wallPostStatus={item.data.status} isWallOwner={isOwnProfile} />
                 ) : null
               )}
             </div>
@@ -822,7 +845,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           ) : (
             <div className="mt-6 space-y-4">
               {sensitivePosts.map((post) => (
-                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator {...(post.wallPost && post.wallPost.wallOwner.username && { wallOwner: { username: post.wallPost.wallOwner.username, displayName: post.wallPost.wallOwner.displayName }, wallPostId: post.wallPost.id, wallPostStatus: post.wallPost.status })} />
+                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator {...(post.wallPost && post.wallPost.wallOwner.username && { wallOwner: { username: post.wallPost.wallOwner.username, displayName: post.wallPost.wallOwner.displayName, usernameFont: post.wallPost.wallOwner.usernameFont }, wallPostId: post.wallPost.id, wallPostStatus: post.wallPost.status })} />
               ))}
             </div>
           )
@@ -842,11 +865,11 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           ) : (
             <div className="mt-6 space-y-4">
               {nsfwPosts.map((post) => (
-                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator {...(post.wallPost && post.wallPost.wallOwner.username && { wallOwner: { username: post.wallPost.wallOwner.username, displayName: post.wallPost.wallOwner.displayName }, wallPostId: post.wallPost.id, wallPostStatus: post.wallPost.status })} />
+                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator {...(post.wallPost && post.wallPost.wallOwner.username && { wallOwner: { username: post.wallPost.wallOwner.username, displayName: post.wallPost.wallOwner.displayName, usernameFont: post.wallPost.wallOwner.usernameFont }, wallPostId: post.wallPost.id, wallPostStatus: post.wallPost.status })} />
               ))}
             </div>
           )
-        ) : (
+        ) : activeTab === "graphic" ? (
           !currentUserId ? (
             <div className="mt-8 text-center">
               <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
@@ -862,14 +885,59 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           ) : (
             <div className="mt-6 space-y-4">
               {graphicPosts.map((post) => (
-                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator {...(post.wallPost && post.wallPost.wallOwner.username && { wallOwner: { username: post.wallPost.wallOwner.username, displayName: post.wallPost.wallOwner.displayName }, wallPostId: post.wallPost.id, wallPostStatus: post.wallPost.status })} />
+                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator {...(post.wallPost && post.wallPost.wallOwner.username && { wallOwner: { username: post.wallPost.wallOwner.username, displayName: post.wallPost.wallOwner.displayName, usernameFont: post.wallPost.wallOwner.usernameFont }, wallPostId: post.wallPost.id, wallPostStatus: post.wallPost.status })} />
               ))}
             </div>
           )
-        )}
+        ) : activeTab === "media" ? (
+          <ProfileMediaTab userId={user.id} />
+        ) : activeTab === "marketplace" ? (
+          <ProfileMarketplaceTab userId={user.id} />
+        ) : null}
           </>
         )}
       </main>
     </div>
+  );
+}
+
+async function ProfileMediaTab({ userId }: { userId: string }) {
+  const { posts, hasMore } = await fetchUserMediaPosts(userId);
+  const boundFetchPage = fetchUserMediaPosts.bind(null, userId);
+  if (posts.length === 0) {
+    return (
+      <div className="mt-8 text-center">
+        <p className="text-zinc-500">No media yet.</p>
+        <p className="mt-1 text-sm text-zinc-400">
+          Images and videos from posts will appear here.
+        </p>
+      </div>
+    );
+  }
+  return (
+    <MediaGrid
+      initialPosts={posts}
+      initialHasMore={hasMore}
+      fetchPage={boundFetchPage}
+    />
+  );
+}
+
+async function ProfileMarketplaceTab({ userId }: { userId: string }) {
+  const { posts, hasMore } = await fetchUserMarketplacePosts(userId);
+  const boundFetchPage = fetchUserMarketplacePosts.bind(null, userId);
+  if (posts.length === 0) {
+    return (
+      <div className="mt-8 text-center">
+        <p className="text-zinc-500">No marketplace listings.</p>
+      </div>
+    );
+  }
+  return (
+    <MarketplaceGrid
+      initialPosts={posts}
+      initialHasMore={hasMore}
+      fetchPage={boundFetchPage}
+    />
   );
 }

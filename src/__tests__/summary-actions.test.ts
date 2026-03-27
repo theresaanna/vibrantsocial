@@ -196,6 +196,6 @@ describe("generateFeedSummaryOnDemand", () => {
     mockAnthropicCreate.mockRejectedValue(new Error("API error"));
 
     const result = await generateFeedSummaryOnDemand("2026-03-23T00:00:00Z");
-    expect(result).toBeNull();
+    expect(result).toBe("Your friends have been posting! Scroll down to see what's new.");
   });
 });

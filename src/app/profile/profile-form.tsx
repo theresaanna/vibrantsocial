@@ -9,7 +9,6 @@ import { unlinkAccount, getLinkedAccounts } from "./account-linking-actions";
 import { BioEditor } from "@/components/bio-editor";
 import { BioRevisionHistory } from "@/components/bio-revision-history";
 import { ThemeEditor } from "@/components/theme-editor";
-import { BackgroundEditor } from "@/components/background-editor";
 import { SparkleEditor } from "@/components/sparkle-editor";
 import type { BackgroundDefinition } from "@/lib/profile-backgrounds";
 import type { CustomPresetData } from "@/lib/profile-themes";
@@ -77,6 +76,7 @@ interface ProfileFormProps {
   starsSpent: number;
   referralCode: string;
   backgrounds: BackgroundDefinition[];
+  premiumBackgrounds: BackgroundDefinition[];
   userEmail: string | null;
   customPresets: CustomPresetData[];
 }
@@ -88,7 +88,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, birthdayMonth: initialBirthdayMonth, birthdayDay: initialBirthdayDay, isPremium, stars, starsSpent, referralCode, backgrounds, userEmail, customPresets }: ProfileFormProps) {
+export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, birthdayMonth: initialBirthdayMonth, birthdayDay: initialBirthdayDay, isPremium, stars, starsSpent, referralCode, backgrounds, premiumBackgrounds, userEmail, customPresets }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [displayNameValue, setDisplayNameValue] = useState(user.displayName ?? "");
@@ -439,7 +439,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
 
       {/* Email address */}
       <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+        <p className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
           Email Address
         </p>
         {email && !pendingEmail && (
@@ -500,7 +500,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
 
       {/* Phone verification */}
       <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+        <p className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
           Phone Verification
         </p>
         {phoneVerified ? (
@@ -710,7 +710,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
         <div>
           <label
             htmlFor="username"
-            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            className="block text-sm font-semibold text-zinc-800 dark:text-zinc-200"
           >
             Username / URL path
           </label>
@@ -748,7 +748,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
         <div>
           <label
             htmlFor="displayName"
-            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            className="block text-sm font-semibold text-zinc-800 dark:text-zinc-200"
           >
             Display Name
           </label>
@@ -765,7 +765,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <label className="block text-sm font-semibold text-zinc-800 dark:text-zinc-200">
             Birthday
           </label>
           <div className="mt-1 flex gap-2">
@@ -852,10 +852,8 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
           isPremium={isPremium}
           userEmail={userEmail}
           customPresets={customPresets}
-        />
-
-        <BackgroundEditor
           backgrounds={backgrounds}
+          premiumBackgrounds={premiumBackgrounds}
           initialBackground={{
             profileBgImage: user.profileBgImage,
             profileBgRepeat: user.profileBgRepeat,
@@ -863,9 +861,6 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
             profileBgSize: user.profileBgSize,
             profileBgPosition: user.profileBgPosition,
           }}
-          isPremium={isPremium}
-          userEmail={userEmail}
-          onChange={scheduleAutosave}
         />
 
         <SparkleEditor
@@ -886,7 +881,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
         />
 
         <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-          <p className="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+          <p className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">
             Content Visibility
           </p>
           <div className="space-y-3">
@@ -974,7 +969,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
 
         {/* Email notifications */}
         <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-          <p className="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+          <p className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">
             Email Notifications
           </p>
           <div className="space-y-3">
@@ -1058,7 +1053,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
 
         {/* Push notifications */}
         <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-          <p className="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+          <p className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">
             Push Notifications
           </p>
           <input type="hidden" name="pushEnabled" value={pushEnabled ? "true" : "false"} />
@@ -1136,7 +1131,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
 
       {/* Linked Accounts */}
       <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" data-testid="linked-accounts-section">
-        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+        <p className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
           Linked Accounts
         </p>
         <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
@@ -1164,7 +1159,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
                     </div>
                   )}
                   <div>
-                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                    <p className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
                       {account.displayName || account.username}
                     </p>
                     {account.username && (
@@ -1231,7 +1226,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
 
       {/* Delete Account */}
       <div className="rounded-lg border border-red-200 p-4 dark:border-red-900/50">
-        <p className="text-sm font-medium text-red-600 dark:text-red-400">
+        <p className="text-base font-semibold text-red-600 dark:text-red-400">
           Delete Account
         </p>
         {!showDeleteConfirm ? (
@@ -1263,7 +1258,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
             <form action={deleteFormAction}>
               <label
                 htmlFor="deleteConfirmation"
-                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                className="block text-sm font-semibold text-zinc-800 dark:text-zinc-200"
               >
                 Type <span className="font-mono text-red-600 dark:text-red-400">delete {user.username}</span> to confirm
               </label>

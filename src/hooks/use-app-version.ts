@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 
-const POLL_INTERVAL = 60_000;
+const POLL_INTERVAL = 300_000; // 5 minutes
 const initialBuildId = process.env.NEXT_PUBLIC_BUILD_ID;
 
 export function useAppVersion() {

@@ -14,6 +14,7 @@ export interface BackgroundDefinition {
   thumbSrc: string;
   category: BgCategory;
   defaults?: BgDefaults;
+  premiumOnly?: boolean;
 }
 
 export const VALID_BG_REPEAT = ["repeat", "repeat-x", "repeat-y", "no-repeat"] as const;

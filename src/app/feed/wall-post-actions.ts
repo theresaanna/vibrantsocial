@@ -139,6 +139,10 @@ export async function updateWallPostStatus(
     return { success: false, message: "Not authenticated" };
   }
 
+  if (await isRateLimited(apiLimiter, `wall:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
   const wallPostId = formData.get("wallPostId") as string;
   const status = formData.get("status") as string;
 
@@ -182,6 +186,10 @@ export async function deleteWallPost(
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `wall:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
   }
 
   const wallPostId = formData.get("wallPostId") as string;

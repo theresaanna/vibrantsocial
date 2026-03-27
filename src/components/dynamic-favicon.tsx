@@ -6,8 +6,6 @@ import { usePathname } from "next/navigation";
 import type { InboundMessage } from "ably";
 import { useAblyReady } from "@/app/providers";
 import { getAblyRealtimeClient } from "@/lib/ably";
-import { getUnreadNotificationCount } from "@/app/notifications/actions";
-import { getConversations } from "@/app/chat/actions";
 
 /** Strip any existing "(N) " prefix from the title */
 function baseTitle(title: string): string {
@@ -19,30 +17,23 @@ function updateTitle(count: number) {
   document.title = count > 0 ? `(${count}) ${base}` : base;
 }
 
-async function fetchUnreadCount(): Promise<number> {
-  const [notifCount, convos] = await Promise.all([
-    getUnreadNotificationCount(),
-    getConversations(),
-  ]);
-  const chatUnread = convos.reduce(
-    (sum: number, c: { unreadCount: number }) => sum + c.unreadCount,
-    0,
-  );
-  return notifCount + chatUnread;
-}
-
 export function DynamicFavicon({
-  initialHasUnread,
+  initialNotifCount,
+  initialChatCount,
 }: {
-  initialHasUnread: boolean;
+  initialNotifCount: number;
+  initialChatCount: number;
 }) {
-  const [unreadCount, setUnreadCount] = useState(initialHasUnread ? 1 : 0);
+  const [notifCount, setNotifCount] = useState(initialNotifCount);
+  const [chatCount, setChatCount] = useState(initialChatCount);
   const { data: session } = useSession();
   const ablyReady = useAblyReady();
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
   pathnameRef.current = pathname;
   const prevPathnameRef = useRef(pathname);
+
+  const totalCount = notifCount + chatCount;
 
   // Set the favicon to the static PNG on mount
   useEffect(() => {
@@ -63,35 +54,24 @@ export function DynamicFavicon({
     }
   }, [pathname]);
 
-  // Update page title when unread count changes
+  // Update page title when total count changes
   useEffect(() => {
-    updateTitle(unreadCount);
-  }, [unreadCount, pathname]);
+    updateTitle(totalCount);
+  }, [totalCount, pathname]);
 
-  // Fetch real count on mount (initial value is just a boolean hint)
-  useEffect(() => {
-    fetchUnreadCount().then(setUnreadCount);
-  }, []);
-
-  // Re-check when leaving notifications or chat pages
+  // Reset the appropriate counter when visiting notifications or chat
   useEffect(() => {
     const prev = prevPathnameRef.current;
     prevPathnameRef.current = pathname;
 
-    const wasOnNotifs = prev === "/notifications";
-    const wasOnChat = prev.startsWith("/chat/");
-
-    if (wasOnNotifs || wasOnChat) {
-      fetchUnreadCount().then(setUnreadCount);
+    if (pathname === "/notifications") {
+      setNotifCount(0);
+    } else if (pathname.startsWith("/chat/") || pathname === "/chat") {
+      setChatCount(0);
     }
+    // When leaving these pages, counts rebuild from Ably events
+    void prev; // suppress unused lint
   }, [pathname]);
-
-  // Re-check on window focus
-  useEffect(() => {
-    const onFocus = () => fetchUnreadCount().then(setUnreadCount);
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, []);
 
   // Subscribe to Ably for instant updates
   useEffect(() => {
@@ -107,14 +87,14 @@ export function DynamicFavicon({
 
     const handleNotif = () => {
       if (pathnameRef.current === "/notifications") return;
-      setUnreadCount((prev) => prev + 1);
+      setNotifCount((prev) => prev + 1);
     };
 
     const handleChat = (msg: InboundMessage) => {
       if (msg.data?.senderId === session?.user?.id) return;
       const convId = msg.data?.conversationId;
       if (pathnameRef.current === `/chat/${convId}`) return;
-      setUnreadCount((prev) => prev + 1);
+      setChatCount((prev) => prev + 1);
     };
 
     notifChannel.subscribe("new", handleNotif);
