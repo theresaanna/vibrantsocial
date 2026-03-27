@@ -74,7 +74,7 @@ export function FontSelector({
         className="flex w-full items-center justify-between"
         data-testid="font-selector-toggle"
       >
-        <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+        <span className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
           Username Font
           {selectedFont && (
             <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">
@@ -83,7 +83,7 @@ export function FontSelector({
           )}
         </span>
         <svg
-          className={`h-4 w-4 text-zinc-400 transition-transform ${expanded ? "rotate-180" : ""}`}
+          className={`h-5 w-5 text-zinc-400 transition-transform ${expanded ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           strokeWidth={2}
