@@ -205,64 +205,6 @@ export function ThemeEditor({
 
       {isOpen && (
         <div id={contentId} className="space-y-4 px-4 pb-4">
-          {/* Preset buttons */}
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(PROFILE_THEME_PRESETS).map(([name, preset]) => (
-              <button
-                key={name}
-                type="button"
-                onClick={() => handlePresetSelect(name)}
-                className={`rounded-lg border px-3 py-1.5 text-sm font-medium capitalize transition-all ${
-                  activePreset === name
-                    ? "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-900"
-                    : "border-transparent"
-                }`}
-                style={{
-                  backgroundColor: preset.profileContainerColor,
-                  color: preset.profileTextColor,
-                }}
-                aria-pressed={activePreset === name}
-              >
-                {name}
-              </button>
-            ))}
-
-            {/* Custom AI preset pills */}
-            {customPresets.map((preset) => (
-              <div key={preset.id} className="group relative">
-                <button
-                  type="button"
-                  onClick={() => handleCustomPresetSelect(preset)}
-                  className={`rounded-lg border px-3 py-1.5 pr-7 text-sm font-medium transition-all ${
-                    activePreset === `custom:${preset.id}`
-                      ? "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-900"
-                      : "border-transparent"
-                  }`}
-                  style={{
-                    backgroundColor: preset.light.profileContainerColor,
-                    color: preset.light.profileTextColor,
-                  }}
-                  aria-pressed={activePreset === `custom:${preset.id}`}
-                  data-testid={`custom-preset-${preset.name}`}
-                >
-                  {preset.name}
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeletePreset(preset.id);
-                  }}
-                  className="absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] leading-none text-white group-hover:flex"
-                  aria-label={`Delete ${preset.name} preset`}
-                  data-testid={`delete-preset-${preset.name}`}
-                >
-                  &times;
-                </button>
-              </div>
-            ))}
-          </div>
-
           {/* AI theme generator — premium only */}
           <div
             className="relative"
@@ -341,6 +283,64 @@ export function ThemeEditor({
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Preset buttons */}
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(PROFILE_THEME_PRESETS).map(([name, preset]) => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => handlePresetSelect(name)}
+                className={`rounded-lg border px-3 py-1.5 text-sm font-medium capitalize transition-all ${
+                  activePreset === name
+                    ? "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-900"
+                    : "border-transparent"
+                }`}
+                style={{
+                  backgroundColor: preset.profileContainerColor,
+                  color: preset.profileTextColor,
+                }}
+                aria-pressed={activePreset === name}
+              >
+                {name}
+              </button>
+            ))}
+
+            {/* Custom AI preset pills */}
+            {customPresets.map((preset) => (
+              <div key={preset.id} className="group relative">
+                <button
+                  type="button"
+                  onClick={() => handleCustomPresetSelect(preset)}
+                  className={`rounded-lg border px-3 py-1.5 pr-7 text-sm font-medium transition-all ${
+                    activePreset === `custom:${preset.id}`
+                      ? "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-900"
+                      : "border-transparent"
+                  }`}
+                  style={{
+                    backgroundColor: preset.light.profileContainerColor,
+                    color: preset.light.profileTextColor,
+                  }}
+                  aria-pressed={activePreset === `custom:${preset.id}`}
+                  data-testid={`custom-preset-${preset.name}`}
+                >
+                  {preset.name}
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeletePreset(preset.id);
+                  }}
+                  className="absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] leading-none text-white group-hover:flex"
+                  aria-label={`Delete ${preset.name} preset`}
+                  data-testid={`delete-preset-${preset.name}`}
+                >
+                  &times;
+                </button>
+              </div>
+            ))}
           </div>
 
           {/* Individual color pickers — premium only */}

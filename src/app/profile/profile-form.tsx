@@ -383,6 +383,48 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
         </div>
       </div>
 
+      {/* Share profile button */}
+      {savedUsername && (
+        <button
+          type="button"
+          onClick={async () => {
+            const url = `${window.location.origin}/${savedUsername}${referralCode ? `?ref=${referralCode}` : ""}`;
+            if (navigator.share) {
+              try {
+                await navigator.share({ title: `@${savedUsername}`, url });
+                return;
+              } catch {
+                // User cancelled or share failed, fall through to clipboard
+              }
+            }
+            try {
+              await navigator.clipboard.writeText(url);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            } catch {
+              // Clipboard not available
+            }
+          }}
+          className="flex items-center gap-1.5 self-start rounded-full border border-zinc-300 bg-white px-4 py-1.5 text-sm font-semibold text-zinc-700 transition-all hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-600 dark:bg-transparent dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-200"
+        >
+          {copied ? (
+            "Copied!"
+          ) : (
+            <>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="h-4 w-4"
+              >
+                <path d="M13 4.5a2.5 2.5 0 11.702 1.737L6.97 9.604a2.518 2.518 0 010 .792l6.733 3.367a2.5 2.5 0 11-.671 1.341l-6.733-3.367a2.5 2.5 0 110-3.474l6.733-3.367A2.52 2.52 0 0113 4.5z" />
+              </svg>
+              Share Profile
+            </>
+          )}
+        </button>
+      )}
+
       {showFrameSelector && (
         <FrameSelector
           currentFrameId={frameId}
@@ -456,35 +498,34 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
         )}
       </div>
 
-      {/* Phone verification & profile link */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-            Phone Verification
+      {/* Phone verification */}
+      <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+          Phone Verification
+        </p>
+        {phoneVerified ? (
+          <p className="mt-1 text-sm text-green-600 dark:text-green-400">
+            Verified: {phoneNumber?.replace(/(\+\d{1,3})\d+(\d{4})/, "$1****$2")}
           </p>
-          {phoneVerified ? (
-            <p className="mt-1 text-sm text-green-600 dark:text-green-400">
-              Verified: {phoneNumber?.replace(/(\+\d{1,3})\d+(\d{4})/, "$1****$2")}
+        ) : (
+          <div className="mt-1 flex items-center justify-between">
+            <p className="text-sm text-zinc-500">
+              {isCredentialsUser
+                ? "Verify your phone for community safety"
+                : "Add a phone number for extra security"}
             </p>
-          ) : (
-            <div className="mt-1 flex items-center justify-between">
-              <p className="text-sm text-zinc-500">
-                {isCredentialsUser
-                  ? "Verify your phone for community safety"
-                  : "Add a phone number for extra security"}
-              </p>
-              <Link
-                href="/verify-phone"
-                className="ml-2 shrink-0 rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-              >
-                Verify
-              </Link>
-            </div>
-          )}
-        </div>
+            <Link
+              href="/verify-phone"
+              className="ml-2 shrink-0 rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+            >
+              Verify
+            </Link>
+          </div>
+        )}
+      </div>
 
-        {/* Stars container */}
-        <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+      {/* Stars container */}
+      <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
           <div className="flex items-center justify-between">
             <button
               type="button"
@@ -649,37 +690,6 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
           )}
         </div>
 
-        {/* Share container */}
-        {savedUsername ? (
-          <div className="flex flex-col justify-between rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-            <Link
-              href={`/${savedUsername}`}
-              className="text-sm font-semibold text-zinc-900 transition-colors hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-400"
-            >
-              View public profile &rarr;
-            </Link>
-            <button
-              type="button"
-              onClick={() => {
-                navigator.clipboard.writeText(
-                  `${window.location.origin}/${savedUsername}`
-                );
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-              }}
-              className="mt-2 self-start rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-            >
-              {copied ? "Copied!" : "Share Profile"}
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-            <p className="text-sm text-zinc-500">
-              Set a username below to get your profile link
-            </p>
-          </div>
-        )}
-      </div>
 
       {/* Profile fields */}
       <form
@@ -702,18 +712,23 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
             htmlFor="username"
             className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
           >
-            Username
+            Username / URL path
           </label>
-          <input
-            id="username"
-            name="username"
-            type="text"
-            value={usernameValue}
-            onChange={(e) => setUsernameValue(e.target.value)}
-            onFocus={cancelAutosave}
-            className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
-            placeholder="your_username"
-          />
+          <div className="mt-1 flex items-center rounded-lg border border-zinc-300 dark:border-zinc-600">
+            <span className="shrink-0 select-none pl-3 text-sm text-zinc-400 dark:text-zinc-500">
+              https://vibrantsocial.app/
+            </span>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              value={usernameValue}
+              onChange={(e) => setUsernameValue(e.target.value)}
+              onFocus={cancelAutosave}
+              className="block w-full rounded-r-lg border-0 bg-transparent px-1 py-2 text-sm focus:ring-0 dark:text-zinc-100"
+              placeholder="your_username"
+            />
+          </div>
           {usernameStatus === "checking" && (
             <p className="mt-1 text-xs text-zinc-400">Checking availability...</p>
           )}
@@ -904,9 +919,20 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
               )}
             </div>
             {!ageVerified && (
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Age verification is required to view sensitive and graphic content.
-              </p>
+              <div className="space-y-1">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Age verification is required to view sensitive and graphic content.
+                </p>
+                <Link
+                  href="/premium"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+                >
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                  </svg>
+                  Included with Premium
+                </Link>
+              </div>
             )}
 
             <label className="flex items-center gap-2">
