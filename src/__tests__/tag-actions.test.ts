@@ -45,6 +45,7 @@ import {
 } from "@/app/tags/actions";
 
 const PUBLIC_AUTHOR = { author: { isProfilePublic: true } };
+const NO_MARKETPLACE = { marketplacePost: null };
 
 describe("searchTags", () => {
   beforeEach(() => {
@@ -119,6 +120,7 @@ describe("searchTags", () => {
                 isNsfw: false,
                 isGraphicNudity: false,
                 ...PUBLIC_AUTHOR,
+                ...NO_MARKETPLACE,
               },
             },
           },
@@ -141,6 +143,7 @@ describe("searchTags", () => {
                 isSensitive: false,
                 isGraphicNudity: false,
                 ...PUBLIC_AUTHOR,
+                ...NO_MARKETPLACE,
               },
             },
           },
@@ -327,7 +330,50 @@ describe("getPostsByTag", () => {
     expect(result).toEqual({ posts: [], hasMore: false, totalCount: 0 });
   });
 
-  it("filters count query by public profile (SFW)", async () => {
+  it("does not filter by public profile when logged in (SFW)", async () => {
+    mockCount.mockResolvedValue(0);
+    mockFindMany.mockResolvedValue([]);
+
+    await getPostsByTag("react");
+
+    expect(mockCount).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          post: {
+            isSensitive: false,
+            isNsfw: false,
+            isGraphicNudity: false,
+            ...NO_MARKETPLACE,
+          },
+        }),
+      })
+    );
+  });
+
+  it("does not filter by public profile when logged in (findMany)", async () => {
+    mockCount.mockResolvedValue(0);
+    mockFindMany.mockResolvedValue([]);
+
+    await getPostsByTag("react");
+
+    expect(mockFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          post: {
+            isSensitive: false,
+            isNsfw: false,
+            isGraphicNudity: false,
+            ...NO_MARKETPLACE,
+          },
+        }),
+      })
+    );
+  });
+
+  it("filters by public profile when not logged in", async () => {
+    const { auth } = await import("@/auth");
+    vi.mocked(auth).mockResolvedValueOnce(null as never);
+
     mockCount.mockResolvedValue(0);
     mockFindMany.mockResolvedValue([]);
 
@@ -341,33 +387,14 @@ describe("getPostsByTag", () => {
             isNsfw: false,
             isGraphicNudity: false,
             ...PUBLIC_AUTHOR,
+            ...NO_MARKETPLACE,
           },
         }),
       })
     );
   });
 
-  it("filters findMany query by public profile (SFW)", async () => {
-    mockCount.mockResolvedValue(0);
-    mockFindMany.mockResolvedValue([]);
-
-    await getPostsByTag("react");
-
-    expect(mockFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          post: {
-            isSensitive: false,
-            isNsfw: false,
-            isGraphicNudity: false,
-            ...PUBLIC_AUTHOR,
-          },
-        }),
-      })
-    );
-  });
-
-  it("includes NSFW posts when includeNsfw is true but still filters by public profile", async () => {
+  it("does not filter by public profile for NSFW when logged in", async () => {
     mockCount.mockResolvedValue(0);
     mockFindMany.mockResolvedValue([]);
 
@@ -379,7 +406,7 @@ describe("getPostsByTag", () => {
           post: {
             isSensitive: false,
             isGraphicNudity: false,
-            ...PUBLIC_AUTHOR,
+            ...NO_MARKETPLACE,
           },
         }),
       })
@@ -390,7 +417,7 @@ describe("getPostsByTag", () => {
           post: {
             isSensitive: false,
             isGraphicNudity: false,
-            ...PUBLIC_AUTHOR,
+            ...NO_MARKETPLACE,
           },
         }),
       })

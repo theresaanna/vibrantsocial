@@ -1,13 +1,21 @@
 "use server";
 
 import { auth } from "@/auth";
-import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { requirePhoneVerification } from "@/lib/phone-gate";
 import { requireNotSuspended } from "@/lib/suspension-gate";
 import { getAblyRestClient } from "@/lib/ably";
-import { createNotification } from "@/lib/notifications";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
+import {
+  requireAuthWithRateLimit,
+  isActionError,
+  hasBlock,
+  groupReactions,
+  createNotificationSafe,
+  USER_PROFILE_SELECT,
+  areFriends,
+} from "@/lib/action-utils";
 import type {
   ActionState,
   ConversationListItem,
@@ -18,17 +26,6 @@ import type {
   ReactionGroup,
   MediaType,
 } from "@/types/chat";
-
-const userSelect = {
-  id: true,
-  username: true,
-  displayName: true,
-  name: true,
-  avatar: true,
-  profileFrameId: true,
-  image: true,
-  usernameFont: true,
-} as const;
 
 const replyToInclude = {
   select: {
@@ -65,33 +62,6 @@ function formatReplyTo(
   };
 }
 
-function groupReactions(
-  reactions: { emoji: string; userId: string }[]
-): ReactionGroup[] {
-  const map = new Map<string, string[]>();
-  for (const r of reactions) {
-    const list = map.get(r.emoji) ?? [];
-    list.push(r.userId);
-    map.set(r.emoji, list);
-  }
-  return Array.from(map, ([emoji, userIds]) => ({ emoji, userIds }));
-}
-
-async function checkFriendship(
-  userId1: string,
-  userId2: string
-): Promise<boolean> {
-  const friendship = await prisma.friendRequest.findFirst({
-    where: {
-      status: "ACCEPTED",
-      OR: [
-        { senderId: userId1, receiverId: userId2 },
-        { senderId: userId2, receiverId: userId1 },
-      ],
-    },
-  });
-  return !!friendship;
-}
 
 interface ConversationParticipantRecord {
   lastReadAt: Date | null;
@@ -122,7 +92,7 @@ export async function getConversations(): Promise<ConversationListItem[]> {
       conversation: {
         include: {
           participants: {
-            include: { user: { select: userSelect } },
+            include: { user: { select: USER_PROFILE_SELECT } },
           },
           messages: {
             orderBy: { createdAt: "desc" },
@@ -189,7 +159,7 @@ export async function getMessages(
     take: 51,
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     include: {
-      sender: { select: userSelect },
+      sender: { select: USER_PROFILE_SELECT },
       reactions: { select: { emoji: true, userId: true } },
       replyTo: replyToInclude,
     },
@@ -215,7 +185,7 @@ export async function getMessageRequests(): Promise<MessageRequestData[]> {
 
   return prisma.messageRequest.findMany({
     where: { receiverId: session.user.id, status: "PENDING" },
-    include: { sender: { select: userSelect } },
+    include: { sender: { select: USER_PROFILE_SELECT } },
     orderBy: { createdAt: "desc" },
   });
 }
@@ -223,14 +193,9 @@ export async function getMessageRequests(): Promise<MessageRequestData[]> {
 export async function startConversation(
   targetUserId: string
 ): Promise<ActionState & { conversationId?: string }> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("chat");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const isNotSuspended = await requireNotSuspended(session.user.id);
   if (!isNotSuspended) {
@@ -249,15 +214,7 @@ export async function startConversation(
   }
 
   // Check for block between the two users
-  const block = await prisma.block.findFirst({
-    where: {
-      OR: [
-        { blockerId: userId, blockedId: targetUserId },
-        { blockerId: targetUserId, blockedId: userId },
-      ],
-    },
-  });
-  if (block) {
+  if (await hasBlock(userId, targetUserId)) {
     return { success: false, message: "Cannot start conversation with this user" };
   }
 
@@ -285,9 +242,9 @@ export async function startConversation(
   }
 
   // Check friendship
-  const areFriends = await checkFriendship(userId, targetUserId);
+  const friendsResult = await areFriends(userId, targetUserId);
 
-  if (areFriends) {
+  if (friendsResult) {
     const conversation = await prisma.conversation.create({
       data: {
         isGroup: false,
@@ -316,14 +273,9 @@ export async function createGroupConversation(data: {
   name: string;
   participantIds: string[];
 }): Promise<ActionState & { conversationId?: string }> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("chat");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const isNotSuspended2 = await requireNotSuspended(session.user.id);
   if (!isNotSuspended2) {
@@ -389,14 +341,9 @@ export async function sendMessage(data: {
   mediaFileSize?: number;
   replyToId?: string;
 }): Promise<ActionState & { messageId?: string }> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("chat");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const isNotSuspended3 = await requireNotSuspended(session.user.id);
   if (!isNotSuspended3) {
@@ -485,7 +432,7 @@ export async function sendMessage(data: {
         mediaFileSize: mediaFileSize ?? null,
       }),
     },
-    include: { sender: { select: userSelect } },
+    include: { sender: { select: USER_PROFILE_SELECT } },
   });
 
   // Update conversation timestamp for ordering
@@ -545,14 +492,9 @@ export async function editMessage(data: {
   messageId: string;
   content: string;
 }): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("chat");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const { messageId, content } = data;
   const trimmedContent = content.trim();
@@ -599,14 +541,9 @@ export async function editMessage(data: {
 }
 
 export async function deleteMessage(messageId: string): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("chat");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const message = await prisma.message.findUnique({
     where: { id: messageId },
@@ -641,14 +578,9 @@ export async function deleteMessage(messageId: string): Promise<ActionState> {
 export async function markConversationRead(
   conversationId: string
 ): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("chat");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const participant = await prisma.conversationParticipant.findUnique({
     where: {
@@ -682,14 +614,9 @@ export async function markConversationRead(
 export async function acceptMessageRequest(
   requestId: string
 ): Promise<ActionState & { conversationId?: string }> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("chat");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const request = await prisma.messageRequest.findUnique({
     where: { id: requestId },
@@ -733,14 +660,9 @@ export async function acceptMessageRequest(
 export async function declineMessageRequest(
   requestId: string
 ): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("chat");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const request = await prisma.messageRequest.findUnique({
     where: { id: requestId },
@@ -767,14 +689,9 @@ export async function declineMessageRequest(
 export async function bulkDeclineMessageRequests(
   requestIds: string[]
 ): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("chat");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   if (!requestIds.length) {
     return { success: false, message: "No requests selected" };
@@ -808,14 +725,9 @@ export async function toggleReaction(data: {
   messageId: string;
   emoji: string;
 }): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("chat");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const { messageId, emoji } = data;
 
@@ -862,16 +774,12 @@ export async function toggleReaction(data: {
 
     // Notify message author about the reaction
     if (message.senderId !== session.user.id) {
-      try {
-        await createNotification({
-          type: "REACTION",
-          actorId: session.user.id,
-          targetUserId: message.senderId,
-          messageId,
-        });
-      } catch {
-        // Non-critical
-      }
+      await createNotificationSafe({
+        type: "REACTION",
+        actorId: session.user.id,
+        targetUserId: message.senderId,
+        messageId,
+      });
     }
   }
 
@@ -909,8 +817,8 @@ export async function getFriendsForChat(): Promise<ChatUserProfile[]> {
       ],
     },
     include: {
-      sender: { select: userSelect },
-      receiver: { select: userSelect },
+      sender: { select: USER_PROFILE_SELECT },
+      receiver: { select: USER_PROFILE_SELECT },
     },
   });
 
@@ -939,7 +847,7 @@ export async function searchUsers(
         { name: { contains: trimmed, mode: "insensitive" } },
       ],
     },
-    select: userSelect,
+    select: USER_PROFILE_SELECT,
     take: 10,
   });
 }
@@ -948,14 +856,9 @@ export async function updateGroupName(data: {
   conversationId: string;
   name: string;
 }): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("chat");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const { conversationId, name } = data;
   const trimmedName = name.trim();
@@ -1003,14 +906,9 @@ export async function addGroupMembers(data: {
   conversationId: string;
   userIds: string[];
 }): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("chat");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const { conversationId, userIds } = data;
   const uniqueIds = [...new Set(userIds)];
@@ -1083,14 +981,9 @@ export async function removeGroupMember(data: {
   conversationId: string;
   userId: string;
 }): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("chat");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const { conversationId, userId } = data;
 
@@ -1141,14 +1034,9 @@ export async function removeGroupMember(data: {
 export async function leaveConversation(
   conversationId: string
 ): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("chat");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const participant = await prisma.conversationParticipant.findUnique({
     where: {

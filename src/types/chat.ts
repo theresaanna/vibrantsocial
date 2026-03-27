@@ -68,14 +68,12 @@ export interface MessageRequestData {
 export interface ChatThemeColors {
   bgColor: string | null;
   textColor: string | null;
+  linkColor: string | null;
   containerColor: string | null;
   secondaryColor: string | null;
 }
 
-export interface ActionState {
-  success: boolean;
-  message: string;
-}
+export type { ActionState } from "@/lib/action-utils";
 
 export interface ConversationWithParticipants {
   id: string;

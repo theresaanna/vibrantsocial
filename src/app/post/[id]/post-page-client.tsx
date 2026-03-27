@@ -9,6 +9,7 @@ interface WallPostData {
   wallOwner: {
     username: string | null;
     displayName: string | null;
+    usernameFont: string | null;
   };
 }
 
@@ -21,6 +22,13 @@ interface PostPageClientProps {
   showNsfwContent: boolean;
   highlightCommentId: string | null;
   wallPost?: WallPostData | null;
+  marketplacePostId?: string;
+  marketplaceData?: {
+    price: number;
+    purchaseUrl: string;
+    shippingOption: string;
+    shippingPrice: number | null;
+  };
 }
 
 export function PostPageClient({
@@ -32,6 +40,8 @@ export function PostPageClient({
   showNsfwContent,
   highlightCommentId,
   wallPost,
+  marketplacePostId,
+  marketplaceData,
 }: PostPageClientProps) {
   return (
     <div>
@@ -68,10 +78,13 @@ export function PostPageClient({
           wallOwner: {
             username: wallPost.wallOwner.username,
             displayName: wallPost.wallOwner.displayName,
+            usernameFont: wallPost.wallOwner.usernameFont,
           },
           wallPostId: wallPost.id,
           wallPostStatus: wallPost.status,
         })}
+        marketplacePostId={marketplacePostId}
+        marketplaceData={marketplaceData}
       />
     </div>
   );

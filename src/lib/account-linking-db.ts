@@ -16,7 +16,7 @@ export async function loadLinkedAccounts(
       linkedAccountGroupId: user.linkedAccountGroupId,
       id: { not: userId },
     },
-    select: { id: true, username: true, displayName: true, avatar: true, profileFrameId: true },
+    select: { id: true, username: true, displayName: true, avatar: true, profileFrameId: true, usernameFont: true },
   });
 
   return members;

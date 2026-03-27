@@ -15,6 +15,7 @@ import { getNotificationText } from "@/lib/notification-text";
 import { StyledName } from "@/components/styled-name";
 import { FriendRequestNotificationActions } from "@/components/friend-request-notification-actions";
 import { WallPostNotificationActions } from "@/components/wall-post-notification-actions";
+import { useSelectionSet } from "@/hooks/use-selection-set";
 
 interface NotificationActor {
   id: string;
@@ -56,12 +57,11 @@ export function NotificationList({
   const [notifications, setNotifications] =
     useState<NotificationItem[]>(initialNotifications);
   const [isPending, startTransition] = useTransition();
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const selection = useSelectionSet();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const hasUnread = notifications.some((n) => !n.readAt);
-  const allSelected = notifications.length > 0 && selectedIds.size === notifications.length;
+  const allSelected = notifications.length > 0 && selection.selectedIds.size === notifications.length;
 
   function handleMarkRead(id: string) {
     setNotifications((prev) =>
@@ -79,38 +79,11 @@ export function NotificationList({
     });
   }
 
-  function toggleSelect(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function toggleSelectAll() {
-    if (allSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(notifications.map((n) => n.id)));
-    }
-  }
-
-  function enterSelectionMode() {
-    setSelectionMode(true);
-    setSelectedIds(new Set());
-  }
-
-  function exitSelectionMode() {
-    setSelectionMode(false);
-    setSelectedIds(new Set());
-  }
-
   function handleDeleteSelected() {
-    const ids = Array.from(selectedIds);
-    setNotifications((prev) => prev.filter((n) => !selectedIds.has(n.id)));
+    const ids = Array.from(selection.selectedIds);
+    setNotifications((prev) => prev.filter((n) => !selection.selectedIds.has(n.id)));
     setShowDeleteConfirm(false);
-    exitSelectionMode();
+    selection.exit();
     startTransition(async () => {
       await deleteNotifications(ids);
     });
@@ -128,28 +101,28 @@ export function NotificationList({
     <div>
       {/* Toolbar */}
       <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-2 dark:border-zinc-800">
-        {selectionMode ? (
+        {selection.active ? (
           <>
             <div className="flex items-center gap-3">
               <label className="flex cursor-pointer items-center gap-2">
                 <input
                   type="checkbox"
                   checked={allSelected}
-                  onChange={toggleSelectAll}
+                  onChange={() => selection.selectAll(notifications.map(n => n.id))}
                   className="rounded"
                 />
                 <span className="text-xs text-zinc-600 dark:text-zinc-400">
                   Select all
                 </span>
               </label>
-              {selectedIds.size > 0 && (
+              {selection.selectedIds.size > 0 && (
                 <span className="text-xs text-zinc-500">
-                  {selectedIds.size} selected
+                  {selection.selectedIds.size} selected
                 </span>
               )}
             </div>
             <div className="flex items-center gap-2">
-              {selectedIds.size > 0 && (
+              {selection.selectedIds.size > 0 && (
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
                   disabled={isPending}
@@ -159,7 +132,7 @@ export function NotificationList({
                 </button>
               )}
               <button
-                onClick={exitSelectionMode}
+                onClick={selection.exit}
                 className="text-xs font-medium text-zinc-500 hover:text-zinc-600 dark:text-zinc-400 dark:hover:text-zinc-300"
               >
                 Cancel
@@ -169,7 +142,7 @@ export function NotificationList({
         ) : (
           <>
             <button
-              onClick={enterSelectionMode}
+              onClick={selection.enter}
               className="text-xs font-medium text-zinc-500 hover:text-zinc-600 dark:text-zinc-400 dark:hover:text-zinc-300"
             >
               Select
@@ -195,7 +168,7 @@ export function NotificationList({
           const name = getActorName(notification.actor);
           const text = getNotificationText(notification.type);
           const isUnread = !notification.readAt;
-          const isSelected = selectedIds.has(notification.id);
+          const isSelected = selection.selectedIds.has(notification.id);
           const isCommentType =
             notification.type === "COMMENT" || notification.type === "REPLY";
           const isMentionWithComment =
@@ -230,12 +203,12 @@ export function NotificationList({
                   : ""
               } ${isSelected ? "bg-fuchsia-50/50 dark:bg-fuchsia-950/20" : ""}`}
             >
-              {selectionMode && (
+              {selection.active && (
                 <label className="relative z-10 mt-2 flex-shrink-0 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={isSelected}
-                    onChange={() => toggleSelect(notification.id)}
+                    onChange={() => selection.toggle(notification.id)}
                     className="rounded"
                   />
                 </label>
@@ -244,7 +217,7 @@ export function NotificationList({
                 <Link
                   href={`/${notification.actor.username}`}
                   className="relative z-10 flex-shrink-0"
-                  tabIndex={selectionMode ? -1 : undefined}
+                  tabIndex={selection.active ? -1 : undefined}
                 >
                   {avatarImg}
                 </Link>
@@ -254,10 +227,10 @@ export function NotificationList({
                 </span>
               )}
               <div className="min-w-0 flex-1">
-                {selectionMode ? (
+                {selection.active ? (
                   <div
                     className="cursor-pointer"
-                    onClick={() => toggleSelect(notification.id)}
+                    onClick={() => selection.toggle(notification.id)}
                   >
                     <p className="text-sm text-zinc-700 dark:text-zinc-300">
                       {notification.type === "CONTENT_MODERATION" ? (
@@ -316,7 +289,7 @@ export function NotificationList({
                   </>
                 )}
               </div>
-              {!selectionMode && isUnread && (
+              {!selection.active && isUnread && (
                 <span className="relative z-10 mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
               )}
             </div>
@@ -328,7 +301,7 @@ export function NotificationList({
       <ConfirmDialog
         open={showDeleteConfirm}
         title="Delete notifications"
-        message={`Are you sure you want to delete ${selectedIds.size} notification${selectedIds.size === 1 ? "" : "s"}? This cannot be undone.`}
+        message={`Are you sure you want to delete ${selection.selectedIds.size} notification${selection.selectedIds.size === 1 ? "" : "s"}? This cannot be undone.`}
         confirmLabel="Delete"
         cancelLabel="Cancel"
         variant="danger"

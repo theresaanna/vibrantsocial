@@ -184,6 +184,9 @@ model User {
   // AI-generated custom theme presets
   customThemePresets CustomThemePreset[]
 
+  // Marketplace questions
+  marketplaceQuestions MarketplaceQuestion[]
+
   // Linked accounts (multi-account switching)
   linkedAccountGroupId String?
   linkedAccountGroup   LinkedAccountGroup? @relation(fields: [linkedAccountGroupId], references: [id])
@@ -258,6 +261,7 @@ model Post {
   audience          PostAudience[]
   contentViolations ContentViolation[]
   wallPost          WallPost?
+  marketplacePost   MarketplacePost?
 
   @@unique([authorId, slug])
   @@index([authorId])
@@ -666,6 +670,8 @@ enum NotificationType {
   LIST_SUBSCRIBE
   LIST_COLLABORATOR_ADD
   WALL_POST
+  MARKETPLACE_QUESTION
+  MARKETPLACE_ANSWER
 }
 
 model Notification {
@@ -886,4 +892,48 @@ model CustomThemePreset {
 
   @@unique([userId, name])
   @@index([userId])
+}
+
+// Marketplace posts
+
+enum ShippingOption {
+  FREE
+  FLAT_RATE
+  PICKUP_ONLY
+  CONTACT_SELLER
+}
+
+model MarketplacePost {
+  id              String         @id @default(cuid())
+  postId          String         @unique
+  purchaseUrl     String
+  price           Float
+  shippingOption  ShippingOption  @default(CONTACT_SELLER)
+  shippingPrice   Float?
+  promotedToFeed  Boolean        @default(false)
+  publicListing   Boolean        @default(false)
+  agreedToTerms   Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  post      Post                  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  questions MarketplaceQuestion[]
+
+  @@index([postId])
+}
+
+model MarketplaceQuestion {
+  id                String   @id @default(cuid())
+  marketplacePostId String
+  askerId           String
+  question          String   @db.Text
+  answer            String?  @db.Text
+  answeredAt        DateTime?
+  createdAt         DateTime @default(now())
+
+  marketplacePost MarketplacePost @relation(fields: [marketplacePostId], references: [id], onDelete: Cascade)
+  asker           User            @relation(fields: [askerId], references: [id], onDelete: Cascade)
+
+  @@index([marketplacePostId, createdAt])
+  @@index([askerId])
 }
