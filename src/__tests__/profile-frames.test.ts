@@ -7,8 +7,8 @@ import {
 
 describe("profile-frames", () => {
   describe("PROFILE_FRAMES", () => {
-    it("contains 27 frame definitions", () => {
-      expect(PROFILE_FRAMES).toHaveLength(27);
+    it("contains 25 frame definitions", () => {
+      expect(PROFILE_FRAMES).toHaveLength(25);
     });
 
     it("has unique IDs", () => {
