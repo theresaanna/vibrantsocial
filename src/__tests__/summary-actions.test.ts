@@ -23,13 +23,27 @@ vi.mock("@/lib/prisma", () => ({
 
 vi.mock("@/lib/cache", () => ({
   cached: vi.fn((_key: string, fn: () => Promise<unknown>) => fn()),
+  getCached: vi.fn().mockResolvedValue(null),
+  invalidate: vi.fn(),
   cacheKeys: {
     userFollowing: (id: string) => `user:${id}:following`,
+    feedSummary: (id: string) => `user:${id}:feed-summary`,
   },
 }));
 
 vi.mock("@/app/feed/block-actions", () => ({
   getAllBlockRelatedIds: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock("@/lib/user-prefs", () => ({
+  getUserPrefs: vi.fn().mockResolvedValue({
+    showNsfwContent: false,
+    ageVerified: false,
+  }),
+}));
+
+vi.mock("@/app/feed/close-friends-actions", () => ({
+  getCachedCloseFriendOfIds: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock("@/lib/lexical-text", () => ({
@@ -39,16 +53,16 @@ vi.mock("@/lib/lexical-text", () => ({
 import { auth } from "@/auth";
 import { anthropic } from "@/lib/anthropic";
 import { prisma } from "@/lib/prisma";
+import { getCached } from "@/lib/cache";
 import {
   fetchFeedSummary,
   generateFeedSummaryOnDemand,
 } from "@/app/feed/summary-actions";
 
 const mockAuth = vi.mocked(auth);
+const mockGetCached = vi.mocked(getCached);
 const mockAnthropicCreate = vi.mocked(anthropic.messages.create);
 const mockFollowFindMany = vi.mocked(prisma.follow.findMany);
-const mockCloseFriendFindMany = vi.mocked(prisma.closeFriend.findMany);
-const mockUserFindUnique = vi.mocked(prisma.user.findUnique);
 const mockPostFindMany = vi.mocked(prisma.post.findMany);
 
 function setupAuthenticatedUser() {
@@ -56,11 +70,6 @@ function setupAuthenticatedUser() {
   mockFollowFindMany.mockResolvedValue([
     { followingId: "friend1" },
   ] as never);
-  mockCloseFriendFindMany.mockResolvedValue([] as never);
-  mockUserFindUnique.mockResolvedValue({
-    showNsfwContent: false,
-    ageVerified: null,
-  } as never);
 }
 
 function makeMockPost(overrides: Record<string, unknown> = {}) {
@@ -151,6 +160,19 @@ describe("fetchFeedSummary", () => {
 
     const result = await fetchFeedSummary(dayAgo);
     expect(result).toEqual({ summary: null, missedCount: 0, tooMany: false });
+  });
+
+  it("returns cached summary when available", async () => {
+    setupAuthenticatedUser();
+    mockPostFindMany.mockResolvedValue([makeMockPost()] as never);
+    mockGetCached.mockResolvedValue("Cached summary text");
+
+    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    const result = await fetchFeedSummary(dayAgo);
+    expect(result.summary).toBe("Cached summary text");
+    expect(result.missedCount).toBe(1);
+    expect(mockAnthropicCreate).not.toHaveBeenCalled();
   });
 });
 

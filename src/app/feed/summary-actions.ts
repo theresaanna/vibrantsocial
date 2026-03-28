@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { anthropic } from "@/lib/anthropic";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
-import { cached, cacheKeys } from "@/lib/cache";
+import { cached, getCached, cacheKeys, invalidate } from "@/lib/cache";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 import { getUserPrefs } from "@/lib/user-prefs";
 import { getCachedCloseFriendOfIds } from "@/app/feed/close-friends-actions";
@@ -172,8 +172,16 @@ export async function fetchFeedSummary(
       return { summary: null, missedCount: 0, tooMany: false };
     }
 
-    // Always return the count and let the user choose to generate
-    return { summary: null, missedCount: posts.length, tooMany: posts.length > SUMMARY_POST_LIMIT };
+    // Return the cached summary if available, otherwise let the user generate on demand
+    const cachedSummary = await getCached<string>(
+      cacheKeys.feedSummary(session.user.id)
+    );
+
+    return {
+      summary: cachedSummary,
+      missedCount: posts.length,
+      tooMany: posts.length > SUMMARY_POST_LIMIT,
+    };
   } catch (error) {
     console.error("Feed summary error:", error);
     return { summary: null, missedCount: 0, tooMany: false };
@@ -187,24 +195,31 @@ export async function generateFeedSummaryOnDemand(
   if (!session?.user?.id) return null;
 
   try {
-    let posts = await fetchMissedPosts(
-      session.user.id,
-      new Date(lastSeenFeedAt),
-      SUMMARY_POST_LIMIT
+    return await cached(
+      cacheKeys.feedSummary(session.user.id),
+      async () => {
+        let posts = await fetchMissedPosts(
+          session.user.id!,
+          new Date(lastSeenFeedAt),
+          SUMMARY_POST_LIMIT
+        );
+
+        // Fall back to last 24 hours if no posts since last seen
+        if (posts.length === 0) {
+          posts = await fetchMissedPosts(
+            session.user.id!,
+            new Date(Date.now() - 24 * 60 * 60 * 1000),
+            SUMMARY_POST_LIMIT
+          );
+        }
+
+        if (posts.length === 0) return null;
+
+        return await generateSummary(posts, posts.length);
+      },
+      // Cache indefinitely (24h TTL as safety net); invalidated when new posts are created
+      86400
     );
-
-    // Fall back to last 24 hours if no posts since last seen
-    if (posts.length === 0) {
-      posts = await fetchMissedPosts(
-        session.user.id,
-        new Date(Date.now() - 24 * 60 * 60 * 1000),
-        SUMMARY_POST_LIMIT
-      );
-    }
-
-    if (posts.length === 0) return null;
-
-    return await generateSummary(posts, posts.length);
   } catch (error) {
     console.error("[FeedSummary] on-demand error:", error);
     if (error instanceof Error) {
@@ -214,4 +229,8 @@ export async function generateFeedSummaryOnDemand(
     // Return a friendly fallback instead of null so the banner doesn't reset
     return "Your friends have been posting! Scroll down to see what's new.";
   }
+}
+
+export async function invalidateFeedSummary(userId: string) {
+  await invalidate(cacheKeys.feedSummary(userId));
 }
