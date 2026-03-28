@@ -11,7 +11,7 @@ import {
   createMentionNotifications,
 } from "@/lib/mentions";
 import { extractTagsFromNames } from "@/lib/tags";
-import { invalidate, cacheKeys } from "@/lib/cache";
+import { invalidate, invalidatePattern, cacheKeys } from "@/lib/cache";
 import { notifyPostSubscribers } from "@/lib/subscription-notifications";
 import { checkAndExpirePremium } from "@/lib/premium";
 import { notifyTagSubscribers } from "@/lib/tag-subscription-notifications";
@@ -247,6 +247,9 @@ export async function createPost(
     name: "moderation/scan-post",
     data: { postId: post.id, userId: session.user.id },
   });
+
+  // Invalidate cached feed summaries so they regenerate with the new post
+  await invalidatePattern("user:*:feed-summary");
 
   revalidatePath("/feed");
   return { success: true, message: "Post created", postId: post.id, slug: post.slug ?? undefined };

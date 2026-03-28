@@ -27,6 +27,12 @@ export async function cached<T>(
   return value;
 }
 
+/** Read a cached value without populating on miss */
+export async function getCached<T>(key: string): Promise<T | null> {
+  if (!redis) return null;
+  return redis.get<T>(key);
+}
+
 /** Invalidate a specific cache key */
 export async function invalidate(key: string) {
   if (!redis) return;
@@ -64,4 +70,5 @@ export const cacheKeys = {
   userListMembers: (listId: string) => `list:${listId}:members`,
   userListSubscriptions: (userId: string) => `user:${userId}:list-subs`,
   userListCollaborators: (listId: string) => `list:${listId}:collaborators`,
+  feedSummary: (userId: string) => `user:${userId}:feed-summary`,
 } as const;
