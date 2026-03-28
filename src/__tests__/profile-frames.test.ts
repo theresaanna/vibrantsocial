@@ -7,8 +7,8 @@ import {
 
 describe("profile-frames", () => {
   describe("PROFILE_FRAMES", () => {
-    it("contains 8 frame definitions", () => {
-      expect(PROFILE_FRAMES).toHaveLength(8);
+    it("contains 27 frame definitions", () => {
+      expect(PROFILE_FRAMES).toHaveLength(27);
     });
 
     it("has unique IDs", () => {
@@ -18,7 +18,7 @@ describe("profile-frames", () => {
 
     it("all frames have valid src paths starting with /frames/", () => {
       for (const frame of PROFILE_FRAMES) {
-        expect(frame.src).toMatch(/^\/frames\/[\w-]+\.svg$/);
+        expect(frame.src).toMatch(/^\/frames\/[\w-]+\.(svg|png)$/);
       }
     });
 
@@ -28,10 +28,13 @@ describe("profile-frames", () => {
       }
     });
 
-    it("includes both spring and neon categories", () => {
+    it("includes all frame categories", () => {
       const categories = new Set(PROFILE_FRAMES.map((f) => f.category));
       expect(categories).toContain("spring");
       expect(categories).toContain("neon");
+      expect(categories).toContain("decorative");
+      expect(categories).toContain("floral");
+      expect(categories).toContain("whimsy");
     });
   });
 
