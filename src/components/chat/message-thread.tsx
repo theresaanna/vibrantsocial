@@ -384,7 +384,7 @@ export function MessageThread({
             </svg>
           </Link>
           {!isGroup && otherUser && (
-            <Link href={`/user/${otherUser.username}`} className="shrink-0">
+            <Link href={`/${otherUser.username}`} className="shrink-0">
               <FramedAvatar
                 src={otherUser.avatar ?? otherUser.image}
                 alt={displayName}
@@ -396,7 +396,7 @@ export function MessageThread({
           )}
           <div>
             {!isGroup && otherUser?.username ? (
-              <Link href={`/user/${otherUser.username}`} className="hover:underline">
+              <Link href={`/${otherUser.username}`} className="hover:underline">
                 <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   <StyledName fontId={otherUser.usernameFont}>{displayName}</StyledName>
                 </h3>
