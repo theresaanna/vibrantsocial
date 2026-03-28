@@ -27,8 +27,10 @@ vi.mock("@/lib/ably", () => ({
   })),
 }));
 
+const mockGetMessages = vi.fn(() => Promise.resolve({ messages: [] as MessageData[], nextCursor: null }));
+
 vi.mock("@/app/chat/actions", () => ({
-  getMessages: vi.fn(() => Promise.resolve({ messages: [], nextCursor: null })),
+  getMessages: (...args: unknown[]) => mockGetMessages(...args),
 }));
 
 const makeSender = () => JSON.stringify({
@@ -299,5 +301,80 @@ describe("useChatMessages", () => {
     expect(result.current.messages[0].mediaType).toBeNull();
     expect(result.current.messages[0].mediaFileName).toBeNull();
     expect(result.current.messages[0].mediaFileSize).toBeNull();
+  });
+
+  it("mergeMessages updates reactions on existing messages on window focus", async () => {
+    const initial = [makeMessage("m1")];
+    const updatedMsg = {
+      ...makeMessage("m1"),
+      reactions: [{ emoji: "\u{1F44D}", userIds: ["user1"] }],
+    };
+    mockGetMessages.mockResolvedValueOnce({ messages: [updatedMsg], nextCursor: null });
+
+    const { result } = renderHook(() => useChatMessages("conv1", initial, "currentUser"));
+    expect(result.current.messages[0].reactions).toEqual([]);
+
+    // Trigger window focus
+    await act(async () => {
+      window.dispatchEvent(new Event("focus"));
+      // Let the promise resolve
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    expect(result.current.messages[0].reactions).toEqual([
+      { emoji: "\u{1F44D}", userIds: ["user1"] },
+    ]);
+  });
+
+  it("mergeMessages updates edits on existing messages on window focus", async () => {
+    const initial = [makeMessage("m1", "original")];
+    const updatedMsg = {
+      ...makeMessage("m1", "edited"),
+      editedAt: new Date("2024-01-01T11:00:00Z"),
+    };
+    mockGetMessages.mockResolvedValueOnce({ messages: [updatedMsg], nextCursor: null });
+
+    const { result } = renderHook(() => useChatMessages("conv1", initial, "currentUser"));
+
+    await act(async () => {
+      window.dispatchEvent(new Event("focus"));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    expect(result.current.messages[0].content).toBe("edited");
+    expect(result.current.messages[0].editedAt).toEqual(new Date("2024-01-01T11:00:00Z"));
+  });
+
+  it("mergeMessages adds new messages alongside existing ones on focus", async () => {
+    const initial = [makeMessage("m1")];
+    const newMsg = makeMessage("m2", "new message");
+    mockGetMessages.mockResolvedValueOnce({ messages: [makeMessage("m1"), newMsg], nextCursor: null });
+
+    const { result } = renderHook(() => useChatMessages("conv1", initial, "currentUser"));
+    expect(result.current.messages).toHaveLength(1);
+
+    await act(async () => {
+      window.dispatchEvent(new Event("focus"));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    expect(result.current.messages).toHaveLength(2);
+    expect(result.current.messages[1].id).toBe("m2");
+  });
+
+  it("mergeMessages does not re-render when nothing changed", async () => {
+    const initial = [makeMessage("m1")];
+    mockGetMessages.mockResolvedValueOnce({ messages: [makeMessage("m1")], nextCursor: null });
+
+    const { result } = renderHook(() => useChatMessages("conv1", initial, "currentUser"));
+    const messagesBefore = result.current.messages;
+
+    await act(async () => {
+      window.dispatchEvent(new Event("focus"));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    // Same reference means no re-render
+    expect(result.current.messages).toBe(messagesBefore);
   });
 });
