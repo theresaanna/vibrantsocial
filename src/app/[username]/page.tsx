@@ -66,6 +66,7 @@ const profileSelect = {
   sparklefallMaxSize: true,
   birthdayMonth: true,
   birthdayDay: true,
+  phoneVerified: true,
   isProfilePublic: true,
   hideWallFromFeed: true,
   tier: true,
@@ -590,7 +591,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           {/* Block & Report flags — top-right corner, icon only */}
           {currentUserId && !isOwnProfile && blockStatus !== "blocked_by_them" && (
             <div className="absolute top-3 right-3 flex items-center gap-1">
-              <BlockButton userId={user.id} isBlocked={blockStatus === "blocked_by_me"} />
+              <BlockButton userId={user.id} isBlocked={blockStatus === "blocked_by_me"} hasVerifiedPhone={!!user.phoneVerified} />
               <ReportButton contentType="profile" contentId={user.id} label="" />
             </div>
           )}

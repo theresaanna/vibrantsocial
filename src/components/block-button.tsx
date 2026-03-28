@@ -7,16 +7,19 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 interface BlockButtonProps {
   userId: string;
   isBlocked: boolean;
+  hasVerifiedPhone?: boolean;
 }
 
-export function BlockButton({ userId, isBlocked }: BlockButtonProps) {
+export function BlockButton({ userId, isBlocked, hasVerifiedPhone = false }: BlockButtonProps) {
   const [showConfirm, setShowConfirm] = useState(false);
+  const [blockByPhone, setBlockByPhone] = useState(false);
   const [, formAction, isPending] = useActionState(toggleBlock, {
     success: false,
     message: "",
   });
 
   const handleClick = () => {
+    setBlockByPhone(false);
     setShowConfirm(true);
   };
 
@@ -26,10 +29,13 @@ export function BlockButton({ userId, isBlocked }: BlockButtonProps) {
     if (form) form.requestSubmit();
   };
 
+  const showPhoneOption = hasVerifiedPhone && !isBlocked;
+
   return (
     <>
       <form id={`block-form-${userId}`} action={formAction}>
         <input type="hidden" name="userId" value={userId} />
+        <input type="hidden" name="blockByPhone" value={blockByPhone ? "true" : "false"} />
         <button
           type="button"
           onClick={handleClick}
@@ -61,7 +67,25 @@ export function BlockButton({ userId, isBlocked }: BlockButtonProps) {
         variant="danger"
         onConfirm={handleConfirm}
         onCancel={() => setShowConfirm(false)}
-      />
+      >
+        {showPhoneOption && (
+          <label
+            className="mt-3 flex items-start gap-2 text-sm text-zinc-600 dark:text-zinc-400"
+            data-testid="block-by-phone-option"
+          >
+            <input
+              type="checkbox"
+              checked={blockByPhone}
+              onChange={(e) => setBlockByPhone(e.target.checked)}
+              className="mt-0.5 rounded border-zinc-300 dark:border-zinc-600"
+              data-testid="block-by-phone-checkbox"
+            />
+            <span>
+              Also block all current and future accounts using the same phone number
+            </span>
+          </label>
+        )}
+      </ConfirmDialog>
     </>
   );
 }
