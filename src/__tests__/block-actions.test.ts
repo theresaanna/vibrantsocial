@@ -18,6 +18,7 @@ vi.mock("@/lib/prisma", () => ({
       findMany: vi.fn(),
       create: vi.fn(),
       delete: vi.fn(),
+      upsert: vi.fn(),
     },
     follow: {
       deleteMany: vi.fn(),
@@ -33,9 +34,19 @@ vi.mock("@/lib/prisma", () => ({
     },
     user: {
       findUnique: vi.fn(),
+      findMany: vi.fn(),
+    },
+    phoneBlock: {
+      upsert: vi.fn(),
     },
     $transaction: vi.fn(),
   },
+}));
+
+vi.mock("@/lib/rate-limit", () => ({
+  apiLimiter: {},
+  authLimiter: {},
+  isRateLimited: vi.fn(() => Promise.resolve(false)),
 }));
 
 vi.mock("@/lib/cache", () => ({
@@ -221,6 +232,124 @@ describe("toggleBlock", () => {
     await toggleBlock(prevState, makeFormData({ userId: "user2" }));
 
     expect(mockRevalidatePath).toHaveBeenCalledWith("/");
+  });
+});
+
+describe("toggleBlock with blockByPhone", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("blocks all accounts sharing the same verified phone number", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.block.findUnique.mockResolvedValueOnce(null as never);
+
+    // Target user has verified phone
+    (mockPrisma.user.findUnique as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ phoneNumber: "+15551234567", phoneVerified: new Date() } as never)
+      // Cache invalidation lookups
+      .mockResolvedValueOnce({ username: "currentuser" } as never)
+      .mockResolvedValueOnce({ username: "targetuser" } as never);
+
+    // Other accounts with the same phone
+    (mockPrisma.user.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
+      { id: "user3" },
+      { id: "user4" },
+    ] as never);
+    mockPrisma.phoneBlock.upsert.mockResolvedValueOnce({} as never);
+    mockPrisma.$transaction.mockResolvedValueOnce([] as never);
+
+    const result = await toggleBlock(
+      prevState,
+      makeFormData({ userId: "user2", blockByPhone: "true" })
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("Blocked");
+
+    // Should create PhoneBlock record
+    expect(mockPrisma.phoneBlock.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          blockerId_phoneNumber: {
+            blockerId: "user1",
+            phoneNumber: "+15551234567",
+          },
+        },
+        create: { blockerId: "user1", phoneNumber: "+15551234567" },
+      })
+    );
+
+    // Transaction should include operations for all 3 users (user2, user3, user4)
+    const txArgs = mockPrisma.$transaction.mock.calls[0][0] as unknown[];
+    // 5 operations per user (upsert block, delete follows, delete friends, delete subs, delete close friends) × 3 users
+    expect(txArgs).toHaveLength(15);
+  });
+
+  it("does not phone-block when target has no verified phone", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.block.findUnique.mockResolvedValueOnce(null as never);
+
+    // Target has phone but not verified
+    (mockPrisma.user.findUnique as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ phoneNumber: "+15551234567", phoneVerified: null } as never)
+      .mockResolvedValueOnce({ username: "currentuser" } as never)
+      .mockResolvedValueOnce({ username: "targetuser" } as never);
+
+    mockPrisma.$transaction.mockResolvedValueOnce([] as never);
+
+    const result = await toggleBlock(
+      prevState,
+      makeFormData({ userId: "user2", blockByPhone: "true" })
+    );
+
+    expect(result.success).toBe(true);
+    // Should NOT look up other accounts or create PhoneBlock
+    expect(mockPrisma.user.findMany).not.toHaveBeenCalled();
+    expect(mockPrisma.phoneBlock.upsert).not.toHaveBeenCalled();
+
+    // Transaction should only contain operations for the single target
+    const txArgs = mockPrisma.$transaction.mock.calls[0][0] as unknown[];
+    expect(txArgs).toHaveLength(5);
+  });
+
+  it("does not phone-block when blockByPhone is not set", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.block.findUnique.mockResolvedValueOnce(null as never);
+    mockPrisma.$transaction.mockResolvedValueOnce([] as never);
+    (mockPrisma.user.findUnique as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ username: "currentuser" } as never)
+      .mockResolvedValueOnce({ username: "targetuser" } as never);
+
+    await toggleBlock(prevState, makeFormData({ userId: "user2" }));
+
+    expect(mockPrisma.phoneBlock.upsert).not.toHaveBeenCalled();
+    expect(mockPrisma.user.findMany).not.toHaveBeenCalled();
+  });
+
+  it("excludes the blocker's own account from phone-based blocks", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.block.findUnique.mockResolvedValueOnce(null as never);
+
+    (mockPrisma.user.findUnique as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ phoneNumber: "+15551234567", phoneVerified: new Date() } as never)
+      .mockResolvedValueOnce({ username: "currentuser" } as never)
+      .mockResolvedValueOnce({ username: "targetuser" } as never);
+
+    (mockPrisma.user.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([] as never);
+    mockPrisma.phoneBlock.upsert.mockResolvedValueOnce({} as never);
+    mockPrisma.$transaction.mockResolvedValueOnce([] as never);
+
+    await toggleBlock(prevState, makeFormData({ userId: "user2", blockByPhone: "true" }));
+
+    // findMany should exclude both the blocker and the target
+    expect(mockPrisma.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: { notIn: ["user1", "user2"] },
+          phoneNumber: "+15551234567",
+          phoneVerified: { not: null },
+        }),
+      })
+    );
   });
 });
 

@@ -71,6 +71,7 @@ export function ChatAbuseNotificationActions({
         <ReportModal
           contentType="conversation"
           contentId={conversationId}
+          isOpen={showReport}
           onClose={() => setShowReport(false)}
         />
       )}
