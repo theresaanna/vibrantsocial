@@ -27,7 +27,6 @@ export const PROFILE_FRAMES: FrameDefinition[] = [
   { id: "decorative-1", name: "Digital City", src: "/frames/frame1.svg", category: "decorative", scaleX: 1.15, scaleY: 0.92, offsetX: 3, offsetY: 3 },
   { id: "decorative-3", name: "Autumn Leaves", src: "/frames/frame3.svg", category: "decorative", scaleX: 1.18, scaleY: 0.9, offsetX: 1, offsetY: 1 },
   { id: "decorative-5", name: "Frisbee", src: "/frames/frame5.svg", category: "decorative", scaleX: 1.15, scaleY: 0.92 },
-  { id: "decorative-10", name: "Flames", src: "/frames/frame10.svg", category: "decorative", frameScale: 1.8, scaleX: 1.22, scaleY: 0.90, offsetX: 10, offsetY: 2 },
   { id: "decorative-12", name: "Lava", src: "/frames/frame12.svg", category: "decorative", offsetX: -5 },
   { id: "floral-1", name: "Cherry Blossom", src: "/frames/floral-1.png", category: "floral", scaleX: 1.12, scaleY: 0.93 },
   { id: "floral-3", name: "Red Rose", src: "/frames/floral-3.png", category: "floral", scaleX: 1.12, scaleY: 0.93 },
