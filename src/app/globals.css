@@ -88,7 +88,7 @@ h6 {
 }
 
 .profile-themed .profile-container {
-  background-color: var(--profile-container);
+  background-color: color-mix(in srgb, var(--profile-container) 80%, transparent);
 }
 
 .profile-themed .profile-text-secondary {
@@ -146,19 +146,19 @@ h6 {
   color: var(--profile-secondary);
 }
 
-/* Profile-themed post cards: use container color for backgrounds */
+/* Profile-themed post cards: use container color at 80% opacity for backgrounds */
 .profile-themed [data-testid="post-card"] {
-  background-color: var(--profile-container);
+  background-color: color-mix(in srgb, var(--profile-container) 80%, transparent);
 }
 
 /* Profile-themed post truncation gradient: match container color */
 .profile-themed .post-truncation-gradient {
-  background: linear-gradient(to top, var(--profile-container), transparent);
+  background: linear-gradient(to top, color-mix(in srgb, var(--profile-container) 80%, transparent), transparent);
 }
 
 /* Profile-themed tabs bar: container-colored background behind tab pills */
 .profile-themed .profile-tabs-bar {
-  background-color: var(--profile-container);
+  background-color: color-mix(in srgb, var(--profile-container) 80%, transparent);
   border-radius: 1rem;
   padding: 0.75rem;
 }
