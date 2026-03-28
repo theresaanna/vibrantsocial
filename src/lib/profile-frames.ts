@@ -34,7 +34,7 @@ export const PROFILE_FRAMES: FrameDefinition[] = [
   { id: "floral-4", name: "Mint Bloom", src: "/frames/floral-4.png", category: "floral", scaleX: 1.10, scaleY: 0.94 },
   { id: "floral-5", name: "Frost Blossom", src: "/frames/floral-5.png", category: "floral", scaleX: 1.12, scaleY: 0.93, offsetX: -3 },
   { id: "floral-6", name: "Pink Peony", src: "/frames/floral-6.png", category: "floral", scaleX: 1.12, scaleY: 0.93 },
-  { id: "whimsy-1", name: "Chocolate Strawberry", src: "/frames/whimsy-1.png", category: "whimsy", frameScale: 1.15, scaleX: 1.18, scaleY: 0.88 },
+  { id: "whimsy-1", name: "Chocolate Strawberry", src: "/frames/whimsy-1.png", category: "whimsy", frameScale: 1.15, scaleX: 1.14, scaleY: 0.92 },
   { id: "whimsy-2", name: "Mushroom Wreath", src: "/frames/whimsy-2.png", category: "whimsy", frameScale: 1.15, scaleX: 1.12, scaleY: 0.92 },
   { id: "whimsy-3", name: "Skull Ring", src: "/frames/whimsy-3.png", category: "whimsy", frameScale: 1.05, scaleX: 0.92, scaleY: 1.08 },
   { id: "whimsy-4", name: "Woodland", src: "/frames/whimsy-4.png", category: "whimsy", frameScale: 1.15, scaleX: 1.10, scaleY: 0.94 },
