@@ -77,7 +77,6 @@ const profileSelect = {
   isProfilePublic: true,
   hideWallFromFeed: true,
   tier: true,
-  phoneVerified: true,
   _count: {
     select: {
       posts: true,
