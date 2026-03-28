@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import type { PrismaPromise } from "@/generated/prisma";
+import type { PrismaPromise } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { cached, invalidate, invalidateMany, cacheKeys } from "@/lib/cache";
 import { requireAuthWithRateLimit, isActionError } from "@/lib/action-utils";
