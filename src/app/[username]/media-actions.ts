@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { extractMediaFromLexicalJson } from "@/lib/lexical-text";
+import { getUserPrefs } from "@/lib/user-prefs";
 
 const MEDIA_PAGE_SIZE = 30;
 
@@ -61,9 +62,16 @@ export async function fetchUserMediaPosts(
       : { hasCustomAudience: false };
 
   // Content flag filters
-  const loggedOutFilter = !currentUserId
-    ? { isSensitive: false, isNsfw: false, isGraphicNudity: false, isLoggedInOnly: false }
-    : {};
+  let nsfwFilter = {};
+  if (!currentUserId) {
+    nsfwFilter = { isSensitive: false, isNsfw: false, isGraphicNudity: false, isLoggedInOnly: false };
+  } else {
+    const prefs = await getUserPrefs(currentUserId);
+    nsfwFilter = {
+      ...(!prefs.showNsfwContent ? { isNsfw: false } : {}),
+      ...(!prefs.ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
+    };
+  }
 
   const dateFilter = cursor ? { lt: new Date(cursor) } : undefined;
 
@@ -73,7 +81,7 @@ export async function fetchUserMediaPosts(
   const posts = await prisma.post.findMany({
     where: {
       authorId: userId,
-      ...loggedOutFilter,
+      ...nsfwFilter,
       ...closeFriendsFilter,
       ...(dateFilter ? { createdAt: dateFilter } : {}),
       AND: [
