@@ -6,6 +6,7 @@ import { getTagCloudData, getAllTagCloudData } from "@/app/tags/actions";
 import { TagCloud } from "./tag-cloud";
 import { CommunitiesViewToggle } from "./communities-view-toggle";
 import { CommunitiesMediaClient } from "./communities-media-client";
+import { CommunitiesDiscussionsClient } from "./communities-discussions-client";
 
 export const metadata: Metadata = {
   title: "Communities",
@@ -18,7 +19,7 @@ interface CommunitiesPageProps {
 
 export default async function CommunitiesPage({ searchParams }: CommunitiesPageProps) {
   const { view } = await searchParams;
-  const activeView = view === "media" ? "media" : "tags";
+  const activeView = view === "media" ? "media" : view === "discussions" ? "discussions" : "tags";
 
   const session = await auth();
   let showNsfwContent = false;
@@ -64,6 +65,16 @@ export default async function CommunitiesPage({ searchParams }: CommunitiesPageP
           }
         >
           <CommunitiesMediaClient />
+        </Suspense>
+      ) : activeView === "discussions" ? (
+        <Suspense
+          fallback={
+            <div className="mt-6 flex justify-center py-8">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-600 dark:border-t-zinc-100" />
+            </div>
+          }
+        >
+          <CommunitiesDiscussionsClient />
         </Suspense>
       ) : tagData.length === 0 ? (
         <div className="rounded-2xl bg-white p-8 text-center shadow-lg dark:bg-zinc-900">
