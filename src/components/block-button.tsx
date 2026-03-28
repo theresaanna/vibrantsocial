@@ -10,7 +10,7 @@ interface BlockButtonProps {
   hasVerifiedPhone?: boolean;
 }
 
-export function BlockButton({ userId, isBlocked, hasVerifiedPhone }: BlockButtonProps) {
+export function BlockButton({ userId, isBlocked, hasVerifiedPhone = false }: BlockButtonProps) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [blockByPhone, setBlockByPhone] = useState(false);
   const [, formAction, isPending] = useActionState(toggleBlock, {
@@ -28,6 +28,8 @@ export function BlockButton({ userId, isBlocked, hasVerifiedPhone }: BlockButton
     const form = document.getElementById(`block-form-${userId}`) as HTMLFormElement;
     if (form) form.requestSubmit();
   };
+
+  const showPhoneOption = hasVerifiedPhone && !isBlocked;
 
   return (
     <>
@@ -66,8 +68,11 @@ export function BlockButton({ userId, isBlocked, hasVerifiedPhone }: BlockButton
         onConfirm={handleConfirm}
         onCancel={() => setShowConfirm(false)}
       >
-        {!isBlocked && hasVerifiedPhone && (
-          <label className="mt-3 flex items-start gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+        {showPhoneOption && (
+          <label
+            className="mt-3 flex items-start gap-2 text-sm text-zinc-600 dark:text-zinc-400"
+            data-testid="block-by-phone-option"
+          >
             <input
               type="checkbox"
               checked={blockByPhone}
@@ -75,7 +80,9 @@ export function BlockButton({ userId, isBlocked, hasVerifiedPhone }: BlockButton
               className="mt-0.5 rounded border-zinc-300 text-fuchsia-600 focus:ring-fuchsia-500 dark:border-zinc-600"
               data-testid="block-by-phone-checkbox"
             />
-            <span>Also block all accounts using the same phone number, including future ones</span>
+            <span>
+              Also block all current and future accounts using the same phone number
+            </span>
           </label>
         )}
       </ConfirmDialog>

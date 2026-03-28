@@ -166,9 +166,9 @@ model User {
   postSubscribers   PostSubscription[] @relation("postSubscribedTo")
 
   // Blocks
-  blockedUsers  Block[]      @relation("blocker")
-  blockedBy     Block[]      @relation("blocked")
-  phoneBlocks   PhoneBlock[] @relation("phoneBlockBlocker")
+  blockedUsers Block[]      @relation("blocker")
+  blockedBy    Block[]      @relation("blocked")
+  phoneBlocks  PhoneBlock[] @relation("phoneBlockBlocker")
 
   // Chat abuse tracking
   chatAbuseFlagsSent     ChatAbuseFlag[]      @relation("chatAbuseFlagSender")

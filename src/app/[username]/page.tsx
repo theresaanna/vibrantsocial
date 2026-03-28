@@ -73,10 +73,10 @@ const profileSelect = {
   sparklefallMaxSize: true,
   birthdayMonth: true,
   birthdayDay: true,
+  phoneVerified: true,
   isProfilePublic: true,
   hideWallFromFeed: true,
   tier: true,
-  phoneVerified: true,
   _count: {
     select: {
       posts: true,
