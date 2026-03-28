@@ -166,8 +166,9 @@ model User {
   postSubscribers   PostSubscription[] @relation("postSubscribedTo")
 
   // Blocks
-  blockedUsers Block[] @relation("blocker")
-  blockedBy    Block[] @relation("blocked")
+  blockedUsers Block[]      @relation("blocker")
+  blockedBy    Block[]      @relation("blocked")
+  phoneBlocks  PhoneBlock[] @relation("phoneBlockBlocker")
 
   // User lists
   userLists              UserList[]             @relation("userListOwner")
@@ -528,6 +529,18 @@ model Block {
   @@unique([blockerId, blockedId])
   @@index([blockerId])
   @@index([blockedId])
+}
+
+model PhoneBlock {
+  id          String   @id @default(cuid())
+  blockerId   String
+  phoneNumber String
+  createdAt   DateTime @default(now())
+
+  blocker User @relation("phoneBlockBlocker", fields: [blockerId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, phoneNumber])
+  @@index([phoneNumber])
 }
 
 // Tag subscriptions (subscribe to new posts in a tag)
