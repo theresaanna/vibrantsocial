@@ -146,6 +146,18 @@ h6 {
   color: var(--profile-secondary);
 }
 
+/* Profile-themed post cards: use container color for backgrounds */
+.profile-themed [data-testid="post-card"] {
+  background-color: var(--profile-container);
+}
+
+/* Profile-themed tabs bar: container-colored background behind tab pills */
+.profile-themed .profile-tabs-bar {
+  background-color: var(--profile-container);
+  border-radius: 1rem;
+  padding: 0.75rem;
+}
+
 /* Chat theme overrides — light mode (default) */
 .chat-themed {
   --chat-bubble-bg: var(--chat-bubble-bg-light);

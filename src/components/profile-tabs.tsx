@@ -41,7 +41,7 @@ export function ProfileTabs({ username, activeTab, hasCustomTheme, showMediaTab,
 
   return (
     <div className="mt-6">
-      <div className="flex flex-wrap gap-2">
+      <div className={`flex flex-wrap gap-2${hasCustomTheme ? " profile-tabs-bar" : ""}`}>
         <Link
           href={`/${username}`}
           className={`${baseClass} ${activeTab === "posts" ? activeClass : inactiveClass}`}
