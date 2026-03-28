@@ -4,7 +4,7 @@ import { FeedClient } from "@/components/feed-client";
 import { calculateAge } from "@/lib/age-gate";
 import { getPostInclude, getRepostInclude, PAGE_SIZE } from "./feed-queries";
 import { cached, cacheKeys } from "@/lib/cache";
-import { getCloseFriendIds } from "@/app/feed/close-friends-actions";
+import { getCloseFriendIds, getCachedCloseFriendOfIds } from "@/app/feed/close-friends-actions";
 import { isProfileIncomplete } from "@/lib/require-profile";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 
@@ -42,10 +42,7 @@ export async function ListFeedContent({ userId, listId }: { userId: string; list
       },
       60
     ),
-    prisma.closeFriend.findMany({
-      where: { friendId: userId },
-      select: { userId: true },
-    }).then((rows) => rows.map((r) => r.userId)),
+    getCachedCloseFriendOfIds(userId),
     getAllBlockRelatedIds(userId),
   ]);
 

@@ -49,6 +49,7 @@ const makeMessage = (id: string, content = "hello"): MessageData => ({
   mediaType: null,
   mediaFileName: null,
   mediaFileSize: null,
+  isNsfw: false,
   replyTo: null,
   editedAt: null,
   deletedAt: null,

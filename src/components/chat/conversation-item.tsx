@@ -83,7 +83,7 @@ export function ConversationItem({
               : "No messages yet"}
           </p>
           {unreadCount > 0 && (
-            <span className="ml-2 flex h-4.5 min-w-4.5 flex-shrink-0 items-center justify-center rounded-full bg-blue-500 px-1 text-[10px] font-medium text-white">
+            <span className={`chat-unread-badge ml-2 flex h-4.5 min-w-4.5 flex-shrink-0 items-center justify-center rounded-full bg-blue-500 px-1 text-[10px] font-medium text-white`}>
               {unreadCount}
             </span>
           )}

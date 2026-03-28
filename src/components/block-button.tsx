@@ -77,7 +77,7 @@ export function BlockButton({ userId, isBlocked, hasVerifiedPhone = false }: Blo
               type="checkbox"
               checked={blockByPhone}
               onChange={(e) => setBlockByPhone(e.target.checked)}
-              className="mt-0.5 rounded border-zinc-300 dark:border-zinc-600"
+              className="mt-0.5 rounded border-zinc-300 text-fuchsia-600 focus:ring-fuchsia-500 dark:border-zinc-600"
               data-testid="block-by-phone-checkbox"
             />
             <span>

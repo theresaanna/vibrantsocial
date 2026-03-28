@@ -13,7 +13,7 @@ export default function TermsOfServicePage() {
         Terms of Service
       </h1>
       <p className="mt-2 text-sm text-zinc-400 dark:text-zinc-500">
-        Last updated: March 7, 2026
+        Last updated: March 25, 2026
       </p>
 
       <p className="mt-8 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
@@ -41,7 +41,20 @@ export default function TermsOfServicePage() {
       </p>
 
       <h2 className="mt-10 text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-        3. Content Labeling Requirements
+        3. Platform &amp; Chat Usage
+      </h2>
+      <p className="mt-4 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+        VibrantSocial is designed for creative expression, connection, and
+        community. We are not able to support the use of the platform &mdash;
+        including posts, direct messages, and group chats &mdash; to plan,
+        coordinate, or facilitate activity that is illegal under applicable law.
+        If we become aware of such use, we may need to take action, which could
+        include removing content or disabling accounts. We want everyone here to
+        have a good experience, and keeping things legal helps us do that.
+      </p>
+
+      <h2 className="mt-10 text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+        4. Content Labeling Requirements
       </h2>
       <p className="mt-4 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
         VibrantSocial requires accurate content labeling to keep the community
@@ -87,7 +100,7 @@ export default function TermsOfServicePage() {
       </p>
 
       <h2 className="mt-10 text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-        4. Account Responsibility
+        5. Account Responsibility
       </h2>
       <p className="mt-4 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
         You are responsible for all activity that occurs under your account. Keep
@@ -96,7 +109,7 @@ export default function TermsOfServicePage() {
       </p>
 
       <h2 className="mt-10 text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-        5. Termination
+        6. Termination
       </h2>
       <p className="mt-4 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
         VibrantSocial reserves the right to suspend or terminate accounts that
@@ -105,7 +118,7 @@ export default function TermsOfServicePage() {
       </p>
 
       <h2 className="mt-10 text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-        6. Contact
+        7. Contact
       </h2>
       <p className="mt-4 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
         If you have questions about these Terms of Service, please contact us at{" "}

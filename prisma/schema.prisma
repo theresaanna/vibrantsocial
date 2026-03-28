@@ -170,6 +170,12 @@ model User {
   blockedBy    Block[]      @relation("blocked")
   phoneBlocks  PhoneBlock[] @relation("phoneBlockBlocker")
 
+  // Chat abuse tracking
+  chatAbuseFlagsSent     ChatAbuseFlag[]      @relation("chatAbuseFlagSender")
+  chatAbuseFlagsReceived ChatAbuseFlag[]      @relation("chatAbuseFlagRecipient")
+  chatAbuseDismissals    ChatAbuseDismissal[] @relation("chatAbuseDismissalUser")
+  chatAbuseDismissedBy   ChatAbuseDismissal[] @relation("chatAbuseDismissalSender")
+
   // User lists
   userLists              UserList[]             @relation("userListOwner")
   userListMembers        UserListMember[]       @relation("userListMembership")
@@ -184,6 +190,9 @@ model User {
 
   // AI-generated custom theme presets
   customThemePresets CustomThemePreset[]
+
+  // Marketplace questions
+  marketplaceQuestions MarketplaceQuestion[]
 
   // Linked accounts (multi-account switching)
   linkedAccountGroupId String?
@@ -259,6 +268,7 @@ model Post {
   audience          PostAudience[]
   contentViolations ContentViolation[]
   wallPost          WallPost?
+  marketplacePost   MarketplacePost?
 
   @@unique([authorId, slug])
   @@index([authorId])
@@ -531,6 +541,7 @@ model Block {
   @@index([blockedId])
 }
 
+// Phone-based blocks (block all accounts sharing a verified phone number)
 model PhoneBlock {
   id          String   @id @default(cuid())
   blockerId   String
@@ -609,12 +620,17 @@ model Message {
   deletedAt      DateTime?
   createdAt      DateTime  @default(now())
 
+  // Content moderation (set asynchronously by scanning)
+  isNsfw    Boolean @default(false)
+  nsfwScore Float?
+
   conversation  Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender        User              @relation(fields: [senderId], references: [id], onDelete: Cascade)
   replyTo       Message?          @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
   replies       Message[]         @relation("MessageReplies")
   reactions     MessageReaction[]
   notifications Notification[]
+  abuseFlags    ChatAbuseFlag[]
 
   @@index([conversationId, createdAt])
   @@index([senderId])
@@ -669,6 +685,7 @@ enum NotificationType {
   REACTION
   MENTION
   FRIEND_REQUEST
+  FRIEND_REQUEST_ACCEPTED
   NEW_POST
   TAG_POST
   CONTENT_MODERATION
@@ -678,6 +695,11 @@ enum NotificationType {
   LIST_SUBSCRIBE
   LIST_COLLABORATOR_ADD
   WALL_POST
+  MARKETPLACE_QUESTION
+  MARKETPLACE_ANSWER
+  CHAT_REQUEST
+  CHAT_REQUEST_ACCEPTED
+  CHAT_ABUSE
 }
 
 model Notification {
@@ -703,6 +725,39 @@ model Notification {
 
   @@index([targetUserId, readAt, createdAt])
   @@index([actorId])
+}
+
+// Chat abuse tracking (per sender→recipient pair)
+
+model ChatAbuseFlag {
+  id          String   @id @default(cuid())
+  senderId    String
+  recipientId String
+  messageId   String
+  confidence  Float
+  violationType String // "hate_speech", "bullying"
+  createdAt   DateTime @default(now())
+
+  sender    User    @relation("chatAbuseFlagSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient User    @relation("chatAbuseFlagRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, recipientId])
+  @@index([recipientId])
+}
+
+// Tracks when a user dismisses abuse alerts from a specific sender
+model ChatAbuseDismissal {
+  id          String   @id @default(cuid())
+  userId      String
+  dismissedSenderId String
+  createdAt   DateTime @default(now())
+
+  user            User @relation("chatAbuseDismissalUser", fields: [userId], references: [id], onDelete: Cascade)
+  dismissedSender User @relation("chatAbuseDismissalSender", fields: [dismissedSenderId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dismissedSenderId])
+  @@index([userId])
 }
 
 // Content moderation
@@ -898,4 +953,48 @@ model CustomThemePreset {
 
   @@unique([userId, name])
   @@index([userId])
+}
+
+// Marketplace posts
+
+enum ShippingOption {
+  FREE
+  FLAT_RATE
+  PICKUP_ONLY
+  CONTACT_SELLER
+}
+
+model MarketplacePost {
+  id              String         @id @default(cuid())
+  postId          String         @unique
+  purchaseUrl     String
+  price           Float
+  shippingOption  ShippingOption  @default(CONTACT_SELLER)
+  shippingPrice   Float?
+  promotedToFeed  Boolean        @default(false)
+  publicListing   Boolean        @default(false)
+  agreedToTerms   Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  post      Post                  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  questions MarketplaceQuestion[]
+
+  @@index([postId])
+}
+
+model MarketplaceQuestion {
+  id                String   @id @default(cuid())
+  marketplacePostId String
+  askerId           String
+  question          String   @db.Text
+  answer            String?  @db.Text
+  answeredAt        DateTime?
+  createdAt         DateTime @default(now())
+
+  marketplacePost MarketplacePost @relation(fields: [marketplacePostId], references: [id], onDelete: Cascade)
+  asker           User            @relation(fields: [askerId], references: [id], onDelete: Cascade)
+
+  @@index([marketplacePostId, createdAt])
+  @@index([askerId])
 }
