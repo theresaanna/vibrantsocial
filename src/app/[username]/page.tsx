@@ -19,6 +19,8 @@ import { RepostCard } from "@/components/repost-card";
 import { ReportButton } from "@/components/report-button";
 import { BlockButton } from "@/components/block-button";
 import { MessageButton } from "@/components/message-button";
+import { ChatRequestButton } from "@/components/chat-request-button";
+import { getChatRequestStatus, type ChatRequestStatus } from "@/app/chat/actions";
 import { getBlockStatus } from "@/app/feed/block-actions";
 import { generateAdaptiveTheme } from "@/lib/profile-themes";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
@@ -172,9 +174,10 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   let friendRequestId: string | undefined;
   let isSubscribed = false;
   let listMemberships: { id: string; name: string; isMember: boolean }[] = [];
+  let chatRequestStatus: ChatRequestStatus = "none";
 
   if (currentUserId && !isOwnProfile) {
-    const [follow, friendship, subscribed, memberships] = await Promise.all([
+    const [follow, friendship, subscribed, memberships, chatReqStatus] = await Promise.all([
       prisma.follow.findUnique({
         where: {
           followerId_followingId: {
@@ -186,12 +189,14 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       getFriendshipStatus(user.id),
       isSubscribedToUser(user.id),
       blockStatus === "none" ? getUserListMemberships(user.id) : Promise.resolve([]),
+      blockStatus === "none" ? getChatRequestStatus(user.id) : Promise.resolve("none" as ChatRequestStatus),
     ]);
     isFollowing = !!follow;
     friendshipStatus = friendship.status;
     friendRequestId = friendship.requestId;
     isSubscribed = subscribed;
     listMemberships = memberships;
+    chatRequestStatus = chatReqStatus;
   }
 
   if (currentUserId) {
@@ -677,6 +682,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                       <FollowButton userId={user.id} isFollowing={isFollowing} />
                       <FriendButton userId={user.id} friendshipStatus={friendshipStatus} requestId={friendRequestId} />
                       {isFriend && <MessageButton userId={user.id} hasCustomTheme={hasCustomTheme} />}
+                      {!isFriend && <ChatRequestButton userId={user.id} initialStatus={chatRequestStatus} hasCustomTheme={hasCustomTheme} />}
                       {/* Secondary actions — smaller, subtler */}
                       <SubscribeButton userId={user.id} isSubscribed={isSubscribed} />
                       <AddToListButton targetUserId={user.id} lists={listMemberships} />

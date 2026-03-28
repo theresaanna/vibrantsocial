@@ -54,6 +54,11 @@ export const chatConversationLimiter = createLimiter(
   "ratelimit:chat-conv"
 );
 
+export const chatRequestLimiter = createLimiter(
+  Ratelimit.slidingWindow(5, "1 h"),
+  "ratelimit:chat-req"
+);
+
 export async function checkRateLimit(
   limiter: Ratelimit | null,
   identifier: string
