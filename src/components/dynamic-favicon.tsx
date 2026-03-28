@@ -54,9 +54,29 @@ export function DynamicFavicon({
     }
   }, [pathname]);
 
-  // Update page title when total count changes
+  // Update page title when total count changes, and re-apply if
+  // Next.js overwrites the title (e.g. during client-side navigation
+  // or metadata refresh).
+  const totalCountRef = useRef(totalCount);
+  totalCountRef.current = totalCount;
+
   useEffect(() => {
     updateTitle(totalCount);
+
+    // Watch for Next.js overwriting the <title> and re-apply the prefix
+    const titleEl = document.querySelector("title");
+    if (!titleEl) return;
+
+    const observer = new MutationObserver(() => {
+      const current = document.title;
+      const count = totalCountRef.current;
+      if (count > 0 && !current.startsWith(`(${count})`)) {
+        updateTitle(count);
+      }
+    });
+
+    observer.observe(titleEl, { childList: true, characterData: true, subtree: true });
+    return () => observer.disconnect();
   }, [totalCount, pathname]);
 
   // Reset the appropriate counter when visiting notifications or chat
