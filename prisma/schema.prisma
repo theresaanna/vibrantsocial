@@ -672,6 +672,8 @@ enum NotificationType {
   WALL_POST
   MARKETPLACE_QUESTION
   MARKETPLACE_ANSWER
+  CHAT_REQUEST
+  CHAT_REQUEST_ACCEPTED
 }
 
 model Notification {

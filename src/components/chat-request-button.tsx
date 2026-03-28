@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { sendChatRequest, type ChatRequestStatus } from "@/app/chat/actions";
+import { sendChatRequest, cancelChatRequest, type ChatRequestStatus } from "@/app/chat/actions";
 
 interface ChatRequestButtonProps {
   userId: string;
@@ -19,34 +19,43 @@ export function ChatRequestButton({ userId, initialStatus, hasCustomTheme }: Cha
     return null;
   }
 
+  const isPendingStatus = status === "pending";
+
   const handleClick = async () => {
     setIsPending(true);
     setError("");
     try {
-      const result = await sendChatRequest(userId);
-      if (result.success) {
-        setStatus("pending");
+      if (isPendingStatus) {
+        const result = await cancelChatRequest(userId);
+        if (result.success) {
+          setStatus("none");
+        } else {
+          setError(result.message);
+        }
       } else {
-        setError(result.message);
+        const result = await sendChatRequest(userId);
+        if (result.success) {
+          setStatus("pending");
+        } else {
+          setError(result.message);
+        }
       }
     } finally {
       setIsPending(false);
     }
   };
 
-  const isPendingStatus = status === "pending";
-
   return (
     <div>
       <button
         onClick={handleClick}
-        disabled={isPending || isPendingStatus}
+        disabled={isPending}
         data-testid="chat-request-button"
         className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
           isPendingStatus
             ? hasCustomTheme
               ? ""
-              : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
+              : "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/40"
             : hasCustomTheme
               ? ""
               : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
@@ -72,7 +81,9 @@ export function ChatRequestButton({ userId, initialStatus, hasCustomTheme }: Cha
             clipRule="evenodd"
           />
         </svg>
-        {isPending ? "Sending…" : isPendingStatus ? "Chat Requested" : "Chat Request"}
+        {isPending
+          ? isPendingStatus ? "Cancelling…" : "Sending…"
+          : isPendingStatus ? "Chat Requested" : "Chat Request"}
       </button>
       {error && (
         <p className="mt-1 text-xs text-red-500" data-testid="chat-request-error">{error}</p>

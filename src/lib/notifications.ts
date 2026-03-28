@@ -128,6 +128,8 @@ export async function createNotification(params: CreateNotificationParams) {
       LIST_COLLABORATOR_ADD: "added you as a collaborator on a list",
       MARKETPLACE_QUESTION: "asked a question on your listing",
       MARKETPLACE_ANSWER: "answered your question on a listing",
+      CHAT_REQUEST: "sent you a chat request",
+      CHAT_REQUEST_ACCEPTED: "accepted your chat request",
     };
     const body = `${actorName} ${typeText[type] || "sent you a notification"}`;
     const url = postId ? `/notifications` : "/notifications";

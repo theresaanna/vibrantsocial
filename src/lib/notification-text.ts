@@ -44,6 +44,10 @@ export function getNotificationText(type: NotificationType): string {
       return "asked a question on your listing";
     case "MARKETPLACE_ANSWER":
       return "answered your question on a listing";
+    case "CHAT_REQUEST":
+      return "sent you a chat request";
+    case "CHAT_REQUEST_ACCEPTED":
+      return "accepted your chat request";
     default:
       return "";
   }

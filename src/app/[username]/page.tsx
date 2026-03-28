@@ -633,63 +633,25 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             />
 
             <div className="min-w-0 w-full sm:flex-1">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-                <div className="min-w-0">
-                  <h1
-                    className={`text-xl font-bold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}
-                    data-testid="profile-display-name"
-                  >
-                    <span className="inline-flex items-center gap-1.5">
-                      <StyledName fontId={user.usernameFont}>{displayName}</StyledName>
-                      {user.tier === "premium" && (
-                        <Link href="/premium" title="Premium member" className="relative inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 shadow-sm">
-                          <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round">
-                            <path d="M12 5v14M5 12h14" />
-                          </svg>
-                        </Link>
-                      )}
-                    </span>
-                  </h1>
-                  <p className={`text-sm ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
-                    @{user.username}
-                  </p>
-                </div>
-
-                <div className={`flex flex-wrap items-center gap-2${currentUserId && !isOwnProfile && blockStatus !== "blocked_by_them" ? " sm:pr-14" : ""}`}>
-                  {isOwnProfile && (
-                    <Link
-                      href="/profile"
-                      className={`rounded-full border px-4 py-1.5 text-sm font-semibold whitespace-nowrap transition-all ${
-                        hasCustomTheme
-                          ? "profile-share-btn"
-                          : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-600 dark:bg-transparent dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-200"
-                      }`}
-                      style={
-                        hasCustomTheme
-                          ? ({
-                              borderColor: "var(--profile-secondary)",
-                              color: "var(--profile-text)",
-                            } as React.CSSProperties)
-                          : undefined
-                      }
-                    >
-                      Edit Profile
-                    </Link>
-                  )}
-                  {currentUserId && !isOwnProfile && blockStatus === "none" && (
-                    <>
-                      {/* Primary actions — prominent */}
-                      <FollowButton userId={user.id} isFollowing={isFollowing} />
-                      <FriendButton userId={user.id} friendshipStatus={friendshipStatus} requestId={friendRequestId} />
-                      {isFriend && <MessageButton userId={user.id} hasCustomTheme={hasCustomTheme} />}
-                      {!isFriend && <ChatRequestButton userId={user.id} initialStatus={chatRequestStatus} hasCustomTheme={hasCustomTheme} />}
-                      {/* Secondary actions — smaller, subtler */}
-                      <SubscribeButton userId={user.id} isSubscribed={isSubscribed} />
-                      <AddToListButton targetUserId={user.id} lists={listMemberships} />
-                    </>
-                  )}
-                  <ProfileShareButton username={user.username!} hasCustomTheme={hasCustomTheme} />
-                </div>
+              <div className="min-w-0">
+                <h1
+                  className={`text-xl font-bold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}
+                  data-testid="profile-display-name"
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    <StyledName fontId={user.usernameFont}>{displayName}</StyledName>
+                    {user.tier === "premium" && (
+                      <Link href="/premium" title="Premium member" className="relative inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 shadow-sm">
+                        <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round">
+                          <path d="M12 5v14M5 12h14" />
+                        </svg>
+                      </Link>
+                    )}
+                  </span>
+                </h1>
+                <p className={`text-sm ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
+                  @{user.username}
+                </p>
               </div>
 
               {blockStatus === "blocked_by_me" && (
@@ -778,6 +740,41 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                 )}
               </div>}
             </div>
+          </div>
+
+          {/* Action buttons — below name, aligned to avatar left edge */}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {isOwnProfile && (
+              <Link
+                href="/profile"
+                className={`rounded-full border px-4 py-1.5 text-sm font-semibold whitespace-nowrap transition-all ${
+                  hasCustomTheme
+                    ? "profile-share-btn"
+                    : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-600 dark:bg-transparent dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-200"
+                }`}
+                style={
+                  hasCustomTheme
+                    ? ({
+                        borderColor: "var(--profile-secondary)",
+                        color: "var(--profile-text)",
+                      } as React.CSSProperties)
+                    : undefined
+                }
+              >
+                Edit Profile
+              </Link>
+            )}
+            {currentUserId && !isOwnProfile && blockStatus === "none" && (
+              <>
+                <FollowButton userId={user.id} isFollowing={isFollowing} />
+                <FriendButton userId={user.id} friendshipStatus={friendshipStatus} requestId={friendRequestId} />
+                {isFriend && <MessageButton userId={user.id} hasCustomTheme={hasCustomTheme} />}
+                {!isFriend && <ChatRequestButton userId={user.id} initialStatus={chatRequestStatus} hasCustomTheme={hasCustomTheme} />}
+                <SubscribeButton userId={user.id} isSubscribed={isSubscribed} />
+                <AddToListButton targetUserId={user.id} lists={listMemberships} />
+              </>
+            )}
+            <ProfileShareButton username={user.username!} hasCustomTheme={hasCustomTheme} />
           </div>
         </div>
 
