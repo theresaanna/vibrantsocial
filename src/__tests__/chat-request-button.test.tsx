@@ -3,12 +3,14 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 vi.mock("@/app/chat/actions", () => ({
   sendChatRequest: vi.fn(),
+  cancelChatRequest: vi.fn(),
 }));
 
 import { ChatRequestButton } from "@/components/chat-request-button";
-import { sendChatRequest } from "@/app/chat/actions";
+import { sendChatRequest, cancelChatRequest } from "@/app/chat/actions";
 
 const mockSendChatRequest = vi.mocked(sendChatRequest);
+const mockCancelChatRequest = vi.mocked(cancelChatRequest);
 
 describe("ChatRequestButton", () => {
   beforeEach(() => {
@@ -26,7 +28,7 @@ describe("ChatRequestButton", () => {
     render(<ChatRequestButton userId="user-123" initialStatus="pending" />);
     const button = screen.getByTestId("chat-request-button");
     expect(button).toHaveTextContent("Chat Requested");
-    expect(button).toBeDisabled();
+    expect(button).not.toBeDisabled();
   });
 
   it("does not render when status is friends", () => {
@@ -67,7 +69,7 @@ describe("ChatRequestButton", () => {
     });
   });
 
-  it("shows loading state while pending", async () => {
+  it("shows sending loading state", async () => {
     let resolvePromise: (value: unknown) => void;
     const promise = new Promise((resolve) => {
       resolvePromise = resolve;
@@ -87,7 +89,7 @@ describe("ChatRequestButton", () => {
     });
   });
 
-  it("shows error message when request fails", async () => {
+  it("shows error message when send fails", async () => {
     mockSendChatRequest.mockResolvedValue({
       success: false,
       message: "Too many chat requests. Please try again later.",
@@ -111,5 +113,86 @@ describe("ChatRequestButton", () => {
     const button = screen.getByTestId("chat-request-button");
     expect(button.style.borderColor).toBe("var(--profile-secondary)");
     expect(button.style.color).toBe("var(--profile-text)");
+  });
+
+  // Cancel flow tests
+  it("cancels pending chat request on click and reverts to none", async () => {
+    mockCancelChatRequest.mockResolvedValue({
+      success: true,
+      message: "Chat request cancelled",
+    });
+
+    render(<ChatRequestButton userId="user-123" initialStatus="pending" />);
+    fireEvent.click(screen.getByTestId("chat-request-button"));
+
+    await waitFor(() => {
+      expect(mockCancelChatRequest).toHaveBeenCalledWith("user-123");
+      expect(screen.getByTestId("chat-request-button")).toHaveTextContent("Chat Request");
+    });
+  });
+
+  it("shows cancelling loading state", async () => {
+    let resolvePromise: (value: unknown) => void;
+    const promise = new Promise((resolve) => {
+      resolvePromise = resolve;
+    });
+    mockCancelChatRequest.mockReturnValue(promise as ReturnType<typeof cancelChatRequest>);
+
+    render(<ChatRequestButton userId="user-123" initialStatus="pending" />);
+    fireEvent.click(screen.getByTestId("chat-request-button"));
+
+    expect(screen.getByTestId("chat-request-button")).toHaveTextContent("Cancelling…");
+    expect(screen.getByTestId("chat-request-button")).toBeDisabled();
+
+    resolvePromise!({ success: true, message: "Chat request cancelled" });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("chat-request-button")).toHaveTextContent("Chat Request");
+    });
+  });
+
+  it("shows error when cancel fails", async () => {
+    mockCancelChatRequest.mockResolvedValue({
+      success: false,
+      message: "No pending chat request to cancel",
+    });
+
+    render(<ChatRequestButton userId="user-123" initialStatus="pending" />);
+    fireEvent.click(screen.getByTestId("chat-request-button"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("chat-request-error")).toHaveTextContent(
+        "No pending chat request to cancel"
+      );
+    });
+
+    // Button should still show "Chat Requested" (not reverted)
+    expect(screen.getByTestId("chat-request-button")).toHaveTextContent("Chat Requested");
+  });
+
+  it("can send after cancelling (full round-trip)", async () => {
+    mockCancelChatRequest.mockResolvedValue({
+      success: true,
+      message: "Chat request cancelled",
+    });
+    mockSendChatRequest.mockResolvedValue({
+      success: true,
+      message: "Chat request sent",
+    });
+
+    render(<ChatRequestButton userId="user-123" initialStatus="pending" />);
+
+    // Cancel
+    fireEvent.click(screen.getByTestId("chat-request-button"));
+    await waitFor(() => {
+      expect(screen.getByTestId("chat-request-button")).toHaveTextContent("Chat Request");
+    });
+
+    // Re-send
+    fireEvent.click(screen.getByTestId("chat-request-button"));
+    await waitFor(() => {
+      expect(mockSendChatRequest).toHaveBeenCalledWith("user-123");
+      expect(screen.getByTestId("chat-request-button")).toHaveTextContent("Chat Requested");
+    });
   });
 });

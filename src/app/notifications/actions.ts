@@ -27,6 +27,28 @@ async function enrichWithPendingFriendRequests(
   return new Set(pendingRequests.map((r) => r.senderId));
 }
 
+async function enrichWithPendingChatRequests(
+  notifications: Array<{ type: string; actorId: string }>,
+  currentUserId: string
+): Promise<Set<string>> {
+  const chatRequestActorIds = notifications
+    .filter((n) => n.type === "CHAT_REQUEST")
+    .map((n) => n.actorId);
+
+  if (chatRequestActorIds.length === 0) return new Set();
+
+  const pendingRequests = await prisma.messageRequest.findMany({
+    where: {
+      senderId: { in: chatRequestActorIds },
+      receiverId: currentUserId,
+      status: "PENDING",
+    },
+    select: { senderId: true },
+  });
+
+  return new Set(pendingRequests.map((r) => r.senderId));
+}
+
 export async function getNotifications() {
   const session = await auth();
   if (!session?.user?.id) return [];
@@ -66,16 +88,20 @@ export async function getNotifications() {
       },
     });
 
-    const pendingActorIds = await enrichWithPendingFriendRequests(
-      notifications,
-      session.user.id
-    );
+    const [pendingFriendActorIds, pendingChatActorIds] = await Promise.all([
+      enrichWithPendingFriendRequests(notifications, session.user.id),
+      enrichWithPendingChatRequests(notifications, session.user.id),
+    ]);
 
     return JSON.parse(JSON.stringify(notifications.map((n) => ({
       ...n,
       hasPendingFriendRequest:
         n.type === "FRIEND_REQUEST"
-          ? pendingActorIds.has(n.actorId)
+          ? pendingFriendActorIds.has(n.actorId)
+          : undefined,
+      hasPendingChatRequest:
+        n.type === "CHAT_REQUEST"
+          ? pendingChatActorIds.has(n.actorId)
           : undefined,
     }))));
   }, 30);
@@ -180,16 +206,20 @@ export async function getRecentNotifications() {
       },
     });
 
-    const pendingActorIds = await enrichWithPendingFriendRequests(
-      notifications,
-      session.user.id
-    );
+    const [pendingFriendActorIds, pendingChatActorIds] = await Promise.all([
+      enrichWithPendingFriendRequests(notifications, session.user.id),
+      enrichWithPendingChatRequests(notifications, session.user.id),
+    ]);
 
     const enriched = notifications.map((n) => ({
       ...n,
       hasPendingFriendRequest:
         n.type === "FRIEND_REQUEST"
-          ? pendingActorIds.has(n.actorId)
+          ? pendingFriendActorIds.has(n.actorId)
+          : undefined,
+      hasPendingChatRequest:
+        n.type === "CHAT_REQUEST"
+          ? pendingChatActorIds.has(n.actorId)
           : undefined,
     }));
 

@@ -365,7 +365,39 @@ export async function sendChatRequest(targetUserId: string): Promise<ActionState
     create: { senderId: userId, receiverId: targetUserId },
   });
 
+  // Notify the recipient
+  await createNotificationSafe({
+    type: "CHAT_REQUEST",
+    actorId: userId,
+    targetUserId,
+  });
+
   return { success: true, message: "Chat request sent" };
+}
+
+export async function cancelChatRequest(targetUserId: string): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const userId = session.user.id;
+
+  const request = await prisma.messageRequest.findUnique({
+    where: {
+      senderId_receiverId: { senderId: userId, receiverId: targetUserId },
+    },
+  });
+
+  if (!request || request.status !== "PENDING") {
+    return { success: false, message: "No pending chat request to cancel" };
+  }
+
+  await prisma.messageRequest.delete({
+    where: { id: request.id },
+  });
+
+  return { success: true, message: "Chat request cancelled" };
 }
 
 export async function createGroupConversation(data: {
@@ -748,12 +780,76 @@ export async function acceptMessageRequest(
     },
   });
 
+  // Notify the requester that their chat request was accepted
+  await createNotificationSafe({
+    type: "CHAT_REQUEST_ACCEPTED",
+    actorId: session.user.id,
+    targetUserId: request.senderId,
+  });
+
   revalidatePath("/chat");
   return {
     success: true,
     message: "Request accepted",
     conversationId: conversation.id,
   };
+}
+
+export async function respondToChatRequestByActor(
+  actorId: string,
+  action: "accept" | "decline"
+): Promise<ActionState & { conversationId?: string }> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  // Find the pending request where actorId is the sender and current user is receiver
+  const request = await prisma.messageRequest.findUnique({
+    where: {
+      senderId_receiverId: { senderId: actorId, receiverId: session.user.id },
+    },
+  });
+
+  if (!request || request.status !== "PENDING") {
+    return { success: false, message: "No pending chat request found" };
+  }
+
+  if (action === "accept") {
+    await prisma.messageRequest.update({
+      where: { id: request.id },
+      data: { status: "ACCEPTED" },
+    });
+
+    const conversation = await prisma.conversation.create({
+      data: {
+        isGroup: false,
+        participants: {
+          create: [
+            { userId: session.user.id },
+            { userId: request.senderId },
+          ],
+        },
+      },
+    });
+
+    await createNotificationSafe({
+      type: "CHAT_REQUEST_ACCEPTED",
+      actorId: session.user.id,
+      targetUserId: request.senderId,
+    });
+
+    revalidatePath("/chat");
+    return { success: true, message: "Chat request accepted", conversationId: conversation.id };
+  } else {
+    await prisma.messageRequest.update({
+      where: { id: request.id },
+      data: { status: "DECLINED" },
+    });
+
+    revalidatePath("/chat");
+    return { success: true, message: "Chat request declined" };
+  }
 }
 
 export async function declineMessageRequest(

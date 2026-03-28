@@ -14,6 +14,7 @@ import type { NotificationType } from "@/generated/prisma/client";
 import { getNotificationText } from "@/lib/notification-text";
 import { StyledName } from "@/components/styled-name";
 import { FriendRequestNotificationActions } from "@/components/friend-request-notification-actions";
+import { ChatRequestNotificationActions } from "@/components/chat-request-notification-actions";
 import { WallPostNotificationActions } from "@/components/wall-post-notification-actions";
 import { useSelectionSet } from "@/hooks/use-selection-set";
 
@@ -43,6 +44,7 @@ interface NotificationItem {
   message: { id: string; conversationId: string } | null;
   tag: { id: string; name: string } | null;
   hasPendingFriendRequest?: boolean;
+  hasPendingChatRequest?: boolean;
 }
 
 function getActorName(actor: NotificationActor): string {
@@ -178,8 +180,10 @@ export function NotificationList({
             href = `/post/${notification.postId}?commentId=${notification.commentId}`;
           } else if (notification.type === "REACTION" && notification.message) {
             href = `/chat/${notification.message.conversationId}`;
-          } else if (notification.type === "FRIEND_REQUEST" || notification.type === "FRIEND_REQUEST_ACCEPTED") {
+          } else if (notification.type === "FRIEND_REQUEST" || notification.type === "FRIEND_REQUEST_ACCEPTED" || notification.type === "CHAT_REQUEST") {
             href = `/${notification.actor.username}`;
+          } else if (notification.type === "CHAT_REQUEST_ACCEPTED") {
+            href = `/chat`;
           } else if (notification.type === "MENTION" && notification.repostId) {
             href = `/quote/${notification.repostId}`;
           } else if (notification.postId) {
@@ -276,6 +280,12 @@ export function NotificationList({
                     {notification.type === "FRIEND_REQUEST" &&
                       notification.hasPendingFriendRequest && (
                         <FriendRequestNotificationActions
+                          actorId={notification.actorId}
+                        />
+                      )}
+                    {notification.type === "CHAT_REQUEST" &&
+                      notification.hasPendingChatRequest && (
+                        <ChatRequestNotificationActions
                           actorId={notification.actorId}
                         />
                       )}
