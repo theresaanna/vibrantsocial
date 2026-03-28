@@ -26,9 +26,9 @@ export async function Header() {
 
   return (
     <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
-      <nav className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-2 px-2 py-3 sm:px-4">
-        {/* Row 1: Logo + theme toggle left, chat/notifications/account switcher right */}
-        <div className="flex items-center gap-2">
+      <nav className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-2 px-2 py-3 sm:px-4 md:flex-nowrap">
+        {/* Logo + theme toggles */}
+        <div className="flex shrink-0 items-center gap-2">
           <Link href="/">
             <Image
               src="/vibrantsocial-logo.png"
@@ -42,8 +42,16 @@ export async function Header() {
           {session?.user && <NsfwToggle initialEnabled={showNsfwContent} />}
         </div>
 
+        {/* Nav links — row 2 on mobile, inline center on md+ */}
+        {session?.user && (
+          <div className="order-3 flex w-full items-center justify-end gap-1 border-t border-zinc-100 pt-2 md:order-2 md:w-auto md:justify-center md:border-0 md:pt-0 dark:border-zinc-800">
+            <NavLinks username={session.user.username} />
+          </div>
+        )}
+
+        {/* Action icons — chat, account switch, notifications */}
         {session?.user ? (
-          <div className="order-2 ml-auto flex items-center gap-1">
+          <div className="order-2 ml-auto flex shrink-0 items-center gap-1 md:order-3 md:ml-0">
             <DynamicFavicon
               initialNotifCount={unreadNotifications}
               initialChatCount={conversations.reduce((sum: number, c: { unreadCount: number }) => sum + c.unreadCount, 0)}
@@ -59,13 +67,6 @@ export async function Header() {
           >
             Sign In
           </Link>
-        )}
-
-        {/* Row 2: Remaining nav icons aligned right */}
-        {session?.user && (
-          <div className="order-3 flex w-full items-center justify-end gap-1 border-t border-zinc-100 pt-2 dark:border-zinc-800">
-            <NavLinks username={session.user.username} />
-          </div>
         )}
       </nav>
     </header>
