@@ -113,6 +113,7 @@ export async function createNotification(params: CreateNotificationParams) {
       LIST_ADD: "added you to a list",
       LIST_SUBSCRIBE: "subscribed to your list",
       LIST_COLLABORATOR_ADD: "added you as a collaborator on a list",
+      CHAT_ABUSE: "may be sending you abusive messages",
     };
     const body = `${actorName} ${typeText[type] || "sent you a notification"}`;
     const url = postId ? `/notifications` : "/notifications";

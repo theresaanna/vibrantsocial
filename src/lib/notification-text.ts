@@ -38,6 +38,8 @@ export function getNotificationText(type: NotificationType): string {
       return "added you as a collaborator on a list";
     case "WALL_POST":
       return "posted on your wall";
+    case "CHAT_ABUSE":
+      return "may be sending you abusive messages. You can report or block this user.";
     default:
       return "";
   }

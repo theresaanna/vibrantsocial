@@ -8,6 +8,7 @@ import { requireNotSuspended } from "@/lib/suspension-gate";
 import { getAblyRestClient } from "@/lib/ably";
 import { createNotification } from "@/lib/notifications";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
+import { inngest } from "@/lib/inngest";
 import type {
   ActionState,
   ConversationListItem,
@@ -538,6 +539,16 @@ export async function sendMessage(data: {
     // Non-critical — message is saved, real-time delivery failed
   }
 
+  // Fire async moderation scan (non-blocking)
+  await inngest.send({
+    name: "moderation/scan-chat-message",
+    data: {
+      messageId: message.id,
+      senderId: session.user.id,
+      conversationId,
+    },
+  });
+
   return { success: true, message: "Message sent", messageId: message.id };
 }
 
@@ -594,6 +605,16 @@ export async function editMessage(data: {
   } catch {
     // Non-critical
   }
+
+  // Re-scan edited message content
+  await inngest.send({
+    name: "moderation/scan-chat-message",
+    data: {
+      messageId,
+      senderId: session.user.id,
+      conversationId: message.conversationId,
+    },
+  });
 
   return { success: true, message: "Message edited" };
 }
@@ -894,6 +915,35 @@ export async function toggleReaction(data: {
   }
 
   return { success: true, message: existing ? "Reaction removed" : "Reaction added" };
+}
+
+export async function dismissChatAbuseAlerts(
+  senderId: string
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
+  await prisma.chatAbuseDismissal.upsert({
+    where: {
+      userId_dismissedSenderId: {
+        userId: session.user.id,
+        dismissedSenderId: senderId,
+      },
+    },
+    update: {},
+    create: {
+      userId: session.user.id,
+      dismissedSenderId: senderId,
+    },
+  });
+
+  return { success: true, message: "Future alerts dismissed" };
 }
 
 export async function getFriendsForChat(): Promise<ChatUserProfile[]> {

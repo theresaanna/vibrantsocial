@@ -49,6 +49,7 @@ export interface MessageData {
   mediaType: MediaType | null;
   mediaFileName: string | null;
   mediaFileSize: number | null;
+  isNsfw: boolean;
   editedAt: Date | null;
   deletedAt: Date | null;
   createdAt: Date;

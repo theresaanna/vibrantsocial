@@ -329,6 +329,7 @@ export function MessageBubble({
                       mediaFileName={message.mediaFileName}
                       mediaFileSize={message.mediaFileSize}
                       isOwn={isOwn}
+                      isNsfw={message.isNsfw}
                     />
                   </div>
                 )}
