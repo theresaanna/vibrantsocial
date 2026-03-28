@@ -743,8 +743,8 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             </div>
           </div>
 
-          {/* Action buttons — below name, aligned to avatar left edge */}
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          {/* Action buttons — below bio, right-aligned */}
+          <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
             {isOwnProfile && (
               <Link
                 href="/profile"
