@@ -33,9 +33,9 @@ export async function fetchTopDiscussedPosts() {
       },
     });
     showNsfwContent = user?.showNsfwContent ?? false;
-    ageVerified = user?.ageVerified ?? false;
+    ageVerified = !!user?.ageVerified;
     showGraphicByDefault = user?.showGraphicByDefault ?? false;
-    phoneVerified = user?.phoneVerified ?? false;
+    phoneVerified = !!user?.phoneVerified;
   }
 
   const since = new Date();
