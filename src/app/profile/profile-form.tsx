@@ -4,7 +4,7 @@ import { useActionState, useState, useEffect, useRef, useCallback } from "react"
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import { updateProfile, removeAvatar, requestEmailChange, cancelEmailChange, deleteAccount } from "./actions";
+import { updateProfile, removeAvatar, requestEmailChange, cancelEmailChange, resendVerificationEmail, deleteAccount } from "./actions";
 import { unlinkAccount, getLinkedAccounts } from "./account-linking-actions";
 import { BioEditor } from "@/components/bio-editor";
 import { BioRevisionHistory } from "@/components/bio-revision-history";
@@ -51,6 +51,7 @@ interface ProfileFormProps {
     usernameFont: string | null;
   };
   email: string | null;
+  emailVerified: boolean;
   pendingEmail: string | null;
   currentAvatar: string | null;
   oauthImage: string | null;
@@ -88,7 +89,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, birthdayMonth: initialBirthdayMonth, birthdayDay: initialBirthdayDay, isPremium, stars, starsSpent, referralCode, backgrounds, premiumBackgrounds, userEmail, customPresets }: ProfileFormProps) {
+export function ProfileForm({ user, email, emailVerified, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, birthdayMonth: initialBirthdayMonth, birthdayDay: initialBirthdayDay, isPremium, stars, starsSpent, referralCode, backgrounds, premiumBackgrounds, userEmail, customPresets }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [displayNameValue, setDisplayNameValue] = useState(user.displayName ?? "");
@@ -112,6 +113,8 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [pushEnabled, setPushEnabled] = useState(initialPushEnabled);
   const [isCancellingEmail, setIsCancellingEmail] = useState(false);
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [showLinkModal, setShowLinkModal] = useState(false);
@@ -442,31 +445,88 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
         <p className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
           Email Address
         </p>
-        {email && !pendingEmail && (
+        {email && !pendingEmail && emailVerified && (
           <p className="mt-1 text-sm text-green-600 dark:text-green-400">
             Verified: {email}
           </p>
         )}
+        {email && !pendingEmail && !emailVerified && (
+          <div className="mt-1">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                Not verified: {email}
+              </p>
+              <button
+                type="button"
+                disabled={isResendingEmail}
+                onClick={async () => {
+                  setIsResendingEmail(true);
+                  setResendMessage(null);
+                  try {
+                    const result = await resendVerificationEmail();
+                    setResendMessage(result.message);
+                  } finally {
+                    setIsResendingEmail(false);
+                  }
+                }}
+                className="ml-2 shrink-0 text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 disabled:opacity-50 dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                {isResendingEmail ? "Sending..." : "Resend verification"}
+              </button>
+            </div>
+            {resendMessage && (
+              <p className="mt-1 text-xs text-green-600 dark:text-green-400">
+                {resendMessage}
+              </p>
+            )}
+          </div>
+        )}
         {pendingEmail && (
-          <div className="mt-1 flex items-center justify-between">
-            <p className="text-sm text-yellow-600 dark:text-yellow-400">
-              Verification sent to {pendingEmail}
-            </p>
-            <button
-              type="button"
-              disabled={isCancellingEmail}
-              onClick={async () => {
-                setIsCancellingEmail(true);
-                try {
-                  await cancelEmailChange();
-                } finally {
-                  setIsCancellingEmail(false);
-                }
-              }}
-              className="ml-2 shrink-0 text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-700 disabled:opacity-50 dark:hover:text-zinc-300"
-            >
-              Cancel
-            </button>
+          <div className="mt-1">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                Verification sent to {pendingEmail}
+              </p>
+              <div className="ml-2 flex shrink-0 gap-2">
+                <button
+                  type="button"
+                  disabled={isResendingEmail}
+                  onClick={async () => {
+                    setIsResendingEmail(true);
+                    setResendMessage(null);
+                    try {
+                      const result = await resendVerificationEmail();
+                      setResendMessage(result.message);
+                    } finally {
+                      setIsResendingEmail(false);
+                    }
+                  }}
+                  className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 disabled:opacity-50 dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  {isResendingEmail ? "Sending..." : "Resend"}
+                </button>
+                <button
+                  type="button"
+                  disabled={isCancellingEmail}
+                  onClick={async () => {
+                    setIsCancellingEmail(true);
+                    try {
+                      await cancelEmailChange();
+                    } finally {
+                      setIsCancellingEmail(false);
+                    }
+                  }}
+                  className="text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-700 disabled:opacity-50 dark:hover:text-zinc-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+            {resendMessage && (
+              <p className="mt-1 text-xs text-green-600 dark:text-green-400">
+                {resendMessage}
+              </p>
+            )}
           </div>
         )}
         <form action={emailFormAction} className="mt-3 flex gap-2">

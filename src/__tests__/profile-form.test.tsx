@@ -34,11 +34,14 @@ vi.mock("@/app/profile/account-linking-actions", () => ({
 }));
 
 // Mock server actions
+const mockResendVerificationEmail = vi.fn().mockResolvedValue({ success: true, message: "Verification email sent" });
 vi.mock("@/app/profile/actions", () => ({
   updateProfile: vi.fn(),
   removeAvatar: vi.fn(),
   requestEmailChange: vi.fn(),
   cancelEmailChange: vi.fn(),
+  resendVerificationEmail: (...args: unknown[]) => mockResendVerificationEmail(...args),
+  deleteAccount: vi.fn(),
 }));
 
 // Mock the BioEditor (Lexical is too heavy for jsdom unit tests)
@@ -95,6 +98,7 @@ const defaultUser = {
 interface RenderFormOptions {
   userOverrides?: Partial<typeof defaultUser>;
   email?: string | null;
+  emailVerified?: boolean;
   pendingEmail?: string | null;
   emailOnComment?: boolean;
   emailOnNewChat?: boolean;
@@ -118,6 +122,7 @@ function renderForm(options: RenderFormOptions = {}) {
   const {
     userOverrides = {},
     email = null,
+    emailVerified = true,
     pendingEmail = null,
     emailOnComment = true,
     emailOnNewChat = true,
@@ -140,6 +145,7 @@ function renderForm(options: RenderFormOptions = {}) {
     <ProfileForm
       user={{ ...defaultUser, ...userOverrides }}
       email={email}
+      emailVerified={emailVerified}
       pendingEmail={pendingEmail}
       currentAvatar={null}
       oauthImage={null}
@@ -387,6 +393,56 @@ describe("ProfileForm", () => {
       expect(
         screen.queryByRole("button", { name: "Cancel" })
       ).not.toBeInTheDocument();
+    });
+
+    it("shows resend button when pendingEmail exists", () => {
+      renderForm({ pendingEmail: "new@example.com" });
+      expect(
+        screen.getByRole("button", { name: "Resend" })
+      ).toBeInTheDocument();
+    });
+
+    it("shows unverified status with resend button when email exists but not verified", () => {
+      renderForm({ email: "user@example.com", emailVerified: false });
+      expect(
+        screen.getByText("Not verified: user@example.com")
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Resend verification" })
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/Verified:/)).not.toBeInTheDocument();
+    });
+
+    it("does not show unverified status when email is verified", () => {
+      renderForm({ email: "user@example.com", emailVerified: true });
+      expect(screen.queryByText(/Not verified:/)).not.toBeInTheDocument();
+      expect(
+        screen.getByText("Verified: user@example.com")
+      ).toBeInTheDocument();
+    });
+
+    it("calls resendVerificationEmail and shows confirmation when resend clicked", async () => {
+      const user = userEvent.setup();
+      renderForm({ email: "user@example.com", emailVerified: false });
+
+      await user.click(screen.getByRole("button", { name: "Resend verification" }));
+
+      await waitFor(() => {
+        expect(mockResendVerificationEmail).toHaveBeenCalled();
+        expect(screen.getByText("Verification email sent")).toBeInTheDocument();
+      });
+    });
+
+    it("calls resendVerificationEmail when resend clicked on pending email", async () => {
+      const user = userEvent.setup();
+      renderForm({ pendingEmail: "new@example.com" });
+
+      await user.click(screen.getByRole("button", { name: "Resend" }));
+
+      await waitFor(() => {
+        expect(mockResendVerificationEmail).toHaveBeenCalled();
+        expect(screen.getByText("Verification email sent")).toBeInTheDocument();
+      });
     });
 
     it("shows email input field", () => {
