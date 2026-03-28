@@ -1023,14 +1023,9 @@ export async function toggleReaction(data: {
 export async function dismissChatAbuseAlerts(
   senderId: string
 ): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `chat:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("chat");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   await prisma.chatAbuseDismissal.upsert({
     where: {
