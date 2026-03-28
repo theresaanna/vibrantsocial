@@ -269,6 +269,105 @@ export async function startConversation(
   return { success: true, message: "Message request sent" };
 }
 
+export type ChatRequestStatus = "none" | "pending" | "accepted" | "declined" | "friends" | "has_conversation";
+
+export async function getChatRequestStatus(targetUserId: string): Promise<ChatRequestStatus> {
+  const session = await auth();
+  if (!session?.user?.id) return "none";
+
+  const userId = session.user.id;
+
+  // Check if already friends
+  if (await areFriends(userId, targetUserId)) return "friends";
+
+  // Check for existing 1:1 conversation
+  const existingConversation = await prisma.conversation.findFirst({
+    where: {
+      isGroup: false,
+      AND: [
+        { participants: { some: { userId } } },
+        { participants: { some: { userId: targetUserId } } },
+      ],
+    },
+  });
+  if (existingConversation) return "has_conversation";
+
+  // Check for existing message request (sent by current user)
+  const request = await prisma.messageRequest.findUnique({
+    where: {
+      senderId_receiverId: { senderId: userId, receiverId: targetUserId },
+    },
+    select: { status: true },
+  });
+
+  if (!request) return "none";
+  if (request.status === "PENDING") return "pending";
+  if (request.status === "ACCEPTED") return "accepted";
+  return "declined";
+}
+
+export async function sendChatRequest(targetUserId: string): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const userId = session.user.id;
+
+  // Aggressive rate limit: 5 per hour
+  const { chatRequestLimiter } = await import("@/lib/rate-limit");
+  const { isRateLimited } = await import("@/lib/rate-limit");
+  if (await isRateLimited(chatRequestLimiter, `chat-req:${userId}`)) {
+    return { success: false, message: "Too many chat requests. Please try again later." };
+  }
+
+  if (userId === targetUserId) {
+    return { success: false, message: "Cannot send a chat request to yourself" };
+  }
+
+  if (await hasBlock(userId, targetUserId)) {
+    return { success: false, message: "Cannot send a chat request to this user" };
+  }
+
+  const targetUser = await prisma.user.findUnique({
+    where: { id: targetUserId },
+    select: { id: true },
+  });
+  if (!targetUser) {
+    return { success: false, message: "User not found" };
+  }
+
+  // Check for existing conversation
+  const existingConversation = await prisma.conversation.findFirst({
+    where: {
+      isGroup: false,
+      AND: [
+        { participants: { some: { userId } } },
+        { participants: { some: { userId: targetUserId } } },
+      ],
+    },
+  });
+  if (existingConversation) {
+    return { success: false, message: "You already have a conversation with this user" };
+  }
+
+  // Check if already friends — they should use the message button instead
+  if (await areFriends(userId, targetUserId)) {
+    return { success: false, message: "You are friends — use the message button instead" };
+  }
+
+  // Upsert the message request (resets declined requests)
+  await prisma.messageRequest.upsert({
+    where: {
+      senderId_receiverId: { senderId: userId, receiverId: targetUserId },
+    },
+    update: { status: "PENDING" },
+    create: { senderId: userId, receiverId: targetUserId },
+  });
+
+  return { success: true, message: "Chat request sent" };
+}
+
 export async function createGroupConversation(data: {
   name: string;
   participantIds: string[];
