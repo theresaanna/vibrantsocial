@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import type { PrismaPromise } from "@/generated/prisma";
 import { revalidatePath } from "next/cache";
 import { cached, invalidate, invalidateMany, cacheKeys } from "@/lib/cache";
 import { requireAuthWithRateLimit, isActionError } from "@/lib/action-utils";
@@ -143,7 +144,7 @@ export async function getBlockStatus(
  * Build the relationship-cleanup operations for blocking a single user.
  * Returns an array of Prisma operations to include in a transaction.
  */
-function buildBlockOps(blockerId: string, targetId: string) {
+function buildBlockOps(blockerId: string, targetId: string): PrismaPromise<unknown>[] {
   return [
     prisma.block.create({
       data: { blockerId, blockedId: targetId },
