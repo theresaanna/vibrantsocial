@@ -43,6 +43,7 @@ export function useChatMessages(
           mediaType: (data.mediaType as MediaType) ?? null,
           mediaFileName: (data.mediaFileName as string) ?? null,
           mediaFileSize: data.mediaFileSize ? parseInt(data.mediaFileSize as string, 10) : null,
+          isNsfw: false,
           sender: JSON.parse(data.sender as string),
           editedAt: data.editedAt ? new Date(data.editedAt) : null,
           deletedAt: data.deletedAt ? new Date(data.deletedAt) : null,
@@ -86,6 +87,14 @@ export function useChatMessages(
         setMessages((prev) =>
           prev.map((m) =>
             m.id === messageId ? { ...m, reactions } : m
+          )
+        );
+        break;
+      }
+      case "nsfw-update": {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === data.id ? { ...m, isNsfw: true } : m
           )
         );
         break;

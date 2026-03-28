@@ -11,6 +11,7 @@ interface ConfirmDialogProps {
   onConfirm: () => void;
   onCancel: () => void;
   variant?: "danger" | "default";
+  children?: React.ReactNode;
 }
 
 export function ConfirmDialog({
@@ -22,6 +23,7 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   variant = "default",
+  children,
 }: ConfirmDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -55,6 +57,7 @@ export function ConfirmDialog({
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
           {message}
         </p>
+        {children}
         <div className="mt-5 flex justify-end gap-3">
           <button
             type="button"

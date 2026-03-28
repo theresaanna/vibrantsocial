@@ -16,6 +16,7 @@ import { StyledName } from "@/components/styled-name";
 import { FriendRequestNotificationActions } from "@/components/friend-request-notification-actions";
 import { ChatRequestNotificationActions } from "@/components/chat-request-notification-actions";
 import { WallPostNotificationActions } from "@/components/wall-post-notification-actions";
+import { ChatAbuseNotificationActions } from "@/components/chat-abuse-notification-actions";
 import { useSelectionSet } from "@/hooks/use-selection-set";
 
 interface NotificationActor {
@@ -178,6 +179,8 @@ export function NotificationList({
           let href: string;
           if ((isCommentType || isMentionWithComment) && notification.postId && notification.commentId) {
             href = `/post/${notification.postId}?commentId=${notification.commentId}`;
+          } else if (notification.type === "CHAT_ABUSE" && notification.message) {
+            href = `/chat/${notification.message.conversationId}`;
           } else if (notification.type === "REACTION" && notification.message) {
             href = `/chat/${notification.message.conversationId}`;
           } else if (notification.type === "FRIEND_REQUEST" || notification.type === "FRIEND_REQUEST_ACCEPTED" || notification.type === "CHAT_REQUEST") {
@@ -296,6 +299,12 @@ export function NotificationList({
                           wallPostId={notification.post.wallPost.id}
                         />
                       )}
+                    {notification.type === "CHAT_ABUSE" && (
+                      <ChatAbuseNotificationActions
+                        actorId={notification.actorId}
+                        conversationId={notification.message?.conversationId ?? null}
+                      />
+                    )}
                   </>
                 )}
               </div>

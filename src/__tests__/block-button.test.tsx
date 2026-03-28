@@ -105,4 +105,51 @@ describe("BlockButton", () => {
     render(<BlockButton userId="u1" isBlocked={false} />);
     expect(screen.getByTestId("profile-block-button")).toBeInTheDocument();
   });
+
+  it("shows phone block checkbox when hasVerifiedPhone is true and blocking", async () => {
+    const user = userEvent.setup();
+    render(<BlockButton userId="u1" isBlocked={false} hasVerifiedPhone={true} />);
+
+    await user.click(screen.getByTestId("profile-block-button"));
+
+    expect(screen.getByTestId("block-by-phone-checkbox")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Also block all accounts using the same phone number/)
+    ).toBeInTheDocument();
+  });
+
+  it("does NOT show phone block checkbox when hasVerifiedPhone is false", async () => {
+    const user = userEvent.setup();
+    render(<BlockButton userId="u1" isBlocked={false} hasVerifiedPhone={false} />);
+
+    await user.click(screen.getByTestId("profile-block-button"));
+
+    expect(screen.queryByTestId("block-by-phone-checkbox")).not.toBeInTheDocument();
+  });
+
+  it("does NOT show phone block checkbox when unblocking", async () => {
+    const user = userEvent.setup();
+    render(<BlockButton userId="u1" isBlocked={true} hasVerifiedPhone={true} />);
+
+    await user.click(screen.getByTestId("profile-block-button"));
+
+    expect(screen.queryByTestId("block-by-phone-checkbox")).not.toBeInTheDocument();
+  });
+
+  it("has hidden blockByPhone input that updates with checkbox", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <BlockButton userId="u1" isBlocked={false} hasVerifiedPhone={true} />
+    );
+
+    // Initially false
+    const hiddenInput = container.querySelector("input[name='blockByPhone']") as HTMLInputElement;
+    expect(hiddenInput).toHaveAttribute("value", "false");
+
+    // Open dialog and check the checkbox
+    await user.click(screen.getByTestId("profile-block-button"));
+    await user.click(screen.getByTestId("block-by-phone-checkbox"));
+
+    expect(hiddenInput).toHaveAttribute("value", "true");
+  });
 });

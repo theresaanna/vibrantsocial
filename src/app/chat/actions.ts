@@ -7,6 +7,7 @@ import { requirePhoneVerification } from "@/lib/phone-gate";
 import { requireNotSuspended } from "@/lib/suspension-gate";
 import { getAblyRestClient } from "@/lib/ably";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
+import { inngest } from "@/lib/inngest";
 import {
   requireAuthWithRateLimit,
   isActionError,
@@ -616,6 +617,16 @@ export async function sendMessage(data: {
     // Non-critical — message is saved, real-time delivery failed
   }
 
+  // Fire async moderation scan (non-blocking)
+  await inngest.send({
+    name: "moderation/scan-chat-message",
+    data: {
+      messageId: message.id,
+      senderId: session.user.id,
+      conversationId,
+    },
+  });
+
   return { success: true, message: "Message sent", messageId: message.id };
 }
 
@@ -667,6 +678,16 @@ export async function editMessage(data: {
   } catch {
     // Non-critical
   }
+
+  // Re-scan edited message content
+  await inngest.send({
+    name: "moderation/scan-chat-message",
+    data: {
+      messageId,
+      senderId: session.user.id,
+      conversationId: message.conversationId,
+    },
+  });
 
   return { success: true, message: "Message edited" };
 }
@@ -997,6 +1018,30 @@ export async function toggleReaction(data: {
   }
 
   return { success: true, message: existing ? "Reaction removed" : "Reaction added" };
+}
+
+export async function dismissChatAbuseAlerts(
+  senderId: string
+): Promise<ActionState> {
+  const authResult = await requireAuthWithRateLimit("chat");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
+
+  await prisma.chatAbuseDismissal.upsert({
+    where: {
+      userId_dismissedSenderId: {
+        userId: session.user.id,
+        dismissedSenderId: senderId,
+      },
+    },
+    update: {},
+    create: {
+      userId: session.user.id,
+      dismissedSenderId: senderId,
+    },
+  });
+
+  return { success: true, message: "Future alerts dismissed" };
 }
 
 export async function getFriendsForChat(): Promise<ChatUserProfile[]> {

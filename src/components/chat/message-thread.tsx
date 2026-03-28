@@ -233,6 +233,7 @@ export function MessageThread({
         mediaType: (attachment?.type as MediaType) ?? null,
         mediaFileName: attachment?.fileName ?? null,
         mediaFileSize: attachment?.fileSize ?? null,
+        isNsfw: false,
         editedAt: null,
         deletedAt: null,
         createdAt: new Date(),

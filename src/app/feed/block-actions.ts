@@ -107,6 +107,7 @@ export async function toggleBlock(
   const session = result;
 
   const targetUserId = formData.get("userId") as string;
+  const blockByPhone = formData.get("blockByPhone") === "true";
 
   if (targetUserId === session.user.id) {
     return { success: false, message: "Cannot block yourself" };
@@ -126,47 +127,86 @@ export async function toggleBlock(
     await prisma.block.delete({ where: { id: existing.id } });
   } else {
     // Block — also clean up all mutual relationships
-    await prisma.$transaction([
-      prisma.block.create({
-        data: { blockerId: session.user.id, blockedId: targetUserId },
-      }),
-      // Remove mutual follows
-      prisma.follow.deleteMany({
-        where: {
-          OR: [
-            { followerId: session.user.id, followingId: targetUserId },
-            { followerId: targetUserId, followingId: session.user.id },
-          ],
-        },
-      }),
-      // Remove friend requests in either direction
-      prisma.friendRequest.deleteMany({
-        where: {
-          OR: [
-            { senderId: session.user.id, receiverId: targetUserId },
-            { senderId: targetUserId, receiverId: session.user.id },
-          ],
-        },
-      }),
-      // Remove post subscriptions
-      prisma.postSubscription.deleteMany({
-        where: {
-          OR: [
-            { subscriberId: session.user.id, subscribedToId: targetUserId },
-            { subscriberId: targetUserId, subscribedToId: session.user.id },
-          ],
-        },
-      }),
-      // Remove close friend entries
-      prisma.closeFriend.deleteMany({
-        where: {
-          OR: [
-            { userId: session.user.id, friendId: targetUserId },
-            { userId: targetUserId, friendId: session.user.id },
-          ],
-        },
-      }),
-    ]);
+    const blockTargetIds = [targetUserId];
+
+    // If blocking by phone, find all accounts sharing the same verified phone
+    if (blockByPhone) {
+      const targetUser = await prisma.user.findUnique({
+        where: { id: targetUserId },
+        select: { phoneNumber: true, phoneVerified: true },
+      });
+
+      if (targetUser?.phoneNumber && targetUser.phoneVerified) {
+        const phoneUsers = await prisma.user.findMany({
+          where: {
+            phoneNumber: targetUser.phoneNumber,
+            phoneVerified: { not: null },
+            id: { notIn: [session.user.id, targetUserId] },
+          },
+          select: { id: true },
+        });
+        blockTargetIds.push(...phoneUsers.map((u: { id: string }) => u.id));
+
+        // Record the phone block for future account enforcement
+        await prisma.phoneBlock.upsert({
+          where: {
+            blockerId_phoneNumber: {
+              blockerId: session.user.id,
+              phoneNumber: targetUser.phoneNumber,
+            },
+          },
+          update: {},
+          create: {
+            blockerId: session.user.id,
+            phoneNumber: targetUser.phoneNumber,
+          },
+        });
+      }
+    }
+
+    await prisma.$transaction(
+      blockTargetIds.flatMap((blockedId) => [
+        prisma.block.upsert({
+          where: {
+            blockerId_blockedId: { blockerId: session.user.id, blockedId },
+          },
+          update: {},
+          create: { blockerId: session.user.id, blockedId },
+        }),
+        prisma.follow.deleteMany({
+          where: {
+            OR: [
+              { followerId: session.user.id, followingId: blockedId },
+              { followerId: blockedId, followingId: session.user.id },
+            ],
+          },
+        }),
+        prisma.friendRequest.deleteMany({
+          where: {
+            OR: [
+              { senderId: session.user.id, receiverId: blockedId },
+              { senderId: blockedId, receiverId: session.user.id },
+            ],
+          },
+        }),
+        prisma.postSubscription.deleteMany({
+          where: {
+            OR: [
+              { subscriberId: session.user.id, subscribedToId: blockedId },
+              { subscriberId: blockedId, subscribedToId: session.user.id },
+            ],
+          },
+        }),
+        prisma.closeFriend.deleteMany({
+          where: {
+            OR: [
+              { userId: session.user.id, friendId: blockedId },
+              { userId: blockedId, friendId: session.user.id },
+            ],
+          },
+        }),
+      ])
+    );
   }
 
   // Instantly invalidate all block + relationship caches for both users

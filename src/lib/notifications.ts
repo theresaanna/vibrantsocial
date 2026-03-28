@@ -130,6 +130,7 @@ export async function createNotification(params: CreateNotificationParams) {
       MARKETPLACE_ANSWER: "answered your question on a listing",
       CHAT_REQUEST: "sent you a chat request",
       CHAT_REQUEST_ACCEPTED: "accepted your chat request",
+      CHAT_ABUSE: "may be sending you abusive messages",
     };
     const body = `${actorName} ${typeText[type] || "sent you a notification"}`;
     const url = postId ? `/notifications` : "/notifications";

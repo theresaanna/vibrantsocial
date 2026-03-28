@@ -166,8 +166,15 @@ model User {
   postSubscribers   PostSubscription[] @relation("postSubscribedTo")
 
   // Blocks
-  blockedUsers Block[] @relation("blocker")
-  blockedBy    Block[] @relation("blocked")
+  blockedUsers  Block[]      @relation("blocker")
+  blockedBy     Block[]      @relation("blocked")
+  phoneBlocks   PhoneBlock[] @relation("phoneBlockBlocker")
+
+  // Chat abuse tracking
+  chatAbuseFlagsSent     ChatAbuseFlag[]      @relation("chatAbuseFlagSender")
+  chatAbuseFlagsReceived ChatAbuseFlag[]      @relation("chatAbuseFlagRecipient")
+  chatAbuseDismissals    ChatAbuseDismissal[] @relation("chatAbuseDismissalUser")
+  chatAbuseDismissedBy   ChatAbuseDismissal[] @relation("chatAbuseDismissalSender")
 
   // User lists
   userLists              UserList[]             @relation("userListOwner")
@@ -534,6 +541,19 @@ model Block {
   @@index([blockedId])
 }
 
+// Phone-based blocks (block all accounts sharing a verified phone number)
+model PhoneBlock {
+  id          String   @id @default(cuid())
+  blockerId   String
+  phoneNumber String
+  createdAt   DateTime @default(now())
+
+  blocker User @relation("phoneBlockBlocker", fields: [blockerId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, phoneNumber])
+  @@index([phoneNumber])
+}
+
 // Tag subscriptions (subscribe to new posts in a tag)
 
 model TagSubscription {
@@ -600,12 +620,17 @@ model Message {
   deletedAt      DateTime?
   createdAt      DateTime  @default(now())
 
+  // Content moderation (set asynchronously by scanning)
+  isNsfw    Boolean @default(false)
+  nsfwScore Float?
+
   conversation  Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender        User              @relation(fields: [senderId], references: [id], onDelete: Cascade)
   replyTo       Message?          @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
   replies       Message[]         @relation("MessageReplies")
   reactions     MessageReaction[]
   notifications Notification[]
+  abuseFlags    ChatAbuseFlag[]
 
   @@index([conversationId, createdAt])
   @@index([senderId])
@@ -674,6 +699,7 @@ enum NotificationType {
   MARKETPLACE_ANSWER
   CHAT_REQUEST
   CHAT_REQUEST_ACCEPTED
+  CHAT_ABUSE
 }
 
 model Notification {
@@ -699,6 +725,39 @@ model Notification {
 
   @@index([targetUserId, readAt, createdAt])
   @@index([actorId])
+}
+
+// Chat abuse tracking (per sender→recipient pair)
+
+model ChatAbuseFlag {
+  id          String   @id @default(cuid())
+  senderId    String
+  recipientId String
+  messageId   String
+  confidence  Float
+  violationType String // "hate_speech", "bullying"
+  createdAt   DateTime @default(now())
+
+  sender    User    @relation("chatAbuseFlagSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient User    @relation("chatAbuseFlagRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, recipientId])
+  @@index([recipientId])
+}
+
+// Tracks when a user dismisses abuse alerts from a specific sender
+model ChatAbuseDismissal {
+  id          String   @id @default(cuid())
+  userId      String
+  dismissedSenderId String
+  createdAt   DateTime @default(now())
+
+  user            User @relation("chatAbuseDismissalUser", fields: [userId], references: [id], onDelete: Cascade)
+  dismissedSender User @relation("chatAbuseDismissalSender", fields: [dismissedSenderId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dismissedSenderId])
+  @@index([userId])
 }
 
 // Content moderation
