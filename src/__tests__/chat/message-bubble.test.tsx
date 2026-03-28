@@ -46,6 +46,7 @@ const baseMessage: MessageData = {
   mediaType: null,
   mediaFileName: null,
   mediaFileSize: null,
+  isNsfw: false,
   editedAt: null,
   deletedAt: null,
   createdAt: new Date("2024-01-01"),

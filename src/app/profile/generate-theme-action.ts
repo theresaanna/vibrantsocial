@@ -12,6 +12,7 @@ import {
   adjustForContrast,
   THEME_COLOR_FIELDS,
 } from "@/lib/profile-themes";
+import { headers } from "next/headers";
 
 const MAX_PROMPT_LENGTH = 200;
 const MAX_PRESETS_PER_USER = 10;
@@ -33,6 +34,15 @@ interface SavePresetResult {
 interface DeletePresetResult {
   success: boolean;
   error?: string;
+}
+
+async function resolveImageUrl(imageUrl: string): Promise<string> {
+  if (/^https?:\/\//.test(imageUrl)) return imageUrl;
+  // Relative path — resolve using the request host
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "vibrantsocial.app";
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  return `${proto}://${host}${imageUrl.startsWith("/") ? "" : "/"}${imageUrl}`;
 }
 
 function enforceContrast(colors: ProfileThemeColors): ProfileThemeColors {
@@ -79,7 +89,7 @@ function toProfileColors(
 }
 
 export async function generateTheme(
-  prompt: string
+  imageUrl: string
 ): Promise<GenerateThemeResult> {
   const session = await auth();
   if (!session?.user?.id) {
@@ -98,21 +108,28 @@ export async function generateTheme(
     return { success: false, error: "Premium subscription required" };
   }
 
-  const sanitizedPrompt = prompt.trim().slice(0, MAX_PROMPT_LENGTH);
-  if (!sanitizedPrompt) {
-    return { success: false, error: "Please enter a theme description" };
+  if (!imageUrl.trim()) {
+    return { success: false, error: "Please select a background image" };
   }
 
   try {
+    const absoluteUrl = await resolveImageUrl(imageUrl);
     const response = await anthropic.messages.create({
       model: "claude-haiku-4-5",
       max_tokens: 512,
       system:
-        "You are a color scheme designer for social media profiles. Given a theme description, generate a cohesive, aesthetically pleasing color scheme with both light and dark variants. Each variant needs 5 hex colors: profileBgColor (main page background), profileTextColor (primary text), profileLinkColor (links and accent), profileSecondaryColor (muted/secondary text), and profileContainerColor (card/container background, slightly offset from main bg). Ensure good readability with sufficient contrast between text and background. Also generate a short creative name for the theme (2-3 words max). Return ONLY valid JSON, no other text.",
+        "You are a color scheme designer for social media profiles. Given a background image, analyze its dominant colors, mood, and aesthetic to generate a cohesive color scheme with both light and dark variants that complement the background. Each variant needs 5 hex colors: profileBgColor (main page background), profileTextColor (primary text), profileLinkColor (links and accent), profileSecondaryColor (muted/secondary text), and profileContainerColor (card/container background, slightly offset from main bg). The colors should feel like they belong with the background image. Ensure good readability with sufficient contrast between text and background. Also generate a short creative name for the theme (2-3 words max). Return ONLY valid JSON, no other text.",
       messages: [
         {
           role: "user",
-          content: `Generate a color scheme for: ${sanitizedPrompt}
+          content: [
+            {
+              type: "image",
+              source: { type: "url", url: absoluteUrl },
+            },
+            {
+              type: "text",
+              text: `Analyze this background image and generate a color scheme that complements it.
 
 Return JSON in this exact format:
 {
@@ -132,6 +149,8 @@ Return JSON in this exact format:
     "profileContainerColor": "#hex"
   }
 }`,
+            },
+          ],
         },
       ],
     });
@@ -173,7 +192,7 @@ Return JSON in this exact format:
     const name =
       typeof data.name === "string" && data.name.trim()
         ? data.name.trim().slice(0, 30)
-        : sanitizedPrompt.slice(0, 30);
+        : "Custom Theme";
 
     return { success: true, name, light, dark };
   } catch {
@@ -183,7 +202,7 @@ Return JSON in this exact format:
 
 export async function saveCustomPreset(data: {
   name: string;
-  prompt: string;
+  imageUrl: string;
   light: ProfileThemeColors;
   dark: ProfileThemeColors;
 }): Promise<SavePresetResult> {
@@ -231,7 +250,7 @@ export async function saveCustomPreset(data: {
   const record = await prisma.customThemePreset.upsert({
     where: { userId_name: { userId: session.user.id, name } },
     update: {
-      prompt: data.prompt.slice(0, MAX_PROMPT_LENGTH),
+      prompt: data.imageUrl.slice(0, MAX_PROMPT_LENGTH),
       lightBgColor: data.light.profileBgColor,
       lightTextColor: data.light.profileTextColor,
       lightLinkColor: data.light.profileLinkColor,
@@ -246,7 +265,7 @@ export async function saveCustomPreset(data: {
     create: {
       userId: session.user.id,
       name,
-      prompt: data.prompt.slice(0, MAX_PROMPT_LENGTH),
+      prompt: data.imageUrl.slice(0, MAX_PROMPT_LENGTH),
       lightBgColor: data.light.profileBgColor,
       lightTextColor: data.light.profileTextColor,
       lightLinkColor: data.light.profileLinkColor,

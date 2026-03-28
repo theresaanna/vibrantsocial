@@ -49,6 +49,7 @@ export interface MessageData {
   mediaType: MediaType | null;
   mediaFileName: string | null;
   mediaFileSize: number | null;
+  isNsfw: boolean;
   editedAt: Date | null;
   deletedAt: Date | null;
   createdAt: Date;
@@ -68,14 +69,12 @@ export interface MessageRequestData {
 export interface ChatThemeColors {
   bgColor: string | null;
   textColor: string | null;
+  linkColor: string | null;
   containerColor: string | null;
   secondaryColor: string | null;
 }
 
-export interface ActionState {
-  success: boolean;
-  message: string;
-}
+export type { ActionState } from "@/lib/action-utils";
 
 export interface ConversationWithParticipants {
   id: string;

@@ -87,7 +87,36 @@ export const PROFILE_THEME_PRESETS: Record<string, ProfileThemeColors> = {
     profileSecondaryColor: "#a3a3a3",
     profileContainerColor: "#ccfbf1",
   },
-  // Neutral themes
+  // Warm themes
+  peach: {
+    profileBgColor: "#fef7ee",
+    profileTextColor: "#1c1917",
+    profileLinkColor: "#ea580c",
+    profileSecondaryColor: "#a3a3a3",
+    profileContainerColor: "#fed7aa",
+  },
+  terracotta: {
+    profileBgColor: "#1a0e0a",
+    profileTextColor: "#fde8d8",
+    profileLinkColor: "#e87c5a",
+    profileSecondaryColor: "#d4a088",
+    profileContainerColor: "#2d1a12",
+  },
+  amber: {
+    profileBgColor: "#fffbeb",
+    profileTextColor: "#1c1917",
+    profileLinkColor: "#d97706",
+    profileSecondaryColor: "#a3a3a3",
+    profileContainerColor: "#fde68a",
+  },
+  cinnamon: {
+    profileBgColor: "#fdf4f0",
+    profileTextColor: "#1c1917",
+    profileLinkColor: "#b45309",
+    profileSecondaryColor: "#a8a29e",
+    profileContainerColor: "#f5ddd3",
+  },
+  // Gray & neutral themes
   stone: {
     profileBgColor: "#f5f5f4",
     profileTextColor: "#1c1917",
@@ -108,6 +137,27 @@ export const PROFILE_THEME_PRESETS: Record<string, ProfileThemeColors> = {
     profileLinkColor: "#a16207",
     profileSecondaryColor: "#a3a3a3",
     profileContainerColor: "#fef9c3",
+  },
+  charcoal: {
+    profileBgColor: "#18181b",
+    profileTextColor: "#e4e4e7",
+    profileLinkColor: "#a1a1aa",
+    profileSecondaryColor: "#71717a",
+    profileContainerColor: "#27272a",
+  },
+  ash: {
+    profileBgColor: "#f4f4f5",
+    profileTextColor: "#27272a",
+    profileLinkColor: "#52525b",
+    profileSecondaryColor: "#a1a1aa",
+    profileContainerColor: "#e4e4e7",
+  },
+  graphite: {
+    profileBgColor: "#111827",
+    profileTextColor: "#e5e7eb",
+    profileLinkColor: "#9ca3af",
+    profileSecondaryColor: "#6b7280",
+    profileContainerColor: "#1f2937",
   },
 };
 

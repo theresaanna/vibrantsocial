@@ -4,6 +4,14 @@ import { extractTextFromLexicalJson } from "@/lib/lexical-text";
 import { StyledName } from "@/components/styled-name";
 import { LinkifyText } from "@/components/chat/linkify-text";
 
+interface MarketplaceData {
+  id: string;
+  price: number;
+  purchaseUrl: string;
+  shippingOption: string;
+  shippingPrice: number | null;
+}
+
 interface SearchPostCardProps {
   post: {
     id: string;
@@ -26,7 +34,16 @@ interface SearchPostCardProps {
       reposts: number;
     };
     tags?: Array<{ tag: { name: string } }>;
+    marketplacePost?: MarketplaceData | null;
   };
+}
+
+function formatShipping(option: string, price: number | null): string {
+  if (option === "FREE") return "Free shipping";
+  if (option === "FLAT_RATE" && price != null)
+    return `+${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(price)} shipping`;
+  if (option === "PICKUP_ONLY") return "Pickup only";
+  return "Contact seller for shipping";
 }
 
 export function SearchPostCard({ post }: SearchPostCardProps) {
@@ -38,14 +55,15 @@ export function SearchPostCard({ post }: SearchPostCardProps) {
     "User";
   const timeAgo = formatTimeAgo(post.createdAt);
   const plainText = extractTextFromLexicalJson(post.content);
+  const isMarketplace = !!post.marketplacePost;
+
+  const href = post.slug && post.author.username
+    ? `/${post.author.username}/${isMarketplace ? "marketplace" : "post"}/${post.slug}`
+    : `/${isMarketplace ? "marketplace" : "post"}/${post.id}`;
 
   return (
     <Link
-      href={
-        post.slug && post.author.username
-          ? `/${post.author.username}/post/${post.slug}`
-          : `/post/${post.id}`
-      }
+      href={href}
       className="block rounded-lg border border-zinc-200 p-4 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
     >
       <div className="flex items-center gap-2">
@@ -65,6 +83,17 @@ export function SearchPostCard({ post }: SearchPostCardProps) {
       <p className="mt-2 line-clamp-3 text-sm text-zinc-700 dark:text-zinc-300">
         <LinkifyText text={plainText || "No content"} asSpans />
       </p>
+
+      {post.marketplacePost && (
+        <div className="mt-2 flex items-center gap-2">
+          <span className="rounded-full bg-pink-500 px-2 py-0.5 text-xs font-bold text-white">
+            {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(post.marketplacePost.price)}
+          </span>
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">
+            {formatShipping(post.marketplacePost.shippingOption, post.marketplacePost.shippingPrice)}
+          </span>
+        </div>
+      )}
 
       {post.tags && post.tags.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1.5">

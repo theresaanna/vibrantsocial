@@ -6,7 +6,7 @@ import { isProfileIncomplete } from "@/lib/require-profile";
 import { ProfileForm } from "./profile-form";
 import { Suspense } from "react";
 import { AutoAccountSwitch } from "@/components/auto-account-switch";
-import { getProfileBackgrounds } from "@/lib/profile-backgrounds.server";
+import { getProfileBackgrounds, getPremiumProfileBackgrounds } from "@/lib/profile-backgrounds.server";
 import type { CustomPresetData } from "@/lib/profile-themes";
 
 export const metadata: Metadata = {
@@ -78,6 +78,7 @@ export default async function ProfilePage() {
   const isPremium = user?.tier === "premium";
   const oauthImage = user?.image ?? session.user.image ?? null;
   const backgrounds = getProfileBackgrounds();
+  const premiumBackgrounds = getPremiumProfileBackgrounds();
 
   let customPresets: CustomPresetData[] = [];
   if (isPremium) {
@@ -184,6 +185,7 @@ export default async function ProfilePage() {
           starsSpent={user?.starsSpent ?? 0}
           referralCode={user?.referralCode ?? ""}
           backgrounds={backgrounds}
+          premiumBackgrounds={premiumBackgrounds}
           userEmail={user?.email ?? null}
           customPresets={customPresets}
         />

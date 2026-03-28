@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getAblyRestClient } from "@/lib/ably";
 import { sendPushNotification } from "@/lib/web-push";
 import type { NotificationType } from "@/generated/prisma/client";
+import { invalidateMany, cacheKeys } from "@/lib/cache";
 
 const MAX_NOTIFICATIONS = 50;
 
@@ -69,6 +70,17 @@ export async function createNotification(params: CreateNotificationParams) {
     });
   }
 
+  // Invalidate notification caches for the target user
+  try {
+    await invalidateMany([
+      cacheKeys.userNotifications(targetUserId),
+      cacheKeys.userRecentNotifications(targetUserId),
+      cacheKeys.unreadNotificationCount(targetUserId),
+    ]);
+  } catch {
+    // Non-critical
+  }
+
   // Publish to Ably for real-time delivery
   try {
     const ably = getAblyRestClient();
@@ -106,6 +118,7 @@ export async function createNotification(params: CreateNotificationParams) {
       REACTION: "reacted to your message",
       MENTION: "mentioned you",
       FRIEND_REQUEST: "sent you a friend request",
+      FRIEND_REQUEST_ACCEPTED: "accepted your friend request",
       NEW_POST: "published a new post",
       TAG_POST: "posted in a tag you follow",
       REFERRAL_SIGNUP: "joined using your referral link! You earned 50 stars",
@@ -113,6 +126,11 @@ export async function createNotification(params: CreateNotificationParams) {
       LIST_ADD: "added you to a list",
       LIST_SUBSCRIBE: "subscribed to your list",
       LIST_COLLABORATOR_ADD: "added you as a collaborator on a list",
+      MARKETPLACE_QUESTION: "asked a question on your listing",
+      MARKETPLACE_ANSWER: "answered your question on a listing",
+      CHAT_REQUEST: "sent you a chat request",
+      CHAT_REQUEST_ACCEPTED: "accepted your chat request",
+      CHAT_ABUSE: "may be sending you abusive messages",
     };
     const body = `${actorName} ${typeText[type] || "sent you a notification"}`;
     const url = postId ? `/notifications` : "/notifications";

@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { requirePhoneVerification } from "@/lib/phone-gate";
 import { requireNotSuspended } from "@/lib/suspension-gate";
 import { revalidatePath } from "next/cache";
@@ -18,10 +18,17 @@ import { extractTagsFromNames } from "@/lib/tags";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { notifyPostSubscribers } from "@/lib/subscription-notifications";
 import { checkStarsMilestone } from "@/lib/referral";
+import {
+  requireAuthWithRateLimit,
+  isActionError,
+  hasBlock,
+  groupReactions,
+  invalidateTagCaches,
+  USER_PROFILE_SELECT,
+} from "@/lib/action-utils";
+import type { ActionState } from "@/lib/action-utils";
 
-interface ActionState {
-  success: boolean;
-  message: string;
+interface CommentActionState extends ActionState {
   comment?: {
     id: string;
     content: string;
@@ -39,29 +46,6 @@ interface ActionState {
     };
     reactions: { emoji: string; userIds: string[] }[];
   };
-}
-
-const commentAuthorSelect = {
-  id: true,
-  username: true,
-  displayName: true,
-  name: true,
-  image: true,
-  avatar: true,
-  profileFrameId: true,
-  usernameFont: true,
-} as const;
-
-function groupReactions(
-  reactions: { emoji: string; userId: string }[]
-): { emoji: string; userIds: string[] }[] {
-  const map = new Map<string, string[]>();
-  for (const r of reactions) {
-    const list = map.get(r.emoji) ?? [];
-    list.push(r.userId);
-    map.set(r.emoji, list);
-  }
-  return Array.from(map, ([emoji, userIds]) => ({ emoji, userIds }));
 }
 
 const commentReactionSelect = {
@@ -120,7 +104,7 @@ export async function fetchComments(postId: string) {
     },
     orderBy: { createdAt: "asc" },
     include: {
-      author: { select: commentAuthorSelect },
+      author: { select: USER_PROFILE_SELECT },
       ...commentReactionSelect,
     },
   });
@@ -132,14 +116,9 @@ export async function toggleLike(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `post:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("post");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const postId = formData.get("postId") as string;
   const existing = await prisma.like.findUnique({
@@ -193,14 +172,9 @@ export async function toggleBookmark(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `post:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("post");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const postId = formData.get("postId") as string;
   const existing = await prisma.bookmark.findUnique({
@@ -238,14 +212,9 @@ export async function toggleRepost(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `post:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("post");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const postId = formData.get("postId") as string;
   const existing = await prisma.repost.findUnique({
@@ -288,14 +257,9 @@ export async function createQuoteRepost(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `post:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("post");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const postId = formData.get("postId") as string;
   const content = (formData.get("content") as string)?.trim();
@@ -336,14 +300,7 @@ export async function createQuoteRepost(
         data: { repostId: repost.id, tagId: tag.id },
       });
     }
-    if (isNsfw) {
-      await invalidate(cacheKeys.nsfwTagCloud());
-    } else {
-      await invalidate(cacheKeys.tagCloud());
-    }
-    await Promise.all(
-      tagNames.map((name) => invalidate(cacheKeys.tagPostCount(name)))
-    );
+    await invalidateTagCaches(tagNames, isNsfw);
   }
 
   const post = await prisma.post.findUnique({
@@ -391,14 +348,9 @@ export async function editRepost(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `post:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("post");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const repostId = formData.get("repostId") as string;
   const content = formData.get("content") as string;
@@ -436,14 +388,7 @@ export async function editRepost(
         data: { repostId, tagId: tag.id },
       });
     }
-    if (isNsfw) {
-      await invalidate(cacheKeys.nsfwTagCloud());
-    } else {
-      await invalidate(cacheKeys.tagCloud());
-    }
-    await Promise.all(
-      tagNames.map((name) => invalidate(cacheKeys.tagPostCount(name)))
-    );
+    await invalidateTagCaches(tagNames, isNsfw);
   } else {
     await invalidate(cacheKeys.tagCloud());
     await invalidate(cacheKeys.nsfwTagCloud());
@@ -476,14 +421,9 @@ export async function togglePinRepost(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `post:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("post");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const repostId = formData.get("repostId") as string;
   if (!repostId) {
@@ -532,14 +472,9 @@ export async function deleteRepost(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `post:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("post");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const repostId = formData.get("repostId") as string;
   if (!repostId) {
@@ -557,10 +492,8 @@ export async function deleteRepost(
   await prisma.repost.delete({ where: { id: repostId } });
 
   if (repost.tags.length > 0) {
-    await invalidate(cacheKeys.tagCloud());
-    await Promise.all(
-      repost.tags.map((rt) => invalidate(cacheKeys.tagPostCount(rt.tag.name)))
-    );
+    const tagNames = repost.tags.map((rt) => rt.tag.name);
+    await invalidateTagCaches(tagNames, repost.isNsfw);
   }
 
   revalidatePath("/feed");
@@ -572,17 +505,12 @@ export async function deleteRepost(
 }
 
 export async function createComment(
-  _prevState: ActionState,
+  _prevState: CommentActionState,
   formData: FormData
-): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `post:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+): Promise<CommentActionState> {
+  const authResult = await requireAuthWithRateLimit("post");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const isNotSuspended = await requireNotSuspended(session.user.id);
   if (!isNotSuspended) {
@@ -615,15 +543,7 @@ export async function createComment(
     select: { authorId: true },
   });
   if (post_?.authorId) {
-    const block = await prisma.block.findFirst({
-      where: {
-        OR: [
-          { blockerId: session.user.id, blockedId: post_.authorId },
-          { blockerId: post_.authorId, blockedId: session.user.id },
-        ],
-      },
-    });
-    if (block) {
+    if (await hasBlock(session.user.id, post_.authorId)) {
       return { success: false, message: "Cannot comment on this post" };
     }
   }
@@ -631,7 +551,7 @@ export async function createComment(
   const comment = await prisma.comment.create({
     data: { content, postId, authorId: session.user.id, parentId },
     include: {
-      author: { select: commentAuthorSelect },
+      author: { select: USER_PROFILE_SELECT },
     },
   });
   await prisma.user.update({ where: { id: session.user.id }, data: { stars: { increment: 1 } } });
@@ -749,7 +669,7 @@ export async function fetchRepostComments(repostId: string) {
     },
     orderBy: { createdAt: "asc" },
     include: {
-      author: { select: commentAuthorSelect },
+      author: { select: USER_PROFILE_SELECT },
     },
   });
 
@@ -760,14 +680,9 @@ export async function toggleRepostLike(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `post:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("post");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const repostId = formData.get("repostId") as string;
   const existing = await prisma.repostLike.findUnique({
@@ -807,14 +722,9 @@ export async function toggleRepostBookmark(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `post:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("post");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const repostId = formData.get("repostId") as string;
   const existing = await prisma.repostBookmark.findUnique({
@@ -852,14 +762,9 @@ export async function createRepostComment(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `post:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("post");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const isNotSuspended = await requireNotSuspended(session.user.id);
   if (!isNotSuspended) {
@@ -889,7 +794,7 @@ export async function createRepostComment(
   const comment = await prisma.repostComment.create({
     data: { content, repostId, authorId: session.user.id, parentId },
     include: {
-      author: { select: commentAuthorSelect },
+      author: { select: USER_PROFILE_SELECT },
     },
   });
   await prisma.user.update({ where: { id: session.user.id }, data: { stars: { increment: 1 } } });
@@ -964,14 +869,9 @@ export async function toggleCommentReaction(data: {
   commentId: string;
   emoji: string;
 }): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `post:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("post");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const { commentId, emoji } = data;
 
@@ -1042,14 +942,9 @@ export async function editComment(data: {
   commentId: string;
   content: string;
 }): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `post:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("post");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const { commentId, content } = data;
   const trimmed = content.trim();
@@ -1097,14 +992,9 @@ export async function editComment(data: {
 export async function deleteComment(data: {
   commentId: string;
 }): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `post:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("post");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const { commentId } = data;
 

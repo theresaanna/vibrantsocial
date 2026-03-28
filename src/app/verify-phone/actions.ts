@@ -104,6 +104,23 @@ export async function verifyPhoneCode(
     data: { phoneVerified: new Date() },
   });
 
+  // Enforce phone-based blocks: auto-block this user for anyone who has
+  // phone-blocked this number
+  const phoneBlocks = await prisma.phoneBlock.findMany({
+    where: { phoneNumber: user.phoneNumber },
+    select: { blockerId: true },
+  });
+
+  if (phoneBlocks.length > 0) {
+    await prisma.block.createMany({
+      data: phoneBlocks.map((pb: { blockerId: string }) => ({
+        blockerId: pb.blockerId,
+        blockedId: session.user.id,
+      })),
+      skipDuplicates: true,
+    });
+  }
+
   revalidatePath("/profile");
   return { step: "done", message: "Phone verified!", success: true };
 }

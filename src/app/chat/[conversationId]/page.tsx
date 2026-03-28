@@ -53,6 +53,7 @@ export default async function ConversationPage({ params }: Props) {
                   name: true,
                   avatar: true,
                   profileFrameId: true,
+                  usernameFont: true,
                   image: true,
                 },
               },
@@ -99,6 +100,7 @@ export default async function ConversationPage({ params }: Props) {
   const themeColors = {
     bgColor: currentUser?.profileBgColor ?? null,
     textColor: currentUser?.profileTextColor ?? null,
+    linkColor: currentUser?.profileLinkColor ?? null,
     containerColor: currentUser?.profileContainerColor ?? null,
     secondaryColor: currentUser?.profileSecondaryColor ?? null,
   };
@@ -122,6 +124,8 @@ export default async function ConversationPage({ params }: Props) {
           "--chat-bubble-text-dark": dark.profileTextColor,
           "--chat-active-bg-dark": dark.profileContainerColor,
           "--chat-active-text-dark": dark.profileSecondaryColor,
+          "--chat-link-color-light": light.profileLinkColor,
+          "--chat-link-color-dark": dark.profileLinkColor,
         } as React.CSSProperties;
       })()
     : undefined;

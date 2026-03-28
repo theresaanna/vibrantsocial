@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { headers } from "next/headers";
 import { authLimiter, isRateLimited } from "@/lib/rate-limit";
+import { verifyTurnstileToken } from "@/lib/turnstile";
+import { forgotPasswordSchema, parseFormData } from "@/lib/validations";
 
 interface ForgotPasswordState {
   success: boolean;
@@ -21,14 +23,19 @@ export async function requestPasswordReset(
     return { success: false, message: "Too many attempts. Please try again later." };
   }
 
-  const email = (formData.get("email") as string)?.trim().toLowerCase();
-
-  if (!email) {
-    return { success: false, message: "Email is required" };
+  // Validate input with Zod
+  const parsed = parseFormData(forgotPasswordSchema, formData, [
+    "email", "cf-turnstile-response",
+  ]);
+  if (!parsed.success) {
+    return { success: false, message: parsed.error };
   }
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { success: false, message: "Invalid email address" };
+  const { email, "cf-turnstile-response": turnstileToken } = parsed.data;
+
+  // Verify Turnstile CAPTCHA
+  if (!(await verifyTurnstileToken(turnstileToken))) {
+    return { success: false, message: "CAPTCHA verification failed. Please try again." };
   }
 
   const successMessage =

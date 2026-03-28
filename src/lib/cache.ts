@@ -55,6 +55,14 @@ export async function invalidatePattern(pattern: string) {
   } while (cursor !== "0");
 }
 
+/**
+ * Invalidate multiple keys at once (more efficient than individual calls).
+ */
+export async function invalidateMany(keys: string[]) {
+  if (!redis || keys.length === 0) return;
+  await redis.del(...keys);
+}
+
 // Cache key builders
 export const cacheKeys = {
   userFollowing: (userId: string) => `user:${userId}:following`,
@@ -65,10 +73,28 @@ export const cacheKeys = {
   allTagCloud: () => `tags:all-cloud`,
   tagPostCount: (tagName: string) => `tag:${tagName}:count`,
   userBlockedIds: (userId: string) => `user:${userId}:blocked`,
+  userBlockedByIds: (userId: string) => `user:${userId}:blocked-by`,
+  userAllBlocks: (userId: string) => `user:${userId}:all-blocks`,
   linkPreview: (url: string) => `linkpreview:${url}`,
   userLists: (userId: string) => `user:${userId}:lists`,
   userListMembers: (listId: string) => `list:${listId}:members`,
   userListSubscriptions: (userId: string) => `user:${userId}:list-subs`,
   userListCollaborators: (listId: string) => `list:${listId}:collaborators`,
   feedSummary: (userId: string) => `user:${userId}:feed-summary`,
+  userPrefs: (userId: string) => `user:${userId}:prefs`,
+  userCloseFriendOf: (userId: string) => `user:${userId}:close-friend-of`,
+  userCloseFriendIds: (userId: string) => `user:${userId}:close-friend-ids`,
+  friendshipStatus: (userA: string, userB: string) => {
+    // Canonical ordering so both directions hit the same key
+    const [a, b] = userA < userB ? [userA, userB] : [userB, userA];
+    return `friendship:${a}:${b}`;
+  },
+  userSearch: (userId: string, query: string) => `search:users:${userId}:${query}`,
+  postSearch: (userId: string, query: string) => `search:posts:${userId}:${query}`,
+  tagSearch: (query: string, includeNsfw: boolean) => `search:tags:${query}:${includeNsfw ? 1 : 0}`,
+  tagSearchForSearch: (userId: string, query: string) => `search:tagsearch:${userId}:${query}`,
+  commentCount: (postId: string) => `post:${postId}:comment-count`,
+  userNotifications: (userId: string) => `user:${userId}:notifications`,
+  userRecentNotifications: (userId: string) => `user:${userId}:recent-notifications`,
+  unreadNotificationCount: (userId: string) => `user:${userId}:unread-notif-count`,
 } as const;

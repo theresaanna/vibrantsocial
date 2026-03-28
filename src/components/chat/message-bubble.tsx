@@ -230,7 +230,10 @@ export function MessageBubble({
         <div className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}>
           {/* Sender name in group */}
           {isGroup && !isOwn && (
-            <span className="mb-0.5 px-3 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            <span
+              className="mb-0.5 px-3 text-xs font-medium text-zinc-500 dark:text-zinc-400"
+              style={themeColors?.linkColor ? { color: "var(--chat-link-color)" } : undefined}
+            >
               <StyledName fontId={senderProfile.usernameFont}>{displayName}</StyledName>
             </span>
           )}
@@ -296,6 +299,7 @@ export function MessageBubble({
                   <button
                     onClick={handleEditSubmit}
                     className="rounded px-2 py-0.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-zinc-800"
+                    style={themeColors?.linkColor ? { color: "var(--chat-link-color)" } : undefined}
                   >
                     Save
                   </button>
@@ -329,11 +333,12 @@ export function MessageBubble({
                       mediaFileName={message.mediaFileName}
                       mediaFileSize={message.mediaFileSize}
                       isOwn={isOwn}
+                      isNsfw={message.isNsfw}
                     />
                   </div>
                 )}
                 {message.content && (
-                  <p className="whitespace-pre-wrap break-words"><LinkifyText text={message.content} /></p>
+                  <p className="whitespace-pre-wrap break-words"><LinkifyText text={message.content} themed={!!themeColors?.linkColor} /></p>
                 )}
               </div>
             )}
@@ -456,7 +461,9 @@ export function MessageBubble({
                     onClick={() => onReaction?.(message.id, reaction.emoji)}
                     className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors ${
                       isReacted
-                        ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-300"
+                        ? themeColors?.linkColor
+                          ? "chat-reaction-active"
+                          : "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-300"
                         : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-600"
                     }`}
                     aria-label={`${reaction.emoji} ${reaction.userIds.length}`}

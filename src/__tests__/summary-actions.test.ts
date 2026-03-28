@@ -35,6 +35,17 @@ vi.mock("@/app/feed/block-actions", () => ({
   getAllBlockRelatedIds: vi.fn().mockResolvedValue([]),
 }));
 
+vi.mock("@/lib/user-prefs", () => ({
+  getUserPrefs: vi.fn().mockResolvedValue({
+    showNsfwContent: false,
+    ageVerified: false,
+  }),
+}));
+
+vi.mock("@/app/feed/close-friends-actions", () => ({
+  getCachedCloseFriendOfIds: vi.fn().mockResolvedValue([]),
+}));
+
 vi.mock("@/lib/lexical-text", () => ({
   extractTextFromLexicalJson: vi.fn((content: string) => content),
 }));
@@ -52,8 +63,6 @@ const mockAuth = vi.mocked(auth);
 const mockGetCached = vi.mocked(getCached);
 const mockAnthropicCreate = vi.mocked(anthropic.messages.create);
 const mockFollowFindMany = vi.mocked(prisma.follow.findMany);
-const mockCloseFriendFindMany = vi.mocked(prisma.closeFriend.findMany);
-const mockUserFindUnique = vi.mocked(prisma.user.findUnique);
 const mockPostFindMany = vi.mocked(prisma.post.findMany);
 
 function setupAuthenticatedUser() {
@@ -61,11 +70,6 @@ function setupAuthenticatedUser() {
   mockFollowFindMany.mockResolvedValue([
     { followingId: "friend1" },
   ] as never);
-  mockCloseFriendFindMany.mockResolvedValue([] as never);
-  mockUserFindUnique.mockResolvedValue({
-    showNsfwContent: false,
-    ageVerified: null,
-  } as never);
 }
 
 function makeMockPost(overrides: Record<string, unknown> = {}) {
@@ -214,6 +218,6 @@ describe("generateFeedSummaryOnDemand", () => {
     mockAnthropicCreate.mockRejectedValue(new Error("API error"));
 
     const result = await generateFeedSummaryOnDemand("2026-03-23T00:00:00Z");
-    expect(result).toBeNull();
+    expect(result).toBe("Your friends have been posting! Scroll down to see what's new.");
   });
 });
