@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useSession } from "next-auth/react";
+import { useModal } from "@/hooks/use-modal";
 import { linkAccount, startOAuthLink } from "@/app/profile/account-linking-actions";
 
 interface LinkAccountModalProps {
@@ -28,19 +29,7 @@ export function LinkAccountModal({ isOpen, onClose, onLinked }: LinkAccountModal
     }
   }, [state.success, update, onLinked, onClose]);
 
-  useEffect(() => {
-    function handleEscape(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    if (isOpen) {
-      document.addEventListener("keydown", handleEscape);
-      document.body.style.overflow = "hidden";
-    }
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "";
-    };
-  }, [isOpen, onClose]);
+  useModal(isOpen, onClose);
 
   if (!isOpen) return null;
 

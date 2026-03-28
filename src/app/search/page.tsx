@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { searchUsers, searchPosts, searchTagsForSearch } from "./actions";
+import { searchUsers, searchPosts, searchTagsForSearch, searchMarketplacePosts } from "./actions";
 import { SearchPageClient } from "./search-page-client";
 
 export const metadata: Metadata = {
@@ -20,17 +20,20 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   const params = await searchParams;
   const query = params.q ?? "";
-  const tab = params.tab === "posts" ? "posts" : params.tab === "tags" ? "tags" : "users";
+  const tab = params.tab === "posts" ? "posts" : params.tab === "tags" ? "tags" : params.tab === "marketplace" ? "marketplace" : "users";
 
   let initialUsers = { users: [] as Awaited<ReturnType<typeof searchUsers>>["users"], hasMore: false };
   let initialPosts = { posts: [] as Awaited<ReturnType<typeof searchPosts>>["posts"], hasMore: false };
   let initialTags = { tags: [] as Awaited<ReturnType<typeof searchTagsForSearch>>["tags"], hasMore: false };
+  let initialMarketplace = { posts: [] as Awaited<ReturnType<typeof searchMarketplacePosts>>["posts"], hasMore: false };
 
   if (query.length >= 2) {
     if (tab === "users") {
       initialUsers = await searchUsers(query);
     } else if (tab === "posts") {
       initialPosts = await searchPosts(query);
+    } else if (tab === "marketplace") {
+      initialMarketplace = await searchMarketplacePosts(query);
     } else {
       initialTags = await searchTagsForSearch(query);
     }
@@ -49,7 +52,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             Search
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Find people, posts, and tags
+            Find people, posts, tags, and listings
           </p>
         </div>
       </div>
@@ -60,6 +63,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         initialUsers={initialUsers}
         initialPosts={initialPosts}
         initialTags={initialTags}
+        initialMarketplace={initialMarketplace}
       />
     </main>
   );

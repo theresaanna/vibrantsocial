@@ -9,6 +9,8 @@ export const USERNAME_FONTS: FontDefinition[] = [
   // Free tier fonts
   { id: "sofadi-one", name: "Sofadi One", googleFamily: "Sofadi+One", tier: "free" },
   { id: "jersey-10", name: "Jersey 10", googleFamily: "Jersey+10", tier: "free" },
+  { id: "limelight", name: "Limelight", googleFamily: "Limelight", tier: "free" },
+  { id: "unkempt", name: "Unkempt", googleFamily: "Unkempt", tier: "free" },
   // Premium tier fonts
   { id: "gugi", name: "Gugi", googleFamily: "Gugi", tier: "premium" },
   { id: "turret-road", name: "Turret Road", googleFamily: "Turret+Road", tier: "premium" },
@@ -20,6 +22,12 @@ export const USERNAME_FONTS: FontDefinition[] = [
   { id: "hachi-maru-pop", name: "Hachi Maru Pop", googleFamily: "Hachi+Maru+Pop", tier: "premium" },
   { id: "ms-madi", name: "Ms Madi", googleFamily: "Ms+Madi", tier: "premium" },
   { id: "jacquard-24", name: "Jacquard 24", googleFamily: "Jacquard+24", tier: "premium" },
+  { id: "texturina", name: "Texturina", googleFamily: "Texturina", tier: "premium" },
+  { id: "great-vibes", name: "Great Vibes", googleFamily: "Great+Vibes", tier: "premium" },
+  { id: "rye", name: "Rye", googleFamily: "Rye", tier: "premium" },
+  { id: "bonbon", name: "Bonbon", googleFamily: "Bonbon", tier: "premium" },
+  { id: "agu-display", name: "Agu Display", googleFamily: "Agu+Display", tier: "premium" },
+  { id: "agbalumo", name: "Agbalumo", googleFamily: "Agbalumo", tier: "premium" },
 ];
 
 const FONT_MAP = new Map(USERNAME_FONTS.map((f) => [f.id, f]));

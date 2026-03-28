@@ -19,12 +19,6 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-vi.mock("@/lib/rate-limit", () => ({
-  apiLimiter: {},
-  authLimiter: {},
-  isRateLimited: vi.fn(() => Promise.resolve(false)),
-}));
-
 vi.mock("@/lib/twilio", () => ({
   sendVerificationCode: vi.fn(),
   checkVerificationCode: vi.fn(),

@@ -7,7 +7,7 @@ import { FeatureShowcase } from "@/components/feature-showcase";
 export const metadata: Metadata = {
   title: "VibrantSocial — Social media for adults",
   description:
-    "Relive the good ol' days of the internet, before content algorithms and AI nonsense. 18+ only.",
+    "Return to the good ol' days of the internet, before revenue-driving algorithms and AI generated nonsense.",
 };
 
 export default async function Home() {
@@ -26,8 +26,8 @@ export default async function Home() {
             </h1>
 
             <p className="mx-auto max-w-md text-lg leading-relaxed text-zinc-500 dark:text-zinc-400">
-              Relive the good ol&apos; days of the internet, before content
-              algorithms and AI nonsense.
+              Return to the good ol&apos; days of the internet, before
+              revenue-driving algorithms and AI generated nonsense.
             </p>
 
             <p className="text-base text-zinc-400 dark:text-zinc-500">

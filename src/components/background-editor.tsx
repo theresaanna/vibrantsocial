@@ -13,6 +13,7 @@ import { PremiumCrown } from "./premium-crown";
 
 interface BackgroundEditorProps {
   backgrounds: BackgroundDefinition[];
+  premiumBackgrounds: BackgroundDefinition[];
   initialBackground: {
     profileBgImage: string | null;
     profileBgRepeat: string | null;
@@ -25,8 +26,46 @@ interface BackgroundEditorProps {
   onChange: () => void;
 }
 
+function BackgroundGrid({
+  backgrounds,
+  selectedSrc,
+  onSelect,
+  disabled,
+}: {
+  backgrounds: BackgroundDefinition[];
+  selectedSrc: string | null;
+  onSelect: (bg: BackgroundDefinition) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <>
+      {backgrounds.map((bg) => (
+        <button
+          key={bg.id}
+          type="button"
+          onClick={() => onSelect(bg)}
+          title={bg.name}
+          disabled={disabled}
+          className={`h-12 w-12 overflow-hidden rounded-lg border transition-all ${
+            selectedSrc === bg.src
+              ? "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-900"
+              : "border-zinc-200 dark:border-zinc-700"
+          } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
+        >
+          <img
+            src={bg.thumbSrc}
+            alt={bg.name}
+            className="h-full w-full object-cover"
+          />
+        </button>
+      ))}
+    </>
+  );
+}
+
 export function BackgroundEditor({
   backgrounds,
+  premiumBackgrounds,
   initialBackground,
   isPremium,
   userEmail,
@@ -162,26 +201,32 @@ export function BackgroundEditor({
         >
           None
         </button>
-        {backgrounds.map((bg) => (
-          <button
-            key={bg.id}
-            type="button"
-            onClick={() => handlePresetSelect(bg)}
-            title={bg.name}
-            className={`h-12 w-12 overflow-hidden rounded-lg border transition-all ${
-              bgImage === bg.src
-                ? "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-900"
-                : "border-zinc-200 dark:border-zinc-700"
-            }`}
-          >
-            <img
-              src={bg.thumbSrc}
-              alt={bg.name}
-              className="h-full w-full object-cover"
-            />
-          </button>
-        ))}
+        <BackgroundGrid
+          backgrounds={backgrounds}
+          selectedSrc={bgImage}
+          onSelect={handlePresetSelect}
+        />
       </div>
+
+      {/* Premium backgrounds */}
+      {premiumBackgrounds.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5">
+            <PremiumCrown href="/premium" inline />
+            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              Premium Backgrounds
+            </span>
+          </div>
+          <div className={`flex flex-wrap gap-2 ${!isPremium ? "pointer-events-none opacity-50" : ""}`}>
+            <BackgroundGrid
+              backgrounds={premiumBackgrounds}
+              selectedSrc={bgImage}
+              onSelect={handlePresetSelect}
+              disabled={!isPremium}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Live preview */}
       {bgImage && (

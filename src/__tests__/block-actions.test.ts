@@ -43,18 +43,18 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-vi.mock("@/lib/rate-limit", () => ({
-  apiLimiter: {},
-  authLimiter: {},
-  isRateLimited: vi.fn(() => Promise.resolve(false)),
-}));
-
 vi.mock("@/lib/cache", () => ({
   cached: vi.fn((_key: string, fn: () => Promise<unknown>) => fn()),
   invalidate: vi.fn(),
+  invalidateMany: vi.fn(),
   cacheKeys: {
     userBlockedIds: (id: string) => `user:${id}:blocked`,
+    userBlockedByIds: (id: string) => `user:${id}:blocked-by`,
+    userAllBlocks: (id: string) => `user:${id}:all-blocks`,
     userFollowing: (id: string) => `user:${id}:following`,
+    userCloseFriendIds: (id: string) => `user:${id}:close-friends`,
+    userCloseFriendOf: (id: string) => `user:${id}:close-friend-of`,
+    friendshipStatus: (id1: string, id2: string) => `friendship:${id1}:${id2}`,
     userProfile: (username: string) => `profile:${username}`,
   },
 }));
@@ -65,12 +65,13 @@ vi.mock("next/cache", () => ({
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { invalidate } from "@/lib/cache";
+import { invalidate, invalidateMany } from "@/lib/cache";
 import { revalidatePath } from "next/cache";
 
 const mockAuth = vi.mocked(auth);
 const mockPrisma = vi.mocked(prisma);
 const mockInvalidate = vi.mocked(invalidate);
+const mockInvalidateMany = vi.mocked(invalidateMany);
 const mockRevalidatePath = vi.mocked(revalidatePath);
 
 const prevState = { success: false, message: "" };
@@ -179,8 +180,9 @@ describe("toggleBlock", () => {
 
     await toggleBlock(prevState, makeFormData({ userId: "user2" }));
 
-    expect(mockInvalidate).toHaveBeenCalledWith("user:user1:blocked");
-    expect(mockInvalidate).toHaveBeenCalledWith("user:user2:blocked");
+    // Block caches invalidated via invalidateMany (called by invalidateBlockCaches)
+    expect(mockInvalidateMany).toHaveBeenCalled();
+    // Other caches invalidated individually
     expect(mockInvalidate).toHaveBeenCalledWith("user:user1:following");
     expect(mockInvalidate).toHaveBeenCalledWith("user:user2:following");
     expect(mockInvalidate).toHaveBeenCalledWith("profile:currentuser");

@@ -11,6 +11,8 @@ import { sendEmailVerificationEmail } from "@/lib/email";
 import { awardReferralSignupStars } from "@/lib/referral";
 import { headers } from "next/headers";
 import { authLimiter, isRateLimited } from "@/lib/rate-limit";
+import { verifyTurnstileToken } from "@/lib/turnstile";
+import { signupSchema, parseFormData } from "@/lib/validations";
 
 interface SignupState {
   success: boolean;
@@ -27,65 +29,21 @@ export async function signup(
     return { success: false, message: "Too many attempts. Please try again later." };
   }
 
-  const email = (formData.get("email") as string)?.trim().toLowerCase();
-  const username = (formData.get("username") as string)?.trim().toLowerCase();
-  const dateOfBirthStr = formData.get("dateOfBirth") as string;
-  const password = formData.get("password") as string;
-  const confirmPassword = formData.get("confirmPassword") as string;
-  const agreeToTos = formData.get("agreeToTos") as string;
-
-  if (!email || !username || !dateOfBirthStr || !password || !confirmPassword) {
-    return { success: false, message: "All fields are required" };
+  // Validate input with Zod
+  const parsed = parseFormData(signupSchema, formData, [
+    "email", "username", "dateOfBirth", "password", "confirmPassword",
+    "agreeToTos", "referralCode", "cf-turnstile-response",
+  ]);
+  if (!parsed.success) {
+    return { success: false, message: parsed.error };
   }
 
-  if (agreeToTos !== "true") {
-    return {
-      success: false,
-      message: "You must agree to the Terms of Service and Privacy Policy",
-    };
-  }
+  const { email, username, password, "cf-turnstile-response": turnstileToken } = parsed.data;
+  const dateOfBirth = new Date(parsed.data.dateOfBirth);
 
-  if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) {
-    return {
-      success: false,
-      message:
-        "Username must be 3-30 characters, letters, numbers, and underscores only",
-    };
-  }
-
-  const dateOfBirth = new Date(dateOfBirthStr);
-  if (isNaN(dateOfBirth.getTime())) {
-    return { success: false, message: "Invalid date of birth" };
-  }
-
-  if (dateOfBirth > new Date()) {
-    return { success: false, message: "Date of birth cannot be in the future" };
-  }
-
-  const today = new Date();
-  let age = today.getFullYear() - dateOfBirth.getFullYear();
-  const monthDiff = today.getMonth() - dateOfBirth.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dateOfBirth.getDate())) {
-    age--;
-  }
-
-  if (age < 18) {
-    return { success: false, message: "You must be at least 18 years old to sign up" };
-  }
-
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { success: false, message: "Invalid email address" };
-  }
-
-  if (password.length < 8) {
-    return {
-      success: false,
-      message: "Password must be at least 8 characters",
-    };
-  }
-
-  if (password !== confirmPassword) {
-    return { success: false, message: "Passwords do not match" };
+  // Verify Turnstile CAPTCHA
+  if (!(await verifyTurnstileToken(turnstileToken))) {
+    return { success: false, message: "CAPTCHA verification failed. Please try again." };
   }
 
   const existingUser = await prisma.user.findUnique({
@@ -113,7 +71,7 @@ export async function signup(
   const passwordHash = await bcrypt.hash(password, 12);
 
   // Look up referrer if a referral code was provided
-  const referralCode = (formData.get("referralCode") as string)?.trim();
+  const referralCode = parsed.data.referralCode;
   let referrerId: string | undefined;
   if (referralCode) {
     const referrer = await prisma.user.findUnique({

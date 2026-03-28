@@ -9,11 +9,11 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { searchUsers, searchPosts, searchTagsForSearch } from "./actions";
+import { searchUsers, searchPosts, searchTagsForSearch, searchMarketplacePosts } from "./actions";
 import { SearchPostCard } from "@/components/search-post-card";
 import { SearchUserCard } from "@/components/search-user-card";
 
-type SearchTab = "users" | "posts" | "tags";
+type SearchTab = "users" | "posts" | "tags" | "marketplace";
 
 interface SearchTag {
   id: string;
@@ -29,6 +29,7 @@ interface SearchPageClientProps {
   initialUsers: { users: any[]; hasMore: boolean };
   initialPosts: { posts: any[]; hasMore: boolean };
   initialTags: { tags: SearchTag[]; hasMore: boolean };
+  initialMarketplace: { posts: any[]; hasMore: boolean };
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
@@ -38,6 +39,7 @@ export function SearchPageClient({
   initialUsers,
   initialPosts,
   initialTags,
+  initialMarketplace,
 }: SearchPageClientProps) {
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
@@ -50,6 +52,9 @@ export function SearchPageClient({
   const [postsHasMore, setPostsHasMore] = useState(initialPosts.hasMore);
   const [tags, setTags] = useState<SearchTag[]>(initialTags.tags);
   const [tagsHasMore, setTagsHasMore] = useState(initialTags.hasMore);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [marketplacePosts, setMarketplacePosts] = useState<any[]>(initialMarketplace.posts);
+  const [marketplaceHasMore, setMarketplaceHasMore] = useState(initialMarketplace.hasMore);
   const [isPending, startTransition] = useTransition();
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -57,6 +62,7 @@ export function SearchPageClient({
   const loadingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastSearchedQuery = useRef(initialQuery);
+  const searchIdRef = useRef(0);
 
   // Auto-focus the search input on mount
   useEffect(() => {
@@ -88,6 +94,8 @@ export function SearchPageClient({
       setPostsHasMore(false);
       setTags([]);
       setTagsHasMore(false);
+      setMarketplacePosts([]);
+      setMarketplaceHasMore(false);
       lastSearchedQuery.current = trimmed;
       return;
     }
@@ -96,17 +104,26 @@ export function SearchPageClient({
       lastSearchedQuery.current = trimmed;
       window.history.replaceState(null, "", `/search?q=${encodeURIComponent(trimmed)}&tab=${activeTab}`);
 
+      const id = ++searchIdRef.current;
       startTransition(async () => {
         if (activeTab === "users") {
           const result = await searchUsers(trimmed);
+          if (searchIdRef.current !== id) return;
           setUsers(result.users);
           setUsersHasMore(result.hasMore);
         } else if (activeTab === "posts") {
           const result = await searchPosts(trimmed);
+          if (searchIdRef.current !== id) return;
           setPosts(result.posts);
           setPostsHasMore(result.hasMore);
+        } else if (activeTab === "marketplace") {
+          const result = await searchMarketplacePosts(trimmed);
+          if (searchIdRef.current !== id) return;
+          setMarketplacePosts(result.posts);
+          setMarketplaceHasMore(result.hasMore);
         } else {
           const result = await searchTagsForSearch(trimmed);
+          if (searchIdRef.current !== id) return;
           setTags(result.tags);
           setTagsHasMore(result.hasMore);
         }
@@ -124,17 +141,26 @@ export function SearchPageClient({
     window.history.replaceState(null, "", `/search?q=${encodeURIComponent(trimmed)}&tab=${tab}`);
 
     if (trimmed.length >= 2) {
+      const id = ++searchIdRef.current;
       startTransition(async () => {
         if (tab === "users") {
           const result = await searchUsers(trimmed);
+          if (searchIdRef.current !== id) return;
           setUsers(result.users);
           setUsersHasMore(result.hasMore);
         } else if (tab === "posts") {
           const result = await searchPosts(trimmed);
+          if (searchIdRef.current !== id) return;
           setPosts(result.posts);
           setPostsHasMore(result.hasMore);
+        } else if (tab === "marketplace") {
+          const result = await searchMarketplacePosts(trimmed);
+          if (searchIdRef.current !== id) return;
+          setMarketplacePosts(result.posts);
+          setMarketplaceHasMore(result.hasMore);
         } else {
           const result = await searchTagsForSearch(trimmed);
+          if (searchIdRef.current !== id) return;
           setTags(result.tags);
           setTagsHasMore(result.hasMore);
         }
@@ -151,6 +177,8 @@ export function SearchPageClient({
   const usersHasMoreRef = useRef(usersHasMore);
   const postsHasMoreRef = useRef(postsHasMore);
   const tagsHasMoreRef = useRef(tagsHasMore);
+  const marketplacePostsRef = useRef(marketplacePosts);
+  const marketplaceHasMoreRef = useRef(marketplaceHasMore);
 
   useEffect(() => { queryRef.current = query; }, [query]);
   useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
@@ -160,6 +188,8 @@ export function SearchPageClient({
   useEffect(() => { usersHasMoreRef.current = usersHasMore; }, [usersHasMore]);
   useEffect(() => { postsHasMoreRef.current = postsHasMore; }, [postsHasMore]);
   useEffect(() => { tagsHasMoreRef.current = tagsHasMore; }, [tagsHasMore]);
+  useEffect(() => { marketplacePostsRef.current = marketplacePosts; }, [marketplacePosts]);
+  useEffect(() => { marketplaceHasMoreRef.current = marketplaceHasMore; }, [marketplaceHasMore]);
 
   const loadMore = useCallback(() => {
     if (loadingRef.current) return;
@@ -195,6 +225,24 @@ export function SearchPageClient({
           );
           setPosts((prev) => [...prev, ...result.posts]);
           setPostsHasMore(result.hasMore);
+        } finally {
+          loadingRef.current = false;
+        }
+      });
+    } else if (activeTabRef.current === "marketplace") {
+      if (!marketplaceHasMoreRef.current) return;
+      const lastPost = marketplacePostsRef.current[marketplacePostsRef.current.length - 1];
+      if (!lastPost) return;
+      loadingRef.current = true;
+
+      startTransition(async () => {
+        try {
+          const result = await searchMarketplacePosts(
+            trimmed,
+            lastPost.createdAt
+          );
+          setMarketplacePosts((prev) => [...prev, ...result.posts]);
+          setMarketplaceHasMore(result.hasMore);
         } finally {
           loadingRef.current = false;
         }
@@ -296,6 +344,16 @@ export function SearchPageClient({
         >
           Tags
         </button>
+        <button
+          onClick={() => handleTabChange("marketplace")}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === "marketplace"
+              ? "border-b-2 border-zinc-900 text-zinc-900 dark:border-zinc-100 dark:text-zinc-100"
+              : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300"
+          }`}
+        >
+          Marketplace
+        </button>
       </div>
 
       <div className="mt-4">
@@ -325,7 +383,7 @@ export function SearchPageClient({
               ))}
             </div>
           </>
-        ) : (
+        ) : activeTab === "tags" ? (
           <>
             {hasSearched && tags.length === 0 && !isPending && (
               <p className="py-8 text-center text-sm text-zinc-500">
@@ -354,6 +412,19 @@ export function SearchPageClient({
                     {tag.postCount} {tag.postCount === 1 ? "post" : "posts"}
                   </span>
                 </Link>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            {hasSearched && marketplacePosts.length === 0 && !isPending && (
+              <p className="py-8 text-center text-sm text-zinc-500">
+                No marketplace listings found
+              </p>
+            )}
+            <div className="space-y-3">
+              {marketplacePosts.map((post) => (
+                <SearchPostCard key={post.id} post={post} />
               ))}
             </div>
           </>

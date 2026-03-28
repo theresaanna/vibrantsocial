@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { invalidateUserPrefs } from "@/lib/user-prefs";
 
 export async function toggleNsfwContent(): Promise<{ showNsfwContent: boolean }> {
   const session = await auth();
@@ -20,6 +21,8 @@ export async function toggleNsfwContent(): Promise<{ showNsfwContent: boolean }>
     where: { id: session.user.id },
     data: { showNsfwContent: newValue },
   });
+
+  await invalidateUserPrefs(session.user.id);
 
   return { showNsfwContent: newValue };
 }
