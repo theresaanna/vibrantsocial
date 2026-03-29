@@ -37,6 +37,14 @@ const nextConfig: NextConfig = {
           value: "max-age=31536000; includeSubDomains",
         },
         {
+          key: "Cross-Origin-Opener-Policy",
+          value: "same-origin-allow-popups",
+        },
+        {
+          key: "Cross-Origin-Embedder-Policy",
+          value: "credentialless",
+        },
+        {
           key: "Content-Security-Policy",
           value: [
             "default-src 'self'",

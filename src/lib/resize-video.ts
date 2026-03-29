@@ -33,6 +33,7 @@ export async function videoNeedsResize(file: File): Promise<boolean> {
       resolve(false);
     };
     video.src = URL.createObjectURL(file);
+    video.load();
   });
 }
 
@@ -48,7 +49,7 @@ export async function resizeVideo(file: File): Promise<File> {
 
   await ffmpeg.exec([
     "-i", inputName,
-    "-vf", `scale='min(${MAX_VIDEO_DIMENSION},iw)':'min(${MAX_VIDEO_DIMENSION},ih)':force_original_aspect_ratio=decrease`,
+    "-vf", `scale='min(${MAX_VIDEO_DIMENSION},iw)':'min(${MAX_VIDEO_DIMENSION},ih)':force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2`,
     "-c:v", "libx264",
     "-c:a", "copy",
     "-movflags", "+faststart",
