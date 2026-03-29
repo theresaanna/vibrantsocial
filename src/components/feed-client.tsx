@@ -26,6 +26,7 @@ interface FeedClientProps {
   ageVerified: boolean;
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
+  hideSensitiveOverlay: boolean;
   hasEmail: boolean;
   isPremium: boolean;
   listId?: string;
@@ -42,6 +43,7 @@ export function FeedClient({
   ageVerified,
   showGraphicByDefault,
   showNsfwContent,
+  hideSensitiveOverlay,
   hasEmail,
   isPremium,
   listId,
@@ -133,6 +135,7 @@ export function FeedClient({
           ageVerified={ageVerified}
           showGraphicByDefault={showGraphicByDefault}
           showNsfwContent={showNsfwContent}
+          hideSensitiveOverlay={hideSensitiveOverlay}
           newItems={newItems}
         />
       )}

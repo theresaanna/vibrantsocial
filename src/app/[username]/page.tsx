@@ -156,6 +156,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   let phoneVerified = false;
   let ageVerified = false;
   let showGraphicByDefault = false;
+  let hideSensitiveOverlay = false;
   let showNsfwContent = false;
   let friendshipStatus: FriendshipStatus = "none";
   let friendRequestId: string | undefined;
@@ -186,11 +187,12 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   if (currentUserId) {
     const currentUser = await prisma.user.findUnique({
       where: { id: currentUserId },
-      select: { phoneVerified: true, ageVerified: true, showGraphicByDefault: true, showNsfwContent: true },
+      select: { phoneVerified: true, ageVerified: true, showGraphicByDefault: true, hideSensitiveOverlay: true, showNsfwContent: true },
     });
     phoneVerified = !!currentUser?.phoneVerified;
     ageVerified = !!currentUser?.ageVerified;
     showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
+    hideSensitiveOverlay = currentUser?.hideSensitiveOverlay ?? false;
     showNsfwContent = currentUser?.showNsfwContent ?? false;
   }
 
@@ -775,11 +777,11 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
               )}
               {feedItems.map((item) =>
                 item.type === "post" ? (
-                  <PostCard key={`post-${item.data.id}`} post={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator {...(item.data.wallPost && item.data.wallPost.wallOwner.username && { wallOwner: { username: item.data.wallPost.wallOwner.username, displayName: item.data.wallPost.wallOwner.displayName }, wallPostId: item.data.wallPost.id, wallPostStatus: item.data.wallPost.status })} />
+                  <PostCard key={`post-${item.data.id}`} post={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} hideSensitiveOverlay={hideSensitiveOverlay} showNsfwContent={showNsfwContent} showPinnedIndicator {...(item.data.wallPost && item.data.wallPost.wallOwner.username && { wallOwner: { username: item.data.wallPost.wallOwner.username, displayName: item.data.wallPost.wallOwner.displayName }, wallPostId: item.data.wallPost.id, wallPostStatus: item.data.wallPost.status })} />
                 ) : item.type === "repost" ? (
-                  <RepostCard key={`repost-${item.data.id}`} repost={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator />
+                  <RepostCard key={`repost-${item.data.id}`} repost={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} hideSensitiveOverlay={hideSensitiveOverlay} showNsfwContent={showNsfwContent} showPinnedIndicator />
                 ) : (
-                  <PostCard key={`wall-${item.data.id}`} post={item.data.post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} wallOwner={{ username: item.data.wallOwner.username!, displayName: item.data.wallOwner.displayName }} wallPostId={item.data.id} wallPostStatus={item.data.status} isWallOwner={isOwnProfile} />
+                  <PostCard key={`wall-${item.data.id}`} post={item.data.post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} hideSensitiveOverlay={hideSensitiveOverlay} showNsfwContent={showNsfwContent} wallOwner={{ username: item.data.wallOwner.username!, displayName: item.data.wallOwner.displayName }} wallPostId={item.data.id} wallPostStatus={item.data.status} isWallOwner={isOwnProfile} />
                 )
               )}
             </div>
@@ -801,7 +803,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
               )}
               {wallFeedItems.map((item) =>
                 item.type === "wall" ? (
-                  <PostCard key={`wall-${item.data.id}`} post={item.data.post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} wallOwner={{ username: item.data.wallOwner.username!, displayName: item.data.wallOwner.displayName }} wallPostId={item.data.id} wallPostStatus={item.data.status} isWallOwner={isOwnProfile} />
+                  <PostCard key={`wall-${item.data.id}`} post={item.data.post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} hideSensitiveOverlay={hideSensitiveOverlay} showNsfwContent={showNsfwContent} wallOwner={{ username: item.data.wallOwner.username!, displayName: item.data.wallOwner.displayName }} wallPostId={item.data.id} wallPostStatus={item.data.status} isWallOwner={isOwnProfile} />
                 ) : null
               )}
             </div>
@@ -822,7 +824,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           ) : (
             <div className="mt-6 space-y-4">
               {sensitivePosts.map((post) => (
-                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator {...(post.wallPost && post.wallPost.wallOwner.username && { wallOwner: { username: post.wallPost.wallOwner.username, displayName: post.wallPost.wallOwner.displayName }, wallPostId: post.wallPost.id, wallPostStatus: post.wallPost.status })} />
+                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} hideSensitiveOverlay={hideSensitiveOverlay} showNsfwContent={showNsfwContent} showPinnedIndicator {...(post.wallPost && post.wallPost.wallOwner.username && { wallOwner: { username: post.wallPost.wallOwner.username, displayName: post.wallPost.wallOwner.displayName }, wallPostId: post.wallPost.id, wallPostStatus: post.wallPost.status })} />
               ))}
             </div>
           )
@@ -842,7 +844,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           ) : (
             <div className="mt-6 space-y-4">
               {nsfwPosts.map((post) => (
-                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator {...(post.wallPost && post.wallPost.wallOwner.username && { wallOwner: { username: post.wallPost.wallOwner.username, displayName: post.wallPost.wallOwner.displayName }, wallPostId: post.wallPost.id, wallPostStatus: post.wallPost.status })} />
+                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} hideSensitiveOverlay={hideSensitiveOverlay} showNsfwContent={showNsfwContent} showPinnedIndicator {...(post.wallPost && post.wallPost.wallOwner.username && { wallOwner: { username: post.wallPost.wallOwner.username, displayName: post.wallPost.wallOwner.displayName }, wallPostId: post.wallPost.id, wallPostStatus: post.wallPost.status })} />
               ))}
             </div>
           )
@@ -862,7 +864,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           ) : (
             <div className="mt-6 space-y-4">
               {graphicPosts.map((post) => (
-                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} showNsfwContent={showNsfwContent} showPinnedIndicator {...(post.wallPost && post.wallPost.wallOwner.username && { wallOwner: { username: post.wallPost.wallOwner.username, displayName: post.wallPost.wallOwner.displayName }, wallPostId: post.wallPost.id, wallPostStatus: post.wallPost.status })} />
+                <PostCard key={post.id} post={post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} hideSensitiveOverlay={hideSensitiveOverlay} showNsfwContent={showNsfwContent} showPinnedIndicator {...(post.wallPost && post.wallPost.wallOwner.username && { wallOwner: { username: post.wallPost.wallOwner.username, displayName: post.wallPost.wallOwner.displayName }, wallPostId: post.wallPost.id, wallPostStatus: post.wallPost.status })} />
               ))}
             </div>
           )

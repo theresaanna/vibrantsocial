@@ -18,6 +18,7 @@ interface PostPageClientProps {
   phoneVerified: boolean;
   ageVerified: boolean;
   showGraphicByDefault: boolean;
+  hideSensitiveOverlay: boolean;
   showNsfwContent: boolean;
   highlightCommentId: string | null;
   wallPost?: WallPostData | null;
@@ -29,6 +30,7 @@ export function PostPageClient({
   phoneVerified,
   ageVerified,
   showGraphicByDefault,
+  hideSensitiveOverlay,
   showNsfwContent,
   highlightCommentId,
   wallPost,
@@ -60,6 +62,7 @@ export function PostPageClient({
         phoneVerified={phoneVerified}
         ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
+        hideSensitiveOverlay={hideSensitiveOverlay}
         showNsfwContent={showNsfwContent}
         defaultShowComments
         defaultExpanded

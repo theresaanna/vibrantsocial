@@ -122,7 +122,7 @@ describe("PostCard - timestamp permalink", () => {
         post={basePost}
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
       />
     );
     const link = screen.getByText("1m ago").closest("a");
@@ -135,7 +135,7 @@ describe("PostCard - timestamp permalink", () => {
         post={{ ...basePost, slug: null }}
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
       />
     );
     const link = screen.getByText("1m ago").closest("a");
@@ -148,7 +148,7 @@ describe("PostCard - timestamp permalink", () => {
         post={{ ...basePost, author: { ...basePost.author, username: null } }}
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
       />
     );
     const link = screen.getByText("1m ago").closest("a");
@@ -163,7 +163,7 @@ describe("PostCard - edited indicator", () => {
         post={{ ...basePost, editedAt: new Date() }}
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
       />
     );
     expect(screen.getByText("(edited)")).toBeInTheDocument();
@@ -175,7 +175,7 @@ describe("PostCard - edited indicator", () => {
         post={basePost}
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
       />
     );
     expect(screen.queryByText("(edited)")).not.toBeInTheDocument();
@@ -190,7 +190,7 @@ describe("PostCard - author menu", () => {
         currentUserId="other-user"
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
       />
     );
     expect(screen.queryByTestId("post-menu-button")).not.toBeInTheDocument();
@@ -202,7 +202,7 @@ describe("PostCard - author menu", () => {
         post={basePost}
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
       />
     );
     expect(screen.queryByTestId("post-menu-button")).not.toBeInTheDocument();
@@ -215,7 +215,7 @@ describe("PostCard - author menu", () => {
         currentUserId="user1"
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
       />
     );
     expect(screen.getByTestId("post-menu-button")).toBeInTheDocument();
@@ -228,7 +228,7 @@ describe("PostCard - author menu", () => {
         currentUserId="user1"
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
       />
     );
     expect(screen.queryByTestId("post-edit-button")).not.toBeInTheDocument();
@@ -248,7 +248,7 @@ describe("PostCard - edit mode", () => {
         currentUserId="user1"
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
       />
     );
     fireEvent.click(screen.getByTestId("post-menu-button"));
@@ -266,7 +266,7 @@ describe("PostCard - edit mode", () => {
         currentUserId="user1"
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
       />
     );
     fireEvent.click(screen.getByTestId("post-menu-button"));
@@ -284,7 +284,7 @@ describe("PostCard - edit mode", () => {
         currentUserId="user1"
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
       />
     );
     expect(screen.getByTestId("post-content")).toBeInTheDocument();
@@ -303,7 +303,7 @@ describe("PostCard - revision history", () => {
         currentUserId="user1"
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
       />
     );
     fireEvent.click(screen.getByTestId("post-menu-button"));
@@ -319,7 +319,7 @@ describe("PostCard - revision history", () => {
         currentUserId="user1"
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
       />
     );
     fireEvent.click(screen.getByTestId("post-menu-button"));

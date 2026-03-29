@@ -56,6 +56,7 @@ export default async function ProfilePage() {
       ageVerified: true,
       showGraphicByDefault: true,
       showNsfwContent: true,
+      hideSensitiveOverlay: true,
       emailOnComment: true,
       emailOnNewChat: true,
       emailOnMention: true,
@@ -163,6 +164,7 @@ export default async function ProfilePage() {
           ageVerified={!!user?.ageVerified}
           showGraphicByDefault={user?.showGraphicByDefault ?? false}
           showNsfwContent={user?.showNsfwContent ?? false}
+          hideSensitiveOverlay={user?.hideSensitiveOverlay ?? false}
           emailOnComment={user?.emailOnComment ?? true}
           emailOnNewChat={user?.emailOnNewChat ?? true}
           emailOnMention={user?.emailOnMention ?? true}

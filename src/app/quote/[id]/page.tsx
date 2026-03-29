@@ -58,6 +58,7 @@ export default async function QuotePage({ params }: Props) {
   let phoneVerified = false;
   let ageVerified = false;
   let showGraphicByDefault = false;
+  let hideSensitiveOverlay = false;
   let showNsfwContent = false;
 
   if (userId) {
@@ -70,6 +71,7 @@ export default async function QuotePage({ params }: Props) {
         dateOfBirth: true,
         ageVerified: true,
         showGraphicByDefault: true,
+        hideSensitiveOverlay: true,
         showNsfwContent: true,
       },
     });
@@ -79,6 +81,7 @@ export default async function QuotePage({ params }: Props) {
     phoneVerified = !!currentUser?.phoneVerified;
     ageVerified = !!currentUser?.ageVerified;
     showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
+    hideSensitiveOverlay = currentUser?.hideSensitiveOverlay ?? false;
     showNsfwContent = currentUser?.showNsfwContent ?? false;
   }
 
@@ -139,6 +142,7 @@ export default async function QuotePage({ params }: Props) {
         phoneVerified={phoneVerified}
         ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
+        hideSensitiveOverlay={hideSensitiveOverlay}
         showNsfwContent={showNsfwContent}
       />
     </main>
