@@ -163,7 +163,6 @@ function UnifiedUploadModal({
   onClose: () => void;
 }) {
   const [uploading, setUploading] = useState(false);
-  const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const { data: session } = useSession();
@@ -207,28 +206,13 @@ function UnifiedUploadModal({
           setUploading(false);
           return false;
         }
-        let videoFile = file;
-        try {
-          const { videoNeedsResize, resizeVideo } = await import("@/lib/resize-video");
-          if (await videoNeedsResize(file)) {
-            setNotice("Resizing video, this may take a moment…");
-            videoFile = await resizeVideo(file);
-            setNotice("");
-          }
-        } catch (resizeErr) {
-          console.error("Video resize failed:", resizeErr);
-          setNotice("");
-          setError(`Video resize failed: ${resizeErr instanceof Error ? resizeErr.message : String(resizeErr)}`);
-          setUploading(false);
-          return false;
-        }
-        const blob = await upload(videoFile.name, videoFile, {
+        const blob = await upload(file.name, file, {
           access: "public",
           handleUploadUrl: "/api/upload/client",
           clientPayload: "video",
         });
         editor.update(() => {
-          $insertNodes([$createVideoNode({ src: blob.url, fileName: videoFile.name, mimeType: videoFile.type }), $createParagraphNode()]);
+          $insertNodes([$createVideoNode({ src: blob.url, fileName: file.name, mimeType: file.type }), $createParagraphNode()]);
         });
       } else if (file.type === "application/pdf") {
         if (file.size > limits.maxDocumentSize) {
@@ -295,7 +279,7 @@ function UnifiedUploadModal({
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
             </svg>
             <span className="text-sm font-medium">
-              {notice ? notice : uploading ? "Uploading..." : "Choose a file"}
+              {uploading ? "Uploading..." : "Choose a file"}
             </span>
           </button>
           <p className="mt-2 text-center text-xs text-zinc-400" data-testid="editor-file-limits">
