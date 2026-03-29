@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useChannel } from "ably/react";
+import { useAblyReady } from "@/app/providers";
 import { AddToHomeBanner } from "@/components/add-to-home-banner";
 import { AddEmailBanner } from "@/components/add-email-banner";
 import { FeedList } from "@/components/feed-list";
@@ -40,6 +41,20 @@ interface FeedClientProps {
   activeView?: FeedView;
 }
 
+function FeedMarketplaceSubscription({
+  currentUserId,
+  onNewPost,
+}: {
+  currentUserId: string;
+  onNewPost: (postId: string) => void;
+}) {
+  useChannel(`feed:${currentUserId}`, "new-post", (event) => {
+    const postId = event.data?.postId as string | undefined;
+    if (postId) onNewPost(postId);
+  });
+  return null;
+}
+
 export function FeedClient({
   phoneVerified,
   isOldEnough,
@@ -56,6 +71,7 @@ export function FeedClient({
   lastSeenFeedAt,
   activeView = "posts",
 }: FeedClientProps) {
+  const isAblyReady = useAblyReady();
   const [newItems, setNewItems] = useState<FeedItem[]>([]);
   const newestDateRef = useRef<string>(
     initialItems[0]?.date ?? new Date().toISOString()
@@ -74,12 +90,6 @@ export function FeedClient({
       setNewItems((prev) => [item, ...prev]);
     }
   }, []);
-
-  // Real-time: receive marketplace posts promoted to feed from other tabs/pages
-  useChannel(`feed:${currentUserId}`, "new-post", (event) => {
-    const postId = event.data?.postId as string | undefined;
-    if (postId) handlePostCreated(postId);
-  });
 
   // Poll for new posts from followed users
   useEffect(() => {
@@ -119,6 +129,12 @@ export function FeedClient({
 
   return (
     <>
+      {isAblyReady && (
+        <FeedMarketplaceSubscription
+          currentUserId={currentUserId}
+          onNewPost={handlePostCreated}
+        />
+      )}
       <AddToHomeBanner />
       <AddEmailBanner hasEmail={hasEmail} />
       {!listId && lastSeenFeedAt && (
