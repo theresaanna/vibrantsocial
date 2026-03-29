@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { calculateAge } from "@/lib/age-gate";
 import { MarketplaceGrid } from "@/components/marketplace-grid";
-import { MarketplacePostComposer } from "@/components/marketplace-post-composer";
+import { MarketplaceClient } from "./marketplace-client";
+
 import { fetchMarketplacePage } from "./media-actions";
 import { isProfileIncomplete } from "@/lib/require-profile";
 
@@ -56,13 +57,14 @@ export async function MarketplaceContent({ userId }: MarketplaceContentProps) {
           </div>
         </div>
       </div>
-      <MarketplacePostComposer
+      <MarketplaceClient
+        initialPosts={posts}
+        initialHasMore={hasMore}
         phoneVerified={phoneVerified}
         isOldEnough={isOldEnough}
         isAgeVerified={isAgeVerified}
         isProfilePublic={isProfilePublic}
       />
-      <MarketplaceGrid initialPosts={posts} initialHasMore={hasMore} />
     </>
   );
 }

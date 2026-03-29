@@ -16,6 +16,7 @@ import { invalidate, cacheKeys } from "@/lib/cache";
 import { generateSlugFromContent, validateSlug } from "@/lib/slugs";
 import { inngest } from "@/lib/inngest";
 import { awardReferralFirstPostBonus, checkStarsMilestone } from "@/lib/referral";
+import { getAblyRestClient } from "@/lib/ably";
 import type { ShippingOption } from "@/generated/prisma/client";
 
 interface MarketplacePostState {
@@ -241,6 +242,12 @@ export async function createMarketplacePost(
     name: "moderation/scan-post",
     data: { postId: post.id, userId: session.user.id },
   });
+
+  if (promotedToFeed) {
+    const ably = getAblyRestClient();
+    const channel = ably.channels.get(`feed:${session.user.id}`);
+    await channel.publish("new-post", { postId: post.id });
+  }
 
   revalidatePath("/marketplace");
   return { success: true, message: "Marketplace post created", postId: post.id, slug: post.slug ?? undefined };
