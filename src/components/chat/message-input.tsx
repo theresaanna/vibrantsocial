@@ -125,7 +125,9 @@ export function MessageInput({
                     videoFile = await resizeVideo(file);
                   }
                 } catch (resizeErr) {
-                  console.warn("Video resize failed, uploading original:", resizeErr);
+                  console.error("Video resize failed:", resizeErr);
+                  setUploadError(`Video resize failed: ${resizeErr instanceof Error ? resizeErr.message : String(resizeErr)}`);
+                  return;
                 }
                 const blob = await blobUpload(videoFile.name, videoFile, {
                   access: "public",

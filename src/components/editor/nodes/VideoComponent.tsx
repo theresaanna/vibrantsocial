@@ -201,7 +201,9 @@ export default function VideoComponent({
       >
         Your browser does not support video playback.
       </video>
-      <p className="mt-1 truncate text-xs text-zinc-500">{fileName}</p>
+      {isVideoEditable && (
+        <p className="mt-1 truncate text-xs text-zinc-500">{fileName}</p>
+      )}
 
       {isSelected && isVideoEditable && (
         <>

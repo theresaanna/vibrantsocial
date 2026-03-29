@@ -216,8 +216,11 @@ function UnifiedUploadModal({
             setNotice("");
           }
         } catch (resizeErr) {
-          console.warn("Video resize failed, uploading original:", resizeErr);
+          console.error("Video resize failed:", resizeErr);
           setNotice("");
+          setError(`Video resize failed: ${resizeErr instanceof Error ? resizeErr.message : String(resizeErr)}`);
+          setUploading(false);
+          return false;
         }
         const blob = await upload(videoFile.name, videoFile, {
           access: "public",
