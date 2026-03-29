@@ -1,4 +1,5 @@
-import type { FFmpeg } from "@ffmpeg/ffmpeg";
+import { FFmpeg } from "@ffmpeg/ffmpeg";
+import { toBlobURL, fetchFile } from "@ffmpeg/util";
 
 const MAX_VIDEO_DIMENSION = 1000;
 
@@ -6,9 +7,6 @@ let ffmpegInstance: FFmpeg | null = null;
 
 async function getFFmpeg(): Promise<FFmpeg> {
   if (ffmpegInstance) return ffmpegInstance;
-
-  const { FFmpeg } = await import("@ffmpeg/ffmpeg");
-  const { toBlobURL } = await import("@ffmpeg/util");
 
   const ffmpeg = new FFmpeg();
   await ffmpeg.load({
@@ -55,7 +53,6 @@ export async function videoNeedsResize(file: File): Promise<boolean> {
 
 export async function resizeVideo(file: File): Promise<File> {
   const ffmpeg = await getFFmpeg();
-  const { fetchFile } = await import("@ffmpeg/util");
 
   const inputName = `input.mp4`;
   const outputName = "output.mp4";
