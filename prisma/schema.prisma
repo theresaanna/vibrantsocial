@@ -195,6 +195,9 @@ model User {
   // Marketplace questions
   marketplaceQuestions MarketplaceQuestion[]
 
+  // Poll votes
+  pollVotes PollVote[]
+
   // Linked accounts (multi-account switching)
   linkedAccountGroupId String?
   linkedAccountGroup   LinkedAccountGroup? @relation(fields: [linkedAccountGroupId], references: [id])
@@ -270,6 +273,7 @@ model Post {
   contentViolations ContentViolation[]
   wallPost          WallPost?
   marketplacePost   MarketplacePost?
+  pollVotes         PollVote[]
 
   @@unique([authorId, slug])
   @@index([authorId])
@@ -355,6 +359,20 @@ model Bookmark {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
+}
+
+model PollVote {
+  id        String   @id @default(cuid())
+  postId    String
+  optionId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
 }
 
 model Repost {
