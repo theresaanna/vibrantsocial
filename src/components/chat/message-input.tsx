@@ -118,7 +118,12 @@ export function MessageInput({
               // Use client-side Vercel Blob upload for videos to avoid
               // the 4.5 MB serverless function body-size limit.
               try {
-                const blob = await blobUpload(file.name, file, {
+                let videoFile = file;
+                const { videoNeedsResize, resizeVideo } = await import("@/lib/resize-video");
+                if (await videoNeedsResize(file)) {
+                  videoFile = await resizeVideo(file);
+                }
+                const blob = await blobUpload(videoFile.name, videoFile, {
                   access: "public",
                   handleUploadUrl: "/api/upload/client",
                   clientPayload: "video",
@@ -126,8 +131,8 @@ export function MessageInput({
                 mediaList.push({
                   url: blob.url,
                   type: "video",
-                  fileName: file.name,
-                  fileSize: file.size,
+                  fileName: videoFile.name,
+                  fileSize: videoFile.size,
                 });
               } catch (err) {
                 setUploadError(

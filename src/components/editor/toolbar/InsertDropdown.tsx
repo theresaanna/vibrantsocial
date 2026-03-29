@@ -276,10 +276,12 @@ function VideoInsertModal({
   onInsert: (src: string, fileName: string, mimeType: string) => void;
 }) {
   const [uploading, setUploading] = useState(false);
+  const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
   async function handleFileUpload(file: File) {
     setError("");
+    setNotice("");
     if (!file.type.startsWith("video/")) {
       setError("Please select a video file");
       return;
@@ -291,12 +293,19 @@ function VideoInsertModal({
 
     setUploading(true);
     try {
-      const blob = await upload(file.name, file, {
+      let videoFile = file;
+      const { videoNeedsResize, resizeVideo } = await import("@/lib/resize-video");
+      if (await videoNeedsResize(file)) {
+        setNotice("Resizing video, this may take a moment…");
+        videoFile = await resizeVideo(file);
+        setNotice("");
+      }
+      const blob = await upload(videoFile.name, videoFile, {
         access: "public",
         handleUploadUrl: "/api/upload/client",
         clientPayload: "video",
       });
-      onInsert(blob.url, file.name, file.type);
+      onInsert(blob.url, videoFile.name, videoFile.type);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
@@ -312,6 +321,7 @@ function VideoInsertModal({
           hint={`MP4, WebM, MOV, OGG (max ${formatSizeLimit(limits.maxVideoSize)})`}
           icon="video"
           uploading={uploading}
+          notice={notice}
           onFileSelect={(file) => handleFileUpload(file)}
         />
         {error && <p className="text-sm text-red-600">{error}</p>}
@@ -623,12 +633,14 @@ function FilePickerArea({
   hint,
   icon,
   uploading,
+  notice,
   onFileSelect,
 }: {
   accept: string;
   hint: string;
   icon: "image" | "video" | "file";
   uploading: boolean;
+  notice?: string;
   onFileSelect: (file: File) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -665,7 +677,7 @@ function FilePickerArea({
           <path strokeLinecap="round" strokeLinejoin="round" d={iconPath} />
         </svg>
         <span className="text-sm font-medium">
-          {uploading ? "Uploading..." : "Choose a file"}
+          {notice ? notice : uploading ? "Uploading..." : "Choose a file"}
         </span>
       </button>
       <p className="mt-2 text-center text-xs text-zinc-400">{hint}</p>
