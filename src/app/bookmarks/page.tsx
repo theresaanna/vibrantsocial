@@ -93,6 +93,7 @@ export default async function BookmarksPage() {
                 select: {
                   username: true,
                   displayName: true,
+                  usernameFont: true,
                 },
               },
             },
@@ -179,6 +180,7 @@ export default async function BookmarksPage() {
                 wallOwner: {
                   username: post.wallPost.wallOwner.username,
                   displayName: post.wallPost.wallOwner.displayName,
+                  usernameFont: post.wallPost.wallOwner.usernameFont,
                 },
                 wallPostId: post.wallPost.id,
                 wallPostStatus: post.wallPost.status,

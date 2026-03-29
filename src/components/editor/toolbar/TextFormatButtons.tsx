@@ -52,57 +52,16 @@ const formats: FormatButton[] = [
   },
 ];
 
-const codeFormats: FormatButton[] = [
-  {
-    format: "subscript",
-    label: "x₂",
-    ariaLabel: "Subscript",
-    shortcut: "",
-    hideOnMobile: true,
-    icon: (
-      <span>
-        x<sub className="text-[0.6em]">2</sub>
-      </span>
-    ),
-  },
-  {
-    format: "superscript",
-    label: "x²",
-    ariaLabel: "Superscript",
-    shortcut: "",
-    hideOnMobile: true,
-    icon: (
-      <span>
-        x<sup className="text-[0.6em]">2</sup>
-      </span>
-    ),
-  },
-  {
-    format: "code",
-    label: "<>",
-    ariaLabel: "Inline Code",
-    shortcut: "",
-    hideOnMobile: true,
-    icon: (
-      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-      </svg>
-    ),
-  },
-];
-
 function FormatButtonGroup({ buttons }: { buttons: FormatButton[] }) {
   const [editor] = useLexicalComposerContext();
   const [activeFormats, setActiveFormats] = useState<Set<TextFormatType>>(new Set());
-
-  const allFormats = [...formats, ...codeFormats];
 
   const updateFormats = useCallback(() => {
     const selection = $getSelection();
     if (!$isRangeSelection(selection)) return;
 
     const active = new Set<TextFormatType>();
-    for (const f of allFormats) {
+    for (const f of formats) {
       if (selection.hasFormat(f.format)) active.add(f.format);
     }
     setActiveFormats(active);
@@ -144,8 +103,4 @@ function FormatButtonGroup({ buttons }: { buttons: FormatButton[] }) {
 
 export function TextFormatButtons() {
   return <FormatButtonGroup buttons={formats} />;
-}
-
-export function CodeFormatButtons() {
-  return <FormatButtonGroup buttons={codeFormats} />;
 }

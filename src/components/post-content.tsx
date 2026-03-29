@@ -55,12 +55,12 @@ export function PostContent({ content, truncate = true, allowChecklistToggle, on
       </div>
       {shouldTruncate && isOverflowing && (
         <>
-          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white dark:from-zinc-900" />
-          <div className="flex justify-center pt-2">
+          <div className="post-truncation-gradient pointer-events-none absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white dark:from-zinc-900" />
+          <div className="relative flex justify-center pt-1">
             <button
               type="button"
               onClick={() => setExpanded(true)}
-              className="text-sm font-medium text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+              className="rounded-full bg-fuchsia-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-fuchsia-700 dark:bg-fuchsia-500 dark:hover:bg-fuchsia-600"
               data-testid="show-more-button"
             >
               Show more

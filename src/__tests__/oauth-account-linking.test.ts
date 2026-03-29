@@ -64,20 +64,20 @@ describe("loadLinkedAccounts", () => {
       linkedAccountGroupId: "group1",
     } as never);
     mockPrisma.user.findMany.mockResolvedValue([
-      { id: "user2", username: "bob", displayName: "Bob", avatar: null },
+      { id: "user2", username: "bob", displayName: "Bob", avatar: null, profileFrameId: null, usernameFont: null },
     ] as never);
 
     const result = await loadLinkedAccounts("user1");
 
     expect(result).toEqual([
-      { id: "user2", username: "bob", displayName: "Bob", avatar: null },
+      { id: "user2", username: "bob", displayName: "Bob", avatar: null, profileFrameId: null, usernameFont: null },
     ]);
     expect(mockPrisma.user.findMany).toHaveBeenCalledWith({
       where: {
         linkedAccountGroupId: "group1",
         id: { not: "user1" },
       },
-      select: { id: true, username: true, displayName: true, avatar: true, profileFrameId: true },
+      select: { id: true, username: true, displayName: true, avatar: true, profileFrameId: true, usernameFont: true },
     });
   });
 });
@@ -333,6 +333,8 @@ describe("JWT callback – OAuth linking flow", () => {
         username: "bob",
         displayName: "Bob",
         avatar: null,
+        profileFrameId: null,
+        usernameFont: null,
       },
     ]);
 
@@ -490,6 +492,8 @@ describe("JWT callback – OAuth linking flow", () => {
         username: "alice-google",
         displayName: "Alice Google",
         avatar: "/google.png",
+        profileFrameId: null,
+        usernameFont: null,
       },
     ];
     vi.mocked(loadLinkedAccounts).mockResolvedValue(linkedAccounts);
@@ -589,6 +593,8 @@ describe("JWT callback – OAuth linking flow", () => {
         username: "discord-bob",
         displayName: "Discord Bob",
         avatar: null,
+        profileFrameId: null,
+        usernameFont: null,
       },
     ]);
 

@@ -20,20 +20,17 @@ vi.mock("@/app/feed/feed-actions", () => ({
   fetchFeedPage: (...args: unknown[]) => mockFetchFeedPage(...args),
 }));
 
-// Mock @tanstack/react-virtual since jsdom doesn't support window scrolling
-vi.mock("@tanstack/react-virtual", () => ({
-  useWindowVirtualizer: (options: { count: number }) => ({
-    getVirtualItems: () =>
-      Array.from({ length: options.count }, (_, i) => ({
-        index: i,
-        start: i * 250,
-        size: 250,
-        key: i,
-      })),
-    getTotalSize: () => options.count * 250,
-    measureElement: () => {},
-  }),
-}));
+// Mock IntersectionObserver for jsdom
+const mockObserve = vi.fn();
+const mockDisconnect = vi.fn();
+vi.stubGlobal(
+  "IntersectionObserver",
+  vi.fn(() => ({
+    observe: mockObserve,
+    disconnect: mockDisconnect,
+    unobserve: vi.fn(),
+  }))
+);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -110,14 +107,25 @@ describe("FeedList", () => {
     expect(screen.queryByText(/all caught up/)).not.toBeInTheDocument();
   });
 
-  it("uses virtualization for rendering items", () => {
+  it("renders posts using normal flow layout with gap", () => {
     const items = [makeFeedItem("p1"), makeFeedItem("p2")];
     const { container } = render(
       <FeedList {...baseProps} initialItems={items} initialHasMore={true} />
     );
-    // Virtualized items use absolute positioning with translateY
+    // Posts use flex column layout, not absolute positioning
+    const flexContainer = container.querySelector(".flex.flex-col.gap-4");
+    expect(flexContainer).toBeInTheDocument();
+    // No absolute positioning
     const positioned = container.querySelectorAll('[style*="position: absolute"]');
-    expect(positioned.length).toBe(2);
+    expect(positioned.length).toBe(0);
+  });
+
+  it("sets up IntersectionObserver for infinite scroll", () => {
+    const items = [makeFeedItem("p1")];
+    render(
+      <FeedList {...baseProps} initialItems={items} initialHasMore={true} />
+    );
+    expect(mockObserve).toHaveBeenCalled();
   });
 
   it("prepends new items via newItems prop", () => {

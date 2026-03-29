@@ -81,6 +81,7 @@ interface RepostCardProps {
         wallOwner: {
           username: string | null;
           displayName: string | null;
+          usernameFont: string | null;
         };
       } | null;
     };
@@ -494,6 +495,7 @@ export function RepostCard({
               wallOwner: {
                 username: repost.post.wallPost.wallOwner.username,
                 displayName: repost.post.wallPost.wallOwner.displayName,
+                usernameFont: repost.post.wallPost.wallOwner.usernameFont,
               },
               wallPostId: repost.post.wallPost.id,
               wallPostStatus: repost.post.wallPost.status,

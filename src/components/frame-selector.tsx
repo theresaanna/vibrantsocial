@@ -60,6 +60,8 @@ export function FrameSelector({
   const springFrames = PROFILE_FRAMES.filter((f) => f.category === "spring");
   const neonFrames = PROFILE_FRAMES.filter((f) => f.category === "neon");
   const decorativeFrames = PROFILE_FRAMES.filter((f) => f.category === "decorative");
+  const floralFrames = PROFILE_FRAMES.filter((f) => f.category === "floral");
+  const whimsyFrames = PROFILE_FRAMES.filter((f) => f.category === "whimsy");
 
   function handleSelect(frameId: string | null) {
     setSelectedFrameId(frameId);
@@ -74,7 +76,7 @@ export function FrameSelector({
       }}
       data-testid="frame-selector-backdrop"
     >
-      <div className="w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900" style={{ maxHeight: "90vh" }}>
+      <div className="w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900" style={{ maxHeight: "90vh" }}>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
             Profile Frame
@@ -124,7 +126,7 @@ export function FrameSelector({
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
               Spring
             </h3>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {springFrames.map((frame) => (
                 <FrameOption
                   key={frame.id}
@@ -143,7 +145,7 @@ export function FrameSelector({
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
               Neon
             </h3>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {neonFrames.map((frame) => (
                 <FrameOption
                   key={frame.id}
@@ -162,8 +164,46 @@ export function FrameSelector({
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
               Decorative
             </h3>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {decorativeFrames.map((frame) => (
+                <FrameOption
+                  key={frame.id}
+                  frame={frame}
+                  isSelected={selectedFrameId === frame.id}
+                  avatarSrc={avatarSrc}
+                  initial={initial}
+                  onSelect={(id) => handleSelect(id)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Floral frames */}
+          <div>
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+              Floral
+            </h3>
+            <div className="grid grid-cols-4 gap-2">
+              {floralFrames.map((frame) => (
+                <FrameOption
+                  key={frame.id}
+                  frame={frame}
+                  isSelected={selectedFrameId === frame.id}
+                  avatarSrc={avatarSrc}
+                  initial={initial}
+                  onSelect={(id) => handleSelect(id)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Whimsy frames */}
+          <div>
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+              Whimsy
+            </h3>
+            <div className="grid grid-cols-4 gap-2">
+              {whimsyFrames.map((frame) => (
                 <FrameOption
                   key={frame.id}
                   frame={frame}

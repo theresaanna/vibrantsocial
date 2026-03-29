@@ -59,6 +59,8 @@ const makeFriend = (id: string, username: string, displayName: string | null = n
   name: displayName,
   avatar: null,
   image: null,
+  profileFrameId: null,
+  usernameFont: null,
 });
 
 const defaultProps = {

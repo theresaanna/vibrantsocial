@@ -115,6 +115,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
           image: true,
           avatar: true,
           profileFrameId: true,
+          usernameFont: true,
           isProfilePublic: true,
         },
       },
@@ -151,14 +152,23 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
             select: {
               username: true,
               displayName: true,
+              usernameFont: true,
             },
           },
         },
+      },
+      marketplacePost: {
+        select: { id: true },
       },
     },
   });
 
   if (!post) notFound();
+
+  // Redirect marketplace posts to their dedicated URL
+  if (post.marketplacePost) {
+    redirect(`/${username}/marketplace/${slug}`);
+  }
 
   // Redirect unauthenticated visitors if author's profile is private
   if (post.author && !post.author.isProfilePublic && !userId)
@@ -210,6 +220,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
         showNsfwContent={showNsfwContent}
         highlightCommentId={commentId ?? null}
         wallPost={post.wallPost}
+        marketplacePostId={undefined}
       />
     </main>
   );

@@ -1,17 +1,20 @@
 "use server";
 
 import { auth } from "@/auth";
-import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { createNotification } from "@/lib/notifications";
 import { inngest } from "@/lib/inngest";
-import { invalidate, cacheKeys } from "@/lib/cache";
+import { invalidate, cached, cacheKeys } from "@/lib/cache";
+import {
+  requireAuthWithRateLimit,
+  isActionError,
+  hasBlock,
+  areFriends,
+  createNotificationSafe,
+  USER_PROFILE_SELECT,
+} from "@/lib/action-utils";
+import type { ActionState } from "@/lib/action-utils";
 import type { FollowUser } from "@/app/feed/follow-actions";
-
-interface FriendActionState {
-  success: boolean;
-  message: string;
-}
 
 export type FriendshipStatus =
   | "none"
@@ -25,34 +28,35 @@ export async function getFriendshipStatus(
   const session = await auth();
   if (!session?.user?.id) return { status: "none" };
 
-  const request = await prisma.friendRequest.findFirst({
-    where: {
-      OR: [
-        { senderId: session.user.id, receiverId: targetUserId },
-        { senderId: targetUserId, receiverId: session.user.id },
-      ],
-    },
-    select: { id: true, senderId: true, status: true },
-  });
+  return cached(
+    cacheKeys.friendshipStatus(session.user.id, targetUserId),
+    async () => {
+      const request = await prisma.friendRequest.findFirst({
+        where: {
+          OR: [
+            { senderId: session.user.id, receiverId: targetUserId },
+            { senderId: targetUserId, receiverId: session.user.id },
+          ],
+        },
+        select: { id: true, senderId: true, status: true },
+      });
 
-  if (!request) return { status: "none" };
-  if (request.status === "ACCEPTED") return { status: "friends", requestId: request.id };
-  if (request.senderId === session.user.id) return { status: "pending_sent", requestId: request.id };
-  return { status: "pending_received", requestId: request.id };
+      if (!request) return { status: "none" as const };
+      if (request.status === "ACCEPTED") return { status: "friends" as const, requestId: request.id };
+      if (request.senderId === session.user.id) return { status: "pending_sent" as const, requestId: request.id };
+      return { status: "pending_received" as const, requestId: request.id };
+    },
+    120
+  );
 }
 
 export async function sendFriendRequest(
-  _prevState: FriendActionState,
+  _prevState: ActionState,
   formData: FormData
-): Promise<FriendActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `friend:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+): Promise<ActionState> {
+  const authResult = await requireAuthWithRateLimit("friend");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const targetUserId = formData.get("userId") as string;
 
@@ -60,16 +64,7 @@ export async function sendFriendRequest(
     return { success: false, message: "Cannot friend yourself" };
   }
 
-  // Check if a block exists between the two users
-  const block = await prisma.block.findFirst({
-    where: {
-      OR: [
-        { blockerId: session.user.id, blockedId: targetUserId },
-        { blockerId: targetUserId, blockedId: session.user.id },
-      ],
-    },
-  });
-  if (block) {
+  if (await hasBlock(session.user.id, targetUserId)) {
     return { success: false, message: "Cannot send friend request to this user" };
   }
 
@@ -92,6 +87,9 @@ export async function sendFriendRequest(
   await prisma.friendRequest.create({
     data: { senderId: session.user.id, receiverId: targetUserId },
   });
+
+  // Invalidate friendship cache
+  await invalidate(cacheKeys.friendshipStatus(session.user.id, targetUserId));
 
   // Auto-follow the target user when sending a friend request
   try {
@@ -123,15 +121,11 @@ export async function sendFriendRequest(
     // Non-critical: friend request was still created
   }
 
-  try {
-    await createNotification({
-      type: "FRIEND_REQUEST",
-      actorId: session.user.id,
-      targetUserId,
-    });
-  } catch {
-    // Non-critical
-  }
+  await createNotificationSafe({
+    type: "FRIEND_REQUEST",
+    actorId: session.user.id,
+    targetUserId,
+  });
 
   // Send email notification
   try {
@@ -163,17 +157,12 @@ export async function sendFriendRequest(
 }
 
 export async function acceptFriendRequest(
-  _prevState: FriendActionState,
+  _prevState: ActionState,
   formData: FormData
-): Promise<FriendActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `friend:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+): Promise<ActionState> {
+  const authResult = await requireAuthWithRateLimit("friend");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const requestId = formData.get("requestId") as string;
 
@@ -195,32 +184,25 @@ export async function acceptFriendRequest(
     data: { status: "ACCEPTED" },
   });
 
-  try {
-    await createNotification({
-      type: "FRIEND_REQUEST",
-      actorId: session.user.id,
-      targetUserId: request.senderId,
-    });
-  } catch {
-    // Non-critical
-  }
+  await invalidate(cacheKeys.friendshipStatus(session.user.id, request.senderId));
+
+  await createNotificationSafe({
+    type: "FRIEND_REQUEST_ACCEPTED",
+    actorId: session.user.id,
+    targetUserId: request.senderId,
+  });
 
   revalidatePath("/");
   return { success: true, message: "Friend request accepted" };
 }
 
 export async function declineFriendRequest(
-  _prevState: FriendActionState,
+  _prevState: ActionState,
   formData: FormData
-): Promise<FriendActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `friend:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+): Promise<ActionState> {
+  const authResult = await requireAuthWithRateLimit("friend");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const requestId = formData.get("requestId") as string;
 
@@ -240,22 +222,19 @@ export async function declineFriendRequest(
   // Delete so the sender can re-request later
   await prisma.friendRequest.delete({ where: { id: requestId } });
 
+  await invalidate(cacheKeys.friendshipStatus(session.user.id, request.senderId));
+
   revalidatePath("/");
   return { success: true, message: "Friend request declined" };
 }
 
 export async function removeFriend(
-  _prevState: FriendActionState,
+  _prevState: ActionState,
   formData: FormData
-): Promise<FriendActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `friend:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+): Promise<ActionState> {
+  const authResult = await requireAuthWithRateLimit("friend");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const targetUserId = formData.get("userId") as string;
 
@@ -274,6 +253,8 @@ export async function removeFriend(
   }
 
   await prisma.friendRequest.delete({ where: { id: friendship.id } });
+
+  await invalidate(cacheKeys.friendshipStatus(session.user.id, targetUserId));
 
   // Also unfollow the target user when unfriending
   try {
@@ -308,15 +289,10 @@ export async function removeFriend(
 export async function respondToFriendRequestByActor(
   actorId: string,
   action: "accept" | "decline"
-): Promise<FriendActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `friend:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+): Promise<ActionState> {
+  const authResult = await requireAuthWithRateLimit("friend");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const request = await prisma.friendRequest.findFirst({
     where: {
@@ -336,15 +312,13 @@ export async function respondToFriendRequestByActor(
       data: { status: "ACCEPTED" },
     });
 
-    try {
-      await createNotification({
-        type: "FRIEND_REQUEST",
-        actorId: session.user.id,
-        targetUserId: request.senderId,
-      });
-    } catch {
-      // Non-critical
-    }
+    await invalidate(cacheKeys.friendshipStatus(session.user.id, actorId));
+
+    await createNotificationSafe({
+      type: "FRIEND_REQUEST_ACCEPTED",
+      actorId: session.user.id,
+      targetUserId: request.senderId,
+    });
 
     revalidatePath("/");
     return { success: true, message: "Friend request accepted" };
@@ -352,6 +326,7 @@ export async function respondToFriendRequestByActor(
 
   // Decline: delete so sender can re-request later
   await prisma.friendRequest.delete({ where: { id: request.id } });
+  await invalidate(cacheKeys.friendshipStatus(session.user.id, actorId));
   revalidatePath("/");
   return { success: true, message: "Friend request declined" };
 }
@@ -367,32 +342,12 @@ export async function getPendingFriendRequests() {
     },
     include: {
       sender: {
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          name: true,
-          avatar: true,
-          profileFrameId: true,
-          usernameFont: true,
-          image: true,
-        },
+        select: USER_PROFILE_SELECT,
       },
     },
     orderBy: { createdAt: "desc" },
   });
 }
-
-const friendUserSelect = {
-  id: true,
-  username: true,
-  displayName: true,
-  name: true,
-  avatar: true,
-  profileFrameId: true,
-  usernameFont: true,
-  image: true,
-} as const;
 
 export async function getBatchFriendshipStatuses(
   userIds: string[]
@@ -457,8 +412,8 @@ export async function getFriends(username: string): Promise<FollowUser[]> {
       OR: [{ senderId: user.id }, { receiverId: user.id }],
     },
     include: {
-      sender: { select: friendUserSelect },
-      receiver: { select: friendUserSelect },
+      sender: { select: USER_PROFILE_SELECT },
+      receiver: { select: USER_PROFILE_SELECT },
     },
     orderBy: { createdAt: "desc" },
   });
