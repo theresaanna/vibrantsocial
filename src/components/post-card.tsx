@@ -647,6 +647,8 @@ export function PostCard({
                 }}
                 isPostAuthor={isAuthor}
                 hideLinkPreview={post.hideLinkPreview}
+                postId={post.id}
+                currentUserId={currentUserId}
               />
             )}
           </div>

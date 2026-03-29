@@ -433,7 +433,7 @@ export function RepostCard({
                 </div>
               </form>
             ) : (
-              <PostContent content={currentContent!} isPostAuthor={isAuthor} />
+              <PostContent content={currentContent!} isPostAuthor={isAuthor} postId={repost.post.id} currentUserId={currentUserId} />
             )}
           </div>
 
