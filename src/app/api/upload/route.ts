@@ -147,7 +147,7 @@ export async function POST(req: Request) {
 
   const blob = await put(filename, uploadBody, {
     access: "public",
-    addRandomSuffix: false,
+    addRandomSuffix: true,
   });
 
   const fileType =
