@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
-import { useChannel } from "ably/react";
+import { useChannel, ChannelProvider } from "ably/react";
 import { useAblyReady } from "@/app/providers";
 import { AddToHomeBanner } from "@/components/add-to-home-banner";
 import { AddEmailBanner } from "@/components/add-email-banner";
@@ -130,10 +130,12 @@ export function FeedClient({
   return (
     <>
       {isAblyReady && (
-        <FeedMarketplaceSubscription
-          currentUserId={currentUserId}
-          onNewPost={handlePostCreated}
-        />
+        <ChannelProvider channelName={`feed:${currentUserId}`}>
+          <FeedMarketplaceSubscription
+            currentUserId={currentUserId}
+            onNewPost={handlePostCreated}
+          />
+        </ChannelProvider>
       )}
       <AddToHomeBanner />
       <AddEmailBanner hasEmail={hasEmail} />
