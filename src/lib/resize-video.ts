@@ -1,12 +1,42 @@
-import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { toBlobURL, fetchFile } from "@ffmpeg/util";
-
 const MAX_VIDEO_DIMENSION = 1000;
 
-let ffmpegInstance: FFmpeg | null = null;
+// Load the UMD build of @ffmpeg/ffmpeg directly from public/,
+// bypassing webpack (which can't handle its internal dynamic chunks).
+async function loadFFmpegUMD(): Promise<typeof import("@ffmpeg/ffmpeg")> {
+  if ((window as Record<string, unknown>).FFmpegWASM) {
+    return (window as Record<string, unknown>).FFmpegWASM as typeof import("@ffmpeg/ffmpeg");
+  }
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "/ffmpeg/ffmpeg.js";
+    script.onload = () => {
+      const mod = (window as Record<string, unknown>).FFmpegWASM as typeof import("@ffmpeg/ffmpeg");
+      if (mod) resolve(mod);
+      else reject(new Error("FFmpegWASM not found after script load"));
+    };
+    script.onerror = () => reject(new Error("Failed to load /ffmpeg/ffmpeg.js"));
+    document.head.appendChild(script);
+  });
+}
 
-async function getFFmpeg(): Promise<FFmpeg> {
+// Inline replacements for @ffmpeg/util functions to avoid webpack issues
+async function toBlobURL(url: string, mimeType: string): Promise<string> {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return URL.createObjectURL(new Blob([blob], { type: mimeType }));
+}
+
+async function fetchFile(file: File): Promise<Uint8Array> {
+  return new Uint8Array(await file.arrayBuffer());
+}
+
+type FFmpegInstance = InstanceType<(typeof import("@ffmpeg/ffmpeg"))["FFmpeg"]>;
+let ffmpegInstance: FFmpegInstance | null = null;
+
+async function getFFmpeg(): Promise<FFmpegInstance> {
   if (ffmpegInstance) return ffmpegInstance;
+
+  const { FFmpeg } = await loadFFmpegUMD();
 
   const ffmpeg = new FFmpeg();
   await ffmpeg.load({
