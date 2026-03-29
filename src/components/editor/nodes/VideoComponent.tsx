@@ -195,7 +195,7 @@ export default function VideoComponent({
         src={src}
         controls
         style={style}
-        className="max-w-full rounded-lg"
+        className="max-h-[50vh] max-w-full rounded-lg"
         preload="metadata"
         draggable={false}
       >
