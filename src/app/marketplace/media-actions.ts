@@ -121,6 +121,70 @@ export async function fetchMarketplacePage(
   };
 }
 
+export async function fetchSingleMarketplacePost(
+  postId: string
+): Promise<MarketplaceMediaPost | null> {
+  const session = await auth();
+
+  const post = await prisma.post.findUnique({
+    where: { id: postId },
+    select: {
+      id: true,
+      slug: true,
+      content: true,
+      createdAt: true,
+      isNsfw: true,
+      isGraphicNudity: true,
+      author: {
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          name: true,
+          image: true,
+          avatar: true,
+          profileFrameId: true,
+        },
+      },
+      marketplacePost: {
+        select: {
+          id: true,
+          price: true,
+          purchaseUrl: true,
+          shippingOption: true,
+          shippingPrice: true,
+        },
+      },
+    },
+  });
+
+  if (!post?.marketplacePost) return null;
+
+  // Visibility: logged-out users can only see public profiles or publicListing posts
+  if (!session?.user?.id) {
+    const isPublicProfile = await prisma.user.findUnique({
+      where: { id: post.author?.id ?? "" },
+      select: { isProfilePublic: true },
+    });
+    const mp = await prisma.marketplacePost.findUnique({
+      where: { postId },
+      select: { publicListing: true },
+    });
+    if (!isPublicProfile?.isProfilePublic && !mp?.publicListing) return null;
+  }
+
+  return {
+    id: post.id,
+    slug: post.slug,
+    content: post.content,
+    createdAt: post.createdAt.toISOString(),
+    isNsfw: post.isNsfw,
+    isGraphicNudity: post.isGraphicNudity,
+    author: post.author,
+    marketplacePost: post.marketplacePost,
+  };
+}
+
 export async function fetchUserMarketplacePosts(
   userId: string,
   cursor?: string

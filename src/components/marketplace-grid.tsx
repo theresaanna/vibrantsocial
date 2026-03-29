@@ -119,14 +119,24 @@ interface MarketplaceGridProps {
   initialPosts: MarketplaceMediaPost[];
   initialHasMore: boolean;
   fetchPage?: MarketplaceFetchFn;
+  newPost?: MarketplaceMediaPost | null;
 }
 
 export function MarketplaceGrid({
   initialPosts,
   initialHasMore,
   fetchPage = fetchMarketplacePage,
+  newPost,
 }: MarketplaceGridProps) {
   const [posts, setPosts] = useState(initialPosts);
+
+  useEffect(() => {
+    if (!newPost) return;
+    setPosts((prev) => {
+      if (prev.some((p) => p.id === newPost.id)) return prev;
+      return [newPost, ...prev];
+    });
+  }, [newPost]);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [isPending, startTransition] = useTransition();
   const loadingRef = useRef(false);

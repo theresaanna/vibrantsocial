@@ -43,8 +43,8 @@ export function Toolbar() {
       <YouTubeButton />
       <span className="hidden sm:contents">
         <TableButton />
-        <PollButton />
       </span>
+      <PollButton />
       <SpeechToTextButton />
       <span className="hidden sm:contents">
         <Divider />
