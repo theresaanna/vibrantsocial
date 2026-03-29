@@ -143,7 +143,7 @@ export async function POST(req: Request) {
 
   const filename = `uploads/${session.user.id}-${Date.now()}.${ext}`;
 
-  const uploadBody = converted ? buffer : file;
+  const uploadBody = (category === "image" || category === "convertible-image") ? buffer : file;
 
   const blob = await put(filename, uploadBody, {
     access: "public",
