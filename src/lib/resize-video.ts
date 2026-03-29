@@ -19,13 +19,6 @@ async function loadFFmpegUMD(): Promise<typeof import("@ffmpeg/ffmpeg")> {
   });
 }
 
-// Inline replacements for @ffmpeg/util functions to avoid webpack issues
-async function toBlobURL(url: string, mimeType: string): Promise<string> {
-  const response = await fetch(url);
-  const blob = await response.blob();
-  return URL.createObjectURL(new Blob([blob], { type: mimeType }));
-}
-
 async function fetchFile(file: File): Promise<Uint8Array> {
   return new Uint8Array(await file.arrayBuffer());
 }
@@ -40,8 +33,8 @@ async function getFFmpeg(): Promise<FFmpegInstance> {
 
   const ffmpeg = new FFmpeg();
   await ffmpeg.load({
-    coreURL: await toBlobURL("/ffmpeg/ffmpeg-core.js", "text/javascript"),
-    wasmURL: await toBlobURL("/ffmpeg/ffmpeg-core.wasm", "application/wasm"),
+    coreURL: "/ffmpeg/ffmpeg-core.js",
+    wasmURL: "/ffmpeg/ffmpeg-core.wasm",
   });
 
   ffmpegInstance = ffmpeg;
