@@ -74,6 +74,7 @@ interface PostCardProps {
   ageVerified: boolean;
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
+  hideSensitiveOverlay: boolean;
   defaultShowComments?: boolean;
   defaultExpanded?: boolean;
   highlightCommentId?: string | null;
@@ -103,6 +104,7 @@ export function PostCard({
   ageVerified,
   showGraphicByDefault,
   showNsfwContent,
+  hideSensitiveOverlay,
   defaultShowComments = false,
   defaultExpanded = false,
   highlightCommentId,
@@ -226,7 +228,7 @@ export function PostCard({
         showOverlay = true;
         overlayMessage = "Verify your age to view this content.";
         canReveal = false;
-      } else {
+      } else if (!hideSensitiveOverlay) {
         showOverlay = true;
         overlayMessage = "Click to view sensitive content";
         canReveal = true;
@@ -246,13 +248,11 @@ export function PostCard({
       }
     }
 
-    // NSFW (new tier): available to all logged-in users
+    // NSFW: always show overlay (no opt-out)
     if (post.isNsfw && !showOverlay) {
-      if (!showNsfwContent) {
-        showOverlay = true;
-        overlayMessage = "Click to view NSFW content";
-        canReveal = true;
-      }
+      showOverlay = true;
+      overlayMessage = "Click to view NSFW content";
+      canReveal = true;
     }
   }
 

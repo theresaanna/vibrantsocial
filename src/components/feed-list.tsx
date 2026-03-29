@@ -16,6 +16,7 @@ export function FeedList({
   ageVerified,
   showGraphicByDefault,
   showNsfwContent,
+  hideSensitiveOverlay,
   newItems = [],
 }: {
   initialItems: FeedItem[];
@@ -25,6 +26,7 @@ export function FeedList({
   ageVerified: boolean;
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
+  hideSensitiveOverlay: boolean;
   newItems?: FeedItem[];
 }) {
   const [items, setItems] = useState(initialItems);
@@ -137,6 +139,7 @@ export function FeedList({
             ageVerified={ageVerified}
             showGraphicByDefault={showGraphicByDefault}
             showNsfwContent={showNsfwContent}
+            hideSensitiveOverlay={hideSensitiveOverlay}
             onDelete={() => handleDelete("post", item.data.id)}
             {...(item.data.wallPost && {
               wallOwner: {
@@ -166,6 +169,7 @@ export function FeedList({
             ageVerified={ageVerified}
             showGraphicByDefault={showGraphicByDefault}
             showNsfwContent={showNsfwContent}
+            hideSensitiveOverlay={hideSensitiveOverlay}
             onDelete={() => handleDelete("repost", item.data.id)}
           />
         );

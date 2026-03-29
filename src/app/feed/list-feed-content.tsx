@@ -27,6 +27,7 @@ export async function ListFeedContent({ userId, listId }: { userId: string; list
         dateOfBirth: true,
         ageVerified: true,
         showGraphicByDefault: true,
+        hideSensitiveOverlay: true,
         showNsfwContent: true,
         tier: true,
       },
@@ -54,6 +55,7 @@ export async function ListFeedContent({ userId, listId }: { userId: string; list
   const phoneVerified = !!currentUser.phoneVerified;
   const ageVerified = !!currentUser.ageVerified;
   const showGraphicByDefault = currentUser.showGraphicByDefault ?? false;
+  const hideSensitiveOverlay = currentUser.hideSensitiveOverlay ?? false;
   const showNsfwContent = currentUser.showNsfwContent ?? false;
   const isOldEnough = currentUser.dateOfBirth
     ? calculateAge(currentUser.dateOfBirth) >= 18
@@ -74,6 +76,7 @@ export async function ListFeedContent({ userId, listId }: { userId: string; list
         currentUserId={userId}
         ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
+        hideSensitiveOverlay={hideSensitiveOverlay}
         showNsfwContent={showNsfwContent}
         hasEmail={!!currentUser.email}
         isPremium={currentUser.tier === "premium"}
@@ -144,6 +147,7 @@ export async function ListFeedContent({ userId, listId }: { userId: string; list
       currentUserId={userId}
       ageVerified={ageVerified}
       showGraphicByDefault={showGraphicByDefault}
+      hideSensitiveOverlay={hideSensitiveOverlay}
       showNsfwContent={showNsfwContent}
       hasEmail={!!currentUser.email}
       isPremium={currentUser.tier === "premium"}

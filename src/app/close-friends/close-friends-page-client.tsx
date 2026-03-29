@@ -32,6 +32,7 @@ interface Props {
   phoneVerified: boolean;
   ageVerified: boolean;
   showGraphicByDefault: boolean;
+  hideSensitiveOverlay: boolean;
   showNsfwContent: boolean;
   closeFriends: CloseFriendEntry[];
   availableFriends: FriendUser[];
@@ -44,6 +45,7 @@ export function CloseFriendsPageClient({
   phoneVerified,
   ageVerified,
   showGraphicByDefault,
+  hideSensitiveOverlay,
   showNsfwContent,
   closeFriends,
   availableFriends,
@@ -91,6 +93,7 @@ export function CloseFriendsPageClient({
           phoneVerified={phoneVerified}
           ageVerified={ageVerified}
           showGraphicByDefault={showGraphicByDefault}
+          hideSensitiveOverlay={hideSensitiveOverlay}
           showNsfwContent={showNsfwContent}
           closeFriendsCount={closeFriends.length}
         />
@@ -112,6 +115,7 @@ function CloseFriendsFeed({
   phoneVerified,
   ageVerified,
   showGraphicByDefault,
+  hideSensitiveOverlay,
   showNsfwContent,
   closeFriendsCount,
 }: {
@@ -120,6 +124,7 @@ function CloseFriendsFeed({
   phoneVerified: boolean;
   ageVerified: boolean;
   showGraphicByDefault: boolean;
+  hideSensitiveOverlay: boolean;
   showNsfwContent: boolean;
   closeFriendsCount: number;
 }) {
@@ -153,6 +158,7 @@ function CloseFriendsFeed({
             phoneVerified={phoneVerified}
             ageVerified={ageVerified}
             showGraphicByDefault={showGraphicByDefault}
+            hideSensitiveOverlay={hideSensitiveOverlay}
             showNsfwContent={showNsfwContent}
             {...(item.data.wallPost && {
               wallOwner: {
@@ -172,6 +178,7 @@ function CloseFriendsFeed({
             phoneVerified={phoneVerified}
             ageVerified={ageVerified}
             showGraphicByDefault={showGraphicByDefault}
+            hideSensitiveOverlay={hideSensitiveOverlay}
             showNsfwContent={showNsfwContent}
           />
         )

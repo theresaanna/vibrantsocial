@@ -109,6 +109,7 @@ interface RenderFormOptions {
   ageVerified?: boolean;
   showGraphicByDefault?: boolean;
   showNsfwContent?: boolean;
+  hideSensitiveOverlay?: boolean;
   pushEnabled?: boolean;
   isProfilePublic?: boolean;
   phoneVerified?: boolean;
@@ -133,6 +134,7 @@ function renderForm(options: RenderFormOptions = {}) {
     ageVerified = false,
     showGraphicByDefault = false,
     showNsfwContent = false,
+    hideSensitiveOverlay = false,
     pushEnabled = false,
     isProfilePublic = true,
     phoneVerified = false,
@@ -152,6 +154,7 @@ function renderForm(options: RenderFormOptions = {}) {
       ageVerified={ageVerified}
       showGraphicByDefault={showGraphicByDefault}
       showNsfwContent={showNsfwContent}
+      hideSensitiveOverlay={hideSensitiveOverlay}
       emailOnComment={emailOnComment}
       emailOnNewChat={emailOnNewChat}
       emailOnMention={emailOnMention}

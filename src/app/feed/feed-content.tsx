@@ -24,6 +24,7 @@ export async function FeedContent({ userId, activeView = "posts" }: { userId: st
         dateOfBirth: true,
         ageVerified: true,
         showGraphicByDefault: true,
+        hideSensitiveOverlay: true,
         showNsfwContent: true,
         tier: true,
         lastSeenFeedAt: true,
@@ -52,6 +53,7 @@ export async function FeedContent({ userId, activeView = "posts" }: { userId: st
   const phoneVerified = !!currentUser.phoneVerified;
   const ageVerified = !!currentUser.ageVerified;
   const showGraphicByDefault = currentUser.showGraphicByDefault ?? false;
+  const hideSensitiveOverlay = currentUser.hideSensitiveOverlay ?? false;
   const showNsfwContent = currentUser.showNsfwContent ?? false;
   const isOldEnough = currentUser.dateOfBirth
     ? calculateAge(currentUser.dateOfBirth) >= 18
@@ -147,6 +149,7 @@ export async function FeedContent({ userId, activeView = "posts" }: { userId: st
       currentUserId={userId}
       ageVerified={ageVerified}
       showGraphicByDefault={showGraphicByDefault}
+      hideSensitiveOverlay={hideSensitiveOverlay}
       showNsfwContent={showNsfwContent}
       hasEmail={!!currentUser.email}
       isPremium={currentUser.tier === "premium"}

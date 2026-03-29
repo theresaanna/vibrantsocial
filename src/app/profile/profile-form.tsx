@@ -58,6 +58,7 @@ interface ProfileFormProps {
   ageVerified: boolean;
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
+  hideSensitiveOverlay: boolean;
   emailOnComment: boolean;
   emailOnNewChat: boolean;
   emailOnMention: boolean;
@@ -89,7 +90,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, email, emailVerified, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, birthdayMonth: initialBirthdayMonth, birthdayDay: initialBirthdayDay, isPremium, stars, starsSpent, referralCode, backgrounds, premiumBackgrounds, userEmail, customPresets }: ProfileFormProps) {
+export function ProfileForm({ user, email, emailVerified, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, hideSensitiveOverlay, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, birthdayMonth: initialBirthdayMonth, birthdayDay: initialBirthdayDay, isPremium, stars, starsSpent, referralCode, backgrounds, premiumBackgrounds, userEmail, customPresets }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [displayNameValue, setDisplayNameValue] = useState(user.displayName ?? "");
@@ -999,14 +1000,29 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
                 className="rounded"
               />
               <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Show NSFW content
+                Show NSFW content in feed
               </span>
             </label>
             <p className="ml-6 text-xs text-zinc-500 dark:text-zinc-400">
-              When enabled, NSFW posts will appear in your feed and on profile Posts tabs without an overlay.
+              When enabled, NSFW posts will appear in your feed and on profile Posts tabs. A click-to-reveal overlay will still be shown.
             </p>
             {ageVerified && (
               <>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    name="hideSensitiveOverlay"
+                    value="true"
+                    defaultChecked={hideSensitiveOverlay}
+                    className="rounded"
+                  />
+                  <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    Hide overlay on Sensitive content
+                  </span>
+                </label>
+                <p className="ml-6 text-xs text-zinc-500 dark:text-zinc-400">
+                  When enabled, Sensitive posts will be visible without clicking to reveal.
+                </p>
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -1016,7 +1032,7 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
                     className="rounded"
                   />
                   <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                    Show Graphic/Explicit content by default
+                    Hide overlay on Graphic/Explicit content
                   </span>
                 </label>
                 <p className="ml-6 text-xs text-zinc-500 dark:text-zinc-400">

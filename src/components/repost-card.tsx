@@ -91,6 +91,7 @@ interface RepostCardProps {
   ageVerified: boolean;
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
+  hideSensitiveOverlay: boolean;
   showPinnedIndicator?: boolean;
   onDelete?: () => void;
 }
@@ -102,6 +103,7 @@ export function RepostCard({
   ageVerified,
   showGraphicByDefault,
   showNsfwContent,
+  hideSensitiveOverlay,
   showPinnedIndicator = false,
   onDelete,
 }: RepostCardProps) {
@@ -488,6 +490,7 @@ export function RepostCard({
             ageVerified={ageVerified}
             showGraphicByDefault={showGraphicByDefault}
             showNsfwContent={showNsfwContent}
+            hideSensitiveOverlay={hideSensitiveOverlay}
             {...(repost.post.wallPost && repost.post.wallPost.wallOwner.username && {
               wallOwner: {
                 username: repost.post.wallPost.wallOwner.username,
@@ -506,6 +509,7 @@ export function RepostCard({
           phoneVerified={phoneVerified}
           ageVerified={ageVerified}
           showGraphicByDefault={showGraphicByDefault}
+          hideSensitiveOverlay={hideSensitiveOverlay}
           showNsfwContent={showNsfwContent}
         />
       )}

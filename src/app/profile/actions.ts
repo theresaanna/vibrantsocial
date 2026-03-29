@@ -265,6 +265,7 @@ export async function updateProfile(
 
   const showGraphicByDefault = formData.get("showGraphicByDefault") === "true";
   const showNsfwContent = formData.get("showNsfwContent") === "true";
+  const hideSensitiveOverlay = formData.get("hideSensitiveOverlay") === "true";
   const emailOnComment = formData.get("emailOnComment") === "true";
   const emailOnNewChat = formData.get("emailOnNewChat") === "true";
   const emailOnMention = formData.get("emailOnMention") === "true";
@@ -288,6 +289,7 @@ export async function updateProfile(
       bio: newBio,
       showGraphicByDefault,
       showNsfwContent,
+      hideSensitiveOverlay,
       emailOnComment,
       emailOnNewChat,
       emailOnMention,

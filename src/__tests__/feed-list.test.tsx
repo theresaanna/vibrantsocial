@@ -43,6 +43,7 @@ const baseProps = {
   ageVerified: false,
   showGraphicByDefault: false,
   showNsfwContent: false,
+  hideSensitiveOverlay: false,
 };
 
 const makeFeedItem = (
