@@ -23,3 +23,19 @@ export async function convertToWebP(
     extension: "webp",
   };
 }
+
+const MAX_IMAGE_DIMENSION = 1000;
+const RESIZABLE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+export function isResizableImage(mimeType: string): boolean {
+  return RESIZABLE_TYPES.includes(mimeType);
+}
+
+export async function resizeImage(inputBuffer: Uint8Array): Promise<Uint8Array> {
+  return sharp(inputBuffer)
+    .resize(MAX_IMAGE_DIMENSION, MAX_IMAGE_DIMENSION, {
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .toBuffer();
+}
