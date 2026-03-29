@@ -1,8 +1,6 @@
 import type { FFmpeg } from "@ffmpeg/ffmpeg";
 
 const MAX_VIDEO_DIMENSION = 1000;
-const FFMPEG_CORE_VERSION = "0.12.6";
-const FFMPEG_CORE_BASE = `https://unpkg.com/@ffmpeg/core@${FFMPEG_CORE_VERSION}/dist/umd`;
 
 let ffmpegInstance: FFmpeg | null = null;
 
@@ -14,8 +12,8 @@ async function getFFmpeg(): Promise<FFmpeg> {
 
   const ffmpeg = new FFmpeg();
   await ffmpeg.load({
-    coreURL: await toBlobURL(`${FFMPEG_CORE_BASE}/ffmpeg-core.js`, "text/javascript"),
-    wasmURL: await toBlobURL(`${FFMPEG_CORE_BASE}/ffmpeg-core.wasm`, "application/wasm"),
+    coreURL: await toBlobURL("/ffmpeg/ffmpeg-core.js", "text/javascript"),
+    wasmURL: await toBlobURL("/ffmpeg/ffmpeg-core.wasm", "application/wasm"),
   });
 
   ffmpegInstance = ffmpeg;
