@@ -229,6 +229,38 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
     expect(screen.getByText("Graphic/Explicit")).toBeInTheDocument();
   });
 
+  it("shows overlay for Graphic/Explicit post even when showNsfwContent is true", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isGraphicNudity: true }}
+        currentUserId="viewer1"
+        phoneVerified={true}
+        ageVerified={true}
+        showGraphicByDefault={false}
+        showNsfwContent={true}
+      />
+    );
+    expect(screen.getByText("Click to view graphic content")).toBeInTheDocument();
+    expect(screen.getByText("Show content")).toBeInTheDocument();
+    expect(screen.queryByTestId("post-content")).not.toBeInTheDocument();
+  });
+
+  it("shows overlay for Graphic/Explicit post that is also NSFW when showNsfwContent is true", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isGraphicNudity: true, isNsfw: true }}
+        currentUserId="viewer1"
+        phoneVerified={true}
+        ageVerified={true}
+        showGraphicByDefault={false}
+        showNsfwContent={true}
+      />
+    );
+    expect(screen.getByText("Click to view graphic content")).toBeInTheDocument();
+    expect(screen.getByText("Show content")).toBeInTheDocument();
+    expect(screen.queryByTestId("post-content")).not.toBeInTheDocument();
+  });
+
   // ── NSFW content (isNsfw) ─────────────────────────────────────────
 
   it("shows click-to-reveal for NSFW post when showNsfwContent is false", () => {
