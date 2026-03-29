@@ -23,6 +23,7 @@ export default async function ProfilePage() {
     select: {
       username: true,
       email: true,
+      emailVerified: true,
       pendingEmail: true,
       dateOfBirth: true,
       phoneNumber: true,
@@ -176,6 +177,7 @@ export default async function ProfilePage() {
           birthdayMonth={user?.birthdayMonth ?? null}
           birthdayDay={user?.birthdayDay ?? null}
           email={user?.email ?? null}
+          emailVerified={!!user?.emailVerified}
           pendingEmail={user?.pendingEmail ?? null}
           phoneVerified={!!user?.phoneVerified}
           phoneNumber={user?.phoneNumber ?? null}
