@@ -3,14 +3,14 @@ const MAX_VIDEO_DIMENSION = 1000;
 // Load the UMD build of @ffmpeg/ffmpeg directly from public/,
 // bypassing webpack (which can't handle its internal dynamic chunks).
 async function loadFFmpegUMD(): Promise<typeof import("@ffmpeg/ffmpeg")> {
-  if ((window as Record<string, unknown>).FFmpegWASM) {
-    return (window as Record<string, unknown>).FFmpegWASM as typeof import("@ffmpeg/ffmpeg");
+  if ((window as unknown as Record<string, unknown>).FFmpegWASM) {
+    return (window as unknown as Record<string, unknown>).FFmpegWASM as typeof import("@ffmpeg/ffmpeg");
   }
   return new Promise((resolve, reject) => {
     const script = document.createElement("script");
     script.src = "/ffmpeg/ffmpeg.js";
     script.onload = () => {
-      const mod = (window as Record<string, unknown>).FFmpegWASM as typeof import("@ffmpeg/ffmpeg");
+      const mod = (window as unknown as Record<string, unknown>).FFmpegWASM as typeof import("@ffmpeg/ffmpeg");
       if (mod) resolve(mod);
       else reject(new Error("FFmpegWASM not found after script load"));
     };
