@@ -115,6 +115,8 @@ const baseFormProps = {
   backgrounds: [],
   userEmail: "test@example.com" as string | null,
   customPresets: [],
+  emailVerified: true,
+  premiumBackgrounds: [],
 };
 
 describe("Profile form - overlay opt-in settings", () => {

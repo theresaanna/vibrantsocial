@@ -63,6 +63,7 @@ const defaultProps = {
   showNsfwContent: false,
   hideSensitiveOverlay: false,
   hasEmail: true,
+  isPremium: false,
 };
 
 describe("FeedClient", () => {

@@ -10,6 +10,7 @@ interface DiscussionsData {
   phoneVerified: boolean;
   ageVerified: boolean;
   showGraphicByDefault: boolean;
+  hideSensitiveOverlay: boolean;
   showNsfwContent: boolean;
 }
 
@@ -53,6 +54,7 @@ export function CommunitiesDiscussionsClient() {
           phoneVerified={data.phoneVerified}
           ageVerified={data.ageVerified}
           showGraphicByDefault={data.showGraphicByDefault}
+          hideSensitiveOverlay={data.hideSensitiveOverlay}
           showNsfwContent={data.showNsfwContent}
           defaultShowComments
           defaultExpanded

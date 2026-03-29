@@ -147,6 +147,7 @@ export async function ListFeedContent({ userId, listId }: { userId: string; list
       currentUserId={userId}
       ageVerified={ageVerified}
       showGraphicByDefault={showGraphicByDefault}
+      hideSensitiveOverlay={hideSensitiveOverlay}
       showNsfwContent={showNsfwContent}
       hasEmail={!!currentUser.email}
       isPremium={currentUser.tier === "premium"}

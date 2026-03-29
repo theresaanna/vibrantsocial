@@ -90,7 +90,7 @@ describe("fetchTopDiscussedPosts", () => {
 
   it("excludes NSFW posts when user has showNsfwContent=false", async () => {
     mockAuth.mockResolvedValue({ user: { id: "user1" } });
-    mockFindUnique.mockResolvedValue({ showNsfwContent: false, ageVerified: false, showGraphicByDefault: false, phoneVerified: false });
+    mockFindUnique.mockResolvedValue({ showNsfwContent: false, ageVerified: false, showGraphicByDefault: false, hideSensitiveOverlay: false, phoneVerified: false });
     mockFindMany.mockResolvedValue([]);
 
     const { fetchTopDiscussedPosts } = await import("@/app/communities/discussion-actions");
@@ -103,7 +103,7 @@ describe("fetchTopDiscussedPosts", () => {
 
   it("includes NSFW posts when user has showNsfwContent=true", async () => {
     mockAuth.mockResolvedValue({ user: { id: "user1" } });
-    mockFindUnique.mockResolvedValue({ showNsfwContent: true, ageVerified: true, showGraphicByDefault: true, phoneVerified: true });
+    mockFindUnique.mockResolvedValue({ showNsfwContent: true, ageVerified: true, showGraphicByDefault: true, hideSensitiveOverlay: true, phoneVerified: true });
     mockFindMany.mockResolvedValue([]);
 
     const { fetchTopDiscussedPosts } = await import("@/app/communities/discussion-actions");
@@ -196,6 +196,7 @@ describe("fetchTopDiscussedPosts", () => {
       showNsfwContent: true,
       ageVerified: true,
       showGraphicByDefault: true,
+      hideSensitiveOverlay: true,
       phoneVerified: true,
     });
     mockFindMany.mockResolvedValue([]);
@@ -207,6 +208,7 @@ describe("fetchTopDiscussedPosts", () => {
     expect(result.phoneVerified).toBe(true);
     expect(result.ageVerified).toBe(true);
     expect(result.showGraphicByDefault).toBe(true);
+    expect(result.hideSensitiveOverlay).toBe(true);
     expect(result.showNsfwContent).toBe(true);
   });
 });

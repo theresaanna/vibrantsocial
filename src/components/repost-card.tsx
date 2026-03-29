@@ -509,6 +509,7 @@ export function RepostCard({
           phoneVerified={phoneVerified}
           ageVerified={ageVerified}
           showGraphicByDefault={showGraphicByDefault}
+          hideSensitiveOverlay={hideSensitiveOverlay}
           showNsfwContent={showNsfwContent}
         />
       )}

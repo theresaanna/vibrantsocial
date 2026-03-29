@@ -20,6 +20,7 @@ export async function fetchTopDiscussedPosts() {
   let showNsfwContent = false;
   let ageVerified = false;
   let showGraphicByDefault = false;
+  let hideSensitiveOverlay = false;
   let phoneVerified = false;
 
   if (userId) {
@@ -29,12 +30,14 @@ export async function fetchTopDiscussedPosts() {
         showNsfwContent: true,
         ageVerified: true,
         showGraphicByDefault: true,
+        hideSensitiveOverlay: true,
         phoneVerified: true,
       },
     });
     showNsfwContent = user?.showNsfwContent ?? false;
     ageVerified = !!user?.ageVerified;
     showGraphicByDefault = user?.showGraphicByDefault ?? false;
+    hideSensitiveOverlay = user?.hideSensitiveOverlay ?? false;
     phoneVerified = !!user?.phoneVerified;
   }
 
@@ -111,6 +114,7 @@ export async function fetchTopDiscussedPosts() {
     phoneVerified,
     ageVerified,
     showGraphicByDefault,
+    hideSensitiveOverlay,
     showNsfwContent,
   }));
 }
