@@ -119,9 +119,13 @@ export function MessageInput({
               // the 4.5 MB serverless function body-size limit.
               try {
                 let videoFile = file;
-                const { videoNeedsResize, resizeVideo } = await import("@/lib/resize-video");
-                if (await videoNeedsResize(file)) {
-                  videoFile = await resizeVideo(file);
+                try {
+                  const { videoNeedsResize, resizeVideo } = await import("@/lib/resize-video");
+                  if (await videoNeedsResize(file)) {
+                    videoFile = await resizeVideo(file);
+                  }
+                } catch (resizeErr) {
+                  console.warn("Video resize failed, uploading original:", resizeErr);
                 }
                 const blob = await blobUpload(videoFile.name, videoFile, {
                   access: "public",

@@ -208,10 +208,15 @@ function UnifiedUploadModal({
           return false;
         }
         let videoFile = file;
-        const { videoNeedsResize, resizeVideo } = await import("@/lib/resize-video");
-        if (await videoNeedsResize(file)) {
-          setNotice("Resizing video, this may take a moment…");
-          videoFile = await resizeVideo(file);
+        try {
+          const { videoNeedsResize, resizeVideo } = await import("@/lib/resize-video");
+          if (await videoNeedsResize(file)) {
+            setNotice("Resizing video, this may take a moment…");
+            videoFile = await resizeVideo(file);
+            setNotice("");
+          }
+        } catch (resizeErr) {
+          console.warn("Video resize failed, uploading original:", resizeErr);
           setNotice("");
         }
         const blob = await upload(videoFile.name, videoFile, {

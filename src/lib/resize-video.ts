@@ -23,15 +23,36 @@ async function getFFmpeg(): Promise<FFmpeg> {
 export async function videoNeedsResize(file: File): Promise<boolean> {
   return new Promise((resolve) => {
     const video = document.createElement("video");
-    video.preload = "metadata";
-    video.onloadedmetadata = () => {
-      URL.revokeObjectURL(video.src);
-      resolve(video.videoWidth > MAX_VIDEO_DIMENSION || video.videoHeight > MAX_VIDEO_DIMENSION);
+    video.preload = "auto";
+    video.muted = true;
+
+    const cleanup = () => URL.revokeObjectURL(video.src);
+
+    // Use loadeddata instead of loadedmetadata — some browsers don't
+    // populate videoWidth/videoHeight until the first frame is decoded.
+    video.onloadeddata = () => {
+      cleanup();
+      const w = video.videoWidth;
+      const h = video.videoHeight;
+      // If dimensions are still 0 (unsupported codec), default to resizing
+      if (w === 0 && h === 0) {
+        resolve(true);
+        return;
+      }
+      resolve(w > MAX_VIDEO_DIMENSION || h > MAX_VIDEO_DIMENSION);
     };
     video.onerror = () => {
-      URL.revokeObjectURL(video.src);
-      resolve(false);
+      cleanup();
+      // Can't probe dimensions — attempt resize anyway, ffmpeg may still handle it
+      resolve(true);
     };
+
+    // Timeout: if neither event fires within 5s, assume resize is needed
+    setTimeout(() => {
+      cleanup();
+      resolve(true);
+    }, 5000);
+
     video.src = URL.createObjectURL(file);
     video.load();
   });
