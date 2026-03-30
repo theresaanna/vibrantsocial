@@ -67,7 +67,7 @@ function GifSearchModal({
   const [gridKey, setGridKey] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(400);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Measure container width for the Grid component
   useEffect(() => {
