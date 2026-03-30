@@ -96,6 +96,14 @@ h6 {
   background-color: color-mix(in srgb, var(--profile-secondary) 30%, transparent) !important;
 }
 
+/* Banner/notice containers (feed summary, marketplace, update banners): standout theme tint */
+.profile-themed .from-fuchsia-50,
+.profile-themed .dark\:from-fuchsia-950\/30 {
+  --tw-gradient-from: color-mix(in srgb, var(--profile-link) 18%, transparent) !important;
+  --tw-gradient-to: color-mix(in srgb, var(--profile-link) 8%, transparent) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
 /* Notification-specific: unread/selected/hover backgrounds use theme container tint */
 .profile-themed .bg-blue-50\/50,
 .profile-themed .dark\:bg-blue-950\/20,
