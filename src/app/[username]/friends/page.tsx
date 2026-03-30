@@ -31,7 +31,7 @@ export default async function FriendsPage({ params }: FriendsPageProps) {
     getFriends(username),
     prisma.user.findUnique({
       where: { username },
-      select: { id: true, ...userThemeSelect },
+      select: { ...userThemeSelect, id: true },
     }),
   ]);
   const otherUserIds = friends.filter((u: { id: string }) => u.id !== currentUserId).map((u: { id: string }) => u.id);
