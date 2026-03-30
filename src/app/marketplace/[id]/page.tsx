@@ -6,6 +6,8 @@ import { isProfileIncomplete } from "@/lib/require-profile";
 import { PostPageClient } from "@/app/post/[id]/post-page-client";
 import { extractContentFromLexicalJson } from "@/lib/lexical-text";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -65,6 +67,7 @@ export default async function MarketplaceIdPage({ params, searchParams }: Props)
   let showGraphicByDefault = false;
   let showNsfwContent = false;
   let hideSensitiveOverlay = false;
+  let theme = NO_THEME;
 
   if (userId) {
     const currentUser = await prisma.user.findUnique({
@@ -78,6 +81,7 @@ export default async function MarketplaceIdPage({ params, searchParams }: Props)
         showGraphicByDefault: true,
         showNsfwContent: true,
         hideSensitiveOverlay: true,
+        ...userThemeSelect,
       },
     });
 
@@ -88,6 +92,7 @@ export default async function MarketplaceIdPage({ params, searchParams }: Props)
     showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
     showNsfwContent = currentUser?.showNsfwContent ?? false;
     hideSensitiveOverlay = currentUser?.hideSensitiveOverlay ?? false;
+    theme = await buildUserTheme(currentUser);
   }
 
   const post = await prisma.post.findUnique({
@@ -198,7 +203,7 @@ export default async function MarketplaceIdPage({ params, searchParams }: Props)
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...theme}>
       <PostPageClient
         post={post}
         currentUserId={userId}
@@ -217,6 +222,6 @@ export default async function MarketplaceIdPage({ params, searchParams }: Props)
           shippingPrice: post.marketplacePost.shippingPrice,
         } : undefined}
       />
-    </main>
+    </ThemedPage>
   );
 }
