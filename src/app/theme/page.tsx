@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { isProfileIncomplete } from "@/lib/require-profile";
 import { ThemeForm } from "./theme-form";
-import { getProfileBackgrounds } from "@/lib/profile-backgrounds.server";
+import { getProfileBackgrounds, getPremiumProfileBackgrounds } from "@/lib/profile-backgrounds.server";
 import type { CustomPresetData } from "@/lib/profile-themes";
 
 export const metadata: Metadata = {
@@ -55,6 +55,7 @@ export default async function ThemePage() {
   const isPremium = user.tier === "premium";
   const avatarSrc = user.avatar ?? user.image ?? session.user.image ?? null;
   const backgrounds = getProfileBackgrounds();
+  const premiumBackgrounds = getPremiumProfileBackgrounds();
 
   let customPresets: CustomPresetData[] = [];
   if (isPremium) {
@@ -137,6 +138,7 @@ export default async function ThemePage() {
           isPremium={isPremium}
           userEmail={user.email ?? null}
           backgrounds={backgrounds}
+          premiumBackgrounds={premiumBackgrounds}
           customPresets={customPresets}
         />
       </div>

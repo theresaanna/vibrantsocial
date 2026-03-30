@@ -40,6 +40,7 @@ interface ThemeFormProps {
   isPremium: boolean;
   userEmail: string | null;
   backgrounds: BackgroundDefinition[];
+  premiumBackgrounds: BackgroundDefinition[];
   customPresets: CustomPresetData[];
 }
 
@@ -48,7 +49,7 @@ interface ThemeState {
   message: string;
 }
 
-export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, customPresets }: ThemeFormProps) {
+export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, premiumBackgrounds, customPresets }: ThemeFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const autosaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasMountedRef = useRef(false);
@@ -136,6 +137,7 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
 
       <BackgroundEditor
         backgrounds={backgrounds}
+        premiumBackgrounds={premiumBackgrounds}
         initialBackground={{
           profileBgImage: user.profileBgImage,
           profileBgRepeat: user.profileBgRepeat,
