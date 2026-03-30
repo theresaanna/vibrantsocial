@@ -35,7 +35,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
     }),
   ]);
 
-  const theme = themeUser ? await buildUserTheme(themeUser) : null;
+  const theme = themeUser ? buildUserTheme(themeUser) : null;
 
   // Owned lists (no owner prefix) + subscribed lists (with owner prefix)
   const allTabs = [

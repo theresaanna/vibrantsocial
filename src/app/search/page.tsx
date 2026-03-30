@@ -25,7 +25,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     where: { id: session.user.id },
     select: userThemeSelect,
   });
-  const theme = themeUser ? await buildUserTheme(themeUser) : NO_THEME;
+  const theme = themeUser ? buildUserTheme(themeUser) : NO_THEME;
 
   const params = await searchParams;
   const query = params.q ?? "";

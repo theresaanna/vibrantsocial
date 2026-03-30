@@ -92,7 +92,7 @@ export default async function MarketplaceIdPage({ params, searchParams }: Props)
     showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
     showNsfwContent = currentUser?.showNsfwContent ?? false;
     hideSensitiveOverlay = currentUser?.hideSensitiveOverlay ?? false;
-    theme = await buildUserTheme(currentUser);
+    theme = buildUserTheme(currentUser);
   }
 
   const post = await prisma.post.findUnique({

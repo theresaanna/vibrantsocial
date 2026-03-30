@@ -65,26 +65,11 @@ h6 {
   }
 }
 
-/* Profile theme overrides — light mode (default) */
+/* Profile theme overrides — user's chosen colors applied directly */
 .profile-themed {
-  --profile-bg: var(--profile-bg-light);
-  --profile-text: var(--profile-text-light);
-  --profile-link: var(--profile-link-light);
-  --profile-secondary: var(--profile-secondary-light);
-  --profile-container: var(--profile-container-light);
-
   background-color: var(--profile-bg);
   color: var(--profile-text);
   min-height: calc(100vh - 57px);
-}
-
-/* Profile theme overrides — dark mode */
-.dark .profile-themed {
-  --profile-bg: var(--profile-bg-dark);
-  --profile-text: var(--profile-text-dark);
-  --profile-link: var(--profile-link-dark);
-  --profile-secondary: var(--profile-secondary-dark);
-  --profile-container: var(--profile-container-dark);
 }
 
 .profile-themed .profile-container {
@@ -171,23 +156,8 @@ h6 {
   padding: 0.75rem;
 }
 
-/* Chat theme overrides — light mode (default) */
-.chat-themed {
-  --chat-bubble-bg: var(--chat-bubble-bg-light);
-  --chat-bubble-text: var(--chat-bubble-text-light);
-  --chat-active-bg: var(--chat-active-bg-light);
-  --chat-active-text: var(--chat-active-text-light);
-  --chat-link-color: var(--chat-link-color-light);
-}
-
-/* Chat theme overrides — dark mode */
-.dark .chat-themed {
-  --chat-bubble-bg: var(--chat-bubble-bg-dark);
-  --chat-bubble-text: var(--chat-bubble-text-dark);
-  --chat-active-bg: var(--chat-active-bg-dark);
-  --chat-active-text: var(--chat-active-text-dark);
-  --chat-link-color: var(--chat-link-color-dark);
-}
+/* Chat theme overrides — user's chosen colors applied directly */
+.chat-themed {}
 
 .chat-themed .chat-input-themed:focus {
   border-color: var(--chat-link-color);

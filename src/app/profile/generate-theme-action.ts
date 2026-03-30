@@ -21,7 +21,7 @@ interface GenerateThemeResult {
   success: boolean;
   name?: string;
   light?: ProfileThemeColors;
-  dark?: ProfileThemeColors;
+  dark?: ProfileThemeColors; // kept for backward compat — always same as light
   error?: string;
 }
 
@@ -118,7 +118,7 @@ export async function generateTheme(
       model: "claude-haiku-4-5",
       max_tokens: 512,
       system:
-        "You are a color scheme designer for social media profiles. Given a background image, analyze its dominant colors, mood, and aesthetic to generate a cohesive color scheme with both light and dark variants that complement the background. Each variant needs 5 hex colors: profileBgColor (main page background), profileTextColor (primary text), profileLinkColor (links and accent), profileSecondaryColor (muted/secondary text), and profileContainerColor (card/container background, slightly offset from main bg). The colors should feel like they belong with the background image. Ensure good readability with sufficient contrast between text and background. Also generate a short creative name for the theme (2-3 words max). Return ONLY valid JSON, no other text.",
+        "You are a color scheme designer for social media profiles. Given a background image, analyze its dominant colors, mood, and aesthetic to generate a cohesive color scheme that complements the background. You need 5 hex colors: profileBgColor (main page background), profileTextColor (primary text), profileLinkColor (links and accent), profileSecondaryColor (muted/secondary text), and profileContainerColor (card/container background, slightly offset from main bg). The colors should feel like they belong with the background image. Ensure good readability with sufficient contrast between text and background. Also generate a short creative name for the theme (2-3 words max). Return ONLY valid JSON, no other text.",
       messages: [
         {
           role: "user",
@@ -134,14 +134,7 @@ export async function generateTheme(
 Return JSON in this exact format:
 {
   "name": "Theme Name",
-  "light": {
-    "profileBgColor": "#hex",
-    "profileTextColor": "#hex",
-    "profileLinkColor": "#hex",
-    "profileSecondaryColor": "#hex",
-    "profileContainerColor": "#hex"
-  },
-  "dark": {
+  "colors": {
     "profileBgColor": "#hex",
     "profileTextColor": "#hex",
     "profileLinkColor": "#hex",
@@ -166,8 +159,6 @@ Return JSON in this exact format:
     if (
       typeof parsed !== "object" ||
       parsed === null ||
-      !("light" in parsed) ||
-      !("dark" in parsed) ||
       !("name" in parsed)
     ) {
       return { success: false, error: "Failed to generate theme. Try again." };
@@ -175,26 +166,27 @@ Return JSON in this exact format:
 
     const data = parsed as {
       name: unknown;
-      light: Record<string, unknown>;
-      dark: Record<string, unknown>;
+      colors?: Record<string, unknown>;
+      light?: Record<string, unknown>;
     };
 
-    if (!validateThemeColors(data.light) || !validateThemeColors(data.dark)) {
+    // Support both new "colors" format and legacy "light" format
+    const colorsObj = data.colors ?? data.light;
+    if (!colorsObj || !validateThemeColors(colorsObj)) {
       return {
         success: false,
         error: "Generated invalid colors. Try again.",
       };
     }
 
-    const light = enforceContrast(toProfileColors(data.light as Record<string, string>));
-    const dark = enforceContrast(toProfileColors(data.dark as Record<string, string>));
+    const colors = enforceContrast(toProfileColors(colorsObj as Record<string, string>));
 
     const name =
       typeof data.name === "string" && data.name.trim()
         ? data.name.trim().slice(0, 30)
         : "Custom Theme";
 
-    return { success: true, name, light, dark };
+    return { success: true, name, light: colors, dark: colors };
   } catch {
     return { success: false, error: "Failed to generate theme. Try again." };
   }

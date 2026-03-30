@@ -1,6 +1,4 @@
 import type React from "react";
-import { prisma } from "@/lib/prisma";
-import { generateAdaptiveTheme } from "@/lib/profile-themes";
 import { isBirthday, getBirthdaySparkleConfig } from "@/lib/birthday";
 
 /**
@@ -10,7 +8,6 @@ import { isBirthday, getBirthdaySparkleConfig } from "@/lib/birthday";
 export const userThemeSelect = {
   id: true,
   tier: true,
-  isBeta: true,
   profileBgColor: true,
   profileTextColor: true,
   profileLinkColor: true,
@@ -36,7 +33,6 @@ export const userThemeSelect = {
 export type UserThemeData = {
   id: string;
   tier: string | null;
-  isBeta: boolean;
   profileBgColor: string | null;
   profileTextColor: string | null;
   profileLinkColor: string | null;
@@ -76,10 +72,6 @@ export interface UserThemeResult {
   sparklefallProps: SparklefallProps | null;
 }
 
-/**
- * Build theme CSS variables, background image style, and sparklefall props
- * for the current user. Mirrors the logic from the profile page.
- */
 export const NO_THEME: UserThemeResult = {
   hasCustomTheme: false,
   themeStyle: undefined,
@@ -87,10 +79,11 @@ export const NO_THEME: UserThemeResult = {
   sparklefallProps: null,
 };
 
-export async function buildUserTheme(user: UserThemeData): Promise<UserThemeResult> {
-  // Page-level theming is currently beta-gated
-  if (!user.isBeta) return NO_THEME;
-
+/**
+ * Build theme CSS variables, background image style, and sparklefall props.
+ * Uses the user's chosen colors directly — no light/dark adaptation.
+ */
+export function buildUserTheme(user: UserThemeData): UserThemeResult {
   const hasCustomTheme = !!(
     user.profileBgColor ||
     user.profileTextColor ||
@@ -100,66 +93,13 @@ export async function buildUserTheme(user: UserThemeData): Promise<UserThemeResu
   );
 
   const themeStyle = hasCustomTheme
-    ? await (async () => {
-        const userColors = {
-          profileBgColor: user.profileBgColor ?? "#ffffff",
-          profileTextColor: user.profileTextColor ?? "#18181b",
-          profileLinkColor: user.profileLinkColor ?? "#2563eb",
-          profileSecondaryColor: user.profileSecondaryColor ?? "#71717a",
-          profileContainerColor: user.profileContainerColor ?? "#f4f4f5",
-        };
-
-        let customPreset: {
-          darkBgColor: string;
-          darkTextColor: string;
-          darkLinkColor: string;
-          darkSecondaryColor: string;
-          darkContainerColor: string;
-        } | null = null;
-        try {
-          customPreset = await prisma.customThemePreset.findFirst({
-            where: {
-              userId: user.id,
-              lightBgColor: userColors.profileBgColor,
-              lightTextColor: userColors.profileTextColor,
-              lightLinkColor: userColors.profileLinkColor,
-              lightSecondaryColor: userColors.profileSecondaryColor,
-              lightContainerColor: userColors.profileContainerColor,
-            },
-          });
-        } catch {
-          // Table may not exist yet during migration rollout
-        }
-
-        let light = userColors;
-        let dark;
-        if (customPreset) {
-          dark = {
-            profileBgColor: customPreset.darkBgColor,
-            profileTextColor: customPreset.darkTextColor,
-            profileLinkColor: customPreset.darkLinkColor,
-            profileSecondaryColor: customPreset.darkSecondaryColor,
-            profileContainerColor: customPreset.darkContainerColor,
-          };
-        } else {
-          const adaptive = generateAdaptiveTheme(userColors);
-          light = adaptive.light;
-          dark = adaptive.dark;
-        }
-
-        return {
-          "--profile-bg-light": light.profileBgColor,
-          "--profile-text-light": light.profileTextColor,
-          "--profile-link-light": light.profileLinkColor,
-          "--profile-secondary-light": light.profileSecondaryColor,
-          "--profile-container-light": light.profileContainerColor,
-          "--profile-bg-dark": dark.profileBgColor,
-          "--profile-text-dark": dark.profileTextColor,
-          "--profile-link-dark": dark.profileLinkColor,
-          "--profile-secondary-dark": dark.profileSecondaryColor,
-          "--profile-container-dark": dark.profileContainerColor,
-        } as React.CSSProperties;
-      })()
+    ? ({
+        "--profile-bg": user.profileBgColor ?? "#ffffff",
+        "--profile-text": user.profileTextColor ?? "#18181b",
+        "--profile-link": user.profileLinkColor ?? "#2563eb",
+        "--profile-secondary": user.profileSecondaryColor ?? "#71717a",
+        "--profile-container": user.profileContainerColor ?? "#f4f4f5",
+      } as React.CSSProperties)
     : undefined;
 
   const bgImageStyle: React.CSSProperties | undefined = user.profileBgImage

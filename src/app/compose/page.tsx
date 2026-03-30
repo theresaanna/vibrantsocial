@@ -35,7 +35,7 @@ export default async function ComposePage() {
   const isOldEnough = calculateAge(currentUser.dateOfBirth!) >= 18;
   const isPremium = currentUser.tier === "premium";
   const isAgeVerified = !!currentUser.ageVerified;
-  const theme = await buildUserTheme(currentUser);
+  const theme = buildUserTheme(currentUser);
 
   return (
     <ThemedPage {...theme}>
