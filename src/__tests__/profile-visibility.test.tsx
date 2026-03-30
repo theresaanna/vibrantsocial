@@ -78,6 +78,7 @@ function renderForm(options: RenderFormOptions = {}) {
       ageVerified={false}
       showGraphicByDefault={false}
       showNsfwContent={false}
+      hideSensitiveOverlay={false}
       emailOnComment={true}
       emailOnNewChat={true}
       emailOnMention={true}

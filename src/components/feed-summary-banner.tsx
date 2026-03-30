@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   fetchFeedSummary,
   generateFeedSummaryOnDemand,
@@ -17,29 +17,34 @@ export function FeedSummaryBanner({ lastSeenFeedAt }: FeedSummaryBannerProps) {
   const [generating, setGenerating] = useState(false);
   const [tooMany, setTooMany] = useState(false);
   const [missedCount, setMissedCount] = useState(0);
+  const fetchedRef = useRef(false);
 
   useEffect(() => {
-    let cancelled = false;
+    // Guard against double-fetch from StrictMode or component remounts
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
 
     fetchFeedSummary(lastSeenFeedAt).then((result) => {
-      if (cancelled) return;
       setSummary(result.summary);
       setTooMany(result.tooMany);
       setMissedCount(result.missedCount);
       setChecked(true);
     });
-
-    return () => {
-      cancelled = true;
-    };
   }, [lastSeenFeedAt]);
 
   async function handleSummarize() {
     setGenerating(true);
-    const result = await generateFeedSummaryOnDemand(lastSeenFeedAt);
-    setSummary(result);
-    setTooMany(false);
-    setGenerating(false);
+    try {
+      const result = await generateFeedSummaryOnDemand(lastSeenFeedAt);
+      setSummary(
+        result ?? "Your friends have been posting! Scroll down to see what's new."
+      );
+      setTooMany(false);
+    } catch {
+      setSummary("Your friends have been posting! Scroll down to see what's new.");
+    } finally {
+      setGenerating(false);
+    }
   }
 
   // Don't render anything until the initial check completes

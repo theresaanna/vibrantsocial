@@ -2,7 +2,9 @@
 
 import crypto from "crypto";
 import { auth } from "@/auth";
-import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
+import { requireAuthWithRateLimit, isActionError } from "@/lib/action-utils";
+import type { ActionState } from "@/lib/action-utils";
 import { del } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { isValidFrameId } from "@/lib/profile-frames";
@@ -12,11 +14,6 @@ import { sendEmailVerificationEmail } from "@/lib/email";
 import { inngest } from "@/lib/inngest";
 
 const MAX_BIO_REVISIONS = 20;
-
-interface ProfileState {
-  success: boolean;
-  message: string;
-}
 
 async function pruneOldRevisions(userId: string) {
   const count = await prisma.bioRevision.count({ where: { userId } });
@@ -34,17 +31,12 @@ async function pruneOldRevisions(userId: string) {
 }
 
 export async function updateProfile(
-  _prevState: ProfileState,
+  _prevState: ActionState,
   formData: FormData
-): Promise<ProfileState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `profile:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+): Promise<ActionState> {
+  const result = await requireAuthWithRateLimit("profile");
+  if (isActionError(result)) return result;
+  const session = result;
 
   const username = formData.get("username") as string | null;
   const displayName = formData.get("displayName") as string | null;
@@ -123,6 +115,7 @@ export async function updateProfile(
 
   const showGraphicByDefault = formData.get("showGraphicByDefault") === "true";
   const showNsfwContent = formData.get("showNsfwContent") === "true";
+  const hideSensitiveOverlay = formData.get("hideSensitiveOverlay") === "true";
   const emailOnComment = formData.get("emailOnComment") === "true";
   const emailOnNewChat = formData.get("emailOnNewChat") === "true";
   const emailOnMention = formData.get("emailOnMention") === "true";
@@ -146,6 +139,7 @@ export async function updateProfile(
       bio: newBio,
       showGraphicByDefault,
       showNsfwContent,
+      hideSensitiveOverlay,
       emailOnComment,
       emailOnNewChat,
       emailOnMention,
@@ -173,15 +167,10 @@ export async function updateProfile(
   return { success: true, message: "Profile updated" };
 }
 
-export async function removeAvatar(): Promise<ProfileState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `profile:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+export async function removeAvatar(): Promise<ActionState> {
+  const result = await requireAuthWithRateLimit("profile");
+  if (isActionError(result)) return result;
+  const session = result;
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -224,23 +213,12 @@ export async function getBioRevisions() {
   });
 }
 
-interface RestoreState {
-  success: boolean;
-  message: string;
-  restoredContent?: string;
-}
-
 export async function restoreBioRevision(
   revisionId: string
-): Promise<RestoreState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `profile:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+): Promise<ActionState & { restoredContent?: string }> {
+  const result = await requireAuthWithRateLimit("profile");
+  if (isActionError(result)) return result;
+  const session = result;
 
   const revision = await prisma.bioRevision.findUnique({
     where: { id: revisionId },
@@ -285,23 +263,13 @@ export async function restoreBioRevision(
   };
 }
 
-interface EmailChangeState {
-  success: boolean;
-  message: string;
-}
-
 export async function requestEmailChange(
-  _prevState: EmailChangeState,
+  _prevState: ActionState,
   formData: FormData
-): Promise<EmailChangeState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `profile:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+): Promise<ActionState> {
+  const result = await requireAuthWithRateLimit("profile");
+  if (isActionError(result)) return result;
+  const session = result;
 
   const email = (formData.get("email") as string)?.trim().toLowerCase();
 
@@ -367,15 +335,10 @@ export async function requestEmailChange(
   };
 }
 
-export async function cancelEmailChange(): Promise<EmailChangeState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `profile:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+export async function cancelEmailChange(): Promise<ActionState> {
+  const result = await requireAuthWithRateLimit("profile");
+  if (isActionError(result)) return result;
+  const session = result;
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -397,15 +360,10 @@ export async function cancelEmailChange(): Promise<EmailChangeState> {
   return { success: true, message: "Email change cancelled" };
 }
 
-export async function resendVerificationEmail(): Promise<ProfileState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `profile:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+export async function resendVerificationEmail(): Promise<ActionState> {
+  const result = await requireAuthWithRateLimit("profile");
+  if (isActionError(result)) return result;
+  const session = result;
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -460,17 +418,12 @@ const EMPTY_LEXICAL_CONTENT = '{"root":{"children":[],"direction":null,"format":
 const BLOB_URL_REGEX = /https:\/\/[^"'\s]+\.blob\.vercel-storage\.com[^"'\s]*/g;
 
 export async function deleteAccount(
-  _prevState: ProfileState,
+  _prevState: ActionState,
   formData: FormData
-): Promise<ProfileState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `profile:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+): Promise<ActionState> {
+  const result = await requireAuthWithRateLimit("profile");
+  if (isActionError(result)) return result;
+  const session = result;
 
   const confirmation = (formData.get("confirmation") as string)?.trim();
 

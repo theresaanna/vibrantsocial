@@ -3,22 +3,30 @@
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
-export type CommunitiesView = "tags" | "media";
+export type CommunitiesView = "tags" | "media" | "discussions";
 
 interface CommunitiesViewToggleProps {
   activeView: CommunitiesView;
 }
+
+const VIEW_ROUTES: Record<CommunitiesView, string> = {
+  tags: "/communities",
+  media: "/communities?view=media",
+  discussions: "/communities?view=discussions",
+};
+
+const TABS: { view: CommunitiesView; label: string; testId: string }[] = [
+  { view: "tags", label: "Tags", testId: "communities-view-tags" },
+  { view: "media", label: "Media", testId: "communities-view-media" },
+  { view: "discussions", label: "Discussions", testId: "communities-view-discussions" },
+];
 
 export function CommunitiesViewToggle({ activeView }: CommunitiesViewToggleProps) {
   const router = useRouter();
 
   const handleViewChange = useCallback(
     (view: CommunitiesView) => {
-      if (view === "media") {
-        router.push("/communities?view=media");
-      } else {
-        router.push("/communities");
-      }
+      router.push(VIEW_ROUTES[view]);
     },
     [router]
   );
@@ -33,26 +41,19 @@ export function CommunitiesViewToggle({ activeView }: CommunitiesViewToggleProps
       role="tablist"
       aria-label="Communities view"
     >
-      <button
-        type="button"
-        role="tab"
-        aria-selected={activeView === "tags"}
-        className={`${baseClass} ${activeView === "tags" ? activeClass : inactiveClass}`}
-        onClick={() => handleViewChange("tags")}
-        data-testid="communities-view-tags"
-      >
-        Tags
-      </button>
-      <button
-        type="button"
-        role="tab"
-        aria-selected={activeView === "media"}
-        className={`${baseClass} ${activeView === "media" ? activeClass : inactiveClass}`}
-        onClick={() => handleViewChange("media")}
-        data-testid="communities-view-media"
-      >
-        Media
-      </button>
+      {TABS.map(({ view, label, testId }) => (
+        <button
+          key={view}
+          type="button"
+          role="tab"
+          aria-selected={activeView === view}
+          className={`${baseClass} ${activeView === view ? activeClass : inactiveClass}`}
+          onClick={() => handleViewChange(view)}
+          data-testid={testId}
+        >
+          {label}
+        </button>
+      ))}
     </div>
   );
 }

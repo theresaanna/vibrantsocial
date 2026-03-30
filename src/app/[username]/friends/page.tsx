@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
 import { getFriends, getBatchFriendshipStatuses } from "@/app/feed/friend-actions";
 import { UserList } from "@/components/user-list";
+import { ThemedPage } from "@/components/themed-page";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
 import Link from "next/link";
 
 interface FriendsPageProps {
@@ -24,12 +27,20 @@ export default async function FriendsPage({ params }: FriendsPageProps) {
   if (!session?.user?.id) redirect("/login");
   const currentUserId = session.user.id;
 
-  const friends = await getFriends(username);
-  const otherUserIds = friends.filter(u => u.id !== currentUserId).map(u => u.id);
+  const [friends, profileUser] = await Promise.all([
+    getFriends(username),
+    prisma.user.findUnique({
+      where: { username },
+      select: { ...userThemeSelect, id: true },
+    }),
+  ]);
+  const otherUserIds = friends.filter((u: { id: string }) => u.id !== currentUserId).map((u: { id: string }) => u.id);
   const friendshipStatuses = await getBatchFriendshipStatuses(otherUserIds);
+  const theme = profileUser ? buildUserTheme(profileUser) : NO_THEME;
+  const isOwnProfile = currentUserId === profileUser?.id;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...theme}>
       <div className="rounded-2xl bg-white shadow-lg dark:bg-zinc-900">
         <div className="flex items-center gap-3 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
           <Link
@@ -41,9 +52,17 @@ export default async function FriendsPage({ params }: FriendsPageProps) {
               <path fillRule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clipRule="evenodd" />
             </svg>
           </Link>
-          <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+          <h1 className="flex-1 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
             @{username}&apos;s Friends
           </h1>
+          {isOwnProfile && (
+            <Link
+              href="/close-friends"
+              className="rounded-full border border-green-500 bg-green-600 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-green-700 dark:border-green-400 dark:bg-green-600 dark:hover:bg-green-700"
+            >
+              Manage Close Friends
+            </Link>
+          )}
         </div>
 
         <UserList
@@ -53,6 +72,6 @@ export default async function FriendsPage({ params }: FriendsPageProps) {
           friendshipStatuses={friendshipStatuses}
         />
       </div>
-    </main>
+    </ThemedPage>
   );
 }

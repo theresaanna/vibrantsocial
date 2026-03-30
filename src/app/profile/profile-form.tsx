@@ -4,7 +4,7 @@ import { useActionState, useState, useEffect, useRef, useCallback } from "react"
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import { updateProfile, removeAvatar, requestEmailChange, cancelEmailChange, deleteAccount } from "./actions";
+import { updateProfile, removeAvatar, requestEmailChange, cancelEmailChange, resendVerificationEmail, deleteAccount } from "./actions";
 import { unlinkAccount, getLinkedAccounts } from "./account-linking-actions";
 import { BioEditor } from "@/components/bio-editor";
 import { BioRevisionHistory } from "@/components/bio-revision-history";
@@ -26,12 +26,14 @@ interface ProfileFormProps {
     profileFrameId: string | null;
   };
   email: string | null;
+  emailVerified: boolean;
   pendingEmail: string | null;
   currentAvatar: string | null;
   oauthImage: string | null;
   ageVerified: boolean;
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
+  hideSensitiveOverlay: boolean;
   emailOnComment: boolean;
   emailOnNewChat: boolean;
   emailOnMention: boolean;
@@ -60,7 +62,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, birthdayMonth: initialBirthdayMonth, birthdayDay: initialBirthdayDay, isPremium, stars, starsSpent, referralCode, userEmail }: ProfileFormProps) {
+export function ProfileForm({ user, email, emailVerified, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, hideSensitiveOverlay, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, birthdayMonth: initialBirthdayMonth, birthdayDay: initialBirthdayDay, isPremium, stars, starsSpent, referralCode, userEmail }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [displayNameValue, setDisplayNameValue] = useState(user.displayName ?? "");
@@ -84,6 +86,8 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [pushEnabled, setPushEnabled] = useState(initialPushEnabled);
   const [isCancellingEmail, setIsCancellingEmail] = useState(false);
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [showLinkModal, setShowLinkModal] = useState(false);
@@ -355,6 +359,48 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
         </div>
       </div>
 
+      {/* Share profile button */}
+      {savedUsername && (
+        <button
+          type="button"
+          onClick={async () => {
+            const url = `${window.location.origin}/${savedUsername}${referralCode ? `?ref=${referralCode}` : ""}`;
+            if (navigator.share) {
+              try {
+                await navigator.share({ title: `@${savedUsername}`, url });
+                return;
+              } catch {
+                // User cancelled or share failed, fall through to clipboard
+              }
+            }
+            try {
+              await navigator.clipboard.writeText(url);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            } catch {
+              // Clipboard not available
+            }
+          }}
+          className="flex items-center gap-1.5 self-start rounded-full border border-zinc-300 bg-white px-4 py-1.5 text-sm font-semibold text-zinc-700 transition-all hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-600 dark:bg-transparent dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-200"
+        >
+          {copied ? (
+            "Copied!"
+          ) : (
+            <>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="h-4 w-4"
+              >
+                <path d="M13 4.5a2.5 2.5 0 11.702 1.737L6.97 9.604a2.518 2.518 0 010 .792l6.733 3.367a2.5 2.5 0 11-.671 1.341l-6.733-3.367a2.5 2.5 0 110-3.474l6.733-3.367A2.52 2.52 0 0113 4.5z" />
+              </svg>
+              Share Profile
+            </>
+          )}
+        </button>
+      )}
+
       {showFrameSelector && (
         <FrameSelector
           currentFrameId={frameId}
@@ -369,34 +415,91 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
 
       {/* Email address */}
       <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+        <p className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
           Email Address
         </p>
-        {email && !pendingEmail && (
+        {email && !pendingEmail && emailVerified && (
           <p className="mt-1 text-sm text-green-600 dark:text-green-400">
             Verified: {email}
           </p>
         )}
+        {email && !pendingEmail && !emailVerified && (
+          <div className="mt-1">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                Not verified: {email}
+              </p>
+              <button
+                type="button"
+                disabled={isResendingEmail}
+                onClick={async () => {
+                  setIsResendingEmail(true);
+                  setResendMessage(null);
+                  try {
+                    const result = await resendVerificationEmail();
+                    setResendMessage(result.message);
+                  } finally {
+                    setIsResendingEmail(false);
+                  }
+                }}
+                className="ml-2 shrink-0 text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 disabled:opacity-50 dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                {isResendingEmail ? "Sending..." : "Resend verification"}
+              </button>
+            </div>
+            {resendMessage && (
+              <p className="mt-1 text-xs text-green-600 dark:text-green-400">
+                {resendMessage}
+              </p>
+            )}
+          </div>
+        )}
         {pendingEmail && (
-          <div className="mt-1 flex items-center justify-between">
-            <p className="text-sm text-yellow-600 dark:text-yellow-400">
-              Verification sent to {pendingEmail}
-            </p>
-            <button
-              type="button"
-              disabled={isCancellingEmail}
-              onClick={async () => {
-                setIsCancellingEmail(true);
-                try {
-                  await cancelEmailChange();
-                } finally {
-                  setIsCancellingEmail(false);
-                }
-              }}
-              className="ml-2 shrink-0 text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-700 disabled:opacity-50 dark:hover:text-zinc-300"
-            >
-              Cancel
-            </button>
+          <div className="mt-1">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                Verification sent to {pendingEmail}
+              </p>
+              <div className="ml-2 flex shrink-0 gap-2">
+                <button
+                  type="button"
+                  disabled={isResendingEmail}
+                  onClick={async () => {
+                    setIsResendingEmail(true);
+                    setResendMessage(null);
+                    try {
+                      const result = await resendVerificationEmail();
+                      setResendMessage(result.message);
+                    } finally {
+                      setIsResendingEmail(false);
+                    }
+                  }}
+                  className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 disabled:opacity-50 dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  {isResendingEmail ? "Sending..." : "Resend"}
+                </button>
+                <button
+                  type="button"
+                  disabled={isCancellingEmail}
+                  onClick={async () => {
+                    setIsCancellingEmail(true);
+                    try {
+                      await cancelEmailChange();
+                    } finally {
+                      setIsCancellingEmail(false);
+                    }
+                  }}
+                  className="text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-700 disabled:opacity-50 dark:hover:text-zinc-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+            {resendMessage && (
+              <p className="mt-1 text-xs text-green-600 dark:text-green-400">
+                {resendMessage}
+              </p>
+            )}
           </div>
         )}
         <form action={emailFormAction} className="mt-3 flex gap-2">
@@ -428,35 +531,34 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
         )}
       </div>
 
-      {/* Phone verification & profile link */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-            Phone Verification
+      {/* Phone verification */}
+      <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+        <p className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+          Phone Verification
+        </p>
+        {phoneVerified ? (
+          <p className="mt-1 text-sm text-green-600 dark:text-green-400">
+            Verified: {phoneNumber?.replace(/(\+\d{1,3})\d+(\d{4})/, "$1****$2")}
           </p>
-          {phoneVerified ? (
-            <p className="mt-1 text-sm text-green-600 dark:text-green-400">
-              Verified: {phoneNumber?.replace(/(\+\d{1,3})\d+(\d{4})/, "$1****$2")}
+        ) : (
+          <div className="mt-1 flex items-center justify-between">
+            <p className="text-sm text-zinc-500">
+              {isCredentialsUser
+                ? "Verify your phone for community safety"
+                : "Add a phone number for extra security"}
             </p>
-          ) : (
-            <div className="mt-1 flex items-center justify-between">
-              <p className="text-sm text-zinc-500">
-                {isCredentialsUser
-                  ? "Verify your phone for community safety"
-                  : "Add a phone number for extra security"}
-              </p>
-              <Link
-                href="/verify-phone"
-                className="ml-2 shrink-0 rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-              >
-                Verify
-              </Link>
-            </div>
-          )}
-        </div>
+            <Link
+              href="/verify-phone"
+              className="ml-2 shrink-0 rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+            >
+              Verify
+            </Link>
+          </div>
+        )}
+      </div>
 
-        {/* Stars container */}
-        <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+      {/* Stars container */}
+      <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
           <div className="flex items-center justify-between">
             <button
               type="button"
@@ -621,37 +723,6 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
           )}
         </div>
 
-        {/* Share container */}
-        {savedUsername ? (
-          <div className="flex flex-col justify-between rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-            <Link
-              href={`/${savedUsername}`}
-              className="text-sm font-semibold text-zinc-900 transition-colors hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-400"
-            >
-              View public profile &rarr;
-            </Link>
-            <button
-              type="button"
-              onClick={() => {
-                navigator.clipboard.writeText(
-                  `${window.location.origin}/${savedUsername}`
-                );
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-              }}
-              className="mt-2 self-start rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-            >
-              {copied ? "Copied!" : "Share Profile"}
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-            <p className="text-sm text-zinc-500">
-              Set a username below to get your profile link
-            </p>
-          </div>
-        )}
-      </div>
 
       {/* Profile fields */}
       <form
@@ -671,20 +742,25 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
         <div>
           <label
             htmlFor="username"
-            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            className="block text-sm font-semibold text-zinc-800 dark:text-zinc-200"
           >
-            Username
+            Username / URL path
           </label>
-          <input
-            id="username"
-            name="username"
-            type="text"
-            value={usernameValue}
-            onChange={(e) => setUsernameValue(e.target.value)}
-            onFocus={cancelAutosave}
-            className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
-            placeholder="your_username"
-          />
+          <div className="mt-1 flex items-center rounded-lg border border-zinc-300 dark:border-zinc-600">
+            <span className="shrink-0 select-none pl-3 text-sm text-zinc-400 dark:text-zinc-500">
+              https://vibrantsocial.app/
+            </span>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              value={usernameValue}
+              onChange={(e) => setUsernameValue(e.target.value)}
+              onFocus={cancelAutosave}
+              className="block w-full rounded-r-lg border-0 bg-transparent px-1 py-2 text-sm focus:ring-0 dark:text-zinc-100"
+              placeholder="your_username"
+            />
+          </div>
           {usernameStatus === "checking" && (
             <p className="mt-1 text-xs text-zinc-400">Checking availability...</p>
           )}
@@ -704,7 +780,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
         <div>
           <label
             htmlFor="displayName"
-            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            className="block text-sm font-semibold text-zinc-800 dark:text-zinc-200"
           >
             Display Name
           </label>
@@ -721,7 +797,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <label className="block text-sm font-semibold text-zinc-800 dark:text-zinc-200">
             Birthday
           </label>
           <div className="mt-1 flex gap-2">
@@ -795,7 +871,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
         </Link>
 
         <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-          <p className="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+          <p className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">
             Content Visibility
           </p>
           <div className="space-y-3">
@@ -828,9 +904,20 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
               )}
             </div>
             {!ageVerified && (
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Age verification is required to view sensitive and graphic content.
-              </p>
+              <div className="space-y-1">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Age verification is required to view sensitive and graphic content.
+                </p>
+                <Link
+                  href="/premium"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+                >
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                  </svg>
+                  Included with Premium
+                </Link>
+              </div>
             )}
 
             <label className="flex items-center gap-2">
@@ -842,14 +929,29 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
                 className="rounded"
               />
               <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Show NSFW content
+                Show NSFW content in feed
               </span>
             </label>
             <p className="ml-6 text-xs text-zinc-500 dark:text-zinc-400">
-              When enabled, NSFW posts will appear in your feed and on profile Posts tabs without an overlay.
+              When enabled, NSFW posts will appear in your feed and on profile Posts tabs. A click-to-reveal overlay will still be shown.
             </p>
             {ageVerified && (
               <>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    name="hideSensitiveOverlay"
+                    value="true"
+                    defaultChecked={hideSensitiveOverlay}
+                    className="rounded"
+                  />
+                  <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    Hide overlay on Sensitive content
+                  </span>
+                </label>
+                <p className="ml-6 text-xs text-zinc-500 dark:text-zinc-400">
+                  When enabled, Sensitive posts will be visible without clicking to reveal.
+                </p>
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -859,7 +961,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
                     className="rounded"
                   />
                   <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                    Show Graphic/Explicit content by default
+                    Hide overlay on Graphic/Explicit content
                   </span>
                 </label>
                 <p className="ml-6 text-xs text-zinc-500 dark:text-zinc-400">
@@ -872,7 +974,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
 
         {/* Email notifications */}
         <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-          <p className="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+          <p className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">
             Email Notifications
           </p>
           <div className="space-y-3">
@@ -956,7 +1058,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
 
         {/* Push notifications */}
         <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-          <p className="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+          <p className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">
             Push Notifications
           </p>
           <input type="hidden" name="pushEnabled" value={pushEnabled ? "true" : "false"} />
@@ -1034,7 +1136,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
 
       {/* Linked Accounts */}
       <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" data-testid="linked-accounts-section">
-        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+        <p className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
           Linked Accounts
         </p>
         <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
@@ -1062,7 +1164,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
                     </div>
                   )}
                   <div>
-                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                    <p className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
                       {account.displayName || account.username}
                     </p>
                     {account.username && (
@@ -1129,7 +1231,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
 
       {/* Delete Account */}
       <div className="rounded-lg border border-red-200 p-4 dark:border-red-900/50">
-        <p className="text-sm font-medium text-red-600 dark:text-red-400">
+        <p className="text-base font-semibold text-red-600 dark:text-red-400">
           Delete Account
         </p>
         {!showDeleteConfirm ? (
@@ -1161,7 +1263,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
             <form action={deleteFormAction}>
               <label
                 htmlFor="deleteConfirmation"
-                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                className="block text-sm font-semibold text-zinc-800 dark:text-zinc-200"
               >
                 Type <span className="font-mono text-red-600 dark:text-red-400">delete {user.username}</span> to confirm
               </label>

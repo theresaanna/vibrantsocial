@@ -99,7 +99,7 @@ describe("PostCard - pin indicator", () => {
         currentUserId="user1"
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
         showPinnedIndicator={true}
       />
     );
@@ -114,7 +114,7 @@ describe("PostCard - pin indicator", () => {
         currentUserId="user1"
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
       />
     );
     expect(screen.queryByTestId("post-pinned-indicator")).not.toBeInTheDocument();
@@ -127,7 +127,7 @@ describe("PostCard - pin indicator", () => {
         currentUserId="user1"
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
       />
     );
     fireEvent.click(screen.getByTestId("post-menu-button"));
@@ -141,7 +141,7 @@ describe("PostCard - pin indicator", () => {
         currentUserId="user1"
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
       />
     );
     fireEvent.click(screen.getByTestId("post-menu-button"));
@@ -155,7 +155,7 @@ describe("PostCard - pin indicator", () => {
         currentUserId="other-user"
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
       />
     );
     expect(screen.queryByTestId("post-menu-button")).not.toBeInTheDocument();

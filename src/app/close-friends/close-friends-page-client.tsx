@@ -1,12 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { PostCard } from "@/components/post-card";
-import { RepostCard } from "@/components/repost-card";
 import { CloseFriendsClient } from "./close-friends-client";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type FeedItem = { type: "post" | "repost"; data: any; date: string };
 
 interface FriendUser {
   id: string;
@@ -16,6 +10,7 @@ interface FriendUser {
   avatar: string | null;
   image: string | null;
   profileFrameId: string | null;
+  usernameFont: string | null;
 }
 
 interface CloseFriendEntry {
@@ -25,30 +20,14 @@ interface CloseFriendEntry {
 }
 
 interface Props {
-  initialItems: FeedItem[];
-  initialHasMore: boolean;
-  currentUserId: string;
-  phoneVerified: boolean;
-  ageVerified: boolean;
-  showGraphicByDefault: boolean;
-  showNsfwContent: boolean;
   closeFriends: CloseFriendEntry[];
   availableFriends: FriendUser[];
 }
 
 export function CloseFriendsPageClient({
-  initialItems,
-  initialHasMore,
-  currentUserId,
-  phoneVerified,
-  ageVerified,
-  showGraphicByDefault,
-  showNsfwContent,
   closeFriends,
   availableFriends,
 }: Props) {
-  const [tab, setTab] = useState<"feed" | "manage">("feed");
-
   return (
     <div>
       <div className="mb-6 flex items-center gap-3">
@@ -59,121 +38,18 @@ export function CloseFriendsPageClient({
         </div>
         <div>
           <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-            Close Friends
+            Manage Close Friends
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Posts from your close friends
+            Add or remove friends from your close friends list
           </p>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="mb-4 flex gap-1 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
-        <button
-          onClick={() => setTab("feed")}
-          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${tab === "feed" ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-zinc-100" : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300"}`}
-        >
-          Feed
-        </button>
-        <button
-          onClick={() => setTab("manage")}
-          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${tab === "manage" ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-zinc-100" : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300"}`}
-        >
-          Manage List
-        </button>
-      </div>
-
-      {tab === "feed" && (
-        <CloseFriendsFeed
-          items={initialItems}
-          currentUserId={currentUserId}
-          phoneVerified={phoneVerified}
-          ageVerified={ageVerified}
-          showGraphicByDefault={showGraphicByDefault}
-          showNsfwContent={showNsfwContent}
-          closeFriendsCount={closeFriends.length}
-        />
-      )}
-
-      {tab === "manage" && (
-        <CloseFriendsClient
-          closeFriends={closeFriends}
-          availableFriends={availableFriends}
-        />
-      )}
-    </div>
-  );
-}
-
-function CloseFriendsFeed({
-  items,
-  currentUserId,
-  phoneVerified,
-  ageVerified,
-  showGraphicByDefault,
-  showNsfwContent,
-  closeFriendsCount,
-}: {
-  items: FeedItem[];
-  currentUserId: string;
-  phoneVerified: boolean;
-  ageVerified: boolean;
-  showGraphicByDefault: boolean;
-  showNsfwContent: boolean;
-  closeFriendsCount: number;
-}) {
-  if (closeFriendsCount === 0) {
-    return (
-      <div className="mt-8 text-center">
-        <p className="text-zinc-500">No close friends yet.</p>
-        <p className="mt-1 text-sm text-zinc-400">
-          Switch to &quot;Manage List&quot; to add friends to your close friends list.
-        </p>
-      </div>
-    );
-  }
-
-  if (items.length === 0) {
-    return (
-      <div className="mt-8 text-center">
-        <p className="text-zinc-500">No posts from your close friends yet.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      {items.map((item) =>
-        item.type === "post" ? (
-          <PostCard
-            key={item.data.id}
-            post={item.data}
-            currentUserId={currentUserId}
-            phoneVerified={phoneVerified}
-            ageVerified={ageVerified}
-            showGraphicByDefault={showGraphicByDefault}
-            showNsfwContent={showNsfwContent}
-            {...(item.data.wallPost && {
-              wallOwner: {
-                username: item.data.wallPost.wallOwner.username,
-                displayName: item.data.wallPost.wallOwner.displayName,
-              },
-              wallPostId: item.data.wallPost.id,
-              wallPostStatus: item.data.wallPost.status,
-            })}
-          />
-        ) : (
-          <RepostCard
-            key={`repost-${item.data.id}`}
-            repost={item.data}
-            currentUserId={currentUserId}
-            phoneVerified={phoneVerified}
-            ageVerified={ageVerified}
-            showGraphicByDefault={showGraphicByDefault}
-            showNsfwContent={showNsfwContent}
-          />
-        )
-      )}
+      <CloseFriendsClient
+        closeFriends={closeFriends}
+        availableFriends={availableFriends}
+      />
     </div>
   );
 }
