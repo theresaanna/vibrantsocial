@@ -27,9 +27,7 @@ export function GifButton() {
         aria-label="Insert GIF"
         title="Insert GIF"
       >
-        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M11.5 9.5v5h-1v-2.5h-2v2.5h-1v-5h1v1.5h2v-1.5h1zm5 0v1h-2v3h2v1h-3v-5h3zm-5 8.5H2a2 2 0 01-2-2V4a2 2 0 012-2h16a2 2 0 012 2v5.5h-2V4H2v12h9.5v2zm7-5.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm-1.5 4v2h-1v-2h-2v-1h2v-2h1v2h2v1h-2z" />
-        </svg>
+        <span className="text-[11px] font-bold leading-none" style={{ fontFamily: "ui-monospace, monospace" }}>GIF</span>
       </button>
       {modal && (
         <GifSearchModal
