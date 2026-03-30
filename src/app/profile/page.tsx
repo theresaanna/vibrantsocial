@@ -71,7 +71,6 @@ export default async function ProfilePage() {
       isProfilePublic: true,
       hideWallFromFeed: true,
       tier: true,
-      isBeta: true,
       stars: true,
       starsSpent: true,
       referralCode: true,
@@ -118,7 +117,7 @@ export default async function ProfilePage() {
     }
   }
 
-  const profileTheme = await buildUserTheme(user);
+  const profileTheme = buildUserTheme(user);
 
   return (
     <ThemedPage {...profileTheme} bare>

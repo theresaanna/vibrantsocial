@@ -6,7 +6,6 @@ import {
   type CustomPresetData,
   PROFILE_THEME_PRESETS,
   THEME_COLOR_FIELDS,
-  generateAdaptiveTheme,
 } from "@/lib/profile-themes";
 import type { BackgroundDefinition } from "@/lib/profile-backgrounds";
 import {
@@ -310,14 +309,12 @@ export function ThemeEditor({
     if (!saveCurrentName.trim() || isSaving) return;
     setSaveCurrentError(null);
 
-    const { light, dark } = generateAdaptiveTheme(colors);
-
     startSaveTransition(async () => {
       const result = await saveCustomPreset({
         name: saveCurrentName.trim(),
         imageUrl: "",
-        light,
-        dark,
+        light: colors,
+        dark: colors,
       });
       if (result.success && result.preset) {
         setCustomPresets((prev) => {
@@ -544,7 +541,7 @@ export function ThemeEditor({
             </div>
           )}
 
-          {/* Preview Light & Dark */}
+          {/* Preview */}
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -555,7 +552,7 @@ export function ThemeEditor({
                   : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
               }`}
             >
-              Preview Light {"&"} Dark
+              Preview
             </button>
             {hasUnsavedThemeChange && (
               <div className="flex gap-1.5">

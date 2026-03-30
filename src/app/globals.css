@@ -65,28 +65,82 @@ h6 {
   }
 }
 
-/* Profile theme overrides — light mode (default) */
+/* Profile theme overrides — user's chosen colors applied directly */
 .profile-themed {
-  --profile-bg: var(--profile-bg-light);
-  --profile-text: var(--profile-text-light);
-  --profile-link: var(--profile-link-light);
-  --profile-secondary: var(--profile-secondary-light);
-  --profile-container: var(--profile-container-light);
-
   background-color: var(--profile-bg);
   color: var(--profile-text);
   min-height: calc(100vh - 57px);
 }
 
-/* Profile theme overrides — dark mode */
-.dark .profile-themed {
-  --profile-bg: var(--profile-bg-dark);
-  --profile-text: var(--profile-text-dark);
-  --profile-link: var(--profile-link-dark);
-  --profile-secondary: var(--profile-secondary-dark);
-  --profile-container: var(--profile-container-dark);
+/*
+ * Broad overrides: force all Tailwind background/text/border colors inside
+ * .profile-themed to use the theme palette. !important is needed to beat
+ * Tailwind utility specificity + the .dark variant selectors.
+ */
+
+/* Backgrounds: white / zinc-50 / zinc-100 / zinc-800 / zinc-900 → container */
+.profile-themed .bg-white,
+.profile-themed .dark\:bg-zinc-900,
+.profile-themed .bg-zinc-50,
+.profile-themed .dark\:bg-zinc-800,
+.profile-themed .bg-zinc-100,
+.profile-themed .dark\:bg-zinc-950 {
+  background-color: color-mix(in srgb, var(--profile-container) 80%, transparent) !important;
 }
 
+/* Primary text: zinc-900 / zinc-100 / zinc-800 / zinc-200 */
+.profile-themed .text-zinc-900,
+.profile-themed .dark\:text-zinc-100,
+.profile-themed .text-zinc-800,
+.profile-themed .dark\:text-zinc-200 {
+  color: var(--profile-text) !important;
+}
+
+/* Secondary text: zinc-500 / zinc-400 / zinc-600 / zinc-300 */
+.profile-themed .text-zinc-500,
+.profile-themed .dark\:text-zinc-400,
+.profile-themed .text-zinc-600,
+.profile-themed .dark\:text-zinc-300,
+.profile-themed .text-zinc-700 {
+  color: var(--profile-secondary) !important;
+}
+
+/* Borders: zinc-200 / zinc-800 / zinc-100 / zinc-700 */
+.profile-themed .border-zinc-200,
+.profile-themed .dark\:border-zinc-800,
+.profile-themed .border-zinc-100,
+.profile-themed .dark\:border-zinc-700 {
+  border-color: color-mix(in srgb, var(--profile-secondary) 25%, transparent) !important;
+}
+
+/* Divide colors */
+.profile-themed .divide-zinc-200 > :not([hidden]) ~ :not([hidden]),
+.profile-themed .dark\:divide-zinc-800 > :not([hidden]) ~ :not([hidden]) {
+  border-color: color-mix(in srgb, var(--profile-secondary) 25%, transparent) !important;
+}
+
+/* Ring colors */
+.profile-themed .ring-zinc-200,
+.profile-themed .dark\:ring-zinc-800 {
+  --tw-ring-color: color-mix(in srgb, var(--profile-secondary) 25%, transparent) !important;
+}
+
+/* Shadow overrides: drop tinted shadows that clash with theme */
+.profile-themed .shadow-lg,
+.profile-themed .shadow-md,
+.profile-themed .shadow-sm {
+  --tw-shadow-color: color-mix(in srgb, var(--profile-text) 8%, transparent);
+}
+
+/* Placeholder text */
+.profile-themed .placeholder-zinc-400::placeholder,
+.profile-themed .placeholder\:text-zinc-400::placeholder,
+.profile-themed .dark\:placeholder-zinc-500::placeholder {
+  color: var(--profile-secondary) !important;
+  opacity: 0.7;
+}
+
+/* Existing class-based overrides */
 .profile-themed .profile-container {
   background-color: color-mix(in srgb, var(--profile-container) 80%, transparent);
 }
@@ -96,8 +150,16 @@ h6 {
 }
 
 .profile-themed .profile-link,
-.profile-themed a {
+.profile-themed a:not(.tag-pill) {
   color: var(--profile-link);
+}
+
+/* Tag cloud pills keep fixed text color regardless of profile theme */
+.tag-pill {
+  color: #27272a !important; /* zinc-800 */
+}
+.dark .tag-pill {
+  color: white !important;
 }
 
 .profile-themed .profile-share-btn:hover {
@@ -163,23 +225,8 @@ h6 {
   padding: 0.75rem;
 }
 
-/* Chat theme overrides — light mode (default) */
-.chat-themed {
-  --chat-bubble-bg: var(--chat-bubble-bg-light);
-  --chat-bubble-text: var(--chat-bubble-text-light);
-  --chat-active-bg: var(--chat-active-bg-light);
-  --chat-active-text: var(--chat-active-text-light);
-  --chat-link-color: var(--chat-link-color-light);
-}
-
-/* Chat theme overrides — dark mode */
-.dark .chat-themed {
-  --chat-bubble-bg: var(--chat-bubble-bg-dark);
-  --chat-bubble-text: var(--chat-bubble-text-dark);
-  --chat-active-bg: var(--chat-active-bg-dark);
-  --chat-active-text: var(--chat-active-text-dark);
-  --chat-link-color: var(--chat-link-color-dark);
-}
+/* Chat theme overrides — user's chosen colors applied directly */
+.chat-themed {}
 
 .chat-themed .chat-input-themed:focus {
   border-color: var(--chat-link-color);

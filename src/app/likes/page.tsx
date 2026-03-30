@@ -41,7 +41,7 @@ export default async function LikesPage() {
   const showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
   const hideSensitiveOverlay = currentUser?.hideSensitiveOverlay ?? false;
   const showNsfwContent = currentUser?.showNsfwContent ?? false;
-  const theme = await buildUserTheme(currentUser);
+  const theme = buildUserTheme(currentUser);
 
   const likes = await prisma.like.findMany({
     where: { userId },

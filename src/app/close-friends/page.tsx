@@ -49,7 +49,7 @@ export default async function CloseFriendsPage() {
   const hideSensitiveOverlay = currentUser.hideSensitiveOverlay ?? false;
   const showNsfwContent = currentUser.showNsfwContent ?? false;
   const isOldEnough = currentUser.dateOfBirth ? calculateAge(currentUser.dateOfBirth) >= 18 : false;
-  const theme = await buildUserTheme(currentUser);
+  const theme = buildUserTheme(currentUser);
 
   const closeFriendIdSet = new Set(closeFriendIds);
   const availableFriends = allFriends.filter((f) => !closeFriendIdSet.has(f.id));

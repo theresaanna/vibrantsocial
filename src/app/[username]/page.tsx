@@ -22,7 +22,6 @@ import { MessageButton } from "@/components/message-button";
 import { ChatRequestButton } from "@/components/chat-request-button";
 import { getChatRequestStatus, type ChatRequestStatus } from "@/app/chat/actions";
 import { getBlockStatus } from "@/app/feed/block-actions";
-import { generateAdaptiveTheme } from "@/lib/profile-themes";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
 import { buildProfilePostsContentFilter } from "./profile-queries";
@@ -503,67 +502,13 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   const userHasBirthday = isBirthday(user.birthdayMonth, user.birthdayDay);
 
   const themeStyle = hasCustomTheme
-    ? await (async () => {
-        const userColors = {
-          profileBgColor: user.profileBgColor ?? "#ffffff",
-          profileTextColor: user.profileTextColor ?? "#18181b",
-          profileLinkColor: user.profileLinkColor ?? "#2563eb",
-          profileSecondaryColor: user.profileSecondaryColor ?? "#71717a",
-          profileContainerColor: user.profileContainerColor ?? "#f4f4f5",
-        };
-
-        // Check if the user's colors match a saved AI-generated preset
-        let customPreset: {
-          darkBgColor: string;
-          darkTextColor: string;
-          darkLinkColor: string;
-          darkSecondaryColor: string;
-          darkContainerColor: string;
-        } | null = null;
-        try {
-          customPreset = await prisma.customThemePreset.findFirst({
-            where: {
-              userId: user.id,
-              lightBgColor: userColors.profileBgColor,
-              lightTextColor: userColors.profileTextColor,
-              lightLinkColor: userColors.profileLinkColor,
-              lightSecondaryColor: userColors.profileSecondaryColor,
-              lightContainerColor: userColors.profileContainerColor,
-            },
-          });
-        } catch {
-          // Table may not exist yet during migration rollout
-        }
-
-        let light = userColors;
-        let dark;
-        if (customPreset) {
-          dark = {
-            profileBgColor: customPreset.darkBgColor,
-            profileTextColor: customPreset.darkTextColor,
-            profileLinkColor: customPreset.darkLinkColor,
-            profileSecondaryColor: customPreset.darkSecondaryColor,
-            profileContainerColor: customPreset.darkContainerColor,
-          };
-        } else {
-          const adaptive = generateAdaptiveTheme(userColors);
-          light = adaptive.light;
-          dark = adaptive.dark;
-        }
-
-        return {
-          "--profile-bg-light": light.profileBgColor,
-          "--profile-text-light": light.profileTextColor,
-          "--profile-link-light": light.profileLinkColor,
-          "--profile-secondary-light": light.profileSecondaryColor,
-          "--profile-container-light": light.profileContainerColor,
-          "--profile-bg-dark": dark.profileBgColor,
-          "--profile-text-dark": dark.profileTextColor,
-          "--profile-link-dark": dark.profileLinkColor,
-          "--profile-secondary-dark": dark.profileSecondaryColor,
-          "--profile-container-dark": dark.profileContainerColor,
-        } as React.CSSProperties;
-      })()
+    ? ({
+        "--profile-bg": user.profileBgColor ?? "#ffffff",
+        "--profile-text": user.profileTextColor ?? "#18181b",
+        "--profile-link": user.profileLinkColor ?? "#2563eb",
+        "--profile-secondary": user.profileSecondaryColor ?? "#71717a",
+        "--profile-container": user.profileContainerColor ?? "#f4f4f5",
+      } as React.CSSProperties)
     : undefined;
 
   const bgImageStyle: React.CSSProperties | undefined = user.profileBgImage

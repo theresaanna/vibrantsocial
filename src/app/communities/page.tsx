@@ -33,7 +33,7 @@ export default async function CommunitiesPage({ searchParams }: CommunitiesPageP
       select: { showNsfwContent: true, ...userThemeSelect },
     });
     showNsfwContent = user?.showNsfwContent ?? false;
-    if (user) theme = await buildUserTheme(user);
+    if (user) theme = buildUserTheme(user);
   }
 
   const tagData = showNsfwContent

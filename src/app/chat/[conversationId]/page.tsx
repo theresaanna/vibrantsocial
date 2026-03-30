@@ -7,7 +7,6 @@ import { requireNotSuspended } from "@/lib/suspension-gate";
 import { getConversations, getMessages, getMessageRequests, getFriendsForChat } from "../actions";
 import { getBlockStatus } from "@/app/feed/block-actions";
 import { ConversationPageClient } from "./conversation-page-client";
-import { generateAdaptiveTheme } from "@/lib/profile-themes";
 import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
 import { ThemedPage } from "@/components/themed-page";
 
@@ -104,31 +103,16 @@ export default async function ConversationPage({ params }: Props) {
   };
 
   const themeStyle = hasCustomTheme
-    ? (() => {
-        const userColors = {
-          profileBgColor: currentUser?.profileBgColor ?? "#ffffff",
-          profileTextColor: currentUser?.profileTextColor ?? "#18181b",
-          profileLinkColor: currentUser?.profileLinkColor ?? "#2563eb",
-          profileSecondaryColor: currentUser?.profileSecondaryColor ?? "#71717a",
-          profileContainerColor: currentUser?.profileContainerColor ?? "#f4f4f5",
-        };
-        const { light, dark } = generateAdaptiveTheme(userColors);
-        return {
-          "--chat-bubble-bg-light": light.profileBgColor,
-          "--chat-bubble-text-light": light.profileTextColor,
-          "--chat-active-bg-light": light.profileContainerColor,
-          "--chat-active-text-light": light.profileSecondaryColor,
-          "--chat-bubble-bg-dark": dark.profileBgColor,
-          "--chat-bubble-text-dark": dark.profileTextColor,
-          "--chat-active-bg-dark": dark.profileContainerColor,
-          "--chat-active-text-dark": dark.profileSecondaryColor,
-          "--chat-link-color-light": light.profileLinkColor,
-          "--chat-link-color-dark": dark.profileLinkColor,
-        } as React.CSSProperties;
-      })()
+    ? ({
+        "--chat-bubble-bg": currentUser?.profileBgColor ?? "#ffffff",
+        "--chat-bubble-text": currentUser?.profileTextColor ?? "#18181b",
+        "--chat-active-bg": currentUser?.profileContainerColor ?? "#f4f4f5",
+        "--chat-active-text": currentUser?.profileSecondaryColor ?? "#71717a",
+        "--chat-link-color": currentUser?.profileLinkColor ?? "#2563eb",
+      } as React.CSSProperties)
     : undefined;
 
-  const profileTheme = currentUser ? await buildUserTheme(currentUser) : null;
+  const profileTheme = currentUser ? buildUserTheme(currentUser) : null;
 
   return (
     <ThemedPage {...(profileTheme ?? NO_THEME)} bare>

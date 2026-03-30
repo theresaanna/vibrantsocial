@@ -21,7 +21,7 @@ export default async function MarketplacePage() {
       where: { id: session.user.id },
       select: userThemeSelect,
     });
-    if (user) theme = await buildUserTheme(user);
+    if (user) theme = buildUserTheme(user);
   }
 
   return (

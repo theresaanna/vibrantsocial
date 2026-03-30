@@ -24,7 +24,7 @@ export default async function NotificationsPage() {
     }),
   ]);
 
-  const theme = themeUser ? await buildUserTheme(themeUser) : null;
+  const theme = themeUser ? buildUserTheme(themeUser) : null;
 
   return (
     <ThemedPage {...(theme ?? NO_THEME)}>
