@@ -126,12 +126,29 @@ h6 {
   color: var(--profile-secondary) !important;
 }
 
-/* Borders: zinc-200 / zinc-800 / zinc-100 / zinc-700 */
-.profile-themed .border-zinc-200,
-.profile-themed .dark\:border-zinc-800,
+/* Borders: all zinc shades → themed border */
 .profile-themed .border-zinc-100,
-.profile-themed .dark\:border-zinc-700 {
+.profile-themed .border-zinc-200,
+.profile-themed .border-zinc-300,
+.profile-themed .border-zinc-400,
+.profile-themed .border-zinc-500,
+.profile-themed .border-zinc-600,
+.profile-themed .border-zinc-900,
+.profile-themed .dark\:border-zinc-100,
+.profile-themed .dark\:border-zinc-500,
+.profile-themed .dark\:border-zinc-600,
+.profile-themed .dark\:border-zinc-700,
+.profile-themed .dark\:border-zinc-800,
+.profile-themed .dark\:border-zinc-900 {
   border-color: color-mix(in srgb, var(--profile-secondary) 25%, transparent) !important;
+}
+
+/* Focus borders */
+.profile-themed .focus\:border-zinc-400:focus,
+.profile-themed .focus\:border-zinc-500:focus,
+.profile-themed .dark\:focus\:border-zinc-400:focus,
+.profile-themed .dark\:focus\:border-zinc-500:focus {
+  border-color: color-mix(in srgb, var(--profile-link) 60%, transparent) !important;
 }
 
 /* Divide colors */
@@ -142,7 +159,10 @@ h6 {
 
 /* Ring colors */
 .profile-themed .ring-zinc-200,
-.profile-themed .dark\:ring-zinc-800 {
+.profile-themed .ring-zinc-300,
+.profile-themed .dark\:ring-zinc-700,
+.profile-themed .dark\:ring-zinc-800,
+.profile-themed .focus\:ring-zinc-400:focus {
   --tw-ring-color: color-mix(in srgb, var(--profile-secondary) 25%, transparent) !important;
 }
 
