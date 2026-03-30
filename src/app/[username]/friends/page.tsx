@@ -58,7 +58,7 @@ export default async function FriendsPage({ params }: FriendsPageProps) {
           {isOwnProfile && (
             <Link
               href="/close-friends"
-              className="rounded-full border border-green-500 bg-green-600 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-green-700 dark:border-green-400 dark:bg-green-600 dark:hover:bg-green-700"
+              className="rounded-full border border-green-500 bg-green-600 px-3 py-1 text-sm font-medium !text-white transition-colors hover:bg-green-700 dark:border-green-400 dark:bg-green-600 dark:hover:bg-green-700"
             >
               Manage Close Friends
             </Link>
