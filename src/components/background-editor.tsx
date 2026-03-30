@@ -37,13 +37,37 @@ function BackgroundGrid({
   onSelect: (bg: BackgroundDefinition) => void;
   disabled?: boolean;
 }) {
+  const [hoveredBg, setHoveredBg] = useState<BackgroundDefinition | null>(null);
+  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseEnter = useCallback((bg: BackgroundDefinition, e: React.MouseEvent<HTMLButtonElement>) => {
+    const btn = e.currentTarget;
+    const container = containerRef.current;
+    if (!container) return;
+    const btnRect = btn.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    setPopoverPos({
+      top: btnRect.bottom - containerRect.top + 8,
+      left: btnRect.left - containerRect.left + btnRect.width / 2,
+    });
+    setHoveredBg(bg);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setHoveredBg(null);
+    setPopoverPos(null);
+  }, []);
+
   return (
-    <>
+    <div ref={containerRef} className="relative flex flex-wrap gap-2">
       {backgrounds.map((bg) => (
         <button
           key={bg.id}
           type="button"
           onClick={() => onSelect(bg)}
+          onMouseEnter={(e) => handleMouseEnter(bg, e)}
+          onMouseLeave={handleMouseLeave}
           title={bg.name}
           disabled={disabled}
           className={`h-12 w-12 overflow-hidden rounded-lg border transition-all ${
@@ -59,7 +83,24 @@ function BackgroundGrid({
           />
         </button>
       ))}
-    </>
+      {hoveredBg && popoverPos && (
+        <div
+          className="pointer-events-none absolute z-50 h-40 w-64 -translate-x-1/2 overflow-hidden rounded-xl border border-zinc-200 shadow-lg dark:border-zinc-700"
+          style={{
+            top: popoverPos.top,
+            left: popoverPos.left,
+            backgroundImage: `url(${hoveredBg.src})`,
+            backgroundRepeat: getDefaultsForBackground(hoveredBg).repeat,
+            backgroundSize: getDefaultsForBackground(hoveredBg).size,
+            backgroundPosition: getDefaultsForBackground(hoveredBg).position,
+          }}
+        >
+          <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-2 py-1">
+            <p className="text-xs font-medium text-white">{hoveredBg.name}</p>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
