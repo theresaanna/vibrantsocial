@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useId, useTransition, useRef } from "react";
+import { useState, useCallback, useId, useTransition, useRef, useEffect } from "react";
 import {
   type ProfileThemeColors,
   type CustomPresetData,
