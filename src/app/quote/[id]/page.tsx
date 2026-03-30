@@ -7,6 +7,8 @@ import { QuotePageClient } from "./quote-page-client";
 import { getPostInclude } from "@/app/feed/feed-queries";
 import { extractContentFromLexicalJson } from "@/lib/lexical-text";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -134,9 +136,21 @@ export default async function QuotePage({ params }: Props) {
     redirect("/login");
   }
 
+  const originalAuthorId = repost.post?.author?.id;
+  const originalAuthor = originalAuthorId
+    ? await prisma.user.findUnique({
+        where: { id: originalAuthorId },
+        select: userThemeSelect,
+      })
+    : null;
+  const theme = originalAuthor ? buildUserTheme(originalAuthor) : undefined;
+
+  const { hasCustomTheme } = theme ?? NO_THEME;
+
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...(theme ?? NO_THEME)}>
       <QuotePageClient
+        hasCustomTheme={hasCustomTheme}
         repost={JSON.parse(JSON.stringify(repost))}
         currentUserId={userId}
         phoneVerified={phoneVerified}
@@ -145,6 +159,6 @@ export default async function QuotePage({ params }: Props) {
         hideSensitiveOverlay={hideSensitiveOverlay}
         showNsfwContent={showNsfwContent}
       />
-    </main>
+    </ThemedPage>
   );
 }
