@@ -18,7 +18,6 @@ import {
 import { GifButton } from "./GifButton";
 import { SpeechToTextButton } from "./SpeechToTextButton";
 
-import { MarkdownToggleButton } from "./MarkdownToggleButton";
 import { Divider } from "./Divider";
 
 export function Toolbar() {
@@ -48,10 +47,6 @@ export function Toolbar() {
       </span>
       <PollButton />
       <SpeechToTextButton />
-      <span className="hidden sm:contents">
-        <Divider />
-        <MarkdownToggleButton />
-      </span>
     </div>
   );
 }
