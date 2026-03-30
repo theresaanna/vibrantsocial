@@ -4,50 +4,20 @@ import userEvent from "@testing-library/user-event";
 import { ThemeEditor } from "@/components/theme-editor";
 import { PROFILE_THEME_PRESETS } from "@/lib/profile-themes";
 import type { CustomPresetData } from "@/lib/profile-themes";
-import type { BackgroundDefinition } from "@/lib/profile-backgrounds";
-
-// Mock ThemePreview to keep tests focused
-vi.mock("@/components/theme-preview", () => ({
-  ThemePreview: ({ onClose }: { onClose: () => void }) => (
-    <div data-testid="theme-preview">
-      <button onClick={onClose}>Close</button>
-    </div>
-  ),
-}));
 
 // Mock server actions
 vi.mock("@/app/theme/generate-theme-action", () => ({
-  generateTheme: vi.fn(),
   saveCustomPreset: vi.fn(),
   deleteCustomPreset: vi.fn(),
 }));
 
 import {
-  generateTheme,
   saveCustomPreset,
   deleteCustomPreset,
 } from "@/app/theme/generate-theme-action";
 
-const mockGenerateTheme = vi.mocked(generateTheme);
 const mockSavePreset = vi.mocked(saveCustomPreset);
 const mockDeletePreset = vi.mocked(deleteCustomPreset);
-
-const sampleBackgrounds: BackgroundDefinition[] = [
-  {
-    id: "blue-waves",
-    name: "Blue Waves",
-    src: "/backgrounds/blue-waves.jpg",
-    thumbSrc: "/backgrounds/thumbs/blue-waves.webp",
-    category: "photo",
-  },
-  {
-    id: "checkered-pattern",
-    name: "Checkered Pattern",
-    src: "/backgrounds/checkered-pattern.jpg",
-    thumbSrc: "/backgrounds/thumbs/checkered-pattern.webp",
-    category: "pattern",
-  },
-];
 
 const defaultProps = {
   initialColors: {},
@@ -55,7 +25,6 @@ const defaultProps = {
   displayName: "Test User",
   bio: null,
   avatarSrc: null,
-  backgrounds: sampleBackgrounds,
 };
 
 const sampleCustomPreset: CustomPresetData = {
@@ -80,7 +49,7 @@ const sampleCustomPreset: CustomPresetData = {
 
 async function expandSection() {
   await userEvent.click(
-    screen.getByRole("button", { name: /profile theme/i })
+    screen.getByRole("button", { name: /^theme$/i })
   );
 }
 
@@ -91,7 +60,7 @@ describe("ThemeEditor", () => {
 
   it("starts collapsed and expands on click", async () => {
     render(<ThemeEditor {...defaultProps} />);
-    const toggle = screen.getByRole("button", { name: /profile theme/i });
+    const toggle = screen.getByRole("button", { name: /^theme$/i });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
 
     await userEvent.click(toggle);
@@ -142,7 +111,7 @@ describe("ThemeEditor", () => {
     }
   });
 
-  it("renders hidden inputs for all 5 color fields and background fields", () => {
+  it("renders hidden inputs for all 5 color fields", () => {
     const { container } = render(<ThemeEditor {...defaultProps} />);
     expect(
       container.querySelector('input[name="profileBgColor"]')
@@ -159,30 +128,6 @@ describe("ThemeEditor", () => {
     expect(
       container.querySelector('input[name="profileContainerColor"]')
     ).toBeInTheDocument();
-    expect(
-      container.querySelector('input[name="profileBgImage"]')
-    ).toBeInTheDocument();
-  });
-
-  it("shows preview modal when preview button is clicked", async () => {
-    render(<ThemeEditor {...defaultProps} />);
-    await expandSection();
-    expect(screen.queryByTestId("theme-preview")).not.toBeInTheDocument();
-
-    const previewBtn = screen.getByRole("button", { name: /preview/i });
-    await userEvent.click(previewBtn);
-
-    expect(screen.getByTestId("theme-preview")).toBeInTheDocument();
-  });
-
-  it("closes preview modal when close is clicked", async () => {
-    render(<ThemeEditor {...defaultProps} />);
-    await expandSection();
-    await userEvent.click(screen.getByRole("button", { name: /preview/i }));
-    expect(screen.getByTestId("theme-preview")).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole("button", { name: /close/i }));
-    expect(screen.queryByTestId("theme-preview")).not.toBeInTheDocument();
   });
 
   it("initializes from provided colors", () => {
@@ -211,151 +156,6 @@ describe("ThemeEditor", () => {
     expect(textInput.value).toBe(
       PROFILE_THEME_PRESETS.default.profileTextColor
     );
-  });
-});
-
-describe("ThemeEditor — background selection", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("renders background thumbnails", async () => {
-    render(<ThemeEditor {...defaultProps} />);
-    await expandSection();
-    expect(screen.getByTitle("Blue Waves")).toBeInTheDocument();
-    expect(screen.getByTitle("Checkered Pattern")).toBeInTheDocument();
-  });
-
-  it("renders None button to clear background", async () => {
-    render(<ThemeEditor {...defaultProps} />);
-    await expandSection();
-    expect(screen.getByRole("button", { name: /none/i })).toBeInTheDocument();
-  });
-
-  it("selecting a background updates hidden bg image input", async () => {
-    const { container } = render(<ThemeEditor {...defaultProps} />);
-    await expandSection();
-    await userEvent.click(screen.getByTitle("Blue Waves"));
-
-    const hiddenInput = container.querySelector(
-      'input[name="profileBgImage"]'
-    ) as HTMLInputElement;
-    expect(hiddenInput.value).toBe("/backgrounds/blue-waves.jpg");
-  });
-
-  it("clearing background sets hidden input to empty", async () => {
-    const { container } = render(
-      <ThemeEditor
-        {...defaultProps}
-        initialBackground={{ profileBgImage: "/backgrounds/blue-waves.jpg", profileBgRepeat: null, profileBgAttachment: null, profileBgSize: null, profileBgPosition: null }}
-      />
-    );
-    await expandSection();
-    await userEvent.click(screen.getByRole("button", { name: /none/i }));
-
-    const hiddenInput = container.querySelector(
-      'input[name="profileBgImage"]'
-    ) as HTMLInputElement;
-    expect(hiddenInput.value).toBe("");
-  });
-});
-
-describe("ThemeEditor — AI generation from background", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("does not show generate button when no background is selected", async () => {
-    render(<ThemeEditor {...defaultProps} isPremium={true} />);
-    await expandSection();
-    expect(screen.queryByTestId("ai-generate-button")).not.toBeInTheDocument();
-  });
-
-  it("shows generate button after selecting a background", async () => {
-    render(<ThemeEditor {...defaultProps} isPremium={true} />);
-    await expandSection();
-    await userEvent.click(screen.getByTitle("Blue Waves"));
-    expect(screen.getByTestId("ai-generate-button")).toBeInTheDocument();
-  });
-
-  it("shows error from failed generation", async () => {
-    mockGenerateTheme.mockResolvedValue({
-      success: false,
-      error: "API error occurred",
-    });
-
-    render(<ThemeEditor {...defaultProps} isPremium={true} />);
-    await expandSection();
-
-    await userEvent.click(screen.getByTitle("Blue Waves"));
-    await userEvent.click(screen.getByTestId("ai-generate-button"));
-
-    expect(await screen.findByTestId("ai-generation-error")).toHaveTextContent(
-      "API error occurred"
-    );
-  });
-
-  it("shows save preset form after successful generation", async () => {
-    mockGenerateTheme.mockResolvedValue({
-      success: true,
-      name: "Ocean Breeze",
-      light: sampleCustomPreset.light,
-      dark: sampleCustomPreset.dark,
-    });
-
-    render(<ThemeEditor {...defaultProps} isPremium={true} />);
-    await expandSection();
-
-    await userEvent.click(screen.getByTitle("Blue Waves"));
-    await userEvent.click(screen.getByTestId("ai-generate-button"));
-
-    expect(await screen.findByTestId("save-preset-form")).toBeInTheDocument();
-    const nameInput = screen.getByTestId(
-      "preset-name-input"
-    ) as HTMLInputElement;
-    expect(nameInput.value).toBe("Ocean Breeze");
-  });
-
-  it("updates hidden inputs after successful generation", async () => {
-    mockGenerateTheme.mockResolvedValue({
-      success: true,
-      name: "Ocean Breeze",
-      light: sampleCustomPreset.light,
-      dark: sampleCustomPreset.dark,
-    });
-
-    const { container } = render(
-      <ThemeEditor {...defaultProps} isPremium={true} />
-    );
-    await expandSection();
-
-    await userEvent.click(screen.getByTitle("Blue Waves"));
-    await userEvent.click(screen.getByTestId("ai-generate-button"));
-
-    await screen.findByTestId("save-preset-form");
-
-    const bgInput = container.querySelector(
-      'input[name="profileBgColor"]'
-    ) as HTMLInputElement;
-    expect(bgInput.value).toBe(sampleCustomPreset.light.profileBgColor);
-  });
-
-  it("calls generateTheme with background image URL", async () => {
-    mockGenerateTheme.mockResolvedValue({
-      success: true,
-      name: "Ocean Breeze",
-      light: sampleCustomPreset.light,
-      dark: sampleCustomPreset.dark,
-    });
-
-    render(<ThemeEditor {...defaultProps} isPremium={true} />);
-    await expandSection();
-
-    await userEvent.click(screen.getByTitle("Blue Waves"));
-    await userEvent.click(screen.getByTestId("ai-generate-button"));
-
-    await screen.findByTestId("save-preset-form");
-    expect(mockGenerateTheme).toHaveBeenCalledWith("/backgrounds/blue-waves.jpg");
   });
 });
 

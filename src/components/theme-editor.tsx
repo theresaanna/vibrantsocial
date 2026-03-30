@@ -20,6 +20,8 @@ interface ThemeEditorProps {
   bio: string | null;
   avatarSrc: string | null;
   onChange?: () => void;
+  onSave?: () => void;
+  isSavingForm?: boolean;
   onColorsChange?: (colors: ProfileThemeColors) => void;
   isPremium?: boolean;
   userEmail?: string | null;
@@ -33,6 +35,8 @@ export function ThemeEditor({
   bio,
   avatarSrc,
   onChange,
+  onSave,
+  isSavingForm = false,
   onColorsChange,
   isPremium = true,
   userEmail,
@@ -80,18 +84,16 @@ export function ThemeEditor({
     (presetName: string) => {
       setColors(PROFILE_THEME_PRESETS[presetName]);
       setActivePreset(presetName);
-      onChange?.();
     },
-    [onChange]
+    []
   );
 
   const handleCustomPresetSelect = useCallback(
     (preset: CustomPresetData) => {
       setColors(preset.light);
       setActivePreset(`custom:${preset.id}`);
-      onChange?.();
     },
-    [onChange]
+    []
   );
 
   const handleSaveCurrentTheme = useCallback(() => {
@@ -132,6 +134,17 @@ export function ThemeEditor({
   const name = displayName || username || "Your Name";
   const initial = name[0]?.toUpperCase() ?? "?";
 
+  const saveButton = onSave ? (
+    <button
+      type="button"
+      onClick={onSave}
+      disabled={isSavingForm}
+      className="w-full rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+    >
+      {isSavingForm ? "Saving..." : "Save Theme"}
+    </button>
+  ) : null;
+
   return (
     <div className="rounded-lg border border-zinc-200 dark:border-zinc-700">
       <button
@@ -161,6 +174,9 @@ export function ThemeEditor({
 
       {isOpen && (
         <div id={contentId} className="space-y-4 px-4 pb-4">
+          {/* Save button — top */}
+          {saveButton}
+
           {/* Inline real-time preview */}
           <div
             className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700"
@@ -411,6 +427,8 @@ export function ThemeEditor({
             </div>
           </div>
 
+          {/* Save button — bottom */}
+          {saveButton}
         </div>
       )}
 

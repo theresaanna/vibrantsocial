@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import type { ProfileThemeColors } from "@/lib/profile-themes";
+import { BioContent } from "@/components/bio-content";
 
 interface ThemePreviewProps {
   colors: ProfileThemeColors;
@@ -16,6 +17,7 @@ export function ThemePreview({
   colors,
   username,
   displayName,
+  bio,
   avatarSrc,
   onClose,
 }: ThemePreviewProps) {
@@ -106,12 +108,21 @@ export function ThemePreview({
               </div>
             </div>
 
-            <p
-              className="mt-3 text-sm"
-              style={{ color: colors.profileSecondaryColor }}
-            >
-              This is what your profile bio will look like with these colors.
-            </p>
+            {bio ? (
+              <div
+                className="mt-3 text-sm"
+                style={{ color: colors.profileSecondaryColor }}
+              >
+                <BioContent content={bio} />
+              </div>
+            ) : (
+              <p
+                className="mt-3 text-sm"
+                style={{ color: colors.profileSecondaryColor }}
+              >
+                This is what your profile bio will look like with these colors.
+              </p>
+            )}
 
             <div className="mt-3 flex gap-4 text-sm">
               <span style={{ color: colors.profileSecondaryColor }}>

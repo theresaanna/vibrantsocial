@@ -23,7 +23,7 @@ interface BackgroundEditorProps {
   };
   isPremium: boolean;
   userEmail?: string | null;
-  onChange: () => void;
+  onChange?: () => void;
   onBackgroundChange?: (bg: {
     image: string | null;
     repeat: string;
@@ -157,7 +157,7 @@ export function BackgroundEditor({
         setBgAttachment("scroll");
       }
       setError(null);
-      onChange();
+      onChange?.();
     },
     [onChange]
   );
@@ -186,7 +186,7 @@ export function BackgroundEditor({
 
         const { url } = await res.json();
         setBgImage(url);
-        onChange();
+        onChange?.();
       } catch {
         setError("Upload failed");
       } finally {
@@ -202,7 +202,7 @@ export function BackgroundEditor({
     try {
       await fetch("/api/profile-background", { method: "DELETE" });
       setBgImage(null);
-      onChange();
+      onChange?.();
     } catch {
       setError("Failed to remove background");
     } finally {
@@ -213,7 +213,7 @@ export function BackgroundEditor({
   const handleSettingChange = useCallback(
     (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLSelectElement>) => {
       setter(e.target.value);
-      onChange();
+      onChange?.();
     },
     [onChange]
   );

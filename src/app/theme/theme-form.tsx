@@ -55,8 +55,6 @@ interface ThemeState {
 
 export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, premiumBackgrounds, customPresets, initialTheme }: ThemeFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
-  const autosaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hasMountedRef = useRef(false);
   const [usernameFont, setUsernameFont] = useState<string | null>(user.usernameFont);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
@@ -88,20 +86,8 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
     }
   }, [isPending, state]);
 
-  const scheduleAutosave = useCallback(() => {
-    if (!hasMountedRef.current) return;
-    if (autosaveRef.current) clearTimeout(autosaveRef.current);
-    autosaveRef.current = setTimeout(() => {
-      formRef.current?.requestSubmit();
-    }, 1500);
-  }, []);
-
-  // Mark as mounted after first render
-  useEffect(() => {
-    hasMountedRef.current = true;
-    return () => {
-      if (autosaveRef.current) clearTimeout(autosaveRef.current);
-    };
+  const handleSave = useCallback(() => {
+    formRef.current?.requestSubmit();
   }, []);
 
   // Live color update handler
@@ -176,22 +162,25 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
           <form
             ref={formRef}
             action={formAction}
-            onChange={(e) => {
-              const target = e.target as HTMLElement;
-              if (target instanceof HTMLInputElement && (target.type === "text" || target.type === "email")) return;
-              if (target instanceof HTMLTextAreaElement) return;
-              scheduleAutosave();
-            }}
             className="space-y-4"
           >
             <input type="hidden" name="usernameFont" value={usernameFont ?? ""} />
+
+            {/* Save button — top */}
+            <button
+              type="submit"
+              disabled={isPending}
+              className="w-full rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            >
+              {isPending ? "Saving..." : "Save"}
+            </button>
 
             <FontSelector
               currentFontId={usernameFont}
               displayName={user.displayName || ""}
               isPremium={isPremium}
               userEmail={userEmail}
-              onSelect={(fontId) => { setUsernameFont(fontId); scheduleAutosave(); }}
+              onSelect={(fontId) => { setUsernameFont(fontId); }}
             />
 
             <ThemeEditor
@@ -206,7 +195,8 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
               displayName={user.displayName}
               bio={user.bio}
               avatarSrc={avatarSrc}
-              onChange={scheduleAutosave}
+              onSave={handleSave}
+              isSavingForm={isPending}
               onColorsChange={handleColorsChange}
               isPremium={isPremium}
               userEmail={userEmail}
@@ -225,7 +215,7 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
               }}
               isPremium={isPremium}
               userEmail={userEmail}
-              onChange={scheduleAutosave}
+
               onBackgroundChange={handleBackgroundChange}
             />
 
@@ -243,12 +233,29 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
               }}
               isPremium={isPremium}
               userEmail={userEmail}
-              onChange={scheduleAutosave}
+
             />
 
-            {saveStatus === "saving" && (
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Saving...</p>
-            )}
+            {/* Save button */}
+            <div className="flex items-center justify-between">
+              <p className={`text-sm ${
+                saveStatus === "saving" ? "text-zinc-400" :
+                saveStatus === "saved" ? "text-green-600" :
+                saveStatus === "error" ? "text-red-600" : "text-transparent"
+              }`}>
+                {saveStatus === "saving" ? "Saving..." :
+                 saveStatus === "saved" ? "Saved" :
+                 saveStatus === "error" ? state.message :
+                 "\u00A0"}
+              </p>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              >
+                {isPending ? "Saving..." : "Save"}
+              </button>
+            </div>
           </form>
         </div>
       </div>

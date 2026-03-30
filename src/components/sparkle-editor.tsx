@@ -13,7 +13,7 @@ interface SparkleEditorProps {
   initialConfig: SparklefallConfig;
   isPremium: boolean;
   userEmail?: string | null;
-  onChange: () => void;
+  onChange?: () => void;
 }
 
 export function SparkleEditor({
@@ -59,7 +59,7 @@ export function SparkleEditor({
     (presetName: string) => {
       setActivePreset(presetName);
       setCustomSparkles("");
-      onChange();
+      onChange?.();
     },
     [onChange]
   );
@@ -127,7 +127,7 @@ export function SparkleEditor({
                 if (e.target.checked && !isPremium) {
                   setActivePreset("default");
                 }
-                onChange();
+                onChange?.();
               }}
               className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600"
             />
@@ -184,7 +184,7 @@ export function SparkleEditor({
                     onChange={(e) => {
                       setCustomSparkles(e.target.value);
                       if (e.target.value.trim()) setActivePreset(null);
-                      onChange();
+                      onChange?.();
                     }}
                     disabled={!isPremium}
                     placeholder="e.g. 🌈 💖 ⭐"
@@ -216,7 +216,7 @@ export function SparkleEditor({
                       value={interval}
                       onChange={(e) => {
                         setInterval_(Number(e.target.value));
-                        onChange();
+                        onChange?.();
                       }}
                       disabled={!isPremium}
                       className="w-full accent-blue-500"
@@ -241,7 +241,7 @@ export function SparkleEditor({
                       value={wind}
                       onChange={(e) => {
                         setWind(Number(e.target.value));
-                        onChange();
+                        onChange?.();
                       }}
                       disabled={!isPremium}
                       className="w-full accent-blue-500"
@@ -266,7 +266,7 @@ export function SparkleEditor({
                       value={maxSparkles}
                       onChange={(e) => {
                         setMaxSparkles(Number(e.target.value));
-                        onChange();
+                        onChange?.();
                       }}
                       disabled={!isPremium}
                       className="w-full accent-blue-500"
@@ -294,7 +294,7 @@ export function SparkleEditor({
                           const v = Number(e.target.value);
                           setMinSize(v);
                           if (v > maxSize) setMaxSize(v);
-                          onChange();
+                          onChange?.();
                         }}
                         disabled={!isPremium}
                         className="w-full accent-blue-500"
@@ -319,7 +319,7 @@ export function SparkleEditor({
                           const v = Number(e.target.value);
                           setMaxSize(v);
                           if (v < minSize) setMinSize(v);
-                          onChange();
+                          onChange?.();
                         }}
                         disabled={!isPremium}
                         className="w-full accent-blue-500"
@@ -338,7 +338,7 @@ export function SparkleEditor({
                     value={customColors}
                     onChange={(e) => {
                       setCustomColors(e.target.value);
-                      onChange();
+                      onChange?.();
                     }}
                     disabled={!isPremium}
                     placeholder="e.g. #ff0000, #00ff00, #0000ff"
