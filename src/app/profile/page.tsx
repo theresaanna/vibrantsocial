@@ -6,8 +6,6 @@ import { isProfileIncomplete } from "@/lib/require-profile";
 import { ProfileForm } from "./profile-form";
 import { Suspense } from "react";
 import { AutoAccountSwitch } from "@/components/auto-account-switch";
-import { getProfileBackgrounds } from "@/lib/profile-backgrounds.server";
-import type { CustomPresetData } from "@/lib/profile-themes";
 
 export const metadata: Metadata = {
   title: "Edit Profile",
@@ -31,26 +29,6 @@ export default async function ProfilePage() {
       avatar: true,
       image: true,
       profileFrameId: true,
-      usernameFont: true,
-      profileBgColor: true,
-      profileTextColor: true,
-      profileLinkColor: true,
-      profileSecondaryColor: true,
-      profileContainerColor: true,
-      profileBgImage: true,
-      profileBgRepeat: true,
-      profileBgAttachment: true,
-      profileBgSize: true,
-      profileBgPosition: true,
-      sparklefallEnabled: true,
-      sparklefallPreset: true,
-      sparklefallSparkles: true,
-      sparklefallColors: true,
-      sparklefallInterval: true,
-      sparklefallWind: true,
-      sparklefallMaxSparkles: true,
-      sparklefallMinSize: true,
-      sparklefallMaxSize: true,
       birthdayMonth: true,
       birthdayDay: true,
       ageVerified: true,
@@ -77,39 +55,6 @@ export default async function ProfilePage() {
   const isCredentialsUser = !!user?.passwordHash;
   const isPremium = user?.tier === "premium";
   const oauthImage = user?.image ?? session.user.image ?? null;
-  const backgrounds = getProfileBackgrounds();
-
-  let customPresets: CustomPresetData[] = [];
-  if (isPremium) {
-    try {
-      customPresets = (
-        await prisma.customThemePreset.findMany({
-          where: { userId: session.user.id },
-          orderBy: { createdAt: "asc" },
-        })
-      ).map((p) => ({
-        id: p.id,
-        name: p.name,
-        prompt: p.prompt,
-        light: {
-          profileBgColor: p.lightBgColor,
-          profileTextColor: p.lightTextColor,
-          profileLinkColor: p.lightLinkColor,
-          profileSecondaryColor: p.lightSecondaryColor,
-          profileContainerColor: p.lightContainerColor,
-        },
-        dark: {
-          profileBgColor: p.darkBgColor,
-          profileTextColor: p.darkTextColor,
-          profileLinkColor: p.darkLinkColor,
-          profileSecondaryColor: p.darkSecondaryColor,
-          profileContainerColor: p.darkContainerColor,
-        },
-      }));
-    } catch {
-      // Table may not exist yet during migration rollout
-    }
-  }
 
   return (
     <div className="flex min-h-[calc(100vh-57px)] items-center justify-center">
@@ -136,27 +81,7 @@ export default async function ProfilePage() {
         <ProfileForm
           user={{
             ...session.user,
-            profileBgColor: user?.profileBgColor ?? null,
-            profileTextColor: user?.profileTextColor ?? null,
-            profileLinkColor: user?.profileLinkColor ?? null,
-            profileSecondaryColor: user?.profileSecondaryColor ?? null,
-            profileContainerColor: user?.profileContainerColor ?? null,
             profileFrameId: user?.profileFrameId ?? null,
-            profileBgImage: user?.profileBgImage ?? null,
-            profileBgRepeat: user?.profileBgRepeat ?? null,
-            profileBgAttachment: user?.profileBgAttachment ?? null,
-            profileBgSize: user?.profileBgSize ?? null,
-            profileBgPosition: user?.profileBgPosition ?? null,
-            sparklefallEnabled: user?.sparklefallEnabled ?? false,
-            sparklefallPreset: user?.sparklefallPreset ?? null,
-            sparklefallSparkles: user?.sparklefallSparkles ?? null,
-            sparklefallColors: user?.sparklefallColors ?? null,
-            sparklefallInterval: user?.sparklefallInterval ?? null,
-            sparklefallWind: user?.sparklefallWind ?? null,
-            sparklefallMaxSparkles: user?.sparklefallMaxSparkles ?? null,
-            sparklefallMinSize: user?.sparklefallMinSize ?? null,
-            sparklefallMaxSize: user?.sparklefallMaxSize ?? null,
-            usernameFont: user?.usernameFont ?? null,
           }}
           currentAvatar={user?.avatar ?? null}
           oauthImage={oauthImage}
@@ -183,9 +108,7 @@ export default async function ProfilePage() {
           stars={user?.stars ?? 0}
           starsSpent={user?.starsSpent ?? 0}
           referralCode={user?.referralCode ?? ""}
-          backgrounds={backgrounds}
           userEmail={user?.email ?? null}
-          customPresets={customPresets}
         />
 
         <form

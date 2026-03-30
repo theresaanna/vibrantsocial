@@ -15,7 +15,7 @@ vi.mock("@/components/theme-preview", () => ({
 }));
 
 // Mock server actions
-vi.mock("@/app/profile/generate-theme-action", () => ({
+vi.mock("@/app/theme/generate-theme-action", () => ({
   generateTheme: vi.fn(),
   saveCustomPreset: vi.fn(),
   deleteCustomPreset: vi.fn(),
@@ -25,7 +25,7 @@ import {
   generateTheme,
   saveCustomPreset,
   deleteCustomPreset,
-} from "@/app/profile/generate-theme-action";
+} from "@/app/theme/generate-theme-action";
 
 const mockGenerateTheme = vi.mocked(generateTheme);
 const mockSavePreset = vi.mocked(saveCustomPreset);

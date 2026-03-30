@@ -59,11 +59,7 @@ const defaultUser = {
   username: "testuser",
   displayName: "Test User",
   bio: null,
-  profileBgColor: null as string | null,
-  profileTextColor: null as string | null,
-  profileLinkColor: null as string | null,
-  profileSecondaryColor: null as string | null,
-  profileContainerColor: null as string | null,
+  profileFrameId: null as string | null,
 };
 
 interface RenderFormOptions {
