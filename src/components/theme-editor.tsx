@@ -12,7 +12,7 @@ import {
   saveCustomPreset,
   deleteCustomPreset,
 } from "@/app/theme/generate-theme-action";
-import { extractContentFromLexicalJson } from "@/lib/lexical-text";
+import { BioContent } from "@/components/bio-content";
 import { PremiumCrown } from "./premium-crown";
 
 interface ThemeEditorProps {
@@ -198,7 +198,13 @@ export function ThemeEditor({
     });
   }, [generatedTheme, presetName, currentBgImage, isSaving]);
 
-  const bioText = bio ? extractContentFromLexicalJson(bio).text : null;
+  const themeVars = {
+    "--profile-bg": colors.profileBgColor,
+    "--profile-text": colors.profileTextColor,
+    "--profile-link": colors.profileLinkColor,
+    "--profile-secondary": colors.profileSecondaryColor,
+    "--profile-container": colors.profileContainerColor,
+  } as React.CSSProperties;
 
   const name = displayName || username || "Your Name";
   const initial = name[0]?.toUpperCase() ?? "?";
@@ -293,12 +299,21 @@ export function ThemeEditor({
                   </div>
                 </div>
 
-                <p
-                  className="mt-2 text-xs"
-                  style={{ color: colors.profileSecondaryColor }}
-                >
-                  {bioText || "This is what your bio will look like with these colors."}
-                </p>
+                {bio ? (
+                  <div
+                    className="profile-themed mt-2"
+                    style={themeVars}
+                  >
+                    <BioContent content={bio} />
+                  </div>
+                ) : (
+                  <p
+                    className="mt-2 text-xs"
+                    style={{ color: colors.profileSecondaryColor }}
+                  >
+                    This is what your bio will look like with these colors.
+                  </p>
+                )}
 
                 <div className="mt-2 flex gap-3 text-xs">
                   <span style={{ color: colors.profileSecondaryColor }}>
