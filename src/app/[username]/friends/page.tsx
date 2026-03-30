@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getFriends, getBatchFriendshipStatuses } from "@/app/feed/friend-actions";
 import { UserList } from "@/components/user-list";
+import { ThemedPage } from "@/components/themed-page";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
 import Link from "next/link";
 
 interface FriendsPageProps {
@@ -25,14 +27,20 @@ export default async function FriendsPage({ params }: FriendsPageProps) {
   if (!session?.user?.id) redirect("/login");
   const currentUserId = session.user.id;
 
-  const friends = await getFriends(username);
-  const otherUserIds = friends.filter(u => u.id !== currentUserId).map(u => u.id);
+  const [friends, profileUser] = await Promise.all([
+    getFriends(username),
+    prisma.user.findUnique({
+      where: { username },
+      select: { id: true, ...userThemeSelect },
+    }),
+  ]);
+  const otherUserIds = friends.filter((u: { id: string }) => u.id !== currentUserId).map((u: { id: string }) => u.id);
   const friendshipStatuses = await getBatchFriendshipStatuses(otherUserIds);
-
-  const isOwnProfile = currentUserId === (await prisma.user.findUnique({ where: { username }, select: { id: true } }))?.id;
+  const theme = profileUser ? buildUserTheme(profileUser) : NO_THEME;
+  const isOwnProfile = currentUserId === profileUser?.id;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...theme}>
       <div className="rounded-2xl bg-white shadow-lg dark:bg-zinc-900">
         <div className="flex items-center gap-3 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
           <Link
@@ -64,6 +72,6 @@ export default async function FriendsPage({ params }: FriendsPageProps) {
           friendshipStatuses={friendshipStatuses}
         />
       </div>
-    </main>
+    </ThemedPage>
   );
 }
