@@ -110,7 +110,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
     include: {
       author: {
         select: {
-          id: true,
+          ...userThemeSelect,
           username: true,
           displayName: true,
           name: true,
@@ -119,7 +119,6 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
           profileFrameId: true,
           usernameFont: true,
           isProfilePublic: true,
-          ...userThemeSelect,
         },
       },
       _count: {
