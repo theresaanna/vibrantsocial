@@ -104,6 +104,22 @@ h6 {
   --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
 }
 
+/* Post tag pills: use theme link color tint instead of fuchsia/zinc light/dark */
+.profile-themed .bg-fuchsia-50,
+.profile-themed .dark\:bg-fuchsia-950\/30 {
+  background-color: color-mix(in srgb, var(--profile-link) 15%, transparent) !important;
+}
+
+.profile-themed .text-fuchsia-600,
+.profile-themed .dark\:text-fuchsia-400 {
+  color: var(--profile-link) !important;
+}
+
+.profile-themed .hover\:bg-fuchsia-100:hover,
+.profile-themed .dark\:hover\:bg-fuchsia-900\/40:hover {
+  background-color: color-mix(in srgb, var(--profile-link) 25%, transparent) !important;
+}
+
 /* Notification-specific: unread/selected/hover backgrounds use theme container tint */
 .profile-themed .bg-blue-50\/50,
 .profile-themed .dark\:bg-blue-950\/20,
