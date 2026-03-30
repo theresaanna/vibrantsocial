@@ -96,8 +96,16 @@ h6 {
 }
 
 .profile-themed .profile-link,
-.profile-themed a {
+.profile-themed a:not(.tag-pill) {
   color: var(--profile-link);
+}
+
+/* Tag cloud pills keep fixed text color regardless of profile theme */
+.tag-pill {
+  color: #27272a !important; /* zinc-800 */
+}
+.dark .tag-pill {
+  color: white !important;
 }
 
 .profile-themed .profile-share-btn:hover {
