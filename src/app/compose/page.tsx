@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { calculateAge } from "@/lib/age-gate";
 import { ComposeClient } from "./compose-client";
 import { isProfileIncomplete } from "@/lib/require-profile";
+import { userThemeSelect, buildUserTheme } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 export const metadata: Metadata = {
   title: "Compose",
@@ -22,8 +24,8 @@ export default async function ComposePage() {
       email: true,
       phoneVerified: true,
       dateOfBirth: true,
-      tier: true,
       ageVerified: true,
+      ...userThemeSelect,
     },
   });
 
@@ -33,10 +35,11 @@ export default async function ComposePage() {
   const isOldEnough = calculateAge(currentUser.dateOfBirth!) >= 18;
   const isPremium = currentUser.tier === "premium";
   const isAgeVerified = !!currentUser.ageVerified;
+  const theme = await buildUserTheme(currentUser);
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...theme}>
       <ComposeClient phoneVerified={phoneVerified} isOldEnough={isOldEnough} isPremium={isPremium} isAgeVerified={isAgeVerified} />
-    </main>
+    </ThemedPage>
   );
 }
