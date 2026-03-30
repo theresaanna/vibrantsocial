@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useId } from "react";
+import { useState, useCallback, useRef, useId, useEffect } from "react";
 import type { BackgroundDefinition } from "@/lib/profile-backgrounds";
 import {
   VALID_BG_REPEAT,
@@ -24,6 +24,13 @@ interface BackgroundEditorProps {
   isPremium: boolean;
   userEmail?: string | null;
   onChange: () => void;
+  onBackgroundChange?: (bg: {
+    image: string | null;
+    repeat: string;
+    attachment: string;
+    size: string;
+    position: string;
+  }) => void;
 }
 
 function BackgroundGrid({
@@ -107,6 +114,7 @@ export function BackgroundEditor({
   isPremium,
   userEmail,
   onChange,
+  onBackgroundChange,
 }: BackgroundEditorProps) {
   const [bgImage, setBgImage] = useState(initialBackground.profileBgImage);
   const [bgRepeat, setBgRepeat] = useState(initialBackground.profileBgRepeat ?? "no-repeat");
@@ -118,6 +126,17 @@ export function BackgroundEditor({
   const [isOpen, setIsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const contentId = useId();
+
+  // Notify parent of live background changes for real-time preview
+  useEffect(() => {
+    onBackgroundChange?.({
+      image: bgImage,
+      repeat: bgRepeat,
+      attachment: bgAttachment,
+      size: bgSize,
+      position: bgPosition,
+    });
+  }, [bgImage, bgRepeat, bgAttachment, bgSize, bgPosition, onBackgroundChange]);
 
   const isCustomUpload = bgImage?.includes("blob.vercel-storage.com") ?? false;
 
@@ -209,7 +228,7 @@ export function BackgroundEditor({
         className="flex w-full items-center justify-between p-4 text-left"
       >
         <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          Profile Background
+          Background
         </h2>
         <svg
           className={`h-4 w-4 text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
