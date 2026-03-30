@@ -21,7 +21,7 @@ export default async function ProfilePage() {
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
-      id: true,
+      ...userThemeSelect,
       username: true,
       email: true,
       emailVerified: true,
@@ -33,8 +33,6 @@ export default async function ProfilePage() {
       avatar: true,
       image: true,
       profileFrameId: true,
-      birthdayMonth: true,
-      birthdayDay: true,
       ageVerified: true,
       showGraphicByDefault: true,
       showNsfwContent: true,
@@ -48,11 +46,9 @@ export default async function ProfilePage() {
       pushEnabled: true,
       isProfilePublic: true,
       hideWallFromFeed: true,
-      tier: true,
       stars: true,
       starsSpent: true,
       referralCode: true,
-      ...userThemeSelect,
     },
   });
 
