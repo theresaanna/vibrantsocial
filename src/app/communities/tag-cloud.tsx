@@ -9,14 +9,18 @@ interface TagCloudProps {
   tags: TagData[];
 }
 
-const PILL_COLORS = [
-  "bg-purple-500 hover:bg-purple-600",
-  "bg-red-500 hover:bg-red-600",
-  "bg-yellow-500 hover:bg-yellow-600",
-  "bg-fuchsia-500 hover:bg-fuchsia-600",
-  "bg-blue-500 hover:bg-blue-600",
-  "bg-green-500 hover:bg-green-600",
-  "bg-orange-500 hover:bg-orange-600",
+/**
+ * Opacity percentages mixed with the theme link color to create
+ * varied-but-cohesive pill backgrounds from the user's palette.
+ */
+const PILL_MIX = [
+  { link: 100, secondary: 0 },
+  { link: 80, secondary: 20 },
+  { link: 60, secondary: 40 },
+  { link: 90, secondary: 10 },
+  { link: 70, secondary: 30 },
+  { link: 50, secondary: 50 },
+  { link: 85, secondary: 15 },
 ];
 
 export function TagCloud({ tags }: TagCloudProps) {
@@ -31,16 +35,18 @@ export function TagCloud({ tags }: TagCloudProps) {
         const fontSize = 14 + t * 16;
         const px = 16 + t * 16;
         const py = 8 + t * 8;
+        const mix = PILL_MIX[i % PILL_MIX.length];
 
         return (
           <Link
             key={tag.name}
             href={`/tag/${tag.name}`}
-            className={`tag-pill inline-flex items-center gap-1 sm:gap-1.5 rounded-full font-semibold transition-colors ${PILL_COLORS[i % PILL_COLORS.length]}`}
+            className="tag-pill inline-flex items-center gap-1 sm:gap-1.5 rounded-full font-semibold transition-colors hover:brightness-90"
             style={{
               "--pill-fs": `${fontSize}px`,
               "--pill-px": `${px}px`,
               "--pill-py": `${py}px`,
+              backgroundColor: `color-mix(in srgb, var(--profile-link, #2563eb) ${mix.link}%, var(--profile-secondary, #71717a))`,
             } as React.CSSProperties}
           >
             #{tag.name}

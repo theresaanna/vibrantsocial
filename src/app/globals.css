@@ -85,7 +85,28 @@ h6 {
 .profile-themed .dark\:bg-zinc-800,
 .profile-themed .bg-zinc-100,
 .profile-themed .dark\:bg-zinc-950 {
-  background-color: color-mix(in srgb, var(--profile-container) 80%, transparent) !important;
+  background-color: color-mix(in srgb, var(--profile-container) 90%, transparent) !important;
+}
+
+/* Muted backgrounds (avatar fallback, badges, pills): zinc-200/300/600/700 */
+.profile-themed .bg-zinc-200,
+.profile-themed .dark\:bg-zinc-700,
+.profile-themed .bg-zinc-300,
+.profile-themed .dark\:bg-zinc-600 {
+  background-color: color-mix(in srgb, var(--profile-secondary) 30%, transparent) !important;
+}
+
+/* Notification-specific: unread/selected/hover backgrounds use theme container tint */
+.profile-themed .bg-blue-50\/50,
+.profile-themed .dark\:bg-blue-950\/20,
+.profile-themed .bg-fuchsia-50\/50,
+.profile-themed .dark\:bg-fuchsia-950\/20 {
+  background-color: color-mix(in srgb, var(--profile-link) 12%, transparent) !important;
+}
+
+.profile-themed .hover\:bg-zinc-50:hover,
+.profile-themed .dark\:hover\:bg-zinc-800\/50:hover {
+  background-color: color-mix(in srgb, var(--profile-container) 95%, transparent) !important;
 }
 
 /* Primary text: zinc-900 / zinc-100 / zinc-800 / zinc-200 */
@@ -154,11 +175,8 @@ h6 {
   color: var(--profile-link);
 }
 
-/* Tag cloud pills keep fixed text color regardless of profile theme */
+/* Tag cloud pills: always white text on colored backgrounds */
 .tag-pill {
-  color: #27272a !important; /* zinc-800 */
-}
-.dark .tag-pill {
   color: white !important;
 }
 
