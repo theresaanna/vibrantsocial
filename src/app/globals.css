@@ -88,7 +88,7 @@ h6 {
 }
 
 .profile-themed .profile-container {
-  background-color: var(--profile-container);
+  background-color: color-mix(in srgb, var(--profile-container) 80%, transparent);
 }
 
 .profile-themed .profile-text-secondary {
@@ -104,12 +104,72 @@ h6 {
   background-color: var(--profile-container);
 }
 
+/* Poll theme overrides inside profile pages */
+.profile-themed .poll-border {
+  border-color: color-mix(in srgb, var(--profile-text) 20%, transparent);
+}
+
+.profile-themed .poll-question {
+  color: var(--profile-text);
+}
+
+.profile-themed .poll-option {
+  border-color: color-mix(in srgb, var(--profile-text) 25%, transparent);
+}
+
+.profile-themed .poll-option:not(:disabled):hover {
+  border-color: var(--profile-link);
+  background-color: color-mix(in srgb, var(--profile-link) 10%, transparent);
+}
+
+.profile-themed .poll-option-result {
+  border-color: color-mix(in srgb, var(--profile-text) 20%, transparent);
+}
+
+.profile-themed .poll-bar-voted {
+  background-color: color-mix(in srgb, var(--profile-link) 25%, transparent);
+}
+
+.profile-themed .poll-bar-default {
+  background-color: color-mix(in srgb, var(--profile-text) 10%, transparent);
+}
+
+.profile-themed .poll-meta {
+  color: var(--profile-secondary);
+}
+
+.profile-themed .poll-option-text {
+  color: var(--profile-text);
+}
+
+.profile-themed .poll-pct {
+  color: var(--profile-secondary);
+}
+
+/* Profile-themed post cards: use container color at 80% opacity for backgrounds */
+.profile-themed [data-testid="post-card"] {
+  background-color: color-mix(in srgb, var(--profile-container) 80%, transparent);
+}
+
+/* Profile-themed post truncation gradient: match container color */
+.profile-themed .post-truncation-gradient {
+  background: linear-gradient(to top, color-mix(in srgb, var(--profile-container) 80%, transparent), transparent);
+}
+
+/* Profile-themed tabs bar: container-colored background behind tab pills */
+.profile-themed .profile-tabs-bar {
+  background-color: color-mix(in srgb, var(--profile-container) 80%, transparent);
+  border-radius: 1rem;
+  padding: 0.75rem;
+}
+
 /* Chat theme overrides — light mode (default) */
 .chat-themed {
   --chat-bubble-bg: var(--chat-bubble-bg-light);
   --chat-bubble-text: var(--chat-bubble-text-light);
   --chat-active-bg: var(--chat-active-bg-light);
   --chat-active-text: var(--chat-active-text-light);
+  --chat-link-color: var(--chat-link-color-light);
 }
 
 /* Chat theme overrides — dark mode */
@@ -118,20 +178,33 @@ h6 {
   --chat-bubble-text: var(--chat-bubble-text-dark);
   --chat-active-bg: var(--chat-active-bg-dark);
   --chat-active-text: var(--chat-active-text-dark);
+  --chat-link-color: var(--chat-link-color-dark);
 }
 
 .chat-themed .chat-input-themed:focus {
-  border-color: var(--chat-bubble-text);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--chat-bubble-text) 20%, transparent);
+  border-color: var(--chat-link-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--chat-link-color) 20%, transparent);
 }
 
 .chat-themed .chat-btn-themed {
-  background-color: var(--chat-bubble-text);
+  background-color: var(--chat-link-color);
   color: var(--chat-bubble-bg);
 }
 
 .chat-themed .chat-btn-themed:hover {
   filter: brightness(0.9);
+}
+
+/* Themed unread badge */
+.chat-themed .chat-unread-badge {
+  background-color: var(--chat-link-color);
+}
+
+/* Themed reaction button (reacted state) */
+.chat-themed .chat-reaction-active {
+  border-color: color-mix(in srgb, var(--chat-link-color) 50%, transparent);
+  background-color: color-mix(in srgb, var(--chat-link-color) 10%, transparent);
+  color: var(--chat-link-color);
 }
 
 /* Collapsible section delete button — show on hover */

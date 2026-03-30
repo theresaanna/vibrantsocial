@@ -1,33 +1,21 @@
 "use server";
 
 import { auth } from "@/auth";
-import { apiLimiter, isRateLimited } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { invalidate, cached, cacheKeys } from "@/lib/cache";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 import { getPostInclude, getRepostInclude, PAGE_SIZE } from "@/app/feed/feed-queries";
-import { createNotification } from "@/lib/notifications";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-interface ActionState {
-  success: boolean;
-  message: string;
-}
-
-const memberUserSelect = {
-  id: true,
-  username: true,
-  displayName: true,
-  name: true,
-  avatar: true,
-  image: true,
-  profileFrameId: true,
-  usernameFont: true,
-} as const;
+import {
+  requireAuthWithRateLimit,
+  isActionError,
+  hasBlock,
+  createNotificationSafe,
+  USER_PROFILE_SELECT,
+} from "@/lib/action-utils";
+import type { ActionState } from "@/lib/action-utils";
+import { getUserPrefs } from "@/lib/user-prefs";
+import { getCachedCloseFriendOfIds } from "@/app/feed/close-friends-actions";
 
 // ---------------------------------------------------------------------------
 // Permission helpers
@@ -54,14 +42,9 @@ export async function createList(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `list-create:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("list-create");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const name = (formData.get("name") as string)?.trim();
   if (!name || name.length < 1 || name.length > 50) {
@@ -155,14 +138,9 @@ export async function addMemberToList(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `list-member:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("list-member");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const listId = formData.get("listId") as string;
   const userId = formData.get("userId") as string;
@@ -175,16 +153,7 @@ export async function addMemberToList(
     return { success: false, message: "List not found or you don't have permission" };
   }
 
-  // Check blocks
-  const block = await prisma.block.findFirst({
-    where: {
-      OR: [
-        { blockerId: session.user.id, blockedId: userId },
-        { blockerId: userId, blockedId: session.user.id },
-      ],
-    },
-  });
-  if (block) {
+  if (await hasBlock(session.user.id, userId)) {
     return { success: false, message: "Cannot add this user" };
   }
 
@@ -197,15 +166,11 @@ export async function addMemberToList(
 
   await prisma.userListMember.create({ data: { listId, userId } });
 
-  try {
-    await createNotification({
-      type: "LIST_ADD",
-      actorId: session.user.id,
-      targetUserId: userId,
-    });
-  } catch {
-    // Non-critical
-  }
+  await createNotificationSafe({
+    type: "LIST_ADD",
+    actorId: session.user.id,
+    targetUserId: userId,
+  });
 
   await invalidate(cacheKeys.userListMembers(listId));
   revalidatePath(`/lists/${listId}`);
@@ -253,14 +218,9 @@ export async function addUserToMultipleLists(
   listIds: string[],
   targetUserId: string
 ): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `list-multi:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("list-multi");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   // Verify all lists belong to the user or they collaborate on
   const [ownedLists, collaboratingLists] = await Promise.all([
@@ -273,22 +233,12 @@ export async function addUserToMultipleLists(
       select: { listId: true },
     }),
   ]);
-  const lists = ownedLists;
   const allowedIds = new Set([
     ...ownedLists.map((l) => l.id),
     ...collaboratingLists.map((c) => c.listId),
   ]);
 
-  // Check blocks
-  const block = await prisma.block.findFirst({
-    where: {
-      OR: [
-        { blockerId: session.user.id, blockedId: targetUserId },
-        { blockerId: targetUserId, blockedId: session.user.id },
-      ],
-    },
-  });
-  if (block) {
+  if (await hasBlock(session.user.id, targetUserId)) {
     return { success: false, message: "Cannot add this user" };
   }
 
@@ -323,15 +273,11 @@ export async function addUserToMultipleLists(
 
   // Notify user if they were added to any new lists
   if (toAdd.length > 0) {
-    try {
-      await createNotification({
-        type: "LIST_ADD",
-        actorId: session.user.id,
-        targetUserId,
-      });
-    } catch {
-      // Non-critical
-    }
+    await createNotificationSafe({
+      type: "LIST_ADD",
+      actorId: session.user.id,
+      targetUserId,
+    });
   }
 
   // Invalidate caches for all affected lists
@@ -366,6 +312,22 @@ export async function getUserLists() {
   );
 }
 
+export async function getCollaboratingLists() {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  return prisma.userList.findMany({
+    where: {
+      collaborators: { some: { userId: session.user.id } },
+    },
+    include: {
+      _count: { select: { members: true } },
+      owner: { select: { username: true, displayName: true, name: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
 export async function getListMembers(listId: string) {
   const session = await auth();
   if (!session?.user?.id) return null;
@@ -381,7 +343,7 @@ export async function getListMembers(listId: string) {
     async () => {
       return prisma.userListMember.findMany({
         where: { listId },
-        include: { user: { select: memberUserSelect } },
+        include: { user: { select: USER_PROFILE_SELECT } },
         orderBy: { createdAt: "desc" },
       });
     },
@@ -473,7 +435,7 @@ export async function searchUsersForList(listId: string, query: string) {
       ],
     },
     select: {
-      ...memberUserSelect,
+      ...USER_PROFILE_SELECT,
       userListMembers: {
         where: { listId },
         select: { id: true },
@@ -510,14 +472,9 @@ export async function toggleListSubscription(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `list-sub:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("list-sub");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const listId = formData.get("listId") as string;
   if (!listId) {
@@ -546,7 +503,7 @@ export async function toggleListSubscription(
     });
 
     // Notify the list owner that someone subscribed
-    await createNotification({
+    await createNotificationSafe({
       type: "LIST_SUBSCRIBE",
       actorId: session.user.id,
       targetUserId: list.ownerId,
@@ -619,14 +576,9 @@ export async function addCollaboratorToList(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `list-collab:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("list-collab");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const listId = formData.get("listId") as string;
   const userId = formData.get("userId") as string;
@@ -643,16 +595,7 @@ export async function addCollaboratorToList(
     return { success: false, message: "List not found or not owned by you" };
   }
 
-  // Check blocks
-  const block = await prisma.block.findFirst({
-    where: {
-      OR: [
-        { blockerId: session.user.id, blockedId: userId },
-        { blockerId: userId, blockedId: session.user.id },
-      ],
-    },
-  });
-  if (block) {
+  if (await hasBlock(session.user.id, userId)) {
     return { success: false, message: "Cannot add this user" };
   }
 
@@ -665,15 +608,11 @@ export async function addCollaboratorToList(
 
   await prisma.userListCollaborator.create({ data: { listId, userId } });
 
-  try {
-    await createNotification({
-      type: "LIST_COLLABORATOR_ADD",
-      actorId: session.user.id,
-      targetUserId: userId,
-    });
-  } catch {
-    // Non-critical
-  }
+  await createNotificationSafe({
+    type: "LIST_COLLABORATOR_ADD",
+    actorId: session.user.id,
+    targetUserId: userId,
+  });
 
   await invalidate(cacheKeys.userListCollaborators(listId));
   revalidatePath(`/lists/${listId}`);
@@ -724,7 +663,7 @@ export async function getListCollaborators(listId: string) {
     async () => {
       const collabs = await prisma.userListCollaborator.findMany({
         where: { listId },
-        include: { user: { select: memberUserSelect } },
+        include: { user: { select: USER_PROFILE_SELECT } },
         orderBy: { createdAt: "desc" },
       });
       return collabs.map((c) => ({
@@ -757,7 +696,7 @@ export async function searchUsersForCollaborator(listId: string, query: string) 
       ],
     },
     select: {
-      ...memberUserSelect,
+      ...USER_PROFILE_SELECT,
       userListCollaborations: {
         where: { listId },
         select: { id: true },
@@ -822,19 +761,12 @@ export async function fetchListFeedPage(listId: string, cursor?: string) {
     return { items: [], hasMore: false };
   }
 
-  const [currentUser, closeFriendOfRows] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { showNsfwContent: true, ageVerified: true },
-    }),
-    prisma.closeFriend.findMany({
-      where: { friendId: userId },
-      select: { userId: true },
-    }),
+  const [prefs, closeFriendOfIds] = await Promise.all([
+    getUserPrefs(userId),
+    getCachedCloseFriendOfIds(userId),
   ]);
-  const showNsfwContent = currentUser?.showNsfwContent ?? false;
-  const ageVerified = !!currentUser?.ageVerified;
-  const closeFriendAuthors = [...closeFriendOfRows.map((r: { userId: string }) => r.userId), userId];
+  const { showNsfwContent, ageVerified } = prefs;
+  const closeFriendAuthors = [...closeFriendOfIds, userId];
 
   const postInclude = getPostInclude(userId);
   const dateFilter = cursor ? { lt: new Date(cursor) } : undefined;
@@ -913,19 +845,12 @@ export async function fetchNewListFeedItems(listId: string, sinceDate: string) {
 
   if (memberIds.length === 0) return [];
 
-  const [currentUser, closeFriendOfRows] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { showNsfwContent: true, ageVerified: true },
-    }),
-    prisma.closeFriend.findMany({
-      where: { friendId: userId },
-      select: { userId: true },
-    }),
+  const [prefs, closeFriendOfIds] = await Promise.all([
+    getUserPrefs(userId),
+    getCachedCloseFriendOfIds(userId),
   ]);
-  const showNsfwContent = currentUser?.showNsfwContent ?? false;
-  const ageVerified = !!currentUser?.ageVerified;
-  const closeFriendAuthors = [...closeFriendOfRows.map((r: { userId: string }) => r.userId), userId];
+  const { showNsfwContent, ageVerified } = prefs;
+  const closeFriendAuthors = [...closeFriendOfIds, userId];
 
   const postInclude = getPostInclude(userId);
   const since = new Date(sinceDate);

@@ -1,26 +1,18 @@
 "use server";
 
 import { auth } from "@/auth";
-import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-
-interface SubscriptionState {
-  success: boolean;
-  message: string;
-}
+import { requireAuthWithRateLimit, isActionError } from "@/lib/action-utils";
+import type { ActionState } from "@/lib/action-utils";
 
 export async function toggleTagSubscription(
-  _prevState: SubscriptionState,
+  _prevState: ActionState,
   formData: FormData
-): Promise<SubscriptionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `tag-sub:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+): Promise<ActionState> {
+  const result = await requireAuthWithRateLimit("tag-sub");
+  if (isActionError(result)) return result;
+  const session = result;
 
   const tagId = formData.get("tagId") as string;
   if (!tagId) {
@@ -56,15 +48,10 @@ export async function toggleTagSubscription(
 export async function updateTagSubscriptionFrequency(
   tagId: string,
   frequency: string
-): Promise<SubscriptionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `tag-sub:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+): Promise<ActionState> {
+  const result = await requireAuthWithRateLimit("tag-sub");
+  if (isActionError(result)) return result;
+  const session = result;
 
   if (frequency !== "immediate" && frequency !== "digest") {
     return { success: false, message: "Invalid frequency" };
@@ -95,15 +82,10 @@ export async function updateTagSubscriptionEmail(
   tagId: string,
   emailNotification: boolean,
   frequency?: string
-): Promise<SubscriptionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `tag-sub:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+): Promise<ActionState> {
+  const result = await requireAuthWithRateLimit("tag-sub");
+  if (isActionError(result)) return result;
+  const session = result;
 
   if (frequency !== undefined && frequency !== "immediate" && frequency !== "digest") {
     return { success: false, message: "Invalid frequency" };

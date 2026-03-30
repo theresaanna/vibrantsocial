@@ -76,6 +76,7 @@ const basePost = {
     name: "Test",
     image: null,
     avatar: null,
+    profileFrameId: null,
   },
   tags: [],
   _count: { comments: 0, likes: 0, bookmarks: 0, reposts: 0 },
@@ -85,16 +86,21 @@ const basePost = {
   comments: [],
 };
 
+const defaultProps = {
+  phoneVerified: true,
+  ageVerified: false,
+  showGraphicByDefault: false,
+  showNsfwContent: false,
+  hideSensitiveOverlay: false,
+};
+
 describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
   it("renders normal post content regardless of verification", () => {
     render(
       <PostCard
         post={basePost}
         currentUserId="user1"
-        phoneVerified={true}
-        ageVerified={false}
-        showGraphicByDefault={false}
-        showNsfwContent={false}
+        {...defaultProps}
       />
     );
     expect(screen.getByTestId("post-content")).toBeInTheDocument();
@@ -108,10 +114,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
       <PostCard
         post={{ ...basePost, isSensitive: true }}
         currentUserId="viewer1"
-        phoneVerified={true}
-        ageVerified={false}
-        showGraphicByDefault={false}
-        showNsfwContent={false}
+        {...defaultProps}
       />
     );
     expect(screen.getByText("Verify your age to view this content.")).toBeInTheDocument();
@@ -124,10 +127,8 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
       <PostCard
         post={{ ...basePost, isSensitive: true }}
         currentUserId="user1"
-        phoneVerified={true}
+        {...defaultProps}
         ageVerified={true}
-        showGraphicByDefault={false}
-        showNsfwContent={false}
       />
     );
     expect(screen.getByText("Click to view sensitive content")).toBeInTheDocument();
@@ -140,10 +141,8 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
       <PostCard
         post={{ ...basePost, isSensitive: true }}
         currentUserId="user1"
-        phoneVerified={true}
+        {...defaultProps}
         ageVerified={true}
-        showGraphicByDefault={false}
-        showNsfwContent={false}
       />
     );
     fireEvent.click(screen.getByText("Show content"));
@@ -156,13 +155,52 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
       <PostCard
         post={{ ...basePost, isSensitive: true }}
         currentUserId="user1"
-        phoneVerified={true}
+        {...defaultProps}
         ageVerified={true}
-        showGraphicByDefault={false}
-        showNsfwContent={false}
       />
     );
     fireEvent.click(screen.getByText("Show content"));
+    expect(screen.getByText("Sensitive")).toBeInTheDocument();
+  });
+
+  it("hides sensitive overlay when hideSensitiveOverlay is true and age verified", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isSensitive: true }}
+        currentUserId="user1"
+        {...defaultProps}
+        ageVerified={true}
+        hideSensitiveOverlay={true}
+      />
+    );
+    expect(screen.getByTestId("post-content")).toBeInTheDocument();
+    expect(screen.queryByText("Click to view sensitive content")).not.toBeInTheDocument();
+  });
+
+  it("still requires age verification for sensitive even with hideSensitiveOverlay", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isSensitive: true }}
+        currentUserId="viewer1"
+        {...defaultProps}
+        ageVerified={false}
+        hideSensitiveOverlay={true}
+      />
+    );
+    expect(screen.getByText("Verify your age to view this content.")).toBeInTheDocument();
+    expect(screen.queryByTestId("post-content")).not.toBeInTheDocument();
+  });
+
+  it("shows Sensitive badge when hideSensitiveOverlay bypasses overlay", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isSensitive: true }}
+        currentUserId="user1"
+        {...defaultProps}
+        ageVerified={true}
+        hideSensitiveOverlay={true}
+      />
+    );
     expect(screen.getByText("Sensitive")).toBeInTheDocument();
   });
 
@@ -173,10 +211,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
       <PostCard
         post={{ ...basePost, isGraphicNudity: true }}
         currentUserId="viewer1"
-        phoneVerified={true}
-        ageVerified={false}
-        showGraphicByDefault={false}
-        showNsfwContent={false}
+        {...defaultProps}
       />
     );
     expect(screen.getByText("Verify your age to view this content.")).toBeInTheDocument();
@@ -189,10 +224,8 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
       <PostCard
         post={{ ...basePost, isGraphicNudity: true }}
         currentUserId="user1"
-        phoneVerified={true}
+        {...defaultProps}
         ageVerified={true}
-        showGraphicByDefault={false}
-        showNsfwContent={false}
       />
     );
     expect(screen.getByText("Click to view graphic content")).toBeInTheDocument();
@@ -200,33 +233,44 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
     expect(screen.queryByTestId("post-content")).not.toBeInTheDocument();
   });
 
-  it("shows Graphic/Explicit content by default when age verified and showGraphicByDefault is true", () => {
+  it("hides Graphic/Explicit overlay when showGraphicByDefault is true and age verified", () => {
     render(
       <PostCard
         post={{ ...basePost, isGraphicNudity: true }}
         currentUserId="user1"
-        phoneVerified={true}
+        {...defaultProps}
         ageVerified={true}
         showGraphicByDefault={true}
-        showNsfwContent={false}
       />
     );
     expect(screen.getByTestId("post-content")).toBeInTheDocument();
     expect(screen.queryByText("Click to view graphic content")).not.toBeInTheDocument();
   });
 
-  it("shows Graphic/Explicit badge on Graphic/Explicit post shown by default", () => {
+  it("shows Graphic/Explicit badge when overlay is hidden via opt-in", () => {
     render(
       <PostCard
         post={{ ...basePost, isGraphicNudity: true }}
         currentUserId="user1"
-        phoneVerified={true}
+        {...defaultProps}
         ageVerified={true}
         showGraphicByDefault={true}
-        showNsfwContent={false}
       />
     );
     expect(screen.getByText("Graphic/Explicit")).toBeInTheDocument();
+  });
+
+  it("still requires age verification for Graphic/Explicit even with showGraphicByDefault", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isGraphicNudity: true }}
+        currentUserId="viewer1"
+        {...defaultProps}
+        showGraphicByDefault={true}
+      />
+    );
+    expect(screen.getByText("Verify your age to view this content.")).toBeInTheDocument();
+    expect(screen.queryByTestId("post-content")).not.toBeInTheDocument();
   });
 
   // ── NSFW content (isNsfw) ─────────────────────────────────────────
@@ -236,10 +280,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
       <PostCard
         post={{ ...basePost, isNsfw: true }}
         currentUserId="user1"
-        phoneVerified={true}
-        ageVerified={false}
-        showGraphicByDefault={false}
-        showNsfwContent={false}
+        {...defaultProps}
       />
     );
     expect(screen.getByText("Click to view NSFW content")).toBeInTheDocument();
@@ -247,49 +288,60 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
     expect(screen.queryByTestId("post-content")).not.toBeInTheDocument();
   });
 
-  it("shows NSFW content by default when showNsfwContent is true", () => {
+  it("always shows NSFW overlay even when showNsfwContent is true", () => {
     render(
       <PostCard
         post={{ ...basePost, isNsfw: true }}
         currentUserId="user1"
-        phoneVerified={true}
-        ageVerified={false}
-        showGraphicByDefault={false}
+        {...defaultProps}
         showNsfwContent={true}
       />
     );
+    expect(screen.getByText("Click to view NSFW content")).toBeInTheDocument();
+    expect(screen.getByText("Show content")).toBeInTheDocument();
+    expect(screen.queryByTestId("post-content")).not.toBeInTheDocument();
+  });
+
+  it("reveals NSFW content after clicking show button", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isNsfw: true }}
+        currentUserId="user1"
+        {...defaultProps}
+        showNsfwContent={true}
+      />
+    );
+    fireEvent.click(screen.getByText("Show content"));
     expect(screen.getByTestId("post-content")).toBeInTheDocument();
     expect(screen.queryByText("Click to view NSFW content")).not.toBeInTheDocument();
   });
 
-  it("shows NSFW badge on NSFW post shown by default", () => {
+  it("shows NSFW badge after revealing content", () => {
     render(
       <PostCard
         post={{ ...basePost, isNsfw: true }}
         currentUserId="user1"
-        phoneVerified={true}
-        ageVerified={false}
-        showGraphicByDefault={false}
+        {...defaultProps}
         showNsfwContent={true}
       />
     );
+    fireEvent.click(screen.getByText("Show content"));
     expect(screen.getByText("NSFW")).toBeInTheDocument();
   });
 
-  // ── Combined badges ───────────────────────────────────────────────
+  // ── Combined flags ──────────────────────────────────────────────────
 
   it("shows combined Sensitive / NSFW badge when both flags are set", () => {
     render(
       <PostCard
         post={{ ...basePost, isSensitive: true, isNsfw: true }}
         currentUserId="user1"
-        phoneVerified={true}
+        {...defaultProps}
         ageVerified={true}
-        showGraphicByDefault={false}
         showNsfwContent={true}
       />
     );
-    // Sensitive requires click-to-reveal even when age verified, so click to reveal first
+    // Sensitive overlay takes priority; click to reveal
     fireEvent.click(screen.getByText("Show content"));
     expect(screen.getByText("Sensitive / NSFW")).toBeInTheDocument();
   });
@@ -299,15 +351,114 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
       <PostCard
         post={{ ...basePost, isSensitive: true, isGraphicNudity: true }}
         currentUserId="user1"
-        phoneVerified={true}
+        {...defaultProps}
         ageVerified={true}
         showGraphicByDefault={true}
-        showNsfwContent={false}
       />
     );
-    // Sensitive requires click-to-reveal even when age verified
+    // Sensitive overlay takes priority; click to reveal
     fireEvent.click(screen.getByText("Show content"));
     expect(screen.getByText("Sensitive / Graphic/Explicit")).toBeInTheDocument();
+  });
+
+  it("shows NSFW overlay on post with both NSFW and Graphic flags when graphic overlay is hidden", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isNsfw: true, isGraphicNudity: true }}
+        currentUserId="user1"
+        {...defaultProps}
+        ageVerified={true}
+        showGraphicByDefault={true}
+      />
+    );
+    // NSFW overlay should still show since NSFW always has overlay
+    expect(screen.getByText("Click to view NSFW content")).toBeInTheDocument();
+  });
+
+  it("shows all three flags in badge when all content types are set", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isSensitive: true, isNsfw: true, isGraphicNudity: true }}
+        currentUserId="user1"
+        {...defaultProps}
+        ageVerified={true}
+        hideSensitiveOverlay={true}
+        showGraphicByDefault={true}
+      />
+    );
+    // NSFW overlay still shows even though others are opted out
+    fireEvent.click(screen.getByText("Show content"));
+    expect(screen.getByText("Sensitive / NSFW / Graphic/Explicit")).toBeInTheDocument();
+  });
+
+  // ── Overlay opt-in interactions ─────────────────────────────────────
+
+  it("hideSensitiveOverlay does not affect Graphic/Explicit overlay", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isGraphicNudity: true }}
+        currentUserId="user1"
+        {...defaultProps}
+        ageVerified={true}
+        hideSensitiveOverlay={true}
+      />
+    );
+    expect(screen.getByText("Click to view graphic content")).toBeInTheDocument();
+    expect(screen.queryByTestId("post-content")).not.toBeInTheDocument();
+  });
+
+  it("showGraphicByDefault does not affect Sensitive overlay", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isSensitive: true }}
+        currentUserId="user1"
+        {...defaultProps}
+        ageVerified={true}
+        showGraphicByDefault={true}
+      />
+    );
+    expect(screen.getByText("Click to view sensitive content")).toBeInTheDocument();
+    expect(screen.queryByTestId("post-content")).not.toBeInTheDocument();
+  });
+
+  it("no overlay opt-in exists for NSFW - overlay always shows", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isNsfw: true }}
+        currentUserId="user1"
+        {...defaultProps}
+        showNsfwContent={true}
+        hideSensitiveOverlay={true}
+        showGraphicByDefault={true}
+      />
+    );
+    expect(screen.getByText("Click to view NSFW content")).toBeInTheDocument();
+    expect(screen.queryByTestId("post-content")).not.toBeInTheDocument();
+  });
+
+  // ── Authors can reveal their own posts ──────────────────────────────
+
+  it("author can reveal their own sensitive post without age verification", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isSensitive: true, author: { ...basePost.author, id: "author1" } }}
+        currentUserId="author1"
+        {...defaultProps}
+      />
+    );
+    // Author should see click-to-reveal, not age-verify lock
+    expect(screen.queryByText("Verify your age to view this content.")).not.toBeInTheDocument();
+  });
+
+  it("author can reveal their own graphic post without age verification", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isGraphicNudity: true, author: { ...basePost.author, id: "author1" } }}
+        currentUserId="author1"
+        {...defaultProps}
+      />
+    );
+    expect(screen.queryByText("Verify your age to view this content.")).not.toBeInTheDocument();
   });
 
   // ── Not authenticated ─────────────────────────────────────────────
@@ -316,10 +467,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
     const { container } = render(
       <PostCard
         post={{ ...basePost, isSensitive: true }}
-        phoneVerified={false}
-        ageVerified={false}
-        showGraphicByDefault={false}
-        showNsfwContent={false}
+        {...defaultProps}
       />
     );
     expect(container.innerHTML).toBe("");
@@ -329,10 +477,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
     const { container } = render(
       <PostCard
         post={{ ...basePost, isNsfw: true }}
-        phoneVerified={false}
-        ageVerified={false}
-        showGraphicByDefault={false}
-        showNsfwContent={false}
+        {...defaultProps}
       />
     );
     expect(container.innerHTML).toBe("");
@@ -342,10 +487,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
     const { container } = render(
       <PostCard
         post={{ ...basePost, isGraphicNudity: true }}
-        phoneVerified={false}
-        ageVerified={false}
-        showGraphicByDefault={false}
-        showNsfwContent={false}
+        {...defaultProps}
       />
     );
     expect(container.innerHTML).toBe("");
@@ -358,10 +500,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
       <PostCard
         post={{ ...basePost, isSensitive: true }}
         currentUserId="user1"
-        phoneVerified={true}
-        ageVerified={false}
-        showGraphicByDefault={false}
-        showNsfwContent={false}
+        {...defaultProps}
       />
     );
     expect(screen.getByText("Test User")).toBeInTheDocument();

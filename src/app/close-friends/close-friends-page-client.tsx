@@ -16,6 +16,7 @@ interface FriendUser {
   avatar: string | null;
   image: string | null;
   profileFrameId: string | null;
+  usernameFont: string | null;
 }
 
 interface CloseFriendEntry {
@@ -31,6 +32,7 @@ interface Props {
   phoneVerified: boolean;
   ageVerified: boolean;
   showGraphicByDefault: boolean;
+  hideSensitiveOverlay: boolean;
   showNsfwContent: boolean;
   closeFriends: CloseFriendEntry[];
   availableFriends: FriendUser[];
@@ -43,6 +45,7 @@ export function CloseFriendsPageClient({
   phoneVerified,
   ageVerified,
   showGraphicByDefault,
+  hideSensitiveOverlay,
   showNsfwContent,
   closeFriends,
   availableFriends,
@@ -90,6 +93,7 @@ export function CloseFriendsPageClient({
           phoneVerified={phoneVerified}
           ageVerified={ageVerified}
           showGraphicByDefault={showGraphicByDefault}
+          hideSensitiveOverlay={hideSensitiveOverlay}
           showNsfwContent={showNsfwContent}
           closeFriendsCount={closeFriends.length}
         />
@@ -111,6 +115,7 @@ function CloseFriendsFeed({
   phoneVerified,
   ageVerified,
   showGraphicByDefault,
+  hideSensitiveOverlay,
   showNsfwContent,
   closeFriendsCount,
 }: {
@@ -119,6 +124,7 @@ function CloseFriendsFeed({
   phoneVerified: boolean;
   ageVerified: boolean;
   showGraphicByDefault: boolean;
+  hideSensitiveOverlay: boolean;
   showNsfwContent: boolean;
   closeFriendsCount: number;
 }) {
@@ -152,11 +158,13 @@ function CloseFriendsFeed({
             phoneVerified={phoneVerified}
             ageVerified={ageVerified}
             showGraphicByDefault={showGraphicByDefault}
+            hideSensitiveOverlay={hideSensitiveOverlay}
             showNsfwContent={showNsfwContent}
             {...(item.data.wallPost && {
               wallOwner: {
                 username: item.data.wallPost.wallOwner.username,
                 displayName: item.data.wallPost.wallOwner.displayName,
+                usernameFont: item.data.wallPost.wallOwner.usernameFont,
               },
               wallPostId: item.data.wallPost.id,
               wallPostStatus: item.data.wallPost.status,
@@ -170,6 +178,7 @@ function CloseFriendsFeed({
             phoneVerified={phoneVerified}
             ageVerified={ageVerified}
             showGraphicByDefault={showGraphicByDefault}
+            hideSensitiveOverlay={hideSensitiveOverlay}
             showNsfwContent={showNsfwContent}
           />
         )

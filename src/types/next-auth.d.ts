@@ -5,6 +5,8 @@ export interface LinkedAccount {
   username: string | null;
   displayName: string | null;
   avatar: string | null;
+  profileFrameId: string | null;
+  usernameFont: string | null;
 }
 
 declare module "next-auth" {
@@ -19,6 +21,8 @@ declare module "next-auth" {
       isEmailVerified: boolean;
       authProvider: string | null;
       linkedAccounts: LinkedAccount[];
+      profileFrameId: string | null;
+      usernameFont: string | null;
     } & DefaultSession["user"];
   }
 
@@ -29,6 +33,8 @@ declare module "next-auth" {
     avatar: string | null;
     tier: string;
     isEmailVerified: boolean;
+    profileFrameId: string | null;
+    usernameFont: string | null;
   }
 }
 
@@ -43,6 +49,8 @@ declare module "next-auth/jwt" {
     isEmailVerified: boolean;
     authProvider: string | null;
     linkedAccounts: LinkedAccount[];
+    profileFrameId: string | null;
+    usernameFont: string | null;
   }
 }
 
@@ -54,5 +62,7 @@ declare module "@auth/core/adapters" {
     avatar: string | null;
     tier: string;
     isEmailVerified: boolean;
+    profileFrameId: string | null;
+    usernameFont: string | null;
   }
 }

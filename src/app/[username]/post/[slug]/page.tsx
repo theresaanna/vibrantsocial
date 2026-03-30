@@ -75,6 +75,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
   let phoneVerified = false;
   let ageVerified = false;
   let showGraphicByDefault = false;
+  let hideSensitiveOverlay = false;
   let showNsfwContent = false;
 
   if (userId) {
@@ -87,6 +88,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
         dateOfBirth: true,
         ageVerified: true,
         showGraphicByDefault: true,
+        hideSensitiveOverlay: true,
         showNsfwContent: true,
       },
     });
@@ -97,6 +99,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
     phoneVerified = !!currentUser?.phoneVerified;
     ageVerified = !!currentUser?.ageVerified;
     showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
+    hideSensitiveOverlay = currentUser?.hideSensitiveOverlay ?? false;
     showNsfwContent = currentUser?.showNsfwContent ?? false;
   }
 
@@ -112,6 +115,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
           image: true,
           avatar: true,
           profileFrameId: true,
+          usernameFont: true,
           isProfilePublic: true,
         },
       },
@@ -148,14 +152,23 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
             select: {
               username: true,
               displayName: true,
+              usernameFont: true,
             },
           },
         },
+      },
+      marketplacePost: {
+        select: { id: true },
       },
     },
   });
 
   if (!post) notFound();
+
+  // Redirect marketplace posts to their dedicated URL
+  if (post.marketplacePost) {
+    redirect(`/${username}/marketplace/${slug}`);
+  }
 
   // Redirect unauthenticated visitors if author's profile is private
   if (post.author && !post.author.isProfilePublic && !userId)
@@ -203,9 +216,11 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
         phoneVerified={phoneVerified}
         ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
+        hideSensitiveOverlay={hideSensitiveOverlay}
         showNsfwContent={showNsfwContent}
         highlightCommentId={commentId ?? null}
         wallPost={post.wallPost}
+        marketplacePostId={undefined}
       />
     </main>
   );

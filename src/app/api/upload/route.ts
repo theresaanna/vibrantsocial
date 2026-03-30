@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { put } from "@vercel/blob";
 import { scanImageBuffer, quarantineUpload } from "@/lib/arachnid-shield";
-import { isConvertibleImage, convertToWebP } from "@/lib/image-convert";
+import { isConvertibleImage, convertToWebP, isResizableImage, resizeImage } from "@/lib/image-convert";
 import { uploadLimiter, checkRateLimit } from "@/lib/rate-limit";
 import { getLimitsForTier, formatSizeLimit, type TierLimits, type UserTier } from "@/lib/limits";
 
@@ -105,18 +105,9 @@ export async function POST(req: Request) {
   let ext = file.name.split(".").pop() ?? "bin";
   let converted = false;
 
-  // Convert HEIC/HEIF to WebP
-  if (category === "convertible-image") {
-    const result = await convertToWebP(buffer);
-    buffer = Buffer.from(result.buffer);
-    ext = result.extension;
-    converted = true;
-  }
-
-  // CSAM scanning for all image types (standard + converted)
+  // CSAM scanning always happens first, on the original buffer
   if (category === "image" || category === "convertible-image") {
-    const uploadMimeType = converted ? "image/webp" : file.type;
-    const scanResult = await scanImageBuffer(buffer, uploadMimeType);
+    const scanResult = await scanImageBuffer(buffer, mimeType);
 
     if (!scanResult.safe) {
       await quarantineUpload({
@@ -136,13 +127,27 @@ export async function POST(req: Request) {
     }
   }
 
+  // Convert HEIC/HEIF to WebP
+  if (category === "convertible-image") {
+    const result = await convertToWebP(buffer);
+    buffer = Buffer.from(result.buffer);
+    ext = result.extension;
+    converted = true;
+  }
+
+  // Resize images to max 1000px in either dimension, preserving aspect ratio
+  const resizableMimeType = converted ? "image/webp" : mimeType;
+  if ((category === "image" || category === "convertible-image") && isResizableImage(resizableMimeType)) {
+    buffer = Buffer.from(await resizeImage(buffer));
+  }
+
   const filename = `uploads/${session.user.id}-${Date.now()}.${ext}`;
 
-  const uploadBody = converted ? buffer : file;
+  const uploadBody = (category === "image" || category === "convertible-image") ? buffer : file;
 
   const blob = await put(filename, uploadBody, {
     access: "public",
-    addRandomSuffix: false,
+    addRandomSuffix: true,
   });
 
   const fileType =

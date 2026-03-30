@@ -49,6 +49,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           avatar: user.avatar,
           tier: user.tier ?? "free",
           isEmailVerified: !!user.emailVerified,
+          profileFrameId: user.profileFrameId,
+          usernameFont: user.usernameFont,
         };
       },
     }),
@@ -123,6 +125,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.bio = user.bio;
         token.avatar = user.avatar;
         token.tier = user.tier ?? "free";
+        token.profileFrameId = user.profileFrameId ?? null;
+        token.usernameFont = user.usernameFont ?? null;
         token.authProvider = account?.provider ?? null;
         // OAuth providers (Google, Discord) verify email themselves
         if (account?.provider && account.provider !== "credentials") {
@@ -168,6 +172,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               tier: true,
               emailVerified: true,
               linkedAccountGroupId: true,
+              profileFrameId: true,
+              usernameFont: true,
             },
           });
 
@@ -182,6 +188,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             token.bio = targetUser.bio;
             token.avatar = targetUser.avatar;
             token.tier = targetUser.tier ?? "free";
+            token.profileFrameId = targetUser.profileFrameId;
+            token.usernameFont = targetUser.usernameFont;
             token.isEmailVerified = !!targetUser.emailVerified;
 
             // Reload linked accounts for the new active user
@@ -198,6 +206,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           if (session.user?.avatar !== undefined)
             token.avatar = session.user.avatar;
           if (session.user?.tier) token.tier = session.user.tier;
+          if (session.user?.profileFrameId !== undefined)
+            token.profileFrameId = session.user.profileFrameId;
+          if (session.user?.usernameFont !== undefined)
+            token.usernameFont = session.user.usernameFont;
           if (session.user?.isEmailVerified !== undefined)
             token.isEmailVerified = session.user.isEmailVerified;
 
@@ -222,6 +234,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       session.user.authProvider = (token.authProvider as string) ?? null;
       session.user.linkedAccounts =
         (token.linkedAccounts as LinkedAccount[]) ?? [];
+      session.user.profileFrameId = (token.profileFrameId as string) ?? null;
+      session.user.usernameFont = (token.usernameFont as string) ?? null;
       return session;
     },
   },

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { getUserLists } from "./actions";
+import { getUserLists, getCollaboratingLists } from "./actions";
 import { ListsPageClient } from "./lists-page-client";
 import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
 import { ThemedPage } from "@/components/themed-page";
@@ -16,8 +16,9 @@ export default async function ListsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const [lists, themeUser] = await Promise.all([
+  const [lists, collaboratingLists, themeUser] = await Promise.all([
     getUserLists(),
+    getCollaboratingLists(),
     prisma.user.findUnique({
       where: { id: session.user.id },
       select: userThemeSelect,
@@ -28,7 +29,10 @@ export default async function ListsPage() {
 
   return (
     <ThemedPage {...(theme ?? NO_THEME)}>
-      <ListsPageClient lists={JSON.parse(JSON.stringify(lists))} />
+      <ListsPageClient
+        lists={JSON.parse(JSON.stringify(lists))}
+        collaboratingLists={JSON.parse(JSON.stringify(collaboratingLists))}
+      />
     </ThemedPage>
   );
 }

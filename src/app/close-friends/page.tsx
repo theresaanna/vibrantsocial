@@ -31,6 +31,7 @@ export default async function CloseFriendsPage() {
         dateOfBirth: true,
         ageVerified: true,
         showGraphicByDefault: true,
+        hideSensitiveOverlay: true,
         showNsfwContent: true,
         ...userThemeSelect,
       },
@@ -45,6 +46,7 @@ export default async function CloseFriendsPage() {
   const phoneVerified = !!currentUser.phoneVerified;
   const ageVerified = !!currentUser.ageVerified;
   const showGraphicByDefault = currentUser.showGraphicByDefault ?? false;
+  const hideSensitiveOverlay = currentUser.hideSensitiveOverlay ?? false;
   const showNsfwContent = currentUser.showNsfwContent ?? false;
   const isOldEnough = currentUser.dateOfBirth ? calculateAge(currentUser.dateOfBirth) >= 18 : false;
   const theme = await buildUserTheme(currentUser);
@@ -109,6 +111,7 @@ export default async function CloseFriendsPage() {
         phoneVerified={phoneVerified}
         ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
+        hideSensitiveOverlay={hideSensitiveOverlay}
         showNsfwContent={showNsfwContent}
         closeFriends={JSON.parse(JSON.stringify(closeFriends))}
         availableFriends={JSON.parse(JSON.stringify(availableFriends))}
