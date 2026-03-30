@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 import { MarketplaceContent } from "./marketplace-content";
 import { FeedSkeleton } from "@/components/feed-skeleton";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 export const metadata: Metadata = {
   title: "Marketplace",
@@ -12,8 +15,17 @@ export const metadata: Metadata = {
 export default async function MarketplacePage() {
   const session = await auth();
 
+  let theme = NO_THEME;
+  if (session?.user?.id) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: userThemeSelect,
+    });
+    if (user) theme = await buildUserTheme(user);
+  }
+
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...theme}>
       <div className="mb-6 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-400 to-pink-600">
           <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -27,6 +39,6 @@ export default async function MarketplacePage() {
       <Suspense fallback={<FeedSkeleton />}>
         <MarketplaceContent userId={session?.user?.id} />
       </Suspense>
-    </main>
+    </ThemedPage>
   );
 }

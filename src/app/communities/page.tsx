@@ -7,6 +7,8 @@ import { TagCloud } from "./tag-cloud";
 import { CommunitiesViewToggle } from "./communities-view-toggle";
 import { CommunitiesMediaClient } from "./communities-media-client";
 import { CommunitiesDiscussionsClient } from "./communities-discussions-client";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 export const metadata: Metadata = {
   title: "Communities",
@@ -23,13 +25,15 @@ export default async function CommunitiesPage({ searchParams }: CommunitiesPageP
 
   const session = await auth();
   let showNsfwContent = false;
+  let theme = NO_THEME;
 
   if (session?.user?.id) {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { showNsfwContent: true },
+      select: { showNsfwContent: true, ...userThemeSelect },
     });
     showNsfwContent = user?.showNsfwContent ?? false;
+    if (user) theme = await buildUserTheme(user);
   }
 
   const tagData = showNsfwContent
@@ -37,7 +41,7 @@ export default async function CommunitiesPage({ searchParams }: CommunitiesPageP
     : await getTagCloudData();
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...theme}>
       <div className="mb-6 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-400 to-pink-600">
           <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -88,6 +92,6 @@ export default async function CommunitiesPage({ searchParams }: CommunitiesPageP
         </div>
       )}
 
-    </main>
+    </ThemedPage>
   );
 }

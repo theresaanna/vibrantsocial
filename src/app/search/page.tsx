@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { searchUsers, searchPosts, searchTagsForSearch, searchMarketplacePosts } from "./actions";
 import { SearchPageClient } from "./search-page-client";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 export const metadata: Metadata = {
   title: "Search",
@@ -17,6 +20,12 @@ interface SearchPageProps {
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
+
+  const themeUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: userThemeSelect,
+  });
+  const theme = themeUser ? await buildUserTheme(themeUser) : NO_THEME;
 
   const params = await searchParams;
   const query = params.q ?? "";
@@ -40,7 +49,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...theme}>
       <div className="mb-6 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-teal-400 to-cyan-600">
           <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -65,6 +74,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         initialTags={initialTags}
         initialMarketplace={initialMarketplace}
       />
-    </main>
+    </ThemedPage>
   );
 }

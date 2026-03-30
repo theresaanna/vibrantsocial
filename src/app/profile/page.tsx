@@ -8,6 +8,8 @@ import { Suspense } from "react";
 import { AutoAccountSwitch } from "@/components/auto-account-switch";
 import { getProfileBackgrounds, getPremiumProfileBackgrounds } from "@/lib/profile-backgrounds.server";
 import type { CustomPresetData } from "@/lib/profile-themes";
+import { buildUserTheme } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 export const metadata: Metadata = {
   title: "Edit Profile",
@@ -21,6 +23,7 @@ export default async function ProfilePage() {
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
+      id: true,
       username: true,
       email: true,
       emailVerified: true,
@@ -68,6 +71,7 @@ export default async function ProfilePage() {
       isProfilePublic: true,
       hideWallFromFeed: true,
       tier: true,
+      isBeta: true,
       stars: true,
       starsSpent: true,
       referralCode: true,
@@ -114,7 +118,10 @@ export default async function ProfilePage() {
     }
   }
 
+  const profileTheme = await buildUserTheme(user);
+
   return (
+    <ThemedPage {...profileTheme} bare>
     <div className="flex min-h-[calc(100vh-57px)] items-center justify-center">
       <Suspense>
         <AutoAccountSwitch />
@@ -209,5 +216,6 @@ export default async function ProfilePage() {
         </form>
       </div>
     </div>
+    </ThemedPage>
   );
 }
