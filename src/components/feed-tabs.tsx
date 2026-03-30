@@ -36,6 +36,13 @@ export function FeedTabs({ lists, activeListId, activeListInfo }: {
       >
         Feed
       </Link>
+      <Link
+        href="/feed?list=close-friends"
+        prefetch={false}
+        className={`${baseClass} ${activeListId === "close-friends" ? activeClass : inactiveClass} shrink-0`}
+      >
+        Close Friends
+      </Link>
       {lists.map((list) => (
         <Link
           key={list.id}

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { FeedContent } from "./feed-content";
 import { ListFeedContent } from "./list-feed-content";
+import { CloseFriendsFeedContent } from "./close-friends-feed-content";
 import { FeedSkeleton } from "@/components/feed-skeleton";
 import { FeedTabs } from "@/components/feed-tabs";
 import { getUserLists, getSubscribedLists, getListInfo } from "@/app/lists/actions";
@@ -68,7 +69,9 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
         } : null}
       />
       <Suspense key={`${activeListId ?? "main-feed"}-${activeView}`} fallback={<FeedSkeleton />}>
-        {activeListId ? (
+        {activeListId === "close-friends" ? (
+          <CloseFriendsFeedContent userId={session.user.id} />
+        ) : activeListId ? (
           <ListFeedContent userId={session.user.id} listId={activeListId} />
         ) : (
           <FeedContent userId={session.user.id} activeView={activeView} />
