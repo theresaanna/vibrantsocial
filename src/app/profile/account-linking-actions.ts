@@ -69,7 +69,7 @@ export async function getLinkedAccounts(): Promise<LinkedAccount[]> {
       linkedAccountGroupId: user.linkedAccountGroupId,
       id: { not: session.user.id },
     },
-    select: { id: true, username: true, displayName: true, avatar: true, profileFrameId: true },
+    select: { id: true, username: true, displayName: true, avatar: true, profileFrameId: true, usernameFont: true },
   });
 
   return members;
@@ -177,7 +177,7 @@ export async function linkAccount(
       linkedAccountGroupId: updatedUser!.linkedAccountGroupId!,
       id: { not: session.user.id },
     },
-    select: { id: true, username: true, displayName: true, avatar: true, profileFrameId: true },
+    select: { id: true, username: true, displayName: true, avatar: true, profileFrameId: true, usernameFont: true },
   });
 
   return {
@@ -250,7 +250,7 @@ export async function unlinkAccount(
       linkedAccountGroupId: currentUser.linkedAccountGroupId,
       id: { not: session.user.id },
     },
-    select: { id: true, username: true, displayName: true, avatar: true, profileFrameId: true },
+    select: { id: true, username: true, displayName: true, avatar: true, profileFrameId: true, usernameFont: true },
   });
 
   return { success: true, message: "Account unlinked", linkedAccounts };

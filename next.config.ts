@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  serverExternalPackages: ["@anthropic-ai/sdk"],
   env: {
     NEXT_PUBLIC_BUILD_ID:
       process.env.VERCEL_GIT_COMMIT_SHA || crypto.randomUUID(),
@@ -39,12 +40,13 @@ const nextConfig: NextConfig = {
           key: "Content-Security-Policy",
           value: [
             "default-src 'self'",
-            `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
+            `script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
+            "worker-src 'self' blob:",
             "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
             "font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com",
             "img-src 'self' data: blob: https: http:",
-            "connect-src 'self' https://*.ingest.us.sentry.io https://api.agechecker.net https://shield.projectarachnid.com https://discord.com https://www.googleapis.com https://api.anthropic.com wss://*.ably.io https://*.ably.io wss://*.ably-realtime.com https://*.ably-realtime.com https://*.public.blob.vercel-storage.com https://vercel.com https://checkout.stripe.com https://billing.stripe.com",
-            "frame-src 'self' https://checkout.stripe.com https://billing.stripe.com https://www.youtube.com https://www.youtube-nocookie.com",
+            "connect-src 'self' https://*.ingest.us.sentry.io https://api.agechecker.net https://shield.projectarachnid.com https://discord.com https://www.googleapis.com https://api.anthropic.com https://api.giphy.com wss://*.ably.io https://*.ably.io wss://*.ably-realtime.com https://*.ably-realtime.com wss://*.ably.net https://*.ably.net https://*.public.blob.vercel-storage.com https://vercel.com https://checkout.stripe.com https://billing.stripe.com",
+            "frame-src 'self' https://challenges.cloudflare.com https://checkout.stripe.com https://billing.stripe.com https://www.youtube.com https://www.youtube-nocookie.com",
             "media-src 'self' https://*.public.blob.vercel-storage.com",
             "object-src 'none'",
             "base-uri 'self'",

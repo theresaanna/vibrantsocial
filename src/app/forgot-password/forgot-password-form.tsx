@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { requestPasswordReset } from "./actions";
+import { TurnstileWidget } from "@/components/turnstile-widget";
 
 export function ForgotPasswordForm() {
   const [state, formAction, isPending] = useActionState(
@@ -27,6 +28,8 @@ export function ForgotPasswordForm() {
           placeholder="you@example.com"
         />
       </div>
+
+      <TurnstileWidget />
 
       <button
         type="submit"

@@ -1,20 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useModal } from "@/hooks/use-modal";
 
 interface ContentFlagsInfoModalProps {
   onClose: () => void;
 }
 
 export function ContentFlagsInfoModal({ onClose }: ContentFlagsInfoModalProps) {
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  useModal(true, onClose, { lockScroll: false });
 
   return createPortal(
     <div

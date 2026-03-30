@@ -3,6 +3,7 @@ import {
   toggleBlock,
   getBlockStatus,
   getBlockedUserIds,
+  getBlockedByUserIds,
   getAllBlockRelatedIds,
 } from "@/app/feed/block-actions";
 
@@ -18,6 +19,7 @@ vi.mock("@/lib/prisma", () => ({
       findMany: vi.fn(),
       create: vi.fn(),
       delete: vi.fn(),
+      upsert: vi.fn(),
     },
     follow: {
       deleteMany: vi.fn(),
@@ -31,8 +33,13 @@ vi.mock("@/lib/prisma", () => ({
     closeFriend: {
       deleteMany: vi.fn(),
     },
+    phoneBlock: {
+      findMany: vi.fn(),
+      upsert: vi.fn(),
+    },
     user: {
       findUnique: vi.fn(),
+      findMany: vi.fn(),
     },
     $transaction: vi.fn(),
   },
@@ -41,9 +48,15 @@ vi.mock("@/lib/prisma", () => ({
 vi.mock("@/lib/cache", () => ({
   cached: vi.fn((_key: string, fn: () => Promise<unknown>) => fn()),
   invalidate: vi.fn(),
+  invalidateMany: vi.fn(),
   cacheKeys: {
     userBlockedIds: (id: string) => `user:${id}:blocked`,
+    userBlockedByIds: (id: string) => `user:${id}:blocked-by`,
+    userAllBlocks: (id: string) => `user:${id}:all-blocks`,
     userFollowing: (id: string) => `user:${id}:following`,
+    userCloseFriendIds: (id: string) => `user:${id}:close-friends`,
+    userCloseFriendOf: (id: string) => `user:${id}:close-friend-of`,
+    friendshipStatus: (id1: string, id2: string) => `friendship:${id1}:${id2}`,
     userProfile: (username: string) => `profile:${username}`,
   },
 }));
@@ -52,14 +65,20 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+vi.mock("@/lib/rate-limit", () => ({
+  apiLimiter: {},
+  isRateLimited: vi.fn().mockResolvedValue(false),
+}));
+
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { invalidate } from "@/lib/cache";
+import { invalidate, invalidateMany } from "@/lib/cache";
 import { revalidatePath } from "next/cache";
 
 const mockAuth = vi.mocked(auth);
 const mockPrisma = vi.mocked(prisma);
 const mockInvalidate = vi.mocked(invalidate);
+const mockInvalidateMany = vi.mocked(invalidateMany);
 const mockRevalidatePath = vi.mocked(revalidatePath);
 
 const prevState = { success: false, message: "" };
@@ -103,7 +122,7 @@ describe("toggleBlock", () => {
     expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
   });
 
-  it("deletes mutual follows in both directions when blocking", async () => {
+  it("transaction contains 5 operations for a standard block (no phone)", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
     mockPrisma.block.findUnique.mockResolvedValueOnce(null as never);
     mockPrisma.$transaction.mockResolvedValueOnce([] as never);
@@ -114,48 +133,7 @@ describe("toggleBlock", () => {
     await toggleBlock(prevState, makeFormData({ userId: "user2" }));
 
     const txArgs = mockPrisma.$transaction.mock.calls[0][0] as unknown[];
-    // The transaction should contain 5 operations (block create, follow delete, friend delete, subscription delete, close friend delete)
     expect(txArgs).toHaveLength(5);
-  });
-
-  it("deletes friend requests in both directions when blocking", async () => {
-    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
-    mockPrisma.block.findUnique.mockResolvedValueOnce(null as never);
-    mockPrisma.$transaction.mockResolvedValueOnce([] as never);
-    (mockPrisma.user.findUnique as ReturnType<typeof vi.fn>)
-      .mockResolvedValueOnce({ username: "currentuser" } as never)
-      .mockResolvedValueOnce({ username: "targetuser" } as never);
-
-    await toggleBlock(prevState, makeFormData({ userId: "user2" }));
-
-    // Verify transaction was called with all expected operations
-    expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
-  });
-
-  it("deletes post subscriptions in both directions when blocking", async () => {
-    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
-    mockPrisma.block.findUnique.mockResolvedValueOnce(null as never);
-    mockPrisma.$transaction.mockResolvedValueOnce([] as never);
-    (mockPrisma.user.findUnique as ReturnType<typeof vi.fn>)
-      .mockResolvedValueOnce({ username: "currentuser" } as never)
-      .mockResolvedValueOnce({ username: "targetuser" } as never);
-
-    await toggleBlock(prevState, makeFormData({ userId: "user2" }));
-
-    expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
-  });
-
-  it("deletes close friend entries in both directions when blocking", async () => {
-    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
-    mockPrisma.block.findUnique.mockResolvedValueOnce(null as never);
-    mockPrisma.$transaction.mockResolvedValueOnce([] as never);
-    (mockPrisma.user.findUnique as ReturnType<typeof vi.fn>)
-      .mockResolvedValueOnce({ username: "currentuser" } as never)
-      .mockResolvedValueOnce({ username: "targetuser" } as never);
-
-    await toggleBlock(prevState, makeFormData({ userId: "user2" }));
-
-    expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
   });
 
   it("invalidates all relevant cache keys for both users", async () => {
@@ -168,8 +146,9 @@ describe("toggleBlock", () => {
 
     await toggleBlock(prevState, makeFormData({ userId: "user2" }));
 
-    expect(mockInvalidate).toHaveBeenCalledWith("user:user1:blocked");
-    expect(mockInvalidate).toHaveBeenCalledWith("user:user2:blocked");
+    // Block caches invalidated via invalidateMany (called by invalidateBlockCaches)
+    expect(mockInvalidateMany).toHaveBeenCalled();
+    // Other caches invalidated individually
     expect(mockInvalidate).toHaveBeenCalledWith("user:user1:following");
     expect(mockInvalidate).toHaveBeenCalledWith("user:user2:following");
     expect(mockInvalidate).toHaveBeenCalledWith("profile:currentuser");
@@ -206,7 +185,6 @@ describe("toggleBlock", () => {
 
     await toggleBlock(prevState, makeFormData({ userId: "user2" }));
 
-    // $transaction should NOT be called on unblock (no follow/friend restoration)
     expect(mockPrisma.$transaction).not.toHaveBeenCalled();
   });
 
@@ -221,6 +199,122 @@ describe("toggleBlock", () => {
     await toggleBlock(prevState, makeFormData({ userId: "user2" }));
 
     expect(mockRevalidatePath).toHaveBeenCalledWith("/");
+  });
+});
+
+describe("toggleBlock phone blocking", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("creates PhoneBlock and blocks other accounts sharing same phone", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.block.findUnique
+      .mockResolvedValueOnce(null as never) // initial check
+      .mockResolvedValueOnce(null as never); // check for alt-account
+    mockPrisma.$transaction.mockResolvedValueOnce([] as never);
+    // Target user lookup for phone
+    (mockPrisma.user.findUnique as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ phoneNumber: "+1555000", phoneVerified: new Date() } as never)
+      // Cache invalidation lookups
+      .mockResolvedValueOnce({ username: "currentuser" } as never)
+      .mockResolvedValueOnce({ username: "targetuser" } as never);
+    // Other accounts with same phone
+    (mockPrisma.user.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
+      { id: "alt-account1" },
+    ] as never);
+
+    const result = await toggleBlock(
+      prevState,
+      makeFormData({ userId: "user2", blockByPhone: "true" })
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("Blocked");
+
+    const txArgs = mockPrisma.$transaction.mock.calls[0][0] as unknown[];
+    // 5 ops for target + 1 PhoneBlock upsert + 5 ops for alt-account = 11
+    expect(txArgs).toHaveLength(11);
+  });
+
+  it("skips already-blocked accounts when phone blocking", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.block.findUnique
+      .mockResolvedValueOnce(null as never) // initial check
+      .mockResolvedValueOnce({ id: "existing" } as never); // alt already blocked
+    mockPrisma.$transaction.mockResolvedValueOnce([] as never);
+    (mockPrisma.user.findUnique as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ phoneNumber: "+1555000", phoneVerified: new Date() } as never)
+      .mockResolvedValueOnce({ username: "currentuser" } as never)
+      .mockResolvedValueOnce({ username: "targetuser" } as never);
+    (mockPrisma.user.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
+      { id: "alt-account1" },
+    ] as never);
+
+    await toggleBlock(prevState, makeFormData({ userId: "user2", blockByPhone: "true" }));
+
+    const txArgs = mockPrisma.$transaction.mock.calls[0][0] as unknown[];
+    // 5 ops for target + 1 PhoneBlock upsert = 6 (alt skipped because already blocked)
+    expect(txArgs).toHaveLength(6);
+  });
+
+  it("does not create PhoneBlock when target has no verified phone", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.block.findUnique.mockResolvedValueOnce(null as never);
+    mockPrisma.$transaction.mockResolvedValueOnce([] as never);
+    (mockPrisma.user.findUnique as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ phoneNumber: null, phoneVerified: null } as never)
+      .mockResolvedValueOnce({ username: "currentuser" } as never)
+      .mockResolvedValueOnce({ username: "targetuser" } as never);
+
+    await toggleBlock(prevState, makeFormData({ userId: "user2", blockByPhone: "true" }));
+
+    const txArgs = mockPrisma.$transaction.mock.calls[0][0] as unknown[];
+    // Standard 5 ops only — no PhoneBlock created
+    expect(txArgs).toHaveLength(5);
+  });
+
+  it("excludes self and target from other-accounts phone search", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.block.findUnique.mockResolvedValueOnce(null as never);
+    mockPrisma.$transaction.mockResolvedValueOnce([] as never);
+    (mockPrisma.user.findUnique as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ phoneNumber: "+1555000", phoneVerified: new Date() } as never)
+      .mockResolvedValueOnce({ username: "currentuser" } as never)
+      .mockResolvedValueOnce({ username: "targetuser" } as never);
+    (mockPrisma.user.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([] as never);
+
+    await toggleBlock(prevState, makeFormData({ userId: "user2", blockByPhone: "true" }));
+
+    const findManyCall = (mockPrisma.user.findMany as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(findManyCall.where.id.notIn).toContain("user1");
+    expect(findManyCall.where.id.notIn).toContain("user2");
+  });
+
+  it("does not phone-block when blockByPhone is false", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.block.findUnique.mockResolvedValueOnce(null as never);
+    mockPrisma.$transaction.mockResolvedValueOnce([] as never);
+    (mockPrisma.user.findUnique as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ username: "currentuser" } as never)
+      .mockResolvedValueOnce({ username: "targetuser" } as never);
+
+    await toggleBlock(prevState, makeFormData({ userId: "user2", blockByPhone: "false" }));
+
+    const txArgs = mockPrisma.$transaction.mock.calls[0][0] as unknown[];
+    expect(txArgs).toHaveLength(5);
+  });
+
+  it("does not phone-block when blockByPhone is not set", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.block.findUnique.mockResolvedValueOnce(null as never);
+    mockPrisma.$transaction.mockResolvedValueOnce([] as never);
+    (mockPrisma.user.findUnique as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ username: "currentuser" } as never)
+      .mockResolvedValueOnce({ username: "targetuser" } as never);
+
+    await toggleBlock(prevState, makeFormData({ userId: "user2" }));
+
+    expect(mockPrisma.phoneBlock.upsert).not.toHaveBeenCalled();
+    expect(mockPrisma.user.findMany).not.toHaveBeenCalled();
   });
 });
 
@@ -267,19 +361,92 @@ describe("getBlockedUserIds", () => {
 
   it("returns empty array when no blocks", async () => {
     mockPrisma.block.findMany.mockResolvedValueOnce([] as never);
+    (mockPrisma.phoneBlock.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([] as never);
 
     const result = await getBlockedUserIds("user1");
     expect(result).toEqual([]);
   });
 
-  it("returns correct IDs of blocked users", async () => {
+  it("returns correct IDs of directly blocked users", async () => {
     mockPrisma.block.findMany.mockResolvedValueOnce([
       { blockedId: "user2" },
       { blockedId: "user3" },
     ] as never);
+    (mockPrisma.phoneBlock.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([] as never);
 
     const result = await getBlockedUserIds("user1");
     expect(result).toEqual(["user2", "user3"]);
+  });
+
+  it("includes phone-blocked users in results", async () => {
+    mockPrisma.block.findMany.mockResolvedValueOnce([
+      { blockedId: "user2" },
+    ] as never);
+    mockPrisma.phoneBlock.findMany.mockResolvedValueOnce([
+      { phoneNumber: "+1555000" },
+    ] as never);
+    mockPrisma.user.findMany.mockResolvedValueOnce([
+      { id: "user3" },
+      { id: "user4" },
+    ] as never);
+
+    const result = await getBlockedUserIds("user1");
+    expect(result).toContain("user2");
+    expect(result).toContain("user3");
+    expect(result).toContain("user4");
+  });
+
+  it("deduplicates direct and phone-blocked users", async () => {
+    mockPrisma.block.findMany.mockResolvedValueOnce([
+      { blockedId: "user2" },
+    ] as never);
+    mockPrisma.phoneBlock.findMany.mockResolvedValueOnce([
+      { phoneNumber: "+1555000" },
+    ] as never);
+    // user2 appears again via phone
+    mockPrisma.user.findMany.mockResolvedValueOnce([
+      { id: "user2" },
+      { id: "user3" },
+    ] as never);
+
+    const result = await getBlockedUserIds("user1");
+    expect(result).toHaveLength(2);
+    expect(result).toContain("user2");
+    expect(result).toContain("user3");
+  });
+});
+
+describe("getBlockedByUserIds", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns direct blockers when user has no verified phone", async () => {
+    mockPrisma.block.findMany.mockResolvedValueOnce([
+      { blockerId: "user2" },
+    ] as never);
+    (mockPrisma.user.findUnique as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      phoneNumber: null,
+      phoneVerified: null,
+    } as never);
+
+    const result = await getBlockedByUserIds("user1");
+    expect(result).toEqual(["user2"]);
+  });
+
+  it("includes phone blockers when user has verified phone", async () => {
+    mockPrisma.block.findMany.mockResolvedValueOnce([
+      { blockerId: "user2" },
+    ] as never);
+    (mockPrisma.user.findUnique as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      phoneNumber: "+1555000",
+      phoneVerified: new Date(),
+    } as never);
+    (mockPrisma.phoneBlock.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
+      { blockerId: "user3" },
+    ] as never);
+
+    const result = await getBlockedByUserIds("user1");
+    expect(result).toContain("user2");
+    expect(result).toContain("user3");
   });
 });
 
@@ -287,17 +454,17 @@ describe("getAllBlockRelatedIds", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("returns union of both directions without duplicates", async () => {
-    // First call is getBlockedUserIds (via cached -> findMany with blockerId)
-    // Second call is getBlockedByUserIds (findMany with blockedId)
+    // getBlockedUserIds calls
     mockPrisma.block.findMany
-      .mockResolvedValueOnce([
-        { blockedId: "user2" },
-        { blockedId: "user3" },
-      ] as never)
-      .mockResolvedValueOnce([
-        { blockerId: "user3" },
-        { blockerId: "user4" },
-      ] as never);
+      .mockResolvedValueOnce([{ blockedId: "user2" }, { blockedId: "user3" }] as never)
+    ;(mockPrisma.phoneBlock.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([] as never);
+    // getBlockedByUserIds calls
+    mockPrisma.block.findMany
+      .mockResolvedValueOnce([{ blockerId: "user3" }, { blockerId: "user4" }] as never);
+    (mockPrisma.user.findUnique as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      phoneNumber: null,
+      phoneVerified: null,
+    } as never);
 
     const result = await getAllBlockRelatedIds("user1");
     // user3 appears in both directions, should be deduplicated

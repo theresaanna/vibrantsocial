@@ -657,6 +657,201 @@ export const scanPostContentFn = inngest.createFunction(
   }
 );
 
+// Chat message moderation scanning
+
+const CHAT_ABUSE_THRESHOLD = 3;
+
+export const scanChatMessageFn = inngest.createFunction(
+  {
+    id: "scan-chat-message",
+    retries: 3,
+    onFailure: onFunctionFailure("scan-chat-message"),
+  },
+  { event: "moderation/scan-chat-message" },
+  async ({ event }) => {
+    const { messageId, senderId, conversationId } = event.data as {
+      messageId: string;
+      senderId: string;
+      conversationId: string;
+    };
+
+    if (!MODERATION_API_URL || !MODERATION_API_KEY) {
+      console.warn("Moderation service not configured, skipping chat scan");
+      return { skipped: true };
+    }
+
+    const message = await prisma.message.findUnique({
+      where: { id: messageId },
+      select: { id: true, content: true, mediaUrl: true, mediaType: true, deletedAt: true },
+    });
+
+    if (!message || message.deletedAt) {
+      return { skipped: true, reason: "message not found or deleted" };
+    }
+
+    const headers = {
+      "Content-Type": "application/json",
+      "X-API-Key": MODERATION_API_KEY,
+    };
+
+    // Scan media for NSFW content (images and video thumbnails)
+    let nsfwDetected = false;
+    let nsfwScore = 0;
+
+    if (message.mediaUrl && (message.mediaType === "image" || message.mediaType === "video")) {
+      try {
+        const resp = await fetch(`${MODERATION_API_URL}/scan/image`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ url: message.mediaUrl }),
+        });
+        if (resp.ok) {
+          const result = await resp.json() as { nsfw: boolean; score: number };
+          if (result.nsfw) {
+            nsfwDetected = true;
+            nsfwScore = result.score;
+          }
+        }
+      } catch (error) {
+        Sentry.captureException(error, {
+          extra: { context: "chat-moderation-image-scan", messageId },
+        });
+      }
+    }
+
+    // If NSFW detected, mark the message
+    if (nsfwDetected) {
+      await prisma.message.update({
+        where: { id: messageId },
+        data: { isNsfw: true, nsfwScore },
+      });
+
+      // Publish update to Ably so recipients see the overlay in real-time
+      try {
+        const { getAblyRestClient } = await import("./ably");
+        const ably = getAblyRestClient();
+        const channel = ably.channels.get(`chat:${conversationId}`);
+        await channel.publish("nsfw-update", { id: messageId, isNsfw: true });
+      } catch {
+        // Non-critical
+      }
+    }
+
+    // Scan text for hate speech / bullying
+    let hateSpeechDetected = false;
+    let bullyingDetected = false;
+    let textConfidence = 0;
+    let textViolationType = "";
+
+    const plainText = message.content.trim();
+    if (plainText.length > 0) {
+      try {
+        const resp = await fetch(`${MODERATION_API_URL}/scan/text`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ text: plainText }),
+        });
+        if (resp.ok) {
+          const result = await resp.json() as {
+            toxicity: number;
+            identity_attack: number;
+            insult: number;
+            is_hate_speech: boolean;
+            is_bullying: boolean;
+          };
+          hateSpeechDetected = result.is_hate_speech;
+          bullyingDetected = result.is_bullying;
+          if (hateSpeechDetected) {
+            textConfidence = result.identity_attack;
+            textViolationType = "hate_speech";
+          } else if (bullyingDetected) {
+            textConfidence = result.insult;
+            textViolationType = "bullying";
+          }
+        }
+      } catch (error) {
+        Sentry.captureException(error, {
+          extra: { context: "chat-moderation-text-scan", messageId },
+        });
+      }
+    }
+
+    // If abuse detected, create flag and check threshold for each recipient
+    if (hateSpeechDetected || bullyingDetected) {
+      // Get all other participants in the conversation (recipients)
+      const participants = await prisma.conversationParticipant.findMany({
+        where: { conversationId, userId: { not: senderId } },
+        select: { userId: true },
+      });
+
+      for (const participant of participants) {
+        const recipientId = participant.userId;
+
+        // Record the abuse flag
+        await prisma.chatAbuseFlag.create({
+          data: {
+            senderId,
+            recipientId,
+            messageId,
+            confidence: textConfidence,
+            violationType: textViolationType,
+          },
+        });
+
+        // Count total high-confidence flags for this sender→recipient pair
+        const flagCount = await prisma.chatAbuseFlag.count({
+          where: { senderId, recipientId },
+        });
+
+        // Only notify after reaching the threshold
+        if (flagCount >= CHAT_ABUSE_THRESHOLD) {
+          // Check if recipient has dismissed alerts from this sender
+          const dismissed = await prisma.chatAbuseDismissal.findUnique({
+            where: { userId_dismissedSenderId: { userId: recipientId, dismissedSenderId: senderId } },
+          });
+
+          if (!dismissed) {
+            // Only create a new notification if there isn't already an unread one
+            const existingNotification = await prisma.notification.findFirst({
+              where: {
+                type: "CHAT_ABUSE",
+                actorId: senderId,
+                targetUserId: recipientId,
+                readAt: null,
+              },
+            });
+
+            if (!existingNotification) {
+              const { createNotification } = await import("./notifications");
+              await createNotification({
+                type: "CHAT_ABUSE",
+                actorId: senderId,
+                targetUserId: recipientId,
+                messageId,
+              });
+            }
+          }
+        }
+      }
+
+      // Also alert admin for review
+      const sender = await prisma.user.findUnique({
+        where: { id: senderId },
+        select: { username: true },
+      });
+      await sendModerationAlertEmail({
+        postId: messageId,
+        authorUsername: sender?.username ?? "unknown",
+        violationType: textViolationType,
+        confidence: textConfidence,
+        contentPreview: `[Chat message] ${plainText.slice(0, 200)}`,
+      });
+    }
+
+    return { messageId, nsfwDetected, hateSpeechDetected, bullyingDetected };
+  }
+);
+
 export const allFunctions = [
   sendCommentEmailFn,
   sendMentionEmailFn,
@@ -668,4 +863,5 @@ export const allFunctions = [
   pollChatEmailNotificationsFn,
   sendTagDigestFn,
   scanPostContentFn,
+  scanChatMessageFn,
 ];

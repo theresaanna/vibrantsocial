@@ -34,6 +34,31 @@ export const authLimiter = createLimiter(
   "ratelimit:auth"
 );
 
+export const friendLimiter = createLimiter(
+  Ratelimit.slidingWindow(50, "1 h"),
+  "ratelimit:friend"
+);
+
+export const searchLimiter = createLimiter(
+  Ratelimit.slidingWindow(30, "1 m"),
+  "ratelimit:search"
+);
+
+export const chatMessageLimiter = createLimiter(
+  Ratelimit.slidingWindow(60, "1 m"),
+  "ratelimit:chat-msg"
+);
+
+export const chatConversationLimiter = createLimiter(
+  Ratelimit.slidingWindow(10, "1 m"),
+  "ratelimit:chat-conv"
+);
+
+export const chatRequestLimiter = createLimiter(
+  Ratelimit.slidingWindow(5, "1 h"),
+  "ratelimit:chat-req"
+);
+
 export async function checkRateLimit(
   limiter: Ratelimit | null,
   identifier: string

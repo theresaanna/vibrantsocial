@@ -6,8 +6,10 @@ import { isProfileIncomplete } from "@/lib/require-profile";
 import { ProfileForm } from "./profile-form";
 import { Suspense } from "react";
 import { AutoAccountSwitch } from "@/components/auto-account-switch";
-import { getProfileBackgrounds } from "@/lib/profile-backgrounds.server";
+import { getProfileBackgrounds, getPremiumProfileBackgrounds } from "@/lib/profile-backgrounds.server";
 import type { CustomPresetData } from "@/lib/profile-themes";
+import { buildUserTheme } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 export const metadata: Metadata = {
   title: "Edit Profile",
@@ -21,8 +23,10 @@ export default async function ProfilePage() {
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
+      id: true,
       username: true,
       email: true,
+      emailVerified: true,
       pendingEmail: true,
       dateOfBirth: true,
       phoneNumber: true,
@@ -56,6 +60,7 @@ export default async function ProfilePage() {
       ageVerified: true,
       showGraphicByDefault: true,
       showNsfwContent: true,
+      hideSensitiveOverlay: true,
       emailOnComment: true,
       emailOnNewChat: true,
       emailOnMention: true,
@@ -78,6 +83,7 @@ export default async function ProfilePage() {
   const isPremium = user?.tier === "premium";
   const oauthImage = user?.image ?? session.user.image ?? null;
   const backgrounds = getProfileBackgrounds();
+  const premiumBackgrounds = getPremiumProfileBackgrounds();
 
   let customPresets: CustomPresetData[] = [];
   if (isPremium) {
@@ -111,7 +117,10 @@ export default async function ProfilePage() {
     }
   }
 
+  const profileTheme = buildUserTheme(user);
+
   return (
+    <ThemedPage {...profileTheme} bare>
     <div className="flex min-h-[calc(100vh-57px)] items-center justify-center">
       <Suspense>
         <AutoAccountSwitch />
@@ -163,6 +172,7 @@ export default async function ProfilePage() {
           ageVerified={!!user?.ageVerified}
           showGraphicByDefault={user?.showGraphicByDefault ?? false}
           showNsfwContent={user?.showNsfwContent ?? false}
+          hideSensitiveOverlay={user?.hideSensitiveOverlay ?? false}
           emailOnComment={user?.emailOnComment ?? true}
           emailOnNewChat={user?.emailOnNewChat ?? true}
           emailOnMention={user?.emailOnMention ?? true}
@@ -175,6 +185,7 @@ export default async function ProfilePage() {
           birthdayMonth={user?.birthdayMonth ?? null}
           birthdayDay={user?.birthdayDay ?? null}
           email={user?.email ?? null}
+          emailVerified={!!user?.emailVerified}
           pendingEmail={user?.pendingEmail ?? null}
           phoneVerified={!!user?.phoneVerified}
           phoneNumber={user?.phoneNumber ?? null}
@@ -184,6 +195,7 @@ export default async function ProfilePage() {
           starsSpent={user?.starsSpent ?? 0}
           referralCode={user?.referralCode ?? ""}
           backgrounds={backgrounds}
+          premiumBackgrounds={premiumBackgrounds}
           userEmail={user?.email ?? null}
           customPresets={customPresets}
         />
@@ -203,5 +215,6 @@ export default async function ProfilePage() {
         </form>
       </div>
     </div>
+    </ThemedPage>
   );
 }

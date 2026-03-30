@@ -69,6 +69,7 @@ interface QuotePageClientProps {
   phoneVerified: boolean;
   ageVerified: boolean;
   showGraphicByDefault: boolean;
+  hideSensitiveOverlay: boolean;
   showNsfwContent: boolean;
 }
 
@@ -78,6 +79,7 @@ export function QuotePageClient({
   phoneVerified,
   ageVerified,
   showGraphicByDefault,
+  hideSensitiveOverlay,
   showNsfwContent,
 }: QuotePageClientProps) {
   return (
@@ -88,6 +90,7 @@ export function QuotePageClient({
         phoneVerified={phoneVerified}
         ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
+        hideSensitiveOverlay={hideSensitiveOverlay}
         showNsfwContent={showNsfwContent}
       />
     </div>

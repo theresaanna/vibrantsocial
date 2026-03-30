@@ -22,7 +22,6 @@ import {
   INSERT_UNORDERED_LIST_COMMAND,
   ListNode,
 } from "@lexical/list";
-import { $createCodeNode, $isCodeNode } from "@lexical/code";
 import { $setBlocksType } from "@lexical/selection";
 import { $findMatchingParent } from "@lexical/utils";
 import { useEffect, useState, useCallback } from "react";
@@ -36,8 +35,7 @@ type BlockType =
   | "bullet"
   | "number"
   | "check"
-  | "quote"
-  | "code";
+  | "quote";
 
 const blockTypeNames: Record<BlockType, string> = {
   paragraph: "Normal",
@@ -48,7 +46,6 @@ const blockTypeNames: Record<BlockType, string> = {
   number: "Numbered List",
   check: "Check List",
   quote: "Quote",
-  code: "Code Block",
 };
 
 export function BlockFormatDropdown() {
@@ -76,8 +73,6 @@ export function BlockFormatDropdown() {
       if (listType === "bullet") setBlockType("bullet");
       else if (listType === "number") setBlockType("number");
       else if (listType === "check") setBlockType("check");
-    } else if ($isCodeNode(element)) {
-      setBlockType("code");
     } else {
       const type = element.getType();
       if (type === "quote") setBlockType("quote");
@@ -127,8 +122,6 @@ export function BlockFormatDropdown() {
         $setBlocksType(selection, () => $createHeadingNode(type as HeadingTagType));
       } else if (type === "quote") {
         $setBlocksType(selection, () => $createQuoteNode());
-      } else if (type === "code") {
-        $setBlocksType(selection, () => $createCodeNode());
       }
     });
 
