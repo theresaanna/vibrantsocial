@@ -72,6 +72,75 @@ h6 {
   min-height: calc(100vh - 57px);
 }
 
+/*
+ * Broad overrides: force all Tailwind background/text/border colors inside
+ * .profile-themed to use the theme palette. !important is needed to beat
+ * Tailwind utility specificity + the .dark variant selectors.
+ */
+
+/* Backgrounds: white / zinc-50 / zinc-100 / zinc-800 / zinc-900 → container */
+.profile-themed .bg-white,
+.profile-themed .dark\:bg-zinc-900,
+.profile-themed .bg-zinc-50,
+.profile-themed .dark\:bg-zinc-800,
+.profile-themed .bg-zinc-100,
+.profile-themed .dark\:bg-zinc-950 {
+  background-color: color-mix(in srgb, var(--profile-container) 80%, transparent) !important;
+}
+
+/* Primary text: zinc-900 / zinc-100 / zinc-800 / zinc-200 */
+.profile-themed .text-zinc-900,
+.profile-themed .dark\:text-zinc-100,
+.profile-themed .text-zinc-800,
+.profile-themed .dark\:text-zinc-200 {
+  color: var(--profile-text) !important;
+}
+
+/* Secondary text: zinc-500 / zinc-400 / zinc-600 / zinc-300 */
+.profile-themed .text-zinc-500,
+.profile-themed .dark\:text-zinc-400,
+.profile-themed .text-zinc-600,
+.profile-themed .dark\:text-zinc-300,
+.profile-themed .text-zinc-700 {
+  color: var(--profile-secondary) !important;
+}
+
+/* Borders: zinc-200 / zinc-800 / zinc-100 / zinc-700 */
+.profile-themed .border-zinc-200,
+.profile-themed .dark\:border-zinc-800,
+.profile-themed .border-zinc-100,
+.profile-themed .dark\:border-zinc-700 {
+  border-color: color-mix(in srgb, var(--profile-secondary) 25%, transparent) !important;
+}
+
+/* Divide colors */
+.profile-themed .divide-zinc-200 > :not([hidden]) ~ :not([hidden]),
+.profile-themed .dark\:divide-zinc-800 > :not([hidden]) ~ :not([hidden]) {
+  border-color: color-mix(in srgb, var(--profile-secondary) 25%, transparent) !important;
+}
+
+/* Ring colors */
+.profile-themed .ring-zinc-200,
+.profile-themed .dark\:ring-zinc-800 {
+  --tw-ring-color: color-mix(in srgb, var(--profile-secondary) 25%, transparent) !important;
+}
+
+/* Shadow overrides: drop tinted shadows that clash with theme */
+.profile-themed .shadow-lg,
+.profile-themed .shadow-md,
+.profile-themed .shadow-sm {
+  --tw-shadow-color: color-mix(in srgb, var(--profile-text) 8%, transparent);
+}
+
+/* Placeholder text */
+.profile-themed .placeholder-zinc-400::placeholder,
+.profile-themed .placeholder\:text-zinc-400::placeholder,
+.profile-themed .dark\:placeholder-zinc-500::placeholder {
+  color: var(--profile-secondary) !important;
+  opacity: 0.7;
+}
+
+/* Existing class-based overrides */
 .profile-themed .profile-container {
   background-color: color-mix(in srgb, var(--profile-container) 80%, transparent);
 }
