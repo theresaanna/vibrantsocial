@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useId, useTransition, useRef } from "react";
+import { useState, useCallback, useId, useTransition, useRef, useEffect } from "react";
 import {
   type ProfileThemeColors,
   type CustomPresetData,
@@ -30,6 +30,7 @@ interface ThemeEditorProps {
   bio: string | null;
   avatarSrc: string | null;
   onChange?: () => void;
+  onColorsChange?: (colors: ProfileThemeColors) => void;
   isPremium?: boolean;
   userEmail?: string | null;
   customPresets?: CustomPresetData[];
@@ -88,6 +89,7 @@ export function ThemeEditor({
   bio,
   avatarSrc,
   onChange,
+  onColorsChange,
   isPremium = true,
   userEmail,
   customPresets: initialCustomPresets = [],
@@ -147,6 +149,11 @@ export function ThemeEditor({
   const [saveCurrentError, setSaveCurrentError] = useState<string | null>(null);
 
   const isCustomUpload = bgImage?.includes("blob.vercel-storage.com") ?? false;
+
+  // Notify parent of live color changes for real-time preview
+  useEffect(() => {
+    onColorsChange?.(colors);
+  }, [colors, onColorsChange]);
 
   // --- Theme handlers ---
 
@@ -360,7 +367,7 @@ export function ThemeEditor({
         className="flex w-full items-center justify-between p-4 text-left"
       >
         <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-          Profile Theme {"&"} Background
+          Theme {"&"} Background
         </h2>
         <svg
           className={`h-5 w-5 text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
