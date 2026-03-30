@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ThemePreview } from "@/components/theme-preview";
 
+vi.mock("@/components/bio-content", () => ({
+  BioContent: ({ content }: { content: string }) => <div data-testid="bio-content">{content}</div>,
+}));
+
 vi.mock("@/lib/profile-themes", () => ({
   generateAdaptiveTheme: (colors: Record<string, string>) => ({
     light: {
@@ -96,6 +100,11 @@ describe("ThemePreview", () => {
 
   it("shows bio preview text", () => {
     render(<ThemePreview {...defaultProps} />);
+    expect(screen.getByTestId("bio-content")).toBeInTheDocument();
+  });
+
+  it("shows placeholder when bio is null", () => {
+    render(<ThemePreview {...defaultProps} bio={null} />);
     expect(
       screen.getByText(
         "This is what your profile bio will look like with these colors."

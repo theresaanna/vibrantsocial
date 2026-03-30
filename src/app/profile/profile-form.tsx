@@ -833,7 +833,8 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
           displayName={user.displayName}
           bio={user.bio}
           avatarSrc={avatarPreview || oauthImage}
-          onChange={scheduleAutosave}
+          onSave={() => formRef.current?.requestSubmit()}
+          isSavingForm={isPending}
           isPremium={isPremium}
           userEmail={userEmail}
           customPresets={customPresets}

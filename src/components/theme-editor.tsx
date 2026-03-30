@@ -23,6 +23,8 @@ interface ThemeEditorProps {
   bio: string | null;
   avatarSrc: string | null;
   onChange?: () => void;
+  onSave?: () => void;
+  isSavingForm?: boolean;
   isPremium?: boolean;
   userEmail?: string | null;
   customPresets?: CustomPresetData[];
@@ -43,6 +45,8 @@ export function ThemeEditor({
   bio,
   avatarSrc,
   onChange,
+  onSave,
+  isSavingForm = false,
   isPremium = true,
   userEmail,
   customPresets: initialCustomPresets = [],
@@ -86,9 +90,8 @@ export function ThemeEditor({
       setColors(PROFILE_THEME_PRESETS[presetName]);
       setActivePreset(presetName);
       setGeneratedTheme(null);
-      onChange?.();
     },
-    [onChange]
+    []
   );
 
   const handleCustomPresetSelect = useCallback(
@@ -96,18 +99,16 @@ export function ThemeEditor({
       setColors(preset.light);
       setActivePreset(`custom:${preset.id}`);
       setGeneratedTheme(null);
-      onChange?.();
     },
-    [onChange]
+    []
   );
 
   const handleColorChange = useCallback(
     (field: keyof ProfileThemeColors, value: string) => {
       setColors((prev) => ({ ...prev, [field]: value }));
       setActivePreset(null);
-      onChange?.();
     },
-    [onChange]
+    []
   );
 
   const handleGenerate = useCallback(() => {
@@ -126,12 +127,11 @@ export function ThemeEditor({
           dark: result.dark,
         });
         setPresetName(result.name);
-        onChange?.();
       } else {
         setGenerationError(result.error ?? "Failed to generate theme");
       }
     });
-  }, [aiPrompt, isGenerating, onChange]);
+  }, [aiPrompt, isGenerating]);
 
   const handleSavePreset = useCallback(() => {
     if (!generatedTheme || !presetName.trim() || isSaving) return;
@@ -205,6 +205,18 @@ export function ThemeEditor({
 
       {isOpen && (
         <div id={contentId} className="space-y-4 px-4 pb-4">
+          {/* Save button — top */}
+          {onSave && (
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={isSavingForm}
+              className="w-full rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            >
+              {isSavingForm ? "Saving..." : "Save Theme"}
+            </button>
+          )}
+
           {/* Preset buttons */}
           <div className="flex flex-wrap gap-2">
             {Object.entries(PROFILE_THEME_PRESETS).map(([name, preset]) => (
@@ -413,6 +425,18 @@ export function ThemeEditor({
               avatarSrc={avatarSrc}
               onClose={() => setShowPreview(false)}
             />
+          )}
+
+          {/* Save button — bottom */}
+          {onSave && (
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={isSavingForm}
+              className="w-full rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            >
+              {isSavingForm ? "Saving..." : "Save Theme"}
+            </button>
           )}
         </div>
       )}
