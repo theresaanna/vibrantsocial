@@ -88,18 +88,6 @@ export function NavLinks({ username }: { username?: string | null }) {
       ),
     },
     {
-      href: "/close-friends",
-      label: "Close Friends",
-      matchPrefix: true,
-      color: "hover:bg-green-50 hover:text-green-500 dark:hover:bg-green-900/20 dark:hover:text-green-500",
-      activeColor: "bg-green-50 text-green-500 dark:bg-green-900/20 dark:text-green-500",
-      icon: (
-        <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M10.5 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-7 9a7 7 0 0 1 14 0H3.5ZM18 8.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5ZM16.5 13c0-.78.145-1.527.41-2.215A5.98 5.98 0 0 0 13.5 9.75a5.973 5.973 0 0 0-1.958.33A7.02 7.02 0 0 1 17.5 16h4a.5.5 0 0 0 .5-.5 5.5 5.5 0 0 0-5.5-2.5Z" />
-        </svg>
-      ),
-    },
-    {
       href: "/marketplace",
       label: "Marketplace",
       matchPrefix: true,
