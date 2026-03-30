@@ -39,17 +39,13 @@ function BackgroundGrid({
 }) {
   const [hoveredBg, setHoveredBg] = useState<BackgroundDefinition | null>(null);
   const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const handleMouseEnter = useCallback((bg: BackgroundDefinition, e: React.MouseEvent<HTMLButtonElement>) => {
     const btn = e.currentTarget;
-    const container = containerRef.current;
-    if (!container) return;
     const btnRect = btn.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
     setPopoverPos({
-      top: btnRect.bottom - containerRect.top + 8,
-      left: btnRect.left - containerRect.left + btnRect.width / 2,
+      top: btnRect.bottom + 8,
+      left: btnRect.left + btnRect.width / 2,
     });
     setHoveredBg(bg);
   }, []);
@@ -60,7 +56,7 @@ function BackgroundGrid({
   }, []);
 
   return (
-    <div ref={containerRef} className="relative flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2">
       {backgrounds.map((bg) => (
         <button
           key={bg.id}
@@ -85,7 +81,7 @@ function BackgroundGrid({
       ))}
       {hoveredBg && popoverPos && (
         <div
-          className="pointer-events-none absolute z-50 h-40 w-64 -translate-x-1/2 overflow-hidden rounded-xl border border-zinc-200 shadow-lg dark:border-zinc-700"
+          className="pointer-events-none fixed z-[9999] h-40 w-64 -translate-x-1/2 overflow-hidden rounded-xl border border-zinc-200 shadow-lg dark:border-zinc-700"
           style={{
             top: popoverPos.top,
             left: popoverPos.left,
