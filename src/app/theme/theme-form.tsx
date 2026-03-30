@@ -201,6 +201,7 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
               isPremium={isPremium}
               userEmail={userEmail}
               customPresets={customPresets}
+              backgrounds={[...backgrounds, ...premiumBackgrounds]}
             />
 
             <BackgroundEditor

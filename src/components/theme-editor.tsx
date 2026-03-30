@@ -7,10 +7,13 @@ import {
   PROFILE_THEME_PRESETS,
   THEME_COLOR_FIELDS,
 } from "@/lib/profile-themes";
+import type { BackgroundDefinition } from "@/lib/profile-backgrounds";
 import {
+  generateTheme,
   saveCustomPreset,
   deleteCustomPreset,
 } from "@/app/theme/generate-theme-action";
+import { extractContentFromLexicalJson } from "@/lib/lexical-text";
 import { PremiumCrown } from "./premium-crown";
 
 interface ThemeEditorProps {
@@ -26,6 +29,7 @@ interface ThemeEditorProps {
   isPremium?: boolean;
   userEmail?: string | null;
   customPresets?: CustomPresetData[];
+  backgrounds?: BackgroundDefinition[];
 }
 
 export function ThemeEditor({
@@ -41,6 +45,7 @@ export function ThemeEditor({
   isPremium = true,
   userEmail,
   customPresets: initialCustomPresets = [],
+  backgrounds = [],
 }: ThemeEditorProps) {
   const defaultPreset = PROFILE_THEME_PRESETS.default;
   const savedColors = useRef<ProfileThemeColors>({
@@ -72,6 +77,20 @@ export function ThemeEditor({
   const [saveCurrentName, setSaveCurrentName] = useState("");
   const [showSaveCurrent, setShowSaveCurrent] = useState(false);
   const [saveCurrentError, setSaveCurrentError] = useState<string | null>(null);
+
+  // AI generation state
+  const [selectedBgImage, setSelectedBgImage] = useState<string | null>(null);
+  const [isGenerating, startGenerateTransition] = useTransition();
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [generatedTheme, setGeneratedTheme] = useState<{
+    name: string;
+    light: ProfileThemeColors;
+    dark: ProfileThemeColors;
+  } | null>(null);
+  const [presetName, setPresetName] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Notify parent of live color changes for real-time preview
   useEffect(() => {
@@ -130,6 +149,104 @@ export function ThemeEditor({
     },
     [activePreset]
   );
+
+  // --- AI generation handlers ---
+
+  const handleBgSelect = useCallback((bg: BackgroundDefinition) => {
+    setSelectedBgImage(bg.src);
+    setGenerationError(null);
+  }, []);
+
+  const handleUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      setUploading(true);
+      setUploadError(null);
+
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("/api/profile-background", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const data = await res.json();
+          setUploadError(data.error || "Upload failed");
+          return;
+        }
+
+        const { url } = await res.json();
+        setSelectedBgImage(url);
+        setGenerationError(null);
+      } catch {
+        setUploadError("Upload failed");
+      } finally {
+        setUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    },
+    []
+  );
+
+  const handleGenerate = useCallback(() => {
+    if (!selectedBgImage || isGenerating) return;
+    setGenerationError(null);
+    setGeneratedTheme(null);
+
+    startGenerateTransition(async () => {
+      const result = await generateTheme(selectedBgImage);
+      if (result.success && result.light && result.dark && result.name) {
+        setColors(result.light);
+        setActivePreset(null);
+        setGeneratedTheme({
+          name: result.name,
+          light: result.light,
+          dark: result.dark,
+        });
+        setPresetName(result.name);
+        onChange?.();
+      } else {
+        setGenerationError(result.error ?? "Failed to generate theme");
+      }
+    });
+  }, [selectedBgImage, isGenerating, onChange]);
+
+  const handleSaveGeneratedPreset = useCallback(() => {
+    if (!generatedTheme || !presetName.trim() || isSaving) return;
+
+    startSaveTransition(async () => {
+      const result = await saveCustomPreset({
+        name: presetName.trim(),
+        imageUrl: selectedBgImage ?? "",
+        light: generatedTheme.light,
+        dark: generatedTheme.dark,
+      });
+      if (result.success && result.preset) {
+        setCustomPresets((prev) => {
+          const existing = prev.findIndex((p) => p.name === result.preset!.name);
+          if (existing >= 0) {
+            const updated = [...prev];
+            updated[existing] = result.preset!;
+            return updated;
+          }
+          return [...prev, result.preset!];
+        });
+        setActivePreset(`custom:${result.preset.id}`);
+        setGeneratedTheme(null);
+      } else {
+        setGenerationError(result.error ?? "Failed to save preset");
+      }
+    });
+  }, [generatedTheme, presetName, selectedBgImage, isSaving]);
+
+  const isCustomUpload =
+    selectedBgImage?.includes("blob.vercel-storage.com") ?? false;
+
+  const bioText = bio ? extractContentFromLexicalJson(bio).text : null;
 
   const name = displayName || username || "Your Name";
   const initial = name[0]?.toUpperCase() ?? "?";
@@ -228,7 +345,7 @@ export function ThemeEditor({
                   className="mt-2 text-xs"
                   style={{ color: colors.profileSecondaryColor }}
                 >
-                  {bio || "This is what your bio will look like with these colors."}
+                  {bioText || "This is what your bio will look like with these colors."}
                 </p>
 
                 <div className="mt-2 flex gap-3 text-xs">
@@ -303,67 +420,6 @@ export function ThemeEditor({
             </div>
           )}
 
-          {/* Save current theme as preset — premium only */}
-          {isPremium && (
-            <div>
-              {!showSaveCurrent ? (
-                <button
-                  type="button"
-                  onClick={() => setShowSaveCurrent(true)}
-                  className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                >
-                  Save Current Theme as Preset
-                </button>
-              ) : (
-                <div className="space-y-2">
-                  <div
-                    className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-2 dark:border-zinc-700 dark:bg-zinc-800"
-                    data-testid="save-current-theme-form"
-                  >
-                    <input
-                      type="text"
-                      value={saveCurrentName}
-                      onChange={(e) => setSaveCurrentName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleSaveCurrentTheme();
-                        }
-                      }}
-                      placeholder="Preset name"
-                      className="flex-1 rounded border border-zinc-300 bg-transparent px-2 py-1 text-sm dark:border-zinc-600 dark:text-zinc-100"
-                      maxLength={30}
-                      data-testid="save-current-name-input"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleSaveCurrentTheme}
-                      disabled={isSaving || !saveCurrentName.trim()}
-                      className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
-                      data-testid="save-current-button"
-                    >
-                      {isSaving ? "Saving..." : "Save Preset"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowSaveCurrent(false);
-                        setSaveCurrentName("");
-                        setSaveCurrentError(null);
-                      }}
-                      className="rounded-lg px-2 py-1 text-sm text-zinc-500 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                  {saveCurrentError && (
-                    <p className="text-xs text-red-500">{saveCurrentError}</p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Theme preset buttons */}
           <div>
             <label className="mb-2 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
@@ -426,6 +482,193 @@ export function ThemeEditor({
               ))}
             </div>
           </div>
+
+          {/* AI theme from background — premium only */}
+          {backgrounds.length > 0 && (
+            <div
+              className="relative"
+              data-testid={
+                isPremium ? "ai-theme-generator" : "ai-theme-upgrade-prompt"
+              }
+            >
+              <PremiumCrown href="/premium" />
+              <div
+                className={`space-y-3 ${!isPremium ? "pointer-events-none opacity-50" : ""}`}
+              >
+                <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                  Generate a color scheme
+                </label>
+
+                {/* Background selection grid */}
+                <div className="flex flex-wrap gap-2">
+                  {backgrounds.map((bg) => (
+                    <button
+                      key={bg.id}
+                      type="button"
+                      onClick={() => handleBgSelect(bg)}
+                      title={bg.name}
+                      disabled={!isPremium}
+                      className={`h-12 w-12 overflow-hidden rounded-lg border transition-all ${
+                        selectedBgImage === bg.src
+                          ? "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-900"
+                          : "border-zinc-200 dark:border-zinc-700"
+                      }`}
+                      data-testid={`theme-bg-${bg.id}`}
+                    >
+                      <img
+                        src={bg.thumbSrc}
+                        alt={bg.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+
+                {/* Upload custom background */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading || !isPremium}
+                    className="rounded-lg bg-fuchsia-50 px-3 py-1.5 text-sm font-medium text-fuchsia-600 transition-colors hover:bg-fuchsia-100 disabled:opacity-50 dark:bg-fuchsia-900/20 dark:text-fuchsia-400 dark:hover:bg-fuchsia-900/30"
+                  >
+                    {uploading ? "Uploading..." : "Upload Image"}
+                  </button>
+                  {isCustomUpload && selectedBgImage && (
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                      Custom image selected
+                    </span>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+                  onChange={handleUpload}
+                  className="hidden"
+                />
+                {uploadError && (
+                  <p className="text-xs text-red-500">{uploadError}</p>
+                )}
+
+                {/* Preview of selected image */}
+                {selectedBgImage && (
+                  <div
+                    className="h-20 w-full rounded-lg border border-zinc-200 bg-cover bg-center dark:border-zinc-700"
+                    style={{ backgroundImage: `url(${selectedBgImage})` }}
+                  />
+                )}
+
+                {/* Generate button */}
+                <button
+                  type="button"
+                  onClick={handleGenerate}
+                  disabled={!isPremium || isGenerating || !selectedBgImage}
+                  className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                  data-testid="ai-generate-button"
+                >
+                  {isGenerating ? "Generating..." : "Generate Theme from Image"}
+                </button>
+
+                {generationError && (
+                  <p
+                    className="text-xs text-red-500"
+                    data-testid="ai-generation-error"
+                  >
+                    {generationError}
+                  </p>
+                )}
+
+                {/* Save generated theme as preset */}
+                {generatedTheme && (
+                  <div
+                    className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-2 dark:border-zinc-700 dark:bg-zinc-800"
+                    data-testid="save-preset-form"
+                  >
+                    <input
+                      type="text"
+                      value={presetName}
+                      onChange={(e) => setPresetName(e.target.value)}
+                      placeholder="Preset name"
+                      className="flex-1 rounded border border-zinc-300 bg-transparent px-2 py-1 text-sm dark:border-zinc-600 dark:text-zinc-100"
+                      maxLength={30}
+                      data-testid="preset-name-input"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSaveGeneratedPreset}
+                      disabled={isSaving || !presetName.trim()}
+                      className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+                      data-testid="save-preset-button"
+                    >
+                      {isSaving ? "Saving..." : "Save Preset"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Save current theme as preset — premium only */}
+          {isPremium && (
+            <div>
+              {!showSaveCurrent ? (
+                <button
+                  type="button"
+                  onClick={() => setShowSaveCurrent(true)}
+                  className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                >
+                  Save Current Theme as Preset
+                </button>
+              ) : (
+                <div className="space-y-2">
+                  <div
+                    className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-2 dark:border-zinc-700 dark:bg-zinc-800"
+                    data-testid="save-current-theme-form"
+                  >
+                    <input
+                      type="text"
+                      value={saveCurrentName}
+                      onChange={(e) => setSaveCurrentName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleSaveCurrentTheme();
+                        }
+                      }}
+                      placeholder="Preset name"
+                      className="flex-1 rounded border border-zinc-300 bg-transparent px-2 py-1 text-sm dark:border-zinc-600 dark:text-zinc-100"
+                      maxLength={30}
+                      data-testid="save-current-name-input"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSaveCurrentTheme}
+                      disabled={isSaving || !saveCurrentName.trim()}
+                      className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+                      data-testid="save-current-button"
+                    >
+                      {isSaving ? "Saving..." : "Save Preset"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSaveCurrent(false);
+                        setSaveCurrentName("");
+                        setSaveCurrentError(null);
+                      }}
+                      className="rounded-lg px-2 py-1 text-sm text-zinc-500 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  {saveCurrentError && (
+                    <p className="text-xs text-red-500">{saveCurrentError}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Save button — bottom */}
           {saveButton}
