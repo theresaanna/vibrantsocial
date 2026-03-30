@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useModal } from "@/hooks/use-modal";
 import { submitReport, type ReportState } from "@/app/report/actions";
 import Link from "next/link";
 
@@ -26,14 +27,7 @@ export function ReportModal({ contentType, contentId, isOpen, onClose }: ReportM
   });
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [isOpen, onClose]);
+  useModal(isOpen, onClose, { lockScroll: false });
 
   if (!isOpen) return null;
 

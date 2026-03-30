@@ -20,6 +20,8 @@ export function getNotificationText(type: NotificationType): string {
       return "mentioned you";
     case "FRIEND_REQUEST":
       return "sent you a friend request";
+    case "FRIEND_REQUEST_ACCEPTED":
+      return "accepted your friend request";
     case "NEW_POST":
       return "published a new post";
     case "TAG_POST":
@@ -38,6 +40,16 @@ export function getNotificationText(type: NotificationType): string {
       return "added you as a collaborator on a list";
     case "WALL_POST":
       return "posted on your wall";
+    case "MARKETPLACE_QUESTION":
+      return "asked a question on your listing";
+    case "MARKETPLACE_ANSWER":
+      return "answered your question on a listing";
+    case "CHAT_REQUEST":
+      return "sent you a chat request";
+    case "CHAT_REQUEST_ACCEPTED":
+      return "accepted your chat request";
+    case "CHAT_ABUSE":
+      return "may be sending you abusive messages. You can report or block this user.";
     default:
       return "";
   }

@@ -10,10 +10,12 @@ import {
   type SerializedLexicalNode,
   type Spread,
 } from "lexical";
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $getNodeByKey } from "lexical";
-import { useIsPostAuthor } from "../PostAuthorContext";
+import { usePostContext } from "../PostAuthorContext";
+import { votePoll, getPollVotes } from "@/app/feed/poll-actions";
+import { getAblyRealtimeClient } from "@/lib/ably";
 
 export interface PollOption {
   id: string;
@@ -26,7 +28,7 @@ export type SerializedPollNode = Spread<
   SerializedLexicalNode
 >;
 
-function PollComponent({
+export function PollComponent({
   question,
   options: initialOptions,
   expiresAt,
@@ -38,14 +40,76 @@ function PollComponent({
   nodeKey: NodeKey;
 }) {
   const [editor] = useLexicalComposerContext();
-  const isPostAuthor = useIsPostAuthor();
+  const { isPostAuthor, postId, currentUserId } = usePostContext();
   const [options, setOptions] = useState(initialOptions);
   const [votedId, setVotedId] = useState<string | null>(null);
+  const [voting, setVoting] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const [loaded, setLoaded] = useState(false);
+  const mountedRef = useRef(true);
 
   const totalVotes = options.reduce((sum, o) => sum + o.votes, 0);
   const isExpired = expiresAt ? new Date(expiresAt).getTime() <= now : false;
 
+  // Apply a vote counts map to the current options
+  const applyVoteCounts = useCallback(
+    (counts: Record<string, number>) => {
+      setOptions((prev) =>
+        prev.map((o) => ({ ...o, votes: counts[o.id] ?? 0 })),
+      );
+    },
+    [],
+  );
+
+  // Fetch persisted votes on mount
+  useEffect(() => {
+    if (!postId) {
+      setLoaded(true);
+      return;
+    }
+    let cancelled = false;
+    getPollVotes(postId).then((result) => {
+      if (cancelled) return;
+      applyVoteCounts(result.votes);
+      if (result.userVote) setVotedId(result.userVote);
+      setLoaded(true);
+    }).catch(() => {
+      if (!cancelled) setLoaded(true);
+    });
+    return () => { cancelled = true; };
+  }, [postId, applyVoteCounts]);
+
+  // Subscribe to Ably for real-time vote updates
+  useEffect(() => {
+    if (!postId) return;
+
+    const ably = getAblyRealtimeClient();
+    if (ably.connection.state === "initialized") {
+      ably.connect();
+    }
+
+    const channel = ably.channels.get(`poll:${postId}`);
+    const handler = (message: { data?: { votes?: Record<string, number>; voterId?: string } }) => {
+      if (!mountedRef.current) return;
+      const data = message.data;
+      if (data?.votes) {
+        applyVoteCounts(data.votes);
+      }
+    };
+
+    channel.subscribe("vote", handler);
+    return () => {
+      channel.unsubscribe("vote", handler);
+    };
+  }, [postId, applyVoteCounts]);
+
+  // Cleanup mounted ref
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  // Countdown timer for poll expiration
   useEffect(() => {
     if (!expiresAt || isExpired) return;
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -66,64 +130,107 @@ function PollComponent({
     return `${seconds}s remaining`;
   }
 
-  function handleVote(optionId: string) {
-    if (votedId || isExpired) return;
+  async function handleVote(optionId: string) {
+    if (votedId || isExpired || voting || !postId || !currentUserId) return;
+    setVoting(true);
+
+    // Optimistic update
     setVotedId(optionId);
-    const updated = options.map((o) =>
-      o.id === optionId ? { ...o, votes: o.votes + 1 } : o
+    setOptions((prev) =>
+      prev.map((o) =>
+        o.id === optionId ? { ...o, votes: o.votes + 1 } : o,
+      ),
     );
-    setOptions(updated);
+
+    try {
+      const result = await votePoll(postId, optionId);
+      // Apply authoritative counts from server
+      applyVoteCounts(result.votes);
+    } catch {
+      // Revert optimistic update on failure
+      setVotedId(null);
+      setOptions((prev) =>
+        prev.map((o) =>
+          o.id === optionId ? { ...o, votes: Math.max(0, o.votes - 1) } : o,
+        ),
+      );
+    } finally {
+      setVoting(false);
+    }
+  }
+
+  // Sync options back to Lexical node so export stays current
+  useEffect(() => {
     editor.update(() => {
       const node = $getNodeByKey(nodeKey);
       if ($isPollNode(node)) {
-        node.setOptions(updated);
+        node.setOptions(options);
       }
     });
-  }
+  }, [editor, nodeKey, options]);
 
   const showResults = !!votedId || isExpired || isPostAuthor;
 
+  // Show a subtle skeleton while loading persisted votes
+  if (!loaded && postId) {
+    return (
+      <div className="poll-border my-2 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+        <p className="poll-question mb-3 font-medium text-zinc-900 dark:text-zinc-100">{question}</p>
+        <div className="space-y-2">
+          {initialOptions.map((option) => (
+            <div
+              key={option.id}
+              className="h-10 animate-pulse rounded-lg bg-zinc-100 dark:bg-zinc-800"
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="my-2 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-      <p className="mb-3 font-medium text-zinc-900 dark:text-zinc-100">{question}</p>
+    <div className="poll-border my-2 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+      <p className="poll-question mb-3 font-medium text-zinc-900 dark:text-zinc-100">{question}</p>
       <div className="space-y-2">
         {options.map((option) => {
-          const pct = totalVotes > 0 ? Math.round((option.votes / (totalVotes + (showResults ? 0 : 1))) * 100) : 0;
+          const pct = totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
           return (
             <button
               key={option.id}
               type="button"
               onClick={() => handleVote(option.id)}
-              disabled={showResults}
+              disabled={showResults || voting}
               className={`relative w-full overflow-hidden rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
                 showResults
-                  ? "cursor-default border-zinc-200 dark:border-zinc-700"
-                  : "border-zinc-300 hover:border-blue-400 hover:bg-blue-50 dark:border-zinc-600 dark:hover:border-blue-500 dark:hover:bg-blue-900/20"
+                  ? `poll-option-result cursor-default border-zinc-200 dark:border-zinc-700`
+                  : `poll-option border-zinc-300 hover:border-blue-400 hover:bg-blue-50 dark:border-zinc-600 dark:hover:border-blue-500 dark:hover:bg-blue-900/20`
               }`}
             >
               {showResults && (
                 <div
-                  className={`absolute inset-y-0 left-0 ${
-                    votedId === option.id ? "bg-blue-100 dark:bg-blue-900/30" : "bg-zinc-100 dark:bg-zinc-800"
+                  className={`absolute inset-y-0 left-0 transition-all duration-300 ${
+                    votedId === option.id
+                      ? "poll-bar-voted bg-blue-100 dark:bg-blue-900/30"
+                      : "poll-bar-default bg-zinc-100 dark:bg-zinc-800"
                   }`}
                   style={{ width: `${pct}%` }}
                 />
               )}
               <span className="relative flex justify-between">
-                <span>{option.text}</span>
-                {showResults && <span className="text-zinc-500">{pct}%</span>}
+                <span className="poll-option-text">{option.text}</span>
+                {showResults && <span className="poll-pct text-zinc-500">{pct}%</span>}
               </span>
             </button>
           );
         })}
       </div>
       {showResults && (
-        <p className="mt-2 text-xs text-zinc-500">
+        <p className="poll-meta mt-2 text-xs text-zinc-500">
           {totalVotes} vote{totalVotes !== 1 ? "s" : ""}
         </p>
       )}
       {expiresAt && (
-        <p className={`mt-1 text-xs ${isExpired ? "text-red-500" : "text-zinc-500"}`}>
+        <p className={`poll-meta mt-1 text-xs ${isExpired ? "text-red-500" : "text-zinc-500"}`}>
           {getTimeRemaining()}
         </p>
       )}

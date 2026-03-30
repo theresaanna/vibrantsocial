@@ -1,26 +1,19 @@
 "use server";
 
 import { auth } from "@/auth";
-import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-
-interface CloseFriendActionState {
-  success: boolean;
-  message: string;
-}
+import { cached, invalidate, cacheKeys } from "@/lib/cache";
+import { requireAuthWithRateLimit, isActionError, areFriends, USER_PROFILE_SELECT } from "@/lib/action-utils";
+import type { ActionState } from "@/lib/action-utils";
 
 export async function addCloseFriend(
-  _prevState: CloseFriendActionState,
+  _prevState: ActionState,
   formData: FormData
-): Promise<CloseFriendActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `close-friend:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+): Promise<ActionState> {
+  const result = await requireAuthWithRateLimit("close-friend");
+  if (isActionError(result)) return result;
+  const session = result;
 
   const friendId = formData.get("friendId") as string;
   if (!friendId) {
@@ -32,17 +25,7 @@ export async function addCloseFriend(
   }
 
   // Verify they are actually friends (accepted friend request)
-  const friendship = await prisma.friendRequest.findFirst({
-    where: {
-      status: "ACCEPTED",
-      OR: [
-        { senderId: session.user.id, receiverId: friendId },
-        { senderId: friendId, receiverId: session.user.id },
-      ],
-    },
-  });
-
-  if (!friendship) {
+  if (!(await areFriends(session.user.id, friendId))) {
     return { success: false, message: "You must be friends first" };
   }
 
@@ -58,22 +41,22 @@ export async function addCloseFriend(
     data: { userId: session.user.id, friendId },
   });
 
+  await Promise.all([
+    invalidate(cacheKeys.userCloseFriendIds(session.user.id)),
+    invalidate(cacheKeys.userCloseFriendOf(friendId)),
+  ]);
+
   revalidatePath("/close-friends");
   return { success: true, message: "Added to close friends" };
 }
 
 export async function removeCloseFriend(
-  _prevState: CloseFriendActionState,
+  _prevState: ActionState,
   formData: FormData
-): Promise<CloseFriendActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `close-friend:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+): Promise<ActionState> {
+  const result = await requireAuthWithRateLimit("close-friend");
+  if (isActionError(result)) return result;
+  const session = result;
 
   const friendId = formData.get("friendId") as string;
   if (!friendId) {
@@ -90,6 +73,11 @@ export async function removeCloseFriend(
 
   await prisma.closeFriend.delete({ where: { id: existing.id } });
 
+  await Promise.all([
+    invalidate(cacheKeys.userCloseFriendIds(session.user.id)),
+    invalidate(cacheKeys.userCloseFriendOf(friendId)),
+  ]);
+
   revalidatePath("/close-friends");
   return { success: true, message: "Removed from close friends" };
 }
@@ -102,16 +90,7 @@ export async function getCloseFriends() {
     where: { userId: session.user.id },
     include: {
       friend: {
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          name: true,
-          avatar: true,
-          profileFrameId: true,
-          usernameFont: true,
-          image: true,
-        },
+        select: USER_PROFILE_SELECT,
       },
     },
     orderBy: { createdAt: "desc" },
@@ -119,11 +98,35 @@ export async function getCloseFriends() {
 }
 
 export async function getCloseFriendIds(userId: string): Promise<string[]> {
-  const rows = await prisma.closeFriend.findMany({
-    where: { userId },
-    select: { friendId: true },
-  });
-  return rows.map((r) => r.friendId);
+  return cached(
+    cacheKeys.userCloseFriendIds(userId),
+    async () => {
+      const rows = await prisma.closeFriend.findMany({
+        where: { userId },
+        select: { friendId: true },
+      });
+      return rows.map((r: { friendId: string }) => r.friendId);
+    },
+    120
+  );
+}
+
+/**
+ * Get IDs of users who have added the given user as a close friend (cached).
+ * Used to determine which close-friends-only posts the user can see.
+ */
+export async function getCachedCloseFriendOfIds(userId: string): Promise<string[]> {
+  return cached(
+    cacheKeys.userCloseFriendOf(userId),
+    async () => {
+      const rows = await prisma.closeFriend.findMany({
+        where: { friendId: userId },
+        select: { userId: true },
+      });
+      return rows.map((r: { userId: string }) => r.userId);
+    },
+    120
+  );
 }
 
 export async function isCloseFriend(
@@ -150,28 +153,10 @@ export async function getAcceptedFriends() {
     },
     include: {
       sender: {
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          name: true,
-          avatar: true,
-          profileFrameId: true,
-          usernameFont: true,
-          image: true,
-        },
+        select: USER_PROFILE_SELECT,
       },
       receiver: {
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          name: true,
-          avatar: true,
-          profileFrameId: true,
-          usernameFont: true,
-          image: true,
-        },
+        select: USER_PROFILE_SELECT,
       },
     },
     orderBy: { updatedAt: "desc" },

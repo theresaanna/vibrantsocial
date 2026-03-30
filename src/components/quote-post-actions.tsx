@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, useTransition } from "react";
+import { useState } from "react";
 import {
   toggleRepostLike,
   toggleRepostBookmark,
   toggleRepost,
 } from "@/app/feed/post-actions";
+import { useOptimisticToggle } from "@/hooks/use-optimistic-toggle";
 
 interface QuotePostActionsProps {
   repostId: string;
@@ -32,62 +33,9 @@ export function QuotePostActions({
   onQuotePost,
   readOnly,
 }: QuotePostActionsProps) {
-  const [liked, setLiked] = useState(isLiked);
-  const [likes, setLikes] = useState(likeCount);
-  const [bookmarked, setBookmarked] = useState(isBookmarked);
-  const [bookmarks, setBookmarks] = useState(bookmarkCount);
+  const like = useOptimisticToggle(isLiked, likeCount, toggleRepostLike, { repostId });
+  const bookmark = useOptimisticToggle(isBookmarked, bookmarkCount, toggleRepostBookmark, { repostId });
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => { setLiked(isLiked); }, [isLiked]);
-  useEffect(() => { setLikes(likeCount); }, [likeCount]);
-  useEffect(() => { setBookmarked(isBookmarked); }, [isBookmarked]);
-  useEffect(() => { setBookmarks(bookmarkCount); }, [bookmarkCount]);
-
-  const [, startLikeTransition] = useTransition();
-  const [, startBookmarkTransition] = useTransition();
-
-  const likeInFlight = useRef(false);
-  const bookmarkInFlight = useRef(false);
-
-  const handleLike = () => {
-    if (likeInFlight.current) return;
-    likeInFlight.current = true;
-
-    const wasLiked = liked;
-    setLiked(!wasLiked);
-    setLikes((c) => wasLiked ? c - 1 : c + 1);
-
-    const formData = new FormData();
-    formData.set("repostId", repostId);
-    startLikeTransition(async () => {
-      const result = await toggleRepostLike({ success: false, message: "" }, formData);
-      if (!result.success) {
-        setLiked(wasLiked);
-        setLikes((c) => wasLiked ? c + 1 : c - 1);
-      }
-      likeInFlight.current = false;
-    });
-  };
-
-  const handleBookmark = () => {
-    if (bookmarkInFlight.current) return;
-    bookmarkInFlight.current = true;
-
-    const wasBookmarked = bookmarked;
-    setBookmarked(!wasBookmarked);
-    setBookmarks((c) => wasBookmarked ? c - 1 : c + 1);
-
-    const formData = new FormData();
-    formData.set("repostId", repostId);
-    startBookmarkTransition(async () => {
-      const result = await toggleRepostBookmark({ success: false, message: "" }, formData);
-      if (!result.success) {
-        setBookmarked(wasBookmarked);
-        setBookmarks((c) => wasBookmarked ? c + 1 : c - 1);
-      }
-      bookmarkInFlight.current = false;
-    });
-  };
 
   const handleShare = async () => {
     const url = `${window.location.origin}/quote/${repostId}`;
@@ -118,28 +66,28 @@ export function QuotePostActions({
           <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
           </svg>
-          {likes > 0 && <span>{likes}</span>}
+          {like.count > 0 && <span>{like.count}</span>}
         </span>
       ) : (
         <button
           type="button"
-          onClick={handleLike}
+          onClick={like.handleToggle}
           className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-red-50 dark:hover:bg-red-900/20 ${
-            liked ? "text-red-500" : "text-zinc-500 hover:text-red-500"
+            like.value ? "text-red-500" : "text-zinc-500 hover:text-red-500"
           }`}
-          aria-label={liked ? "Unlike" : "Like"}
+          aria-label={like.value ? "Unlike" : "Like"}
           data-testid="quote-like-button"
         >
           <svg
             className="h-4 w-4"
-            fill={liked ? "currentColor" : "none"}
+            fill={like.value ? "currentColor" : "none"}
             stroke="currentColor"
             strokeWidth={2}
             viewBox="0 0 24 24"
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
           </svg>
-          {likes > 0 && <span>{likes}</span>}
+          {like.count > 0 && <span>{like.count}</span>}
         </button>
       )}
 
@@ -179,28 +127,28 @@ export function QuotePostActions({
           <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
           </svg>
-          {bookmarks > 0 && <span>{bookmarks}</span>}
+          {bookmark.count > 0 && <span>{bookmark.count}</span>}
         </span>
       ) : (
         <button
           type="button"
-          onClick={handleBookmark}
+          onClick={bookmark.handleToggle}
           className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-yellow-50 dark:hover:bg-yellow-900/20 ${
-            bookmarked ? "text-yellow-500" : "text-zinc-500 hover:text-yellow-500"
+            bookmark.value ? "text-yellow-500" : "text-zinc-500 hover:text-yellow-500"
           }`}
-          aria-label={bookmarked ? "Unbookmark" : "Bookmark"}
+          aria-label={bookmark.value ? "Unbookmark" : "Bookmark"}
           data-testid="quote-bookmark-button"
         >
           <svg
             className="h-4 w-4"
-            fill={bookmarked ? "currentColor" : "none"}
+            fill={bookmark.value ? "currentColor" : "none"}
             stroke="currentColor"
             strokeWidth={2}
             viewBox="0 0 24 24"
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
           </svg>
-          {bookmarks > 0 && <span>{bookmarks}</span>}
+          {bookmark.count > 0 && <span>{bookmark.count}</span>}
         </button>
       )}
 

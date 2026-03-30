@@ -5,29 +5,17 @@ import { ThemeEditor } from "@/components/theme-editor";
 import { PROFILE_THEME_PRESETS } from "@/lib/profile-themes";
 import type { CustomPresetData } from "@/lib/profile-themes";
 
-// Mock ThemePreview to keep tests focused
-vi.mock("@/components/theme-preview", () => ({
-  ThemePreview: ({ onClose }: { onClose: () => void }) => (
-    <div data-testid="theme-preview">
-      <button onClick={onClose}>Close</button>
-    </div>
-  ),
-}));
-
 // Mock server actions
-vi.mock("@/app/profile/generate-theme-action", () => ({
-  generateTheme: vi.fn(),
+vi.mock("@/app/theme/generate-theme-action", () => ({
   saveCustomPreset: vi.fn(),
   deleteCustomPreset: vi.fn(),
 }));
 
 import {
-  generateTheme,
   saveCustomPreset,
   deleteCustomPreset,
-} from "@/app/profile/generate-theme-action";
+} from "@/app/theme/generate-theme-action";
 
-const mockGenerateTheme = vi.mocked(generateTheme);
 const mockSavePreset = vi.mocked(saveCustomPreset);
 const mockDeletePreset = vi.mocked(deleteCustomPreset);
 
@@ -61,7 +49,7 @@ const sampleCustomPreset: CustomPresetData = {
 
 async function expandSection() {
   await userEvent.click(
-    screen.getByRole("button", { name: /profile theme/i })
+    screen.getByRole("button", { name: /^theme$/i })
   );
 }
 
@@ -72,7 +60,7 @@ describe("ThemeEditor", () => {
 
   it("starts collapsed and expands on click", async () => {
     render(<ThemeEditor {...defaultProps} />);
-    const toggle = screen.getByRole("button", { name: /profile theme/i });
+    const toggle = screen.getByRole("button", { name: /^theme$/i });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
 
     await userEvent.click(toggle);
@@ -87,16 +75,6 @@ describe("ThemeEditor", () => {
         screen.getByRole("button", { name: new RegExp(name, "i") })
       ).toBeInTheDocument();
     }
-  });
-
-  it("renders 5 color picker inputs", async () => {
-    render(<ThemeEditor {...defaultProps} />);
-    await expandSection();
-    expect(screen.getByLabelText("Background")).toBeInTheDocument();
-    expect(screen.getByLabelText("Text")).toBeInTheDocument();
-    expect(screen.getByLabelText("Links")).toBeInTheDocument();
-    expect(screen.getByLabelText("Secondary Text")).toBeInTheDocument();
-    expect(screen.getByLabelText("Container")).toBeInTheDocument();
   });
 
   it("selecting a preset updates hidden form inputs", async () => {
@@ -152,27 +130,6 @@ describe("ThemeEditor", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows preview modal when preview button is clicked", async () => {
-    render(<ThemeEditor {...defaultProps} />);
-    await expandSection();
-    expect(screen.queryByTestId("theme-preview")).not.toBeInTheDocument();
-
-    const previewBtn = screen.getByRole("button", { name: /preview/i });
-    await userEvent.click(previewBtn);
-
-    expect(screen.getByTestId("theme-preview")).toBeInTheDocument();
-  });
-
-  it("closes preview modal when close is clicked", async () => {
-    render(<ThemeEditor {...defaultProps} />);
-    await expandSection();
-    await userEvent.click(screen.getByRole("button", { name: /preview/i }));
-    expect(screen.getByTestId("theme-preview")).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole("button", { name: /close/i }));
-    expect(screen.queryByTestId("theme-preview")).not.toBeInTheDocument();
-  });
-
   it("initializes from provided colors", () => {
     const { container } = render(
       <ThemeEditor
@@ -199,99 +156,6 @@ describe("ThemeEditor", () => {
     expect(textInput.value).toBe(
       PROFILE_THEME_PRESETS.default.profileTextColor
     );
-  });
-});
-
-describe("ThemeEditor — AI generation", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("renders AI prompt input for premium users", async () => {
-    render(<ThemeEditor {...defaultProps} isPremium={true} />);
-    await expandSection();
-    expect(screen.getByTestId("ai-prompt-input")).toBeInTheDocument();
-    expect(screen.getByTestId("ai-generate-button")).toBeInTheDocument();
-  });
-
-  it("disables AI prompt for non-premium users", async () => {
-    render(<ThemeEditor {...defaultProps} isPremium={false} />);
-    await expandSection();
-    expect(screen.getByTestId("ai-prompt-input")).toBeDisabled();
-    expect(screen.getByTestId("ai-generate-button")).toBeDisabled();
-  });
-
-  it("disables generate button when prompt is empty", async () => {
-    render(<ThemeEditor {...defaultProps} isPremium={true} />);
-    await expandSection();
-    const generateButton = screen.getByTestId("ai-generate-button");
-    expect(generateButton).toBeDisabled();
-  });
-
-  it("shows error from failed generation", async () => {
-    mockGenerateTheme.mockResolvedValue({
-      success: false,
-      error: "API error occurred",
-    });
-
-    render(<ThemeEditor {...defaultProps} isPremium={true} />);
-    await expandSection();
-
-    const input = screen.getByTestId("ai-prompt-input");
-    await userEvent.type(input, "cyberpunk");
-
-    const button = screen.getByTestId("ai-generate-button");
-    await userEvent.click(button);
-
-    expect(await screen.findByTestId("ai-generation-error")).toHaveTextContent(
-      "API error occurred"
-    );
-  });
-
-  it("shows save preset form after successful generation", async () => {
-    mockGenerateTheme.mockResolvedValue({
-      success: true,
-      name: "Neon Dreams",
-      light: sampleCustomPreset.light,
-      dark: sampleCustomPreset.dark,
-    });
-
-    render(<ThemeEditor {...defaultProps} isPremium={true} />);
-    await expandSection();
-
-    await userEvent.type(screen.getByTestId("ai-prompt-input"), "cyberpunk");
-    await userEvent.click(screen.getByTestId("ai-generate-button"));
-
-    expect(await screen.findByTestId("save-preset-form")).toBeInTheDocument();
-    const nameInput = screen.getByTestId(
-      "preset-name-input"
-    ) as HTMLInputElement;
-    expect(nameInput.value).toBe("Neon Dreams");
-  });
-
-  it("updates color pickers after successful generation", async () => {
-    mockGenerateTheme.mockResolvedValue({
-      success: true,
-      name: "Neon Dreams",
-      light: sampleCustomPreset.light,
-      dark: sampleCustomPreset.dark,
-    });
-
-    const { container } = render(
-      <ThemeEditor {...defaultProps} isPremium={true} />
-    );
-    await expandSection();
-
-    await userEvent.type(screen.getByTestId("ai-prompt-input"), "cyberpunk");
-    await userEvent.click(screen.getByTestId("ai-generate-button"));
-
-    // Wait for state update
-    await screen.findByTestId("save-preset-form");
-
-    const bgInput = container.querySelector(
-      'input[name="profileBgColor"]'
-    ) as HTMLInputElement;
-    expect(bgInput.value).toBe(sampleCustomPreset.light.profileBgColor);
   });
 });
 
@@ -365,5 +229,145 @@ describe("ThemeEditor — custom presets", () => {
     await userEvent.click(deleteButton);
 
     expect(mockDeletePreset).toHaveBeenCalledWith("preset1");
+  });
+});
+
+describe("ThemeEditor — save current theme", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("shows save current theme button for premium users", async () => {
+    render(<ThemeEditor {...defaultProps} isPremium={true} />);
+    await expandSection();
+    expect(
+      screen.getByRole("button", { name: /save current theme as preset/i })
+    ).toBeInTheDocument();
+  });
+
+  it("does not show save current theme button for non-premium users", async () => {
+    render(<ThemeEditor {...defaultProps} isPremium={false} />);
+    await expandSection();
+    expect(
+      screen.queryByRole("button", { name: /save current theme as preset/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows save form when button is clicked", async () => {
+    render(<ThemeEditor {...defaultProps} isPremium={true} />);
+    await expandSection();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /save current theme as preset/i })
+    );
+
+    expect(screen.getByTestId("save-current-theme-form")).toBeInTheDocument();
+    expect(screen.getByTestId("save-current-name-input")).toBeInTheDocument();
+  });
+
+  it("hides save form when cancel is clicked", async () => {
+    render(<ThemeEditor {...defaultProps} isPremium={true} />);
+    await expandSection();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /save current theme as preset/i })
+    );
+    expect(screen.getByTestId("save-current-theme-form")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /cancel/i }));
+    expect(screen.queryByTestId("save-current-theme-form")).not.toBeInTheDocument();
+  });
+
+  it("save button is disabled when name is empty", async () => {
+    render(<ThemeEditor {...defaultProps} isPremium={true} />);
+    await expandSection();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /save current theme as preset/i })
+    );
+
+    expect(screen.getByTestId("save-current-button")).toBeDisabled();
+  });
+
+  it("calls saveCustomPreset with current colors and name", async () => {
+    mockSavePreset.mockResolvedValue({
+      success: true,
+      preset: {
+        id: "new-preset",
+        name: "My Theme",
+        prompt: "",
+        light: PROFILE_THEME_PRESETS.default,
+        dark: PROFILE_THEME_PRESETS.midnight,
+      },
+    });
+
+    render(<ThemeEditor {...defaultProps} isPremium={true} />);
+    await expandSection();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /save current theme as preset/i })
+    );
+
+    await userEvent.type(screen.getByTestId("save-current-name-input"), "My Theme");
+    await userEvent.click(screen.getByTestId("save-current-button"));
+
+    expect(mockSavePreset).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "My Theme",
+        imageUrl: "",
+        light: expect.objectContaining({ profileBgColor: expect.any(String) }),
+        dark: expect.objectContaining({ profileBgColor: expect.any(String) }),
+      })
+    );
+  });
+
+  it("adds saved preset as a custom preset pill", async () => {
+    mockSavePreset.mockResolvedValue({
+      success: true,
+      preset: {
+        id: "new-preset",
+        name: "My Theme",
+        prompt: "",
+        light: PROFILE_THEME_PRESETS.default,
+        dark: PROFILE_THEME_PRESETS.midnight,
+      },
+    });
+
+    render(<ThemeEditor {...defaultProps} isPremium={true} />);
+    await expandSection();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /save current theme as preset/i })
+    );
+
+    await userEvent.type(screen.getByTestId("save-current-name-input"), "My Theme");
+    await userEvent.click(screen.getByTestId("save-current-button"));
+
+    expect(
+      await screen.findByTestId("custom-preset-My Theme")
+    ).toBeInTheDocument();
+    // Form should be hidden after successful save
+    expect(screen.queryByTestId("save-current-theme-form")).not.toBeInTheDocument();
+  });
+
+  it("shows error when save fails", async () => {
+    mockSavePreset.mockResolvedValue({
+      success: false,
+      error: "Maximum of 10 custom presets reached. Delete one first.",
+    });
+
+    render(<ThemeEditor {...defaultProps} isPremium={true} />);
+    await expandSection();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /save current theme as preset/i })
+    );
+
+    await userEvent.type(screen.getByTestId("save-current-name-input"), "My Theme");
+    await userEvent.click(screen.getByTestId("save-current-button"));
+
+    expect(
+      await screen.findByText(/maximum of 10 custom presets/i)
+    ).toBeInTheDocument();
   });
 });

@@ -86,7 +86,7 @@ const defaultRepost = {
 describe("RepostCard", () => {
   it("renders reposter name and reposted label", () => {
     render(
-      <RepostCard repost={defaultRepost} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} />
+      <RepostCard repost={defaultRepost} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} />
     );
     expect(screen.getByText("Alice")).toBeInTheDocument();
     expect(screen.getByText("reposted")).toBeInTheDocument();
@@ -94,7 +94,7 @@ describe("RepostCard", () => {
 
   it("shows repost-header testid for simple reposts", () => {
     render(
-      <RepostCard repost={defaultRepost} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} />
+      <RepostCard repost={defaultRepost} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} />
     );
     expect(screen.getByTestId("repost-header")).toBeInTheDocument();
     expect(screen.queryByTestId("quote-header")).toBeNull();
@@ -103,7 +103,7 @@ describe("RepostCard", () => {
   it("shows quote-header testid for quote posts", () => {
     const quoteRepost = { ...defaultRepost, content: "My thoughts" };
     render(
-      <RepostCard repost={quoteRepost} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} />
+      <RepostCard repost={quoteRepost} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} />
     );
     expect(screen.getByTestId("quote-header")).toBeInTheDocument();
     expect(screen.queryByTestId("repost-header")).toBeNull();
@@ -111,7 +111,7 @@ describe("RepostCard", () => {
 
   it("renders the original post content", () => {
     render(
-      <RepostCard repost={defaultRepost} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} />
+      <RepostCard repost={defaultRepost} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} />
     );
     expect(screen.getByText("Hello world")).toBeInTheDocument();
   });
@@ -122,14 +122,14 @@ describe("RepostCard", () => {
       content: "This is my commentary",
     };
     render(
-      <RepostCard repost={repostWithQuote} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} />
+      <RepostCard repost={repostWithQuote} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} />
     );
     expect(screen.getByText("This is my commentary")).toBeInTheDocument();
   });
 
   it("does not render quote section for simple reposts", () => {
     const { container } = render(
-      <RepostCard repost={defaultRepost} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} />
+      <RepostCard repost={defaultRepost} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} />
     );
     // The quote box has a specific styling, ensure it's not there
     const quoteBox = container.querySelector(".mb-2.rounded-lg.border");
@@ -138,7 +138,7 @@ describe("RepostCard", () => {
 
   it("links reposter name to their profile", () => {
     render(
-      <RepostCard repost={defaultRepost} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} />
+      <RepostCard repost={defaultRepost} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} />
     );
     const link = screen.getByText("Alice").closest("a");
     expect(link).toHaveAttribute("href", "/alice");
@@ -150,7 +150,7 @@ describe("RepostCard", () => {
       content: "My commentary",
     };
     render(
-      <RepostCard repost={repostWithQuote} currentUserId="u1" phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} />
+      <RepostCard repost={repostWithQuote} currentUserId="u1" phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} />
     );
     expect(screen.getByTestId("repost-menu-button")).toBeInTheDocument();
   });
@@ -161,14 +161,14 @@ describe("RepostCard", () => {
       content: "My commentary",
     };
     render(
-      <RepostCard repost={repostWithQuote} currentUserId="u99" phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} />
+      <RepostCard repost={repostWithQuote} currentUserId="u99" phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} />
     );
     expect(screen.queryByTestId("repost-menu-button")).toBeNull();
   });
 
   it("does not show menu button for simple reposts", () => {
     render(
-      <RepostCard repost={defaultRepost} currentUserId="u1" phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} />
+      <RepostCard repost={defaultRepost} currentUserId="u1" phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} />
     );
     expect(screen.queryByTestId("repost-menu-button")).toBeNull();
   });
@@ -180,7 +180,7 @@ describe("RepostCard", () => {
       isPinned: true,
     };
     render(
-      <RepostCard repost={pinnedRepost} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} showPinnedIndicator />
+      <RepostCard repost={pinnedRepost} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} showPinnedIndicator />
     );
     expect(screen.getByTestId("repost-pinned-indicator")).toBeInTheDocument();
     expect(screen.getByText("Pinned")).toBeInTheDocument();
@@ -193,7 +193,7 @@ describe("RepostCard", () => {
       editedAt: new Date("2026-03-07T12:00:00Z"),
     };
     render(
-      <RepostCard repost={editedRepost} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} />
+      <RepostCard repost={editedRepost} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} />
     );
     expect(screen.getByText("(edited)")).toBeInTheDocument();
   });
@@ -205,7 +205,7 @@ describe("RepostCard", () => {
       tags: [{ tag: { name: "art" } }, { tag: { name: "music" } }],
     };
     render(
-      <RepostCard repost={repostWithTags} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} />
+      <RepostCard repost={repostWithTags} phoneVerified={false} ageVerified={false} showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} />
     );
     expect(screen.getByText("#art")).toBeInTheDocument();
     expect(screen.getByText("#music")).toBeInTheDocument();

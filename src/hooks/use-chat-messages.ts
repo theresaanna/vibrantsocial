@@ -19,10 +19,34 @@ export function useChatMessages(
   // Merge fetched messages with existing state (adds new, updates existing)
   const mergeMessages = useCallback((fetched: MessageData[]) => {
     setMessages((prev) => {
-      const existingIds = new Set(prev.map((m) => m.id));
-      const newMsgs = fetched.filter((m) => !existingIds.has(m.id));
-      if (newMsgs.length === 0) return prev;
-      return [...prev, ...newMsgs];
+      const fetchedMap = new Map(fetched.map((m) => [m.id, m]));
+      let changed = false;
+
+      // Update existing messages with fresh server data (reactions, edits, deletes)
+      const updated = prev.map((m) => {
+        const fresh = fetchedMap.get(m.id);
+        if (!fresh) return m;
+        fetchedMap.delete(m.id);
+        // Check if anything actually changed to avoid unnecessary re-renders
+        if (
+          m.content === fresh.content &&
+          m.editedAt?.toString() === fresh.editedAt?.toString() &&
+          m.deletedAt?.toString() === fresh.deletedAt?.toString() &&
+          JSON.stringify(m.reactions) === JSON.stringify(fresh.reactions)
+        ) {
+          return m;
+        }
+        changed = true;
+        return { ...m, ...fresh };
+      });
+
+      // Append any truly new messages
+      const newMsgs = Array.from(fetchedMap.values());
+      if (newMsgs.length > 0) {
+        changed = true;
+      }
+
+      return changed ? [...updated, ...newMsgs] : prev;
     });
   }, []);
 
@@ -43,6 +67,7 @@ export function useChatMessages(
           mediaType: (data.mediaType as MediaType) ?? null,
           mediaFileName: (data.mediaFileName as string) ?? null,
           mediaFileSize: data.mediaFileSize ? parseInt(data.mediaFileSize as string, 10) : null,
+          isNsfw: false,
           sender: JSON.parse(data.sender as string),
           editedAt: data.editedAt ? new Date(data.editedAt) : null,
           deletedAt: data.deletedAt ? new Date(data.deletedAt) : null,
@@ -86,6 +111,14 @@ export function useChatMessages(
         setMessages((prev) =>
           prev.map((m) =>
             m.id === messageId ? { ...m, reactions } : m
+          )
+        );
+        break;
+      }
+      case "nsfw-update": {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === data.id ? { ...m, isNsfw: true } : m
           )
         );
         break;

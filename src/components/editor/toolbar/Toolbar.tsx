@@ -4,22 +4,20 @@ import { UndoRedoButtons } from "./UndoRedoButtons";
 import { BlockFormatDropdown } from "./BlockFormatDropdown";
 
 import { FontSizeControls } from "./FontSizeControls";
-import { TextFormatButtons, CodeFormatButtons } from "./TextFormatButtons";
+import { TextFormatButtons } from "./TextFormatButtons";
 import { LinkButton } from "./LinkButton";
 import { ColorPicker } from "./ColorPicker";
 import { AlignmentDropdown } from "./AlignmentDropdown";
 import {
   FileUploadButton,
-  HorizontalRuleButton,
+
   YouTubeButton,
   TableButton,
   PollButton,
-  EquationButton,
-  StickyNoteButton,
 } from "./InsertButtons";
+import { GifButton } from "./GifButton";
 import { SpeechToTextButton } from "./SpeechToTextButton";
 
-import { MarkdownToggleButton } from "./MarkdownToggleButton";
 import { Divider } from "./Divider";
 
 export function Toolbar() {
@@ -43,19 +41,12 @@ export function Toolbar() {
       <Divider />
       <FileUploadButton />
       <YouTubeButton />
+      <GifButton />
       <span className="hidden sm:contents">
-        <HorizontalRuleButton />
         <TableButton />
-        <PollButton />
-        <EquationButton />
-        <CodeFormatButtons />
-        <StickyNoteButton />
       </span>
+      <PollButton />
       <SpeechToTextButton />
-      <span className="hidden sm:contents">
-        <Divider />
-        <MarkdownToggleButton />
-      </span>
     </div>
   );
 }

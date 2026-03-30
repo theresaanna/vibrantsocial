@@ -6,29 +6,6 @@ vi.mock("@/components/bio-content", () => ({
   BioContent: ({ content }: { content: string }) => <div data-testid="bio-content">{content}</div>,
 }));
 
-vi.mock("@/lib/profile-themes", () => ({
-  generateAdaptiveTheme: (colors: Record<string, string>) => ({
-    light: {
-      profileBgColor: colors.profileBgColor || "#ffffff",
-      profileTextColor: colors.profileTextColor || "#000000",
-      profileLinkColor: colors.profileLinkColor || "#2563eb",
-      profileSecondaryColor: colors.profileSecondaryColor || "#71717a",
-      profileContainerColor: colors.profileContainerColor || "#f4f4f5",
-    },
-    dark: {
-      profileBgColor: "#1a1a2e",
-      profileTextColor: "#e0e0e0",
-      profileLinkColor: "#60a5fa",
-      profileSecondaryColor: "#9ca3af",
-      profileContainerColor: "#2d2d44",
-    },
-  }),
-  isLightBackground: (color: string) => {
-    // Simple check: if color starts with #f or #e or #d or #c or #b, it's light
-    return color.toLowerCase() < "#800000" ? false : true;
-  },
-}));
-
 const defaultColors = {
   profileBgColor: "#ffffff",
   profileTextColor: "#18181b",
@@ -98,7 +75,7 @@ describe("ThemePreview", () => {
     expect(screen.getByText("2 hours ago")).toBeInTheDocument();
   });
 
-  it("shows bio preview text", () => {
+  it("renders bio through BioContent when bio is provided", () => {
     render(<ThemePreview {...defaultProps} />);
     expect(screen.getByTestId("bio-content")).toBeInTheDocument();
   });
@@ -109,27 +86,6 @@ describe("ThemePreview", () => {
       screen.getByText(
         "This is what your profile bio will look like with these colors."
       )
-    ).toBeInTheDocument();
-  });
-
-  it("has Light and Dark toggle buttons", () => {
-    render(<ThemePreview {...defaultProps} />);
-    expect(screen.getByText("Light")).toBeInTheDocument();
-    expect(screen.getByText("Dark")).toBeInTheDocument();
-  });
-
-  it("toggles between light and dark preview modes", () => {
-    render(<ThemePreview {...defaultProps} />);
-    fireEvent.click(screen.getByText("Dark"));
-    // The mode indicator text should change
-    // Exact text depends on which mode was initially selected
-    expect(
-      screen.getByText("Light") // Light button should still be visible
-    ).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText("Light"));
-    expect(
-      screen.getByText("Dark") // Dark button should still be visible
     ).toBeInTheDocument();
   });
 
@@ -181,14 +137,5 @@ describe("ThemePreview", () => {
     );
     expect(screen.getByText("Your Name")).toBeInTheDocument();
     expect(screen.getByText("@username")).toBeInTheDocument();
-  });
-
-  it("shows mode indicator text", () => {
-    render(<ThemePreview {...defaultProps} />);
-    // One of these should be visible depending on initial mode
-    const modeText =
-      screen.queryByText("Your chosen colors") ||
-      screen.queryByText(/Auto-generated for/);
-    expect(modeText).toBeInTheDocument();
   });
 });

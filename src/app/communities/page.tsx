@@ -6,6 +6,9 @@ import { getTagCloudData, getAllTagCloudData } from "@/app/tags/actions";
 import { TagCloud } from "./tag-cloud";
 import { CommunitiesViewToggle } from "./communities-view-toggle";
 import { CommunitiesMediaClient } from "./communities-media-client";
+import { CommunitiesDiscussionsClient } from "./communities-discussions-client";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 export const metadata: Metadata = {
   title: "Communities",
@@ -18,17 +21,19 @@ interface CommunitiesPageProps {
 
 export default async function CommunitiesPage({ searchParams }: CommunitiesPageProps) {
   const { view } = await searchParams;
-  const activeView = view === "media" ? "media" : "tags";
+  const activeView = view === "media" ? "media" : view === "discussions" ? "discussions" : "tags";
 
   const session = await auth();
   let showNsfwContent = false;
+  let theme = NO_THEME;
 
   if (session?.user?.id) {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { showNsfwContent: true },
+      select: { showNsfwContent: true, ...userThemeSelect },
     });
     showNsfwContent = user?.showNsfwContent ?? false;
+    if (user) theme = buildUserTheme(user);
   }
 
   const tagData = showNsfwContent
@@ -36,7 +41,7 @@ export default async function CommunitiesPage({ searchParams }: CommunitiesPageP
     : await getTagCloudData();
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...theme}>
       <div className="mb-6 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-400 to-pink-600">
           <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -65,6 +70,16 @@ export default async function CommunitiesPage({ searchParams }: CommunitiesPageP
         >
           <CommunitiesMediaClient />
         </Suspense>
+      ) : activeView === "discussions" ? (
+        <Suspense
+          fallback={
+            <div className="mt-6 flex justify-center py-8">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-600 dark:border-t-zinc-100" />
+            </div>
+          }
+        >
+          <CommunitiesDiscussionsClient />
+        </Suspense>
       ) : tagData.length === 0 ? (
         <div className="rounded-2xl bg-white p-8 text-center shadow-lg dark:bg-zinc-900">
           <p className="text-sm text-zinc-500">
@@ -77,6 +92,6 @@ export default async function CommunitiesPage({ searchParams }: CommunitiesPageP
         </div>
       )}
 
-    </main>
+    </ThemedPage>
   );
 }

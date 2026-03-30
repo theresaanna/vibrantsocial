@@ -19,6 +19,7 @@ export interface CommunitiesMediaPost {
     image: string | null;
     avatar: string | null;
     profileFrameId: string | null;
+    usernameFont: string | null;
   } | null;
 }
 
@@ -45,9 +46,12 @@ export async function fetchCommunitiesMediaPage(
   // Fetch more posts than needed since many won't have media
   const fetchCount = MEDIA_PAGE_SIZE * 3;
 
+  const isLoggedIn = !!session?.user?.id;
+
   const posts = await prisma.post.findMany({
     where: {
-      author: { isProfilePublic: true },
+      ...(isLoggedIn ? {} : { author: { isProfilePublic: true } }),
+      marketplacePost: null,
       isSensitive: false,
       isGraphicNudity: false,
       ...(!showNsfwContent
@@ -79,6 +83,7 @@ export async function fetchCommunitiesMediaPage(
           image: true,
           avatar: true,
           profileFrameId: true,
+          usernameFont: true,
         },
       },
     },

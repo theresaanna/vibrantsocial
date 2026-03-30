@@ -1,19 +1,16 @@
 "use client";
 
-import { useState, useCallback, useId, useTransition } from "react";
+import { useState, useCallback, useId, useTransition, useRef, useEffect } from "react";
 import {
   type ProfileThemeColors,
   type CustomPresetData,
   PROFILE_THEME_PRESETS,
   THEME_COLOR_FIELDS,
-  isValidHexColor,
 } from "@/lib/profile-themes";
 import {
-  generateTheme,
   saveCustomPreset,
   deleteCustomPreset,
-} from "@/app/profile/generate-theme-action";
-import { ThemePreview } from "./theme-preview";
+} from "@/app/theme/generate-theme-action";
 import { PremiumCrown } from "./premium-crown";
 
 interface ThemeEditorProps {
@@ -25,18 +22,11 @@ interface ThemeEditorProps {
   onChange?: () => void;
   onSave?: () => void;
   isSavingForm?: boolean;
+  onColorsChange?: (colors: ProfileThemeColors) => void;
   isPremium?: boolean;
   userEmail?: string | null;
   customPresets?: CustomPresetData[];
 }
-
-const COLOR_LABELS: Record<keyof ProfileThemeColors, string> = {
-  profileBgColor: "Background",
-  profileTextColor: "Text",
-  profileLinkColor: "Links",
-  profileSecondaryColor: "Secondary Text",
-  profileContainerColor: "Container",
-};
 
 export function ThemeEditor({
   initialColors,
@@ -47,12 +37,13 @@ export function ThemeEditor({
   onChange,
   onSave,
   isSavingForm = false,
+  onColorsChange,
   isPremium = true,
   userEmail,
   customPresets: initialCustomPresets = [],
 }: ThemeEditorProps) {
   const defaultPreset = PROFILE_THEME_PRESETS.default;
-  const [colors, setColors] = useState<ProfileThemeColors>({
+  const savedColors = useRef<ProfileThemeColors>({
     profileBgColor:
       initialColors.profileBgColor ?? defaultPreset.profileBgColor,
     profileTextColor:
@@ -66,30 +57,33 @@ export function ThemeEditor({
       initialColors.profileContainerColor ??
       defaultPreset.profileContainerColor,
   });
+  const [colors, setColors] = useState<ProfileThemeColors>({ ...savedColors.current });
   const [activePreset, setActivePreset] = useState<string | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
+
+  const hasUnsavedThemeChange = THEME_COLOR_FIELDS.some(
+    (f) => colors[f] !== savedColors.current[f]
+  );
   const [isOpen, setIsOpen] = useState(false);
   const contentId = useId();
 
-  // AI generation state
-  const [aiPrompt, setAiPrompt] = useState("");
-  const [isGenerating, startGenerateTransition] = useTransition();
-  const [generationError, setGenerationError] = useState<string | null>(null);
-  const [generatedTheme, setGeneratedTheme] = useState<{
-    name: string;
-    light: ProfileThemeColors;
-    dark: ProfileThemeColors;
-  } | null>(null);
-  const [presetName, setPresetName] = useState("");
   const [isSaving, startSaveTransition] = useTransition();
   const [customPresets, setCustomPresets] =
     useState<CustomPresetData[]>(initialCustomPresets);
+  const [saveCurrentName, setSaveCurrentName] = useState("");
+  const [showSaveCurrent, setShowSaveCurrent] = useState(false);
+  const [saveCurrentError, setSaveCurrentError] = useState<string | null>(null);
+
+  // Notify parent of live color changes for real-time preview
+  useEffect(() => {
+    onColorsChange?.(colors);
+  }, [colors, onColorsChange]);
+
+  // --- Theme handlers ---
 
   const handlePresetSelect = useCallback(
     (presetName: string) => {
       setColors(PROFILE_THEME_PRESETS[presetName]);
       setActivePreset(presetName);
-      setGeneratedTheme(null);
     },
     []
   );
@@ -98,68 +92,29 @@ export function ThemeEditor({
     (preset: CustomPresetData) => {
       setColors(preset.light);
       setActivePreset(`custom:${preset.id}`);
-      setGeneratedTheme(null);
     },
     []
   );
 
-  const handleColorChange = useCallback(
-    (field: keyof ProfileThemeColors, value: string) => {
-      setColors((prev) => ({ ...prev, [field]: value }));
-      setActivePreset(null);
-    },
-    []
-  );
-
-  const handleGenerate = useCallback(() => {
-    if (!aiPrompt.trim() || isGenerating) return;
-    setGenerationError(null);
-    setGeneratedTheme(null);
-
-    startGenerateTransition(async () => {
-      const result = await generateTheme(aiPrompt.trim());
-      if (result.success && result.light && result.dark && result.name) {
-        setColors(result.light);
-        setActivePreset(null);
-        setGeneratedTheme({
-          name: result.name,
-          light: result.light,
-          dark: result.dark,
-        });
-        setPresetName(result.name);
-      } else {
-        setGenerationError(result.error ?? "Failed to generate theme");
-      }
-    });
-  }, [aiPrompt, isGenerating]);
-
-  const handleSavePreset = useCallback(() => {
-    if (!generatedTheme || !presetName.trim() || isSaving) return;
-
+  const handleSaveCurrentTheme = useCallback(() => {
+    if (!saveCurrentName.trim() || isSaving) return;
     startSaveTransition(async () => {
       const result = await saveCustomPreset({
-        name: presetName.trim(),
-        prompt: aiPrompt,
-        light: generatedTheme.light,
-        dark: generatedTheme.dark,
+        name: saveCurrentName.trim(),
+        imageUrl: "",
+        light: colors,
+        dark: colors,
       });
       if (result.success && result.preset) {
-        setCustomPresets((prev) => {
-          const existing = prev.findIndex((p) => p.name === result.preset!.name);
-          if (existing >= 0) {
-            const updated = [...prev];
-            updated[existing] = result.preset!;
-            return updated;
-          }
-          return [...prev, result.preset!];
-        });
-        setActivePreset(`custom:${result.preset.id}`);
-        setGeneratedTheme(null);
+        setCustomPresets((prev) => [...prev, result.preset!]);
+        setSaveCurrentName("");
+        setShowSaveCurrent(false);
+        setSaveCurrentError(null);
       } else {
-        setGenerationError(result.error ?? "Failed to save preset");
+        setSaveCurrentError(result.error ?? "Failed to save preset");
       }
     });
-  }, [generatedTheme, presetName, aiPrompt, isSaving]);
+  }, [colors, saveCurrentName, isSaving]);
 
   const handleDeletePreset = useCallback(
     (presetId: string) => {
@@ -176,6 +131,20 @@ export function ThemeEditor({
     [activePreset]
   );
 
+  const name = displayName || username || "Your Name";
+  const initial = name[0]?.toUpperCase() ?? "?";
+
+  const saveButton = onSave ? (
+    <button
+      type="button"
+      onClick={onSave}
+      disabled={isSavingForm}
+      className="w-full rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+    >
+      {isSavingForm ? "Saving..." : "Save Theme"}
+    </button>
+  ) : null;
+
   return (
     <div className="rounded-lg border border-zinc-200 dark:border-zinc-700">
       <button
@@ -185,11 +154,11 @@ export function ThemeEditor({
         aria-controls={contentId}
         className="flex w-full items-center justify-between p-4 text-left"
       >
-        <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          Profile Theme
+        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+          Theme
         </h2>
         <svg
-          className={`h-4 w-4 text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`h-5 w-5 text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           strokeWidth={2}
@@ -206,238 +175,260 @@ export function ThemeEditor({
       {isOpen && (
         <div id={contentId} className="space-y-4 px-4 pb-4">
           {/* Save button — top */}
-          {onSave && (
-            <button
-              type="button"
-              onClick={onSave}
-              disabled={isSavingForm}
-              className="w-full rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          {saveButton}
+
+          {/* Inline real-time preview */}
+          <div
+            className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700"
+          >
+            <div
+              className="p-4"
+              style={{ backgroundColor: colors.profileBgColor }}
             >
-              {isSavingForm ? "Saving..." : "Save Theme"}
-            </button>
+              <div
+                className="rounded-xl p-4"
+                style={{ backgroundColor: colors.profileContainerColor }}
+              >
+                <div className="flex items-start gap-3">
+                  {avatarSrc ? (
+                    <img
+                      src={avatarSrc}
+                      alt=""
+                      className="h-10 w-10 rounded-full"
+                    />
+                  ) : (
+                    <div
+                      className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold"
+                      style={{
+                        backgroundColor: colors.profileSecondaryColor + "33",
+                        color: colors.profileTextColor,
+                      }}
+                    >
+                      {initial}
+                    </div>
+                  )}
+
+                  <div className="min-w-0 flex-1">
+                    <h3
+                      className="text-sm font-bold"
+                      style={{ color: colors.profileTextColor }}
+                    >
+                      {name}
+                    </h3>
+                    <p
+                      className="text-xs"
+                      style={{ color: colors.profileSecondaryColor }}
+                    >
+                      @{username || "username"}
+                    </p>
+                  </div>
+                </div>
+
+                <p
+                  className="mt-2 text-xs"
+                  style={{ color: colors.profileSecondaryColor }}
+                >
+                  {bio || "This is what your bio will look like with these colors."}
+                </p>
+
+                <div className="mt-2 flex gap-3 text-xs">
+                  <span style={{ color: colors.profileSecondaryColor }}>
+                    <span
+                      className="font-semibold"
+                      style={{ color: colors.profileTextColor }}
+                    >
+                      42
+                    </span>{" "}
+                    posts
+                  </span>
+                  <span style={{ color: colors.profileSecondaryColor }}>
+                    <span
+                      className="font-semibold"
+                      style={{ color: colors.profileTextColor }}
+                    >
+                      128
+                    </span>{" "}
+                    followers
+                  </span>
+                </div>
+              </div>
+
+              {/* Sample post */}
+              <div
+                className="mt-2 rounded-xl p-3"
+                style={{ backgroundColor: colors.profileContainerColor }}
+              >
+                <p
+                  className="text-xs"
+                  style={{ color: colors.profileTextColor }}
+                >
+                  Just posted something cool! Check out{" "}
+                  <span style={{ color: colors.profileLinkColor }}>
+                    this link
+                  </span>{" "}
+                  for more details.
+                </p>
+                <p
+                  className="mt-1 text-[10px]"
+                  style={{ color: colors.profileSecondaryColor }}
+                >
+                  2 hours ago
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Unsaved theme indicator */}
+          {hasUnsavedThemeChange && (
+            <div
+              className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 dark:border-blue-800 dark:bg-blue-950"
+              data-testid="unsaved-theme-indicator"
+            >
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                  Theme changed
+                </span>
+              </div>
+              <div className="flex gap-1.5">
+                {THEME_COLOR_FIELDS.map((field) => (
+                  <span
+                    key={field}
+                    className="inline-block h-4 w-4 rounded-full border border-zinc-300 dark:border-zinc-600"
+                    style={{ backgroundColor: colors[field] }}
+                    title={field.replace("profile", "").replace("Color", "")}
+                  />
+                ))}
+              </div>
+            </div>
           )}
 
-          {/* Preset buttons */}
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(PROFILE_THEME_PRESETS).map(([name, preset]) => (
-              <button
-                key={name}
-                type="button"
-                onClick={() => handlePresetSelect(name)}
-                className={`rounded-lg border px-3 py-1.5 text-sm font-medium capitalize transition-all ${
-                  activePreset === name
-                    ? "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-900"
-                    : "border-transparent"
-                }`}
-                style={{
-                  backgroundColor: preset.profileContainerColor,
-                  color: preset.profileTextColor,
-                }}
-                aria-pressed={activePreset === name}
-              >
-                {name}
-              </button>
-            ))}
-
-            {/* Custom AI preset pills */}
-            {customPresets.map((preset) => (
-              <div key={preset.id} className="group relative">
+          {/* Save current theme as preset — premium only */}
+          {isPremium && (
+            <div>
+              {!showSaveCurrent ? (
                 <button
                   type="button"
-                  onClick={() => handleCustomPresetSelect(preset)}
-                  className={`rounded-lg border px-3 py-1.5 pr-7 text-sm font-medium transition-all ${
-                    activePreset === `custom:${preset.id}`
+                  onClick={() => setShowSaveCurrent(true)}
+                  className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                >
+                  Save Current Theme as Preset
+                </button>
+              ) : (
+                <div className="space-y-2">
+                  <div
+                    className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-2 dark:border-zinc-700 dark:bg-zinc-800"
+                    data-testid="save-current-theme-form"
+                  >
+                    <input
+                      type="text"
+                      value={saveCurrentName}
+                      onChange={(e) => setSaveCurrentName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleSaveCurrentTheme();
+                        }
+                      }}
+                      placeholder="Preset name"
+                      className="flex-1 rounded border border-zinc-300 bg-transparent px-2 py-1 text-sm dark:border-zinc-600 dark:text-zinc-100"
+                      maxLength={30}
+                      data-testid="save-current-name-input"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSaveCurrentTheme}
+                      disabled={isSaving || !saveCurrentName.trim()}
+                      className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+                      data-testid="save-current-button"
+                    >
+                      {isSaving ? "Saving..." : "Save Preset"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSaveCurrent(false);
+                        setSaveCurrentName("");
+                        setSaveCurrentError(null);
+                      }}
+                      className="rounded-lg px-2 py-1 text-sm text-zinc-500 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  {saveCurrentError && (
+                    <p className="text-xs text-red-500">{saveCurrentError}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Theme preset buttons */}
+          <div>
+            <label className="mb-2 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+              Color Theme
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(PROFILE_THEME_PRESETS).map(([name, preset]) => (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => handlePresetSelect(name)}
+                  className={`rounded-lg border px-3 py-1.5 text-sm font-medium capitalize transition-all ${
+                    activePreset === name
                       ? "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-900"
                       : "border-transparent"
                   }`}
                   style={{
-                    backgroundColor: preset.light.profileContainerColor,
-                    color: preset.light.profileTextColor,
+                    backgroundColor: preset.profileContainerColor,
+                    color: preset.profileTextColor,
                   }}
-                  aria-pressed={activePreset === `custom:${preset.id}`}
-                  data-testid={`custom-preset-${preset.name}`}
+                  aria-pressed={activePreset === name}
                 >
-                  {preset.name}
+                  {name}
                 </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeletePreset(preset.id);
-                  }}
-                  className="absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] leading-none text-white group-hover:flex"
-                  aria-label={`Delete ${preset.name} preset`}
-                  data-testid={`delete-preset-${preset.name}`}
-                >
-                  &times;
-                </button>
-              </div>
-            ))}
-          </div>
+              ))}
 
-          {/* AI theme generator — premium only */}
-          <div
-            className="relative"
-            data-testid={
-              isPremium ? "ai-theme-generator" : "ai-theme-upgrade-prompt"
-            }
-          >
-            <PremiumCrown href="/premium" />
-            <div
-              className={`space-y-2 ${!isPremium ? "pointer-events-none opacity-50" : ""}`}
-            >
-              <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                Generate a color scheme
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={aiPrompt}
-                  onChange={(e) => setAiPrompt(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleGenerate();
-                    }
-                  }}
-                  placeholder="Describe a theme (e.g., cyberpunk neon, warm autumn)"
-                  disabled={!isPremium || isGenerating}
-                  className="flex-1 rounded-lg border border-zinc-300 bg-transparent px-3 py-1.5 text-sm dark:border-zinc-600 dark:text-zinc-100"
-                  maxLength={200}
-                  data-testid="ai-prompt-input"
-                />
-                <button
-                  type="button"
-                  onClick={handleGenerate}
-                  disabled={!isPremium || isGenerating || !aiPrompt.trim()}
-                  className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
-                  data-testid="ai-generate-button"
-                >
-                  {isGenerating ? "Generating..." : "Generate"}
-                </button>
-              </div>
-
-              {generationError && (
-                <p
-                  className="text-xs text-red-500"
-                  data-testid="ai-generation-error"
-                >
-                  {generationError}
-                </p>
-              )}
-
-              {/* Save as preset form */}
-              {generatedTheme && (
-                <div
-                  className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-2 dark:border-zinc-700 dark:bg-zinc-800"
-                  data-testid="save-preset-form"
-                >
-                  <input
-                    type="text"
-                    value={presetName}
-                    onChange={(e) => setPresetName(e.target.value)}
-                    placeholder="Preset name"
-                    className="flex-1 rounded border border-zinc-300 bg-transparent px-2 py-1 text-sm dark:border-zinc-600 dark:text-zinc-100"
-                    maxLength={30}
-                    data-testid="preset-name-input"
-                  />
+              {/* Custom preset pills */}
+              {customPresets.map((preset) => (
+                <div key={preset.id} className="group relative">
                   <button
                     type="button"
-                    onClick={handleSavePreset}
-                    disabled={isSaving || !presetName.trim()}
-                    className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
-                    data-testid="save-preset-button"
+                    onClick={() => handleCustomPresetSelect(preset)}
+                    className={`rounded-lg border px-3 py-1.5 pr-7 text-sm font-medium transition-all ${
+                      activePreset === `custom:${preset.id}`
+                        ? "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-900"
+                        : "border-transparent"
+                    }`}
+                    style={{
+                      backgroundColor: preset.light.profileContainerColor,
+                      color: preset.light.profileTextColor,
+                    }}
+                    aria-pressed={activePreset === `custom:${preset.id}`}
+                    data-testid={`custom-preset-${preset.name}`}
                   >
-                    {isSaving ? "Saving..." : "Save Preset"}
+                    {preset.name}
                   </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Individual color pickers — premium only */}
-          <div
-            className="relative"
-            data-testid={
-              isPremium
-                ? "custom-color-pickers"
-                : "custom-colors-upgrade-prompt"
-            }
-          >
-            <PremiumCrown href="/premium" />
-            <div
-              className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${!isPremium ? "pointer-events-none opacity-50" : ""}`}
-            >
-              {THEME_COLOR_FIELDS.map((field) => (
-                <div key={field} className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={colors[field]}
-                    onChange={(e) => handleColorChange(field, e.target.value)}
-                    disabled={!isPremium}
-                    className="h-8 w-8 cursor-pointer rounded border border-zinc-300 dark:border-zinc-600"
-                    aria-label={COLOR_LABELS[field]}
-                  />
-                  <div className="flex flex-col">
-                    <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                      {COLOR_LABELS[field]}
-                    </label>
-                    <input
-                      type="text"
-                      value={colors[field]}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        if (v.length <= 7) {
-                          handleColorChange(field, v);
-                        }
-                      }}
-                      onBlur={(e) => {
-                        if (!isValidHexColor(e.target.value)) {
-                          handleColorChange(field, defaultPreset[field]);
-                        }
-                      }}
-                      disabled={!isPremium}
-                      className="w-20 rounded border border-zinc-300 bg-transparent px-1.5 py-0.5 text-xs dark:border-zinc-600 dark:text-zinc-100"
-                      maxLength={7}
-                    />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeletePreset(preset.id);
+                    }}
+                    className="absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] leading-none text-white group-hover:flex"
+                    aria-label={`Delete ${preset.name} preset`}
+                    data-testid={`delete-preset-${preset.name}`}
+                  >
+                    &times;
+                  </button>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Preview button */}
-          <button
-            type="button"
-            onClick={() => setShowPreview(true)}
-            className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-          >
-            Preview Light &amp; Dark
-          </button>
-
-          {/* Preview modal */}
-          {showPreview && (
-            <ThemePreview
-              colors={colors}
-              username={username}
-              displayName={displayName}
-              bio={bio}
-              avatarSrc={avatarSrc}
-              onClose={() => setShowPreview(false)}
-            />
-          )}
-
           {/* Save button — bottom */}
-          {onSave && (
-            <button
-              type="button"
-              onClick={onSave}
-              disabled={isSavingForm}
-              className="w-full rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-            >
-              {isSavingForm ? "Saving..." : "Save Theme"}
-            </button>
-          )}
+          {saveButton}
         </div>
       )}
 

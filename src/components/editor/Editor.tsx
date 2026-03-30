@@ -8,7 +8,7 @@ import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { CheckListPlugin } from "@lexical/react/LexicalCheckListPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
-import { HorizontalRulePlugin } from "@lexical/react/LexicalHorizontalRulePlugin";
+
 import { TablePlugin } from "@lexical/react/LexicalTablePlugin";
 import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin";
 import { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin";
@@ -25,6 +25,7 @@ import { HashtagPlugin } from "./plugins/HashtagPlugin";
 import { HashtagLinkPlugin } from "./plugins/HashtagLinkPlugin";
 
 import { DraftPlugin, ClearDraftButton } from "./plugins/DraftPlugin";
+import { ContextMenuPlugin } from "./plugins/ContextMenuPlugin";
 
 interface EditorProps {
   /** Initial content as Lexical JSON string */
@@ -129,13 +130,14 @@ export function Editor({
           <LinkPlugin />
           <AutoLinkPlugin />
           <ClickableLinkPlugin />
-          <HorizontalRulePlugin />
+
           <TablePlugin />
           <TabIndentationPlugin />
           <MentionsPlugin />
           <HashtagPlugin />
           <HashtagLinkPlugin />
           {draftKey && <DraftPlugin draftKey={draftKey} />}
+          <ContextMenuPlugin />
         </div>
         {draftKey && (
           <div className="flex justify-end border-t border-zinc-200 px-3 py-1.5 dark:border-zinc-700">

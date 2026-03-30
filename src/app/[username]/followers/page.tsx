@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { getFollowers } from "@/app/feed/follow-actions";
 import { getBatchFriendshipStatuses } from "@/app/feed/friend-actions";
 import { UserList } from "@/components/user-list";
+import { ThemedPage } from "@/components/themed-page";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
 import Link from "next/link";
 
 interface FollowersPageProps {
@@ -25,12 +28,19 @@ export default async function FollowersPage({ params }: FollowersPageProps) {
   if (!session?.user?.id) redirect("/login");
   const currentUserId = session.user.id;
 
-  const followers = await getFollowers(username);
+  const [followers, profileUser] = await Promise.all([
+    getFollowers(username),
+    prisma.user.findUnique({
+      where: { username },
+      select: userThemeSelect,
+    }),
+  ]);
   const otherUserIds = followers.filter(u => u.id !== currentUserId).map(u => u.id);
   const friendshipStatuses = await getBatchFriendshipStatuses(otherUserIds);
+  const theme = profileUser ? buildUserTheme(profileUser) : NO_THEME;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...theme}>
       <div className="rounded-2xl bg-white shadow-lg dark:bg-zinc-900">
         <div className="flex items-center gap-3 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
           <Link
@@ -54,6 +64,6 @@ export default async function FollowersPage({ params }: FollowersPageProps) {
           friendshipStatuses={friendshipStatuses}
         />
       </div>
-    </main>
+    </ThemedPage>
   );
 }

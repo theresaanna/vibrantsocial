@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { PostCard } from "@/components/post-card";
 import { calculateAge } from "@/lib/age-gate";
 import { isProfileIncomplete } from "@/lib/require-profile";
+import { userThemeSelect, buildUserTheme } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 export const metadata: Metadata = {
   title: "Likes",
@@ -26,7 +28,9 @@ export default async function LikesPage() {
       dateOfBirth: true,
       ageVerified: true,
       showGraphicByDefault: true,
+      hideSensitiveOverlay: true,
       showNsfwContent: true,
+      ...userThemeSelect,
     },
   });
 
@@ -35,7 +39,9 @@ export default async function LikesPage() {
   const phoneVerified = !!currentUser?.phoneVerified;
   const ageVerified = !!currentUser?.ageVerified;
   const showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
+  const hideSensitiveOverlay = currentUser?.hideSensitiveOverlay ?? false;
   const showNsfwContent = currentUser?.showNsfwContent ?? false;
+  const theme = buildUserTheme(currentUser);
 
   const likes = await prisma.like.findMany({
     where: { userId },
@@ -88,6 +94,7 @@ export default async function LikesPage() {
                 select: {
                   username: true,
                   displayName: true,
+                  usernameFont: true,
                 },
               },
             },
@@ -134,7 +141,7 @@ export default async function LikesPage() {
   const posts = likes.map((l) => l.post);
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...theme}>
       <div className="mb-6 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-red-400 to-rose-600">
           <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -168,11 +175,13 @@ export default async function LikesPage() {
               phoneVerified={phoneVerified}
               ageVerified={ageVerified}
               showGraphicByDefault={showGraphicByDefault}
+              hideSensitiveOverlay={hideSensitiveOverlay}
               showNsfwContent={showNsfwContent}
               {...(post.wallPost && post.wallPost.wallOwner.username && {
                 wallOwner: {
                   username: post.wallPost.wallOwner.username,
                   displayName: post.wallPost.wallOwner.displayName,
+                  usernameFont: post.wallPost.wallOwner.usernameFont,
                 },
                 wallPostId: post.wallPost.id,
                 wallPostStatus: post.wallPost.status,
@@ -181,6 +190,6 @@ export default async function LikesPage() {
           ))}
         </div>
       )}
-    </main>
+    </ThemedPage>
   );
 }
