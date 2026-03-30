@@ -19,6 +19,22 @@ const PATTERN_IDS = new Set([
   "smiley-faces",
   "spiderweb-pattern",
   "yellow-triangles",
+  "90s-retro-pattern",
+  "abstract-leopard",
+  "blue-camo",
+  "buffalo-plaid",
+  "eucalyptus-leaves",
+  "fish-scales",
+  "forest-plants-snails",
+  "grunge-texture",
+  "pan-africa",
+  "pastel-rainbow-dots",
+  "pastel-strawberries",
+  "red-hearts",
+  "retro-monochrome",
+  "shoe-pattern",
+  "tropical-leaves",
+  "vintage-background",
 ]);
 
 /**

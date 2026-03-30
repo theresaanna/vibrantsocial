@@ -53,7 +53,6 @@ export function PostContent({ content, truncate = true, allowChecklistToggle, on
         className={shouldTruncate ? "max-h-[50vh] overflow-hidden" : ""}
       >
         <EditorContent content={content} allowChecklistToggle={allowChecklistToggle} onContentChange={onContentChange} isPostAuthor={isPostAuthor} postId={postId} currentUserId={currentUserId} />
-        {firstUrl && !hideLinkPreview && <LinkPreviewCard url={firstUrl} />}
       </div>
       {shouldTruncate && isOverflowing && (
         <>
@@ -70,6 +69,7 @@ export function PostContent({ content, truncate = true, allowChecklistToggle, on
           </div>
         </>
       )}
+      {firstUrl && !hideLinkPreview && <LinkPreviewCard url={firstUrl} />}
     </div>
   );
 }
