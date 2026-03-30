@@ -7,6 +7,8 @@ import { getCloseFriends, getCloseFriendIds, getAcceptedFriends } from "@/app/fe
 import { getPostInclude, getRepostInclude, PAGE_SIZE } from "@/app/feed/feed-queries";
 import { CloseFriendsPageClient } from "./close-friends-page-client";
 import { isProfileIncomplete } from "@/lib/require-profile";
+import { userThemeSelect, buildUserTheme } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 export const metadata: Metadata = {
   title: "Close Friends",
@@ -30,6 +32,7 @@ export default async function CloseFriendsPage() {
         ageVerified: true,
         showGraphicByDefault: true,
         showNsfwContent: true,
+        ...userThemeSelect,
       },
     }),
     getCloseFriends(),
@@ -44,6 +47,7 @@ export default async function CloseFriendsPage() {
   const showGraphicByDefault = currentUser.showGraphicByDefault ?? false;
   const showNsfwContent = currentUser.showNsfwContent ?? false;
   const isOldEnough = currentUser.dateOfBirth ? calculateAge(currentUser.dateOfBirth) >= 18 : false;
+  const theme = await buildUserTheme(currentUser);
 
   const closeFriendIdSet = new Set(closeFriendIds);
   const availableFriends = allFriends.filter((f) => !closeFriendIdSet.has(f.id));
@@ -97,7 +101,7 @@ export default async function CloseFriendsPage() {
   const initialItems = allItems.slice(0, PAGE_SIZE);
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...theme}>
       <CloseFriendsPageClient
         initialItems={initialItems}
         initialHasMore={hasMore}
@@ -109,6 +113,6 @@ export default async function CloseFriendsPage() {
         closeFriends={JSON.parse(JSON.stringify(closeFriends))}
         availableFriends={JSON.parse(JSON.stringify(availableFriends))}
       />
-    </main>
+    </ThemedPage>
   );
 }

@@ -73,6 +73,9 @@ model User {
   showGraphicByDefault Boolean   @default(false)
   showNsfwContent      Boolean   @default(false)
 
+  // Beta access
+  isBeta                Boolean   @default(false)
+
   // Subscription tier
   tier                  String    @default("free") // "free" | "premium"
   stripeCustomerId      String?   @unique

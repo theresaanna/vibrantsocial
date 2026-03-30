@@ -8,6 +8,8 @@ import { getConversations, getMessages, getMessageRequests, getFriendsForChat } 
 import { getBlockStatus } from "@/app/feed/block-actions";
 import { ConversationPageClient } from "./conversation-page-client";
 import { generateAdaptiveTheme } from "@/lib/profile-themes";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 export const metadata: Metadata = {
   title: "Conversation",
@@ -65,11 +67,7 @@ export default async function ConversationPage({ params }: Props) {
       prisma.user.findUnique({
         where: { id: session.user.id },
         select: {
-          profileBgColor: true,
-          profileTextColor: true,
-          profileLinkColor: true,
-          profileContainerColor: true,
-          profileSecondaryColor: true,
+          ...userThemeSelect,
         },
       }),
     ]);
@@ -126,7 +124,10 @@ export default async function ConversationPage({ params }: Props) {
       })()
     : undefined;
 
+  const profileTheme = currentUser ? await buildUserTheme(currentUser) : null;
+
   return (
+    <ThemedPage {...(profileTheme ?? NO_THEME)} bare>
     <ConversationPageClient
       conversationId={conversationId}
       conversations={conversations}
@@ -141,5 +142,6 @@ export default async function ConversationPage({ params }: Props) {
       hasCustomTheme={hasCustomTheme}
       themeStyle={themeStyle}
     />
+    </ThemedPage>
   );
 }

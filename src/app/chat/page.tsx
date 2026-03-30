@@ -6,6 +6,8 @@ import { getConversations, getMessageRequests, getFriendsForChat } from "./actio
 import { ChatPageClient } from "./chat-page-client";
 import { generateAdaptiveTheme } from "@/lib/profile-themes";
 import { isProfileIncomplete } from "@/lib/require-profile";
+import { userThemeSelect, buildUserTheme } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 export const metadata: Metadata = {
   title: "Chat",
@@ -22,11 +24,7 @@ export default async function ChatPage() {
       username: true,
       email: true,
       dateOfBirth: true,
-      profileBgColor: true,
-      profileTextColor: true,
-      profileLinkColor: true,
-      profileContainerColor: true,
-      profileSecondaryColor: true,
+      ...userThemeSelect,
     },
   });
   if (!user || isProfileIncomplete(user)) redirect("/complete-profile");
@@ -75,14 +73,18 @@ export default async function ChatPage() {
       })()
     : undefined;
 
+  const profileTheme = await buildUserTheme(user);
+
   return (
-    <ChatPageClient
-      conversations={conversations}
-      messageRequests={messageRequests}
-      friends={friends}
-      themeColors={themeColors}
-      hasCustomTheme={hasCustomTheme}
-      themeStyle={themeStyle}
-    />
+    <ThemedPage {...profileTheme} bare>
+      <ChatPageClient
+        conversations={conversations}
+        messageRequests={messageRequests}
+        friends={friends}
+        themeColors={themeColors}
+        hasCustomTheme={hasCustomTheme}
+        themeStyle={themeStyle}
+      />
+    </ThemedPage>
   );
 }

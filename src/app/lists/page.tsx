@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { getUserLists } from "./actions";
 import { ListsPageClient } from "./lists-page-client";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 export const metadata: Metadata = {
   title: "Lists",
@@ -13,11 +16,19 @@ export default async function ListsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const lists = await getUserLists();
+  const [lists, themeUser] = await Promise.all([
+    getUserLists(),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: userThemeSelect,
+    }),
+  ]);
+
+  const theme = themeUser ? await buildUserTheme(themeUser) : null;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...(theme ?? NO_THEME)}>
       <ListsPageClient lists={JSON.parse(JSON.stringify(lists))} />
-    </main>
+    </ThemedPage>
   );
 }
