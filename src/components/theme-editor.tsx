@@ -97,11 +97,12 @@ export function ThemeEditor({
   const handleSaveCurrentTheme = useCallback(() => {
     if (!saveCurrentName.trim() || isSaving) return;
     startSaveTransition(async () => {
-      const result = await saveCustomPreset(
-        saveCurrentName.trim(),
-        colors,
-        ""
-      );
+      const result = await saveCustomPreset({
+        name: saveCurrentName.trim(),
+        imageUrl: "",
+        light: colors,
+        dark: colors,
+      });
       if (result.success && result.preset) {
         setCustomPresets((prev) => [...prev, result.preset!]);
         setSaveCurrentName("");
