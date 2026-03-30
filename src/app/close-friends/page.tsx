@@ -24,6 +24,8 @@ export default async function CloseFriendsPage() {
       where: { id: userId },
       select: {
         username: true,
+        email: true,
+        dateOfBirth: true,
         ...userThemeSelect,
       },
     }),
