@@ -6,7 +6,7 @@ import { isProfileIncomplete } from "@/lib/require-profile";
 import { ProfileForm } from "./profile-form";
 import { Suspense } from "react";
 import { AutoAccountSwitch } from "@/components/auto-account-switch";
-import { buildUserTheme } from "@/lib/user-theme";
+import { userThemeSelect, buildUserTheme } from "@/lib/user-theme";
 import { ThemedPage } from "@/components/themed-page";
 
 export const metadata: Metadata = {
@@ -52,6 +52,7 @@ export default async function ProfilePage() {
       stars: true,
       starsSpent: true,
       referralCode: true,
+      ...userThemeSelect,
     },
   });
 

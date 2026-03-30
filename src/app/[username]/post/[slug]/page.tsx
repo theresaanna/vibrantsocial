@@ -6,6 +6,8 @@ import { isProfileIncomplete } from "@/lib/require-profile";
 import { PostPageClient } from "@/app/post/[id]/post-page-client";
 import { extractContentFromLexicalJson } from "@/lib/lexical-text";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 interface Props {
   params: Promise<{ username: string; slug: string }>;
@@ -117,6 +119,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
           profileFrameId: true,
           usernameFont: true,
           isProfilePublic: true,
+          ...userThemeSelect,
         },
       },
       _count: {
@@ -208,8 +211,10 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
     }
   }
 
+  const theme = post.author ? buildUserTheme(post.author) : undefined;
+
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...(theme ?? NO_THEME)}>
       <PostPageClient
         post={post}
         currentUserId={userId}
@@ -222,6 +227,6 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
         wallPost={post.wallPost}
         marketplacePostId={undefined}
       />
-    </main>
+    </ThemedPage>
   );
 }
