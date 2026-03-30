@@ -15,6 +15,7 @@ import {
   TableButton,
   PollButton,
 } from "./InsertButtons";
+import { GifButton } from "./GifButton";
 import { SpeechToTextButton } from "./SpeechToTextButton";
 
 import { MarkdownToggleButton } from "./MarkdownToggleButton";
@@ -41,6 +42,7 @@ export function Toolbar() {
       <Divider />
       <FileUploadButton />
       <YouTubeButton />
+      <GifButton />
       <span className="hidden sm:contents">
         <TableButton />
       </span>
