@@ -182,6 +182,7 @@ h6 {
 }
 
 /* Divide colors */
+.profile-themed .divide-zinc-100 > :not([hidden]) ~ :not([hidden]),
 .profile-themed .divide-zinc-200 > :not([hidden]) ~ :not([hidden]),
 .profile-themed .dark\:divide-zinc-800 > :not([hidden]) ~ :not([hidden]) {
   border-color: color-mix(in srgb, var(--profile-secondary) 25%, transparent) !important;
