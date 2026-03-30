@@ -128,9 +128,47 @@ h6 {
   background-color: color-mix(in srgb, var(--profile-link) 12%, transparent) !important;
 }
 
+/* Hover backgrounds: all zinc hover variants → themed */
 .profile-themed .hover\:bg-zinc-50:hover,
-.profile-themed .dark\:hover\:bg-zinc-800\/50:hover {
-  background-color: color-mix(in srgb, var(--profile-container) 95%, transparent) !important;
+.profile-themed .hover\:bg-zinc-100:hover,
+.profile-themed .hover\:bg-zinc-200:hover,
+.profile-themed .hover\:bg-zinc-200\/50:hover,
+.profile-themed .hover\:bg-zinc-300:hover {
+  background-color: color-mix(in srgb, var(--profile-secondary) 15%, transparent) !important;
+}
+
+.profile-themed .dark\:hover\:bg-zinc-200:hover {
+  background-color: color-mix(in srgb, var(--profile-secondary) 15%, transparent) !important;
+}
+
+.profile-themed .dark\:hover\:bg-zinc-700:hover,
+.profile-themed .dark\:hover\:bg-zinc-700\/50:hover,
+.profile-themed .dark\:hover\:bg-zinc-800:hover,
+.profile-themed .dark\:hover\:bg-zinc-800\/50:hover,
+.profile-themed .dark\:hover\:bg-zinc-900:hover {
+  background-color: color-mix(in srgb, var(--profile-secondary) 15%, transparent) !important;
+}
+
+.profile-themed .hover\:bg-zinc-800:hover,
+.profile-themed .hover\:bg-zinc-600:hover {
+  background-color: color-mix(in srgb, var(--profile-secondary) 15%, transparent) !important;
+}
+
+/* Dark-mode static button backgrounds → themed container */
+.profile-themed .dark\:bg-zinc-100 {
+  background-color: var(--profile-container) !important;
+}
+
+/* Checkbox / radio accent colors → theme link */
+.profile-themed .accent-blue-500,
+.profile-themed .accent-fuchsia-500 {
+  accent-color: var(--profile-link) !important;
+}
+
+/* Generic checkbox/radio inputs inside themed areas */
+.profile-themed input[type="checkbox"],
+.profile-themed input[type="radio"] {
+  accent-color: var(--profile-link);
 }
 
 /* Primary text: zinc-900 / zinc-100 / zinc-800 / zinc-200 */
