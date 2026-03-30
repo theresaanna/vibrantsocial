@@ -88,6 +88,14 @@ h6 {
   background-color: color-mix(in srgb, var(--profile-container) 90%, transparent) !important;
 }
 
+/* Muted backgrounds (avatar fallback, badges, pills): zinc-200/300/600/700 */
+.profile-themed .bg-zinc-200,
+.profile-themed .dark\:bg-zinc-700,
+.profile-themed .bg-zinc-300,
+.profile-themed .dark\:bg-zinc-600 {
+  background-color: color-mix(in srgb, var(--profile-secondary) 30%, transparent) !important;
+}
+
 /* Notification-specific: unread/selected/hover backgrounds use theme container tint */
 .profile-themed .bg-blue-50\/50,
 .profile-themed .dark\:bg-blue-950\/20,
