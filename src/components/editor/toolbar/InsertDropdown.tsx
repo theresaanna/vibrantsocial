@@ -280,7 +280,6 @@ function VideoInsertModal({
 
   async function handleFileUpload(file: File) {
     setError("");
-    setNotice("");
     if (!file.type.startsWith("video/")) {
       setError("Please select a video file");
       return;
