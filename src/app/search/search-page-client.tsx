@@ -313,7 +313,8 @@ export function SearchPageClient({
         </svg>
       </div>
 
-      <div className="mt-4 flex gap-1 border-b border-zinc-200 dark:border-zinc-700">
+      <div className="mt-4 overflow-hidden rounded-2xl bg-white shadow-lg dark:bg-zinc-900">
+      <div className="flex gap-1 border-b border-zinc-200 dark:border-zinc-700">
         <button
           onClick={() => handleTabChange("users")}
           className={`px-4 py-2 text-sm font-medium transition-colors ${
@@ -356,7 +357,7 @@ export function SearchPageClient({
         </button>
       </div>
 
-      <div className="mt-4">
+      <div className="p-4">
         {activeTab === "users" ? (
           <>
             {hasSearched && users.length === 0 && !isPending && (
@@ -437,6 +438,7 @@ export function SearchPageClient({
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-600 dark:border-t-zinc-100" />
           </div>
         )}
+      </div>
       </div>
     </div>
   );

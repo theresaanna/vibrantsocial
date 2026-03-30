@@ -169,6 +169,14 @@ h6 {
 .profile-themed input[type="checkbox"],
 .profile-themed input[type="radio"] {
   accent-color: var(--profile-link);
+  color-scheme: light;
+  background-color: var(--profile-container);
+  border-color: color-mix(in srgb, var(--profile-secondary) 40%, transparent);
+}
+
+/* Force color-scheme on themed area so form controls match the theme bg */
+.profile-themed {
+  color-scheme: normal;
 }
 
 /* Primary text: all strong zinc text → theme text */
