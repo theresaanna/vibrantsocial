@@ -44,7 +44,7 @@ export async function Header() {
 
         {/* Nav links — row 2 on mobile, inline center on md+ */}
         {session?.user && (
-          <div className="order-3 flex w-full items-center justify-end gap-1 border-t border-zinc-100 pt-2 md:order-2 md:w-auto md:justify-center md:border-0 md:pt-0 dark:border-zinc-800">
+          <div className="order-3 flex w-full items-center justify-end gap-1 border-t border-zinc-100 pl-2 pt-2 md:order-2 md:w-auto md:justify-center md:border-0 md:pl-0 md:pt-0 dark:border-zinc-800">
             <NavLinks username={session.user.username} />
           </div>
         )}
