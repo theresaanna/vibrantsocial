@@ -151,6 +151,12 @@ h6 {
   border-color: color-mix(in srgb, var(--profile-secondary) 25%, transparent) !important;
 }
 
+/* Active tab underlines: use theme link color for emphasis */
+.profile-themed .border-b-2.border-zinc-900,
+.profile-themed .border-b-2.dark\:border-zinc-100 {
+  border-color: var(--profile-link) !important;
+}
+
 /* Focus borders */
 .profile-themed .focus\:border-zinc-400:focus,
 .profile-themed .focus\:border-zinc-500:focus,
