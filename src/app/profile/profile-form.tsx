@@ -8,14 +8,9 @@ import { updateProfile, removeAvatar, requestEmailChange, cancelEmailChange, res
 import { unlinkAccount, getLinkedAccounts } from "./account-linking-actions";
 import { BioEditor } from "@/components/bio-editor";
 import { BioRevisionHistory } from "@/components/bio-revision-history";
-import { ThemeEditor } from "@/components/theme-editor";
-import { SparkleEditor } from "@/components/sparkle-editor";
-import type { BackgroundDefinition } from "@/lib/profile-backgrounds";
-import type { CustomPresetData } from "@/lib/profile-themes";
 import { FrameSelector } from "@/components/frame-selector";
 import { PremiumCrown } from "@/components/premium-crown";
 import { FramedAvatar } from "@/components/framed-avatar";
-import { FontSelector } from "@/components/font-selector";
 import { PushNotificationToggle } from "@/components/push-notification-toggle";
 import { LinkAccountModal } from "@/components/link-account-modal";
 import { AvatarCropperModal } from "@/components/avatar-cropper-modal";
@@ -28,27 +23,7 @@ interface ProfileFormProps {
     username: string | null;
     displayName: string | null;
     bio: string | null;
-    profileBgColor: string | null;
-    profileTextColor: string | null;
-    profileLinkColor: string | null;
-    profileSecondaryColor: string | null;
-    profileContainerColor: string | null;
     profileFrameId: string | null;
-    profileBgImage: string | null;
-    profileBgRepeat: string | null;
-    profileBgAttachment: string | null;
-    profileBgSize: string | null;
-    profileBgPosition: string | null;
-    sparklefallEnabled: boolean;
-    sparklefallPreset: string | null;
-    sparklefallSparkles: string | null;
-    sparklefallColors: string | null;
-    sparklefallInterval: number | null;
-    sparklefallWind: number | null;
-    sparklefallMaxSparkles: number | null;
-    sparklefallMinSize: number | null;
-    sparklefallMaxSize: number | null;
-    usernameFont: string | null;
   };
   email: string | null;
   emailVerified: boolean;
@@ -77,10 +52,7 @@ interface ProfileFormProps {
   stars: number;
   starsSpent: number;
   referralCode: string;
-  backgrounds: BackgroundDefinition[];
-  premiumBackgrounds: BackgroundDefinition[];
   userEmail: string | null;
-  customPresets: CustomPresetData[];
 }
 
 interface ProfileState {
@@ -90,7 +62,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, email, emailVerified, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, hideSensitiveOverlay, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, birthdayMonth: initialBirthdayMonth, birthdayDay: initialBirthdayDay, isPremium, stars, starsSpent, referralCode, backgrounds, premiumBackgrounds, userEmail, customPresets }: ProfileFormProps) {
+export function ProfileForm({ user, email, emailVerified, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, hideSensitiveOverlay, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, birthdayMonth: initialBirthdayMonth, birthdayDay: initialBirthdayDay, isPremium, stars, starsSpent, referralCode, userEmail }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [displayNameValue, setDisplayNameValue] = useState(user.displayName ?? "");
@@ -122,7 +94,7 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
   const [frameId, setFrameId] = useState<string | null>(user.profileFrameId);
   const [showFrameSelector, setShowFrameSelector] = useState(false);
-  const [usernameFont, setUsernameFont] = useState<string | null>(user.usernameFont);
+
   const [birthdayMonth, setBirthdayMonth] = useState<string>(initialBirthdayMonth ? String(initialBirthdayMonth) : "");
   const [birthdayDay, setBirthdayDay] = useState<string>(initialBirthdayDay ? String(initialBirthdayDay) : "");
   const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
@@ -767,7 +739,6 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
         className="space-y-4"
       >
         <input type="hidden" name="profileFrameId" value={frameId ?? ""} />
-        <input type="hidden" name="usernameFont" value={usernameFont ?? ""} />
         <div>
           <label
             htmlFor="username"
@@ -869,14 +840,6 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
           </p>
         </div>
 
-        <FontSelector
-          currentFontId={usernameFont}
-          displayName={displayNameValue || user.displayName || ""}
-          isPremium={isPremium}
-          userEmail={userEmail}
-          onSelect={(fontId) => { setUsernameFont(fontId); scheduleAutosave(); }}
-        />
-
         <div>
           <BioEditor initialContent={user.bio} onChange={scheduleAutosave} />
           <button
@@ -897,49 +860,15 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
           />
         )}
 
-        <ThemeEditor
-          initialColors={{
-            profileBgColor: user.profileBgColor ?? undefined,
-            profileTextColor: user.profileTextColor ?? undefined,
-            profileLinkColor: user.profileLinkColor ?? undefined,
-            profileSecondaryColor: user.profileSecondaryColor ?? undefined,
-            profileContainerColor: user.profileContainerColor ?? undefined,
-          }}
-          username={savedUsername ?? null}
-          displayName={user.displayName}
-          bio={user.bio}
-          avatarSrc={avatarPreview || oauthImage}
-          onChange={scheduleAutosave}
-          isPremium={isPremium}
-          userEmail={userEmail}
-          customPresets={customPresets}
-          backgrounds={backgrounds}
-          premiumBackgrounds={premiumBackgrounds}
-          initialBackground={{
-            profileBgImage: user.profileBgImage,
-            profileBgRepeat: user.profileBgRepeat,
-            profileBgAttachment: user.profileBgAttachment,
-            profileBgSize: user.profileBgSize,
-            profileBgPosition: user.profileBgPosition,
-          }}
-        />
-
-        <SparkleEditor
-          initialConfig={{
-            sparklefallEnabled: user.sparklefallEnabled,
-            sparklefallPreset: user.sparklefallPreset,
-            sparklefallSparkles: user.sparklefallSparkles,
-            sparklefallColors: user.sparklefallColors,
-            sparklefallInterval: user.sparklefallInterval,
-            sparklefallWind: user.sparklefallWind,
-            sparklefallMaxSparkles: user.sparklefallMaxSparkles,
-            sparklefallMinSize: user.sparklefallMinSize,
-            sparklefallMaxSize: user.sparklefallMaxSize,
-          }}
-          isPremium={isPremium}
-          userEmail={userEmail}
-          onChange={scheduleAutosave}
-        />
+        <Link
+          href="/theme"
+          className="flex items-center gap-2 rounded-lg border border-zinc-200 p-3 text-sm font-medium text-pink-600 transition-colors hover:bg-pink-50 dark:border-zinc-700 dark:text-pink-400 dark:hover:bg-pink-900/20"
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
+          </svg>
+          Customize your theme, font, and background
+        </Link>
 
         <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
           <p className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">

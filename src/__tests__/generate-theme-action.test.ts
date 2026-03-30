@@ -50,7 +50,7 @@ import {
   generateTheme,
   saveCustomPreset,
   deleteCustomPreset,
-} from "@/app/profile/generate-theme-action";
+} from "@/app/theme/generate-theme-action";
 
 const mockAuth = vi.mocked(auth);
 const mockAnthropicCreate = vi.mocked(anthropic.messages.create);

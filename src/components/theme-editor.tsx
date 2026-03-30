@@ -19,7 +19,7 @@ import {
   generateTheme,
   saveCustomPreset,
   deleteCustomPreset,
-} from "@/app/profile/generate-theme-action";
+} from "@/app/theme/generate-theme-action";
 import { ThemePreview } from "./theme-preview";
 import { PremiumCrown } from "./premium-crown";
 
