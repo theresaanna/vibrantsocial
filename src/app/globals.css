@@ -171,20 +171,45 @@ h6 {
   accent-color: var(--profile-link);
 }
 
-/* Primary text: zinc-900 / zinc-100 / zinc-800 / zinc-200 */
+/* Primary text: all strong zinc text → theme text */
 .profile-themed .text-zinc-900,
-.profile-themed .dark\:text-zinc-100,
 .profile-themed .text-zinc-800,
-.profile-themed .dark\:text-zinc-200 {
+.profile-themed .dark\:text-zinc-100,
+.profile-themed .dark\:text-zinc-200,
+.profile-themed .dark\:text-zinc-50 {
   color: var(--profile-text) !important;
 }
 
-/* Secondary text: zinc-500 / zinc-400 / zinc-600 / zinc-300 */
-.profile-themed .text-zinc-500,
-.profile-themed .dark\:text-zinc-400,
+/* Secondary/muted text: all mid-tone zinc text → theme secondary */
+.profile-themed .text-zinc-700,
 .profile-themed .text-zinc-600,
+.profile-themed .text-zinc-500,
+.profile-themed .text-zinc-400,
+.profile-themed .text-zinc-300,
+.profile-themed .text-zinc-200,
+.profile-themed .text-zinc-100,
+.profile-themed .dark\:text-zinc-500,
+.profile-themed .dark\:text-zinc-400,
 .profile-themed .dark\:text-zinc-300,
-.profile-themed .text-zinc-700 {
+.profile-themed .dark\:text-zinc-700,
+.profile-themed .dark\:text-zinc-600,
+.profile-themed .dark\:text-zinc-900 {
+  color: var(--profile-secondary) !important;
+}
+
+/* Hover text: zinc hover states → themed */
+.profile-themed .hover\:text-zinc-900:hover,
+.profile-themed .hover\:text-zinc-800:hover,
+.profile-themed .hover\:text-zinc-700:hover,
+.profile-themed .hover\:text-zinc-600:hover,
+.profile-themed .hover\:text-zinc-500:hover,
+.profile-themed .dark\:hover\:text-zinc-100:hover,
+.profile-themed .dark\:hover\:text-zinc-200:hover {
+  color: var(--profile-text) !important;
+}
+
+.profile-themed .dark\:hover\:text-zinc-300:hover,
+.profile-themed .dark\:hover\:text-zinc-400:hover {
   color: var(--profile-secondary) !important;
 }
 
