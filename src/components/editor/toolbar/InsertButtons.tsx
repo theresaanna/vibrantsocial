@@ -179,7 +179,6 @@ function UnifiedUploadModal({
 
   async function handleFile(file: File): Promise<boolean> {
     setError("");
-    setNotice("");
     setUploading(true);
 
     try {
