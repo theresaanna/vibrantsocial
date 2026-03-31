@@ -60,6 +60,7 @@ export async function getNotifications() {
       },
       message: { select: { id: true, conversationId: true } },
       tag: { select: { id: true, name: true } },
+      userList: { select: { id: true, name: true } },
     },
   });
 

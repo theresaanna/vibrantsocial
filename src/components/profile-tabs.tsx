@@ -13,7 +13,7 @@ interface ProfileTabsProps {
 }
 
 export function ProfileTabs({ username, activeTab, hasCustomTheme, showWallTab, showSensitiveTab, showNsfwTab, showGraphicTab }: ProfileTabsProps) {
-  const baseClass = "px-5 py-2.5 rounded-lg text-sm font-semibold transition-all";
+  const baseClass = "shrink-0 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all";
 
   const activeClass = hasCustomTheme
     ? ""
@@ -39,7 +39,7 @@ export function ProfileTabs({ username, activeTab, hasCustomTheme, showWallTab, 
 
   return (
     <div className="mt-6">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex gap-2 overflow-x-auto">
         <Link
           href={`/${username}`}
           className={`${baseClass} ${activeTab === "posts" ? activeClass : inactiveClass}`}

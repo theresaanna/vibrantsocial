@@ -136,8 +136,9 @@ model User {
   receivedMessageRequests  MessageRequest[] @relation("receivedMessageRequests")
 
   // Reactions
-  messageReactions MessageReaction[]
-  commentReactions CommentReaction[]
+  messageReactions       MessageReaction[]
+  commentReactions       CommentReaction[]
+  repostCommentReactions RepostCommentReaction[]
 
   // Notifications
   notificationsReceived Notification[] @relation("notificationTarget")
@@ -407,21 +408,37 @@ model RepostBookmark {
 }
 
 model RepostComment {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   content   String
   repostId  String
   authorId  String
   parentId  String?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+  editedAt  DateTime?
 
-  repost  Repost          @relation(fields: [repostId], references: [id], onDelete: Cascade)
-  author  User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  parent  RepostComment?  @relation("RepostCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies RepostComment[] @relation("RepostCommentReplies")
+  repost    Repost                  @relation(fields: [repostId], references: [id], onDelete: Cascade)
+  author    User                    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent    RepostComment?          @relation("RepostCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   RepostComment[]         @relation("RepostCommentReplies")
+  reactions RepostCommentReaction[]
 
   @@index([repostId])
   @@index([authorId])
   @@index([parentId])
+}
+
+model RepostCommentReaction {
+  id        String   @id @default(cuid())
+  commentId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  comment RepostComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId, emoji])
+  @@index([commentId])
 }
 
 model BioRevision {
@@ -677,16 +694,18 @@ model Notification {
   messageId    String?
   repostId     String?
   tagId        String?
+  userListId   String?
   readAt       DateTime?
   createdAt    DateTime         @default(now())
 
-  actor      User     @relation("notificationActor", fields: [actorId], references: [id], onDelete: Cascade)
-  targetUser User     @relation("notificationTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
-  post       Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  comment    Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  message    Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  repost     Repost?  @relation(fields: [repostId], references: [id], onDelete: Cascade)
-  tag        Tag?     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  actor      User      @relation("notificationActor", fields: [actorId], references: [id], onDelete: Cascade)
+  targetUser User      @relation("notificationTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  post       Post?     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment    Comment?  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  message    Message?  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  repost     Repost?   @relation(fields: [repostId], references: [id], onDelete: Cascade)
+  tag        Tag?      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  userList   UserList? @relation(fields: [userListId], references: [id], onDelete: SetNull)
 
   @@index([targetUserId, readAt, createdAt])
   @@index([actorId])
@@ -783,6 +802,7 @@ model UserList {
   members       UserListMember[]
   subscriptions UserListSubscription[]
   collaborators UserListCollaborator[]
+  notifications Notification[]
 
   @@unique([ownerId, name])
   @@index([ownerId])

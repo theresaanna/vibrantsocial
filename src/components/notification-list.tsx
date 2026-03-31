@@ -41,6 +41,7 @@ interface NotificationItem {
   post: { id: string; content: string; wallPost?: { id: string; status: string } | null } | null;
   message: { id: string; conversationId: string } | null;
   tag: { id: string; name: string } | null;
+  userList: { id: string; name: string } | null;
   hasPendingFriendRequest?: boolean;
 }
 
@@ -207,6 +208,11 @@ export function NotificationList({
             href = `/chat/${notification.message.conversationId}`;
           } else if (notification.type === "FRIEND_REQUEST") {
             href = `/${notification.actor.username}`;
+          } else if (
+            (notification.type === "LIST_ADD" || notification.type === "LIST_COLLABORATOR_ADD") &&
+            notification.userList
+          ) {
+            href = `/lists/${notification.userList.id}`;
           } else if (notification.type === "MENTION" && notification.repostId) {
             href = `/quote/${notification.repostId}`;
           } else if (notification.postId) {

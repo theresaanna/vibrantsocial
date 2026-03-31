@@ -14,10 +14,11 @@ interface CreateNotificationParams {
   messageId?: string;
   repostId?: string;
   tagId?: string;
+  userListId?: string;
 }
 
 export async function createNotification(params: CreateNotificationParams) {
-  const { type, actorId, targetUserId, postId, commentId, messageId, repostId, tagId } = params;
+  const { type, actorId, targetUserId, postId, commentId, messageId, repostId, tagId, userListId } = params;
 
   // Don't notify yourself (except system notifications like milestones)
   if (actorId === targetUserId && type !== "STARS_MILESTONE") return;
@@ -34,7 +35,7 @@ export async function createNotification(params: CreateNotificationParams) {
   if (block) return;
 
   const notification = await prisma.notification.create({
-    data: { type, actorId, targetUserId, postId, commentId, messageId, repostId, tagId },
+    data: { type, actorId, targetUserId, postId, commentId, messageId, repostId, tagId, userListId },
     include: {
       actor: {
         select: {

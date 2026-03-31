@@ -750,10 +750,11 @@ export async function fetchRepostComments(repostId: string) {
     orderBy: { createdAt: "asc" },
     include: {
       author: { select: commentAuthorSelect },
+      reactions: { select: { emoji: true, userId: true } },
     },
   });
 
-  return JSON.parse(JSON.stringify(buildCommentTree(allComments)));
+  return JSON.parse(JSON.stringify(transformCommentsWithReactions(buildCommentTree(allComments))));
 }
 
 export async function toggleRepostLike(
@@ -956,6 +957,118 @@ export async function createRepostComment(
   revalidatePath("/feed");
   revalidatePath(`/quote/${repostId}`);
   return { success: true, message: "Comment added" };
+}
+
+export async function toggleRepostCommentReaction(data: {
+  commentId: string;
+  emoji: string;
+}): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `post:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
+  const { commentId, emoji } = data;
+
+  const comment = await prisma.repostComment.findUnique({
+    where: { id: commentId },
+    select: { id: true, repostId: true, authorId: true },
+  });
+  if (!comment) {
+    return { success: false, message: "Comment not found" };
+  }
+
+  const existing = await prisma.repostCommentReaction.findUnique({
+    where: { commentId_userId_emoji: { commentId, userId: session.user.id, emoji } },
+  });
+
+  if (existing) {
+    await prisma.repostCommentReaction.delete({ where: { id: existing.id } });
+  } else {
+    await prisma.repostCommentReaction.create({
+      data: { commentId, userId: session.user.id, emoji },
+    });
+  }
+
+  return { success: true, message: existing ? "Reaction removed" : "Reaction added" };
+}
+
+export async function editRepostComment(data: {
+  commentId: string;
+  content: string;
+}): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `post:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
+  const { commentId, content } = data;
+  const trimmed = content.trim();
+
+  if (!trimmed) {
+    return { success: false, message: "Comment cannot be empty" };
+  }
+  if (trimmed.length > 1000) {
+    return { success: false, message: "Comment too long (max 1000 characters)" };
+  }
+
+  const comment = await prisma.repostComment.findUnique({
+    where: { id: commentId },
+    select: { id: true, repostId: true, authorId: true },
+  });
+  if (!comment) {
+    return { success: false, message: "Comment not found" };
+  }
+  if (comment.authorId !== session.user.id) {
+    return { success: false, message: "Not authorized" };
+  }
+
+  await prisma.repostComment.update({
+    where: { id: commentId },
+    data: { content: trimmed, editedAt: new Date() },
+  });
+
+  revalidatePath(`/quote/${comment.repostId}`);
+  revalidatePath("/feed");
+  return { success: true, message: "Comment updated" };
+}
+
+export async function deleteRepostComment(data: {
+  commentId: string;
+}): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  if (await isRateLimited(apiLimiter, `post:${session.user.id}`)) {
+    return { success: false, message: "Too many requests. Please try again later." };
+  }
+
+  const comment = await prisma.repostComment.findUnique({
+    where: { id: data.commentId },
+    select: { id: true, repostId: true, authorId: true },
+  });
+  if (!comment) {
+    return { success: false, message: "Comment not found" };
+  }
+  if (comment.authorId !== session.user.id) {
+    return { success: false, message: "Not authorized" };
+  }
+
+  await prisma.repostComment.delete({ where: { id: data.commentId } });
+
+  revalidatePath(`/quote/${comment.repostId}`);
+  revalidatePath("/feed");
+  return { success: true, message: "Comment deleted" };
 }
 
 // ── Comment reactions ─────────────────────────────────────────────
