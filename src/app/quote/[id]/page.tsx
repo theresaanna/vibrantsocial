@@ -87,22 +87,32 @@ export default async function QuotePage({ params }: Props) {
     showNsfwContent = currentUser?.showNsfwContent ?? false;
   }
 
+  const repostUserSelect = {
+    id: true,
+    username: true,
+    displayName: true,
+    name: true,
+    image: true,
+    avatar: true,
+    profileFrameId: true,
+    usernameFont: true,
+  };
+
   const repost = await prisma.repost.findUnique({
     where: { id },
     include: {
-      user: {
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          name: true,
-          image: true,
-          avatar: true,
-          profileFrameId: true,
-        },
-      },
+      user: { select: repostUserSelect },
       post: {
         include: getPostInclude(userId ?? ""),
+      },
+      quotedRepost: {
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          user: { select: repostUserSelect },
+          post: { include: getPostInclude(userId ?? "") },
+        },
       },
       tags: {
         include: {

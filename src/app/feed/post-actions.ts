@@ -262,6 +262,7 @@ export async function createQuoteRepost(
   const session = authResult;
 
   const postId = formData.get("postId") as string;
+  const quotedRepostId = (formData.get("quotedRepostId") as string) || null;
   const content = (formData.get("content") as string)?.trim();
   const isSensitive = formData.get("isSensitive") === "true";
   const isNsfw = formData.get("isNsfw") === "true";
@@ -281,7 +282,7 @@ export async function createQuoteRepost(
   }
 
   const repost = await prisma.repost.create({
-    data: { postId, userId: session.user.id, content, isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly },
+    data: { postId, userId: session.user.id, content, isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly, quotedRepostId },
   });
   await prisma.user.update({ where: { id: session.user.id }, data: { stars: { increment: 1 } } });
   await checkStarsMilestone(session.user.id);

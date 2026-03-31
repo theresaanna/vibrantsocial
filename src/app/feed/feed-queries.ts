@@ -82,6 +82,15 @@ export function getRepostInclude(userId: string) {
   return {
     user: { select: repostUserSelect },
     post: { include: getPostInclude(userId) },
+    quotedRepost: {
+      select: {
+        id: true,
+        content: true,
+        createdAt: true,
+        user: { select: repostUserSelect },
+        post: { include: getPostInclude(userId) },
+      },
+    },
     tags: { include: { tag: { select: { name: true } } } },
     _count: {
       select: {

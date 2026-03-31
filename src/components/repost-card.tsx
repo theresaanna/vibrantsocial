@@ -48,6 +48,40 @@ interface RepostCardProps {
     };
     likes?: Array<{ id: string }>;
     bookmarks?: Array<{ id: string }>;
+    quotedRepost?: {
+      id: string;
+      content: string | null;
+      createdAt: Date;
+      user: RepostUser;
+      post: {
+        id: string;
+        content: string;
+        createdAt: Date;
+        editedAt?: Date | null;
+        isAuthorDeleted?: boolean;
+        isSensitive: boolean;
+        isNsfw: boolean;
+        isGraphicNudity: boolean;
+        isPinned: boolean;
+        author: RepostUser | null;
+        tags?: Array<{ tag: { name: string } }>;
+        _count: {
+          comments: number;
+          likes: number;
+          bookmarks: number;
+          reposts: number;
+        };
+        likes: Array<{ id: string }>;
+        bookmarks: Array<{ id: string }>;
+        reposts: Array<{ id: string }>;
+        comments: Array<{
+          id: string;
+          content: string;
+          createdAt: Date;
+          author: RepostUser;
+        }>;
+      };
+    } | null;
     post: {
       id: string;
       content: string;
@@ -464,7 +498,7 @@ export function RepostCard({
                 isLiked={(repost.likes?.length ?? 0) > 0}
                 isBookmarked={(repost.bookmarks?.length ?? 0) > 0}
                 onToggleComments={() => setShowComments((v) => !v)}
-                onQuotePost={currentUserId ? () => router.push(`/post/${repost.post.id}/quote`) : undefined}
+                onQuotePost={currentUserId ? () => router.push(`/quote/${repost.id}/requote`) : undefined}
                 readOnly={!currentUserId}
               />
             </div>
@@ -483,25 +517,66 @@ export function RepostCard({
             </div>
           )}
 
-          {/* Original post */}
-          <PostCard
-            post={repost.post}
-            currentUserId={currentUserId}
-            phoneVerified={phoneVerified}
-            ageVerified={ageVerified}
-            showGraphicByDefault={showGraphicByDefault}
-            showNsfwContent={showNsfwContent}
-            hideSensitiveOverlay={hideSensitiveOverlay}
-            {...(repost.post.wallPost && repost.post.wallPost.wallOwner.username && {
-              wallOwner: {
-                username: repost.post.wallPost.wallOwner.username,
-                displayName: repost.post.wallPost.wallOwner.displayName,
-                usernameFont: repost.post.wallPost.wallOwner.usernameFont,
-              },
-              wallPostId: repost.post.wallPost.id,
-              wallPostStatus: repost.post.wallPost.status,
-            })}
-          />
+          {/* Embedded content: quoted repost or original post */}
+          {repost.quotedRepost ? (
+            <div className="border-t border-zinc-100 dark:border-zinc-800">
+              <div className="px-4 py-3">
+                <div className="flex items-center gap-2 mb-2">
+                  {repost.quotedRepost.user.avatar || repost.quotedRepost.user.image ? (
+                    <img
+                      src={(repost.quotedRepost.user.avatar || repost.quotedRepost.user.image)!}
+                      alt=""
+                      referrerPolicy="no-referrer"
+                      className="h-5 w-5 rounded-full"
+                    />
+                  ) : (
+                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-zinc-200 text-[10px] font-bold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+                      {(repost.quotedRepost.user.displayName || repost.quotedRepost.user.name || repost.quotedRepost.user.username || "?")[0]?.toUpperCase()}
+                    </div>
+                  )}
+                  <Link href={`/${repost.quotedRepost.user.username}`} className="text-sm font-semibold text-zinc-900 hover:underline dark:text-zinc-100">
+                    <StyledName fontId={repost.quotedRepost.user.usernameFont}>
+                      {repost.quotedRepost.user.displayName || repost.quotedRepost.user.name || repost.quotedRepost.user.username}
+                    </StyledName>
+                  </Link>
+                  <span className="text-xs text-zinc-400">{timeAgo(new Date(repost.quotedRepost.createdAt))}</span>
+                </div>
+                {repost.quotedRepost.content && (
+                  <div className="mb-2">
+                    <PostContent content={repost.quotedRepost.content} truncate />
+                  </div>
+                )}
+              </div>
+              <PostCard
+                post={repost.quotedRepost.post}
+                currentUserId={currentUserId}
+                phoneVerified={phoneVerified}
+                ageVerified={ageVerified}
+                showGraphicByDefault={showGraphicByDefault}
+                showNsfwContent={showNsfwContent}
+                hideSensitiveOverlay={hideSensitiveOverlay}
+              />
+            </div>
+          ) : (
+            <PostCard
+              post={repost.post}
+              currentUserId={currentUserId}
+              phoneVerified={phoneVerified}
+              ageVerified={ageVerified}
+              showGraphicByDefault={showGraphicByDefault}
+              showNsfwContent={showNsfwContent}
+              hideSensitiveOverlay={hideSensitiveOverlay}
+              {...(repost.post.wallPost && repost.post.wallPost.wallOwner.username && {
+                wallOwner: {
+                  username: repost.post.wallPost.wallOwner.username,
+                  displayName: repost.post.wallPost.wallOwner.displayName,
+                  usernameFont: repost.post.wallPost.wallOwner.usernameFont,
+                },
+                wallPostId: repost.post.wallPost.id,
+                wallPostStatus: repost.post.wallPost.status,
+              })}
+            />
+          )}
         </div>
       ) : (
         <PostCard

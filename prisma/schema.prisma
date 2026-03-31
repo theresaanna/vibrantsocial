@@ -384,6 +384,7 @@ model Repost {
   id                 String   @id @default(cuid())
   postId             String
   userId             String
+  quotedRepostId     String?
   content            String?  @db.Text
   isSensitive        Boolean  @default(false)
   isNsfw             Boolean  @default(false)
@@ -395,6 +396,8 @@ model Repost {
 
   post Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
   user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quotedRepost    Repost?  @relation("QuotedRepost", fields: [quotedRepostId], references: [id], onDelete: SetNull)
+  quotedBy        Repost[] @relation("QuotedRepost")
   tags            RepostTag[]
   likes           RepostLike[]
   bookmarks       RepostBookmark[]

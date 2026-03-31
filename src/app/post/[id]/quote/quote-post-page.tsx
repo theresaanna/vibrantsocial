@@ -30,6 +30,7 @@ import { timeAgo } from "@/lib/time";
 
 interface QuotePostPageProps {
   postId: string;
+  quotedRepostId?: string;
   originalAuthor: string;
   originalAuthorDisplayName: string;
   originalAuthorAvatar: string | null;
@@ -39,6 +40,7 @@ interface QuotePostPageProps {
 
 export function QuotePostPage({
   postId,
+  quotedRepostId,
   originalAuthor,
   originalAuthorDisplayName,
   originalAuthorAvatar,
@@ -69,6 +71,7 @@ export function QuotePostPage({
 
     const formData = new FormData();
     formData.set("postId", postId);
+    if (quotedRepostId) formData.set("quotedRepostId", quotedRepostId);
     formData.set("content", editorJson);
     formData.set("isSensitive", isSensitive ? "true" : "false");
     formData.set("isNsfw", isNsfw ? "true" : "false");

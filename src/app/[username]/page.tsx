@@ -304,20 +304,29 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
     },
   };
 
+  const repostUserSelect = {
+    id: true,
+    username: true,
+    displayName: true,
+    name: true,
+    image: true,
+    avatar: true,
+    profileFrameId: true,
+    usernameFont: true,
+  };
+
   const repostInclude = {
-    user: {
+    user: { select: repostUserSelect },
+    post: { include: postInclude },
+    quotedRepost: {
       select: {
         id: true,
-        username: true,
-        displayName: true,
-        name: true,
-        image: true,
-        avatar: true,
-        profileFrameId: true,
-        usernameFont: true,
+        content: true,
+        createdAt: true,
+        user: { select: repostUserSelect },
+        post: { include: postInclude },
       },
     },
-    post: { include: postInclude },
     tags: { include: { tag: { select: { name: true } } } },
     _count: {
       select: {
