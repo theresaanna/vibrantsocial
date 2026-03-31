@@ -404,7 +404,7 @@ model Repost {
   comments        RepostComment[]
   notifications   Notification[]
 
-  @@unique([postId, userId])
+  @@index([postId, userId])
 }
 
 model RepostTag {

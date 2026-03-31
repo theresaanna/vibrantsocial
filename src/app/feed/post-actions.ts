@@ -217,8 +217,8 @@ export async function toggleRepost(
   const session = authResult;
 
   const postId = formData.get("postId") as string;
-  const existing = await prisma.repost.findUnique({
-    where: { postId_userId: { postId, userId: session.user.id } },
+  const existing = await prisma.repost.findFirst({
+    where: { postId, userId: session.user.id, quotedRepostId: null },
   });
 
   if (existing) {
@@ -273,12 +273,15 @@ export async function createQuoteRepost(
     return { success: false, message: "Quote text cannot be empty" };
   }
 
-  const existing = await prisma.repost.findUnique({
-    where: { postId_userId: { postId, userId: session.user.id } },
-  });
+  // Only enforce one-repost-per-post for direct reposts (not quoting a quote)
+  if (!quotedRepostId) {
+    const existing = await prisma.repost.findFirst({
+      where: { postId, userId: session.user.id, quotedRepostId: null },
+    });
 
-  if (existing) {
-    return { success: false, message: "You have already reposted this post" };
+    if (existing) {
+      return { success: false, message: "You have already reposted this post" };
+    }
   }
 
   const repost = await prisma.repost.create({
