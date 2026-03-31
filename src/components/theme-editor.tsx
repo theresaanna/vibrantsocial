@@ -18,6 +18,7 @@ import { PremiumCrown } from "./premium-crown";
 
 interface ThemeEditorProps {
   initialColors: Partial<ProfileThemeColors>;
+  initialContainerOpacity?: number;
   username: string | null;
   displayName: string | null;
   bio: string | null;
@@ -38,6 +39,7 @@ const COLOR_LABELS: Record<keyof ProfileThemeColors, string> = {
 
 export function ThemeEditor({
   initialColors,
+  initialContainerOpacity = 0,
   username,
   displayName,
   bio,
@@ -62,6 +64,9 @@ export function ThemeEditor({
       initialColors.profileContainerColor ??
       defaultPreset.profileContainerColor,
   });
+  const [containerOpacity, setContainerOpacity] = useState(
+    Math.min(20, Math.max(0, initialContainerOpacity))
+  );
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -394,6 +399,32 @@ export function ThemeEditor({
             </div>
           </div>
 
+          {/* Container transparency slider */}
+          <div className="flex items-center gap-3">
+            <label
+              htmlFor="container-opacity-slider"
+              className="shrink-0 text-xs font-medium text-zinc-600 dark:text-zinc-400"
+            >
+              Container transparency
+            </label>
+            <input
+              id="container-opacity-slider"
+              type="range"
+              min={0}
+              max={20}
+              step={1}
+              value={containerOpacity}
+              onChange={(e) => {
+                setContainerOpacity(Number(e.target.value));
+                onChange?.();
+              }}
+              className="flex-1 accent-blue-600"
+            />
+            <span className="w-8 shrink-0 text-right text-xs text-zinc-500">
+              {containerOpacity}%
+            </span>
+          </div>
+
           {/* Preview button */}
           <button
             type="button"
@@ -421,6 +452,7 @@ export function ThemeEditor({
       {THEME_COLOR_FIELDS.map((field) => (
         <input key={field} type="hidden" name={field} value={colors[field]} />
       ))}
+      <input type="hidden" name="profileContainerOpacity" value={containerOpacity} />
     </div>
   );
 }

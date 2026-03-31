@@ -34,6 +34,7 @@ interface ProfileFormProps {
     profileLinkColor: string | null;
     profileSecondaryColor: string | null;
     profileContainerColor: string | null;
+    profileContainerOpacity: number | null;
     profileFrameId: string | null;
     profileBgImage: string | null;
     profileBgRepeat: string | null;
@@ -829,6 +830,7 @@ export function ProfileForm({ user, email, pendingEmail, currentAvatar, oauthIma
             profileSecondaryColor: user.profileSecondaryColor ?? undefined,
             profileContainerColor: user.profileContainerColor ?? undefined,
           }}
+          initialContainerOpacity={user.profileContainerOpacity ?? 0}
           username={savedUsername ?? null}
           displayName={user.displayName}
           bio={user.bio}

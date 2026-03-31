@@ -51,6 +51,7 @@ const profileSelect = {
   profileLinkColor: true,
   profileSecondaryColor: true,
   profileContainerColor: true,
+  profileContainerOpacity: true,
   profileBgImage: true,
   profileBgRepeat: true,
   profileBgAttachment: true,
@@ -521,6 +522,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           dark = adaptive.dark;
         }
 
+        const opacity = user.profileContainerOpacity ?? 0;
         return {
           "--profile-bg-light": light.profileBgColor,
           "--profile-text-light": light.profileTextColor,
@@ -532,6 +534,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           "--profile-link-dark": dark.profileLinkColor,
           "--profile-secondary-dark": dark.profileSecondaryColor,
           "--profile-container-dark": dark.profileContainerColor,
+          "--profile-container-alpha": `${100 - opacity}%`,
         } as React.CSSProperties;
       })()
     : undefined;

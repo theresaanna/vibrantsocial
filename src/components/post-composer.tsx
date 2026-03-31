@@ -174,10 +174,10 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, isAgeVerif
           <div className="relative px-4 py-3">
             <RichTextPlugin
               contentEditable={
-                <ContentEditable className="min-h-[80px] text-sm text-zinc-900 outline-none dark:text-zinc-100" />
+                <ContentEditable className="min-h-[80px] text-[18px] text-zinc-900 outline-none dark:text-zinc-100" />
               }
               placeholder={
-                <div className="pointer-events-none absolute left-4 top-3 text-sm text-zinc-400">
+                <div className="pointer-events-none absolute left-4 top-3 text-[18px] text-zinc-400">
                   What&apos;s on your mind?
                 </div>
               }

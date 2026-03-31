@@ -137,10 +137,10 @@ export function QuotePostPage({
               <div className="relative px-3 py-2">
                 <RichTextPlugin
                   contentEditable={
-                    <ContentEditable className="min-h-[120px] text-sm text-zinc-900 outline-none dark:text-zinc-100" />
+                    <ContentEditable className="min-h-[120px] text-[18px] text-zinc-900 outline-none dark:text-zinc-100" />
                   }
                   placeholder={
-                    <div className="pointer-events-none absolute left-3 top-2 text-sm text-zinc-400">
+                    <div className="pointer-events-none absolute left-3 top-2 text-[18px] text-zinc-400">
                       Add your commentary...
                     </div>
                   }

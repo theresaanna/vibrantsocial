@@ -88,7 +88,7 @@ h6 {
 }
 
 .profile-themed .profile-container {
-  background-color: var(--profile-container);
+  background-color: color-mix(in srgb, var(--profile-container) var(--profile-container-alpha, 100%), transparent);
 }
 
 .profile-themed .profile-text-secondary {
@@ -101,7 +101,7 @@ h6 {
 }
 
 .profile-themed .profile-share-btn:hover {
-  background-color: var(--profile-container);
+  background-color: color-mix(in srgb, var(--profile-container) var(--profile-container-alpha, 100%), transparent);
 }
 
 /* Chat theme overrides — light mode (default) */
