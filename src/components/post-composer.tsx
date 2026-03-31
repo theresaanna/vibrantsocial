@@ -166,7 +166,7 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, isAgeVerif
   };
 
   return (
-    <div className="rounded-2xl bg-white shadow-lg dark:bg-zinc-900">
+    <div className="mb-6 rounded-2xl bg-white shadow-lg dark:bg-zinc-900">
       <form action={formAction}>
         <input type="hidden" name="content" value={editorJson} />
         <LexicalComposer initialConfig={editorConfig}>
