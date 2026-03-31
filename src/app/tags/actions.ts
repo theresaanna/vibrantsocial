@@ -33,42 +33,46 @@ export async function searchTags(query: string, includeNsfw?: boolean) {
   const normalized = normalizeTag(query);
   if (!normalized) return [];
 
-  const postFilter = includeNsfw
-    ? { isSensitive: false, isGraphicNudity: false, author: { isProfilePublic: true } }
-    : { isSensitive: false, isNsfw: false, isGraphicNudity: false, author: { isProfilePublic: true } };
+  const cacheKey = cacheKeys.tagSearch(normalized, !!includeNsfw);
 
-  const tags = await prisma.tag.findMany({
-    where: {
-      name: { startsWith: normalized },
-      ...(!includeNsfw ? { isNsfw: false } : {}),
-      posts: {
-        some: {
-          post: postFilter,
+  return cached(cacheKey, async () => {
+    const postFilter = includeNsfw
+      ? { isSensitive: false, isGraphicNudity: false, author: { isProfilePublic: true }, marketplacePost: null as null }
+      : { isSensitive: false, isNsfw: false, isGraphicNudity: false, author: { isProfilePublic: true }, marketplacePost: null as null };
+
+    const tags = await prisma.tag.findMany({
+      where: {
+        name: { startsWith: normalized },
+        ...(!includeNsfw ? { isNsfw: false } : {}),
+        posts: {
+          some: {
+            post: postFilter,
+          },
         },
       },
-    },
-    select: {
-      id: true,
-      name: true,
-      _count: {
-        select: {
-          posts: {
-            where: {
-              post: postFilter,
+      select: {
+        id: true,
+        name: true,
+        _count: {
+          select: {
+            posts: {
+              where: {
+                post: postFilter,
+              },
             },
           },
         },
       },
-    },
-    orderBy: { name: "asc" },
-    take: 20,
-  });
+      orderBy: { name: "asc" },
+      take: 20,
+    });
 
-  // Only return tags used on 2+ posts
-  return (tags as (TagWithCount & { id: string })[])
-    .filter((t) => t._count.posts >= 2)
-    .slice(0, 10)
-    .map((t) => ({ id: t.id, name: t.name, count: t._count.posts }));
+    // Only return tags used on 2+ posts
+    return (tags as (TagWithCount & { id: string })[])
+      .filter((t) => t._count.posts >= 2)
+      .slice(0, 10)
+      .map((t) => ({ id: t.id, name: t.name, count: t._count.posts }));
+  }, 180);
 }
 
 /**
@@ -92,6 +96,7 @@ export async function getTagCloudData() {
                     isNsfw: false,
                     isGraphicNudity: false,
                     author: { isProfilePublic: true },
+                    marketplacePost: null,
                   },
                 },
               },
@@ -127,6 +132,7 @@ export async function getNsfwTagCloudData() {
                     isSensitive: false,
                     isGraphicNudity: false,
                     author: { isProfilePublic: true },
+                    marketplacePost: null,
                   },
                 },
               },
@@ -143,6 +149,7 @@ export async function getNsfwTagCloudData() {
                     isSensitive: false,
                     isGraphicNudity: false,
                     author: { isProfilePublic: true },
+                    marketplacePost: null,
                   },
                 },
               },
@@ -177,6 +184,7 @@ export async function getAllTagCloudData() {
                     isSensitive: false,
                     isGraphicNudity: false,
                     author: { isProfilePublic: true },
+                    marketplacePost: null,
                   },
                 },
               },
@@ -205,13 +213,15 @@ export async function getPostsByTag(
 ) {
   const session = await auth();
   const currentUserId = userId || session?.user?.id || "";
+  const isLoggedIn = !!currentUserId;
 
   const normalized = normalizeTag(tagName);
   if (!normalized) return { posts: [], hasMore: false, totalCount: 0 };
 
+  const authorFilter = isLoggedIn ? {} : { author: { isProfilePublic: true } };
   const postFilter = includeNsfw
-    ? { isSensitive: false, isGraphicNudity: false, author: { isProfilePublic: true } }
-    : { isSensitive: false, isNsfw: false, isGraphicNudity: false, author: { isProfilePublic: true } };
+    ? { isSensitive: false, isGraphicNudity: false, ...authorFilter, marketplacePost: null }
+    : { isSensitive: false, isNsfw: false, isGraphicNudity: false, ...authorFilter, marketplacePost: null };
 
   const fetchCount = PAGE_SIZE + 1;
 

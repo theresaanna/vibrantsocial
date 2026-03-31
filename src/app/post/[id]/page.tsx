@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type React from "react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, permanentRedirect, notFound } from "next/navigation";
@@ -6,6 +7,7 @@ import { isProfileIncomplete } from "@/lib/require-profile";
 import { PostPageClient } from "./post-page-client";
 import { extractContentFromLexicalJson } from "@/lib/lexical-text";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
+import { generateAdaptiveTheme } from "@/lib/profile-themes";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -63,6 +65,7 @@ export default async function PostPage({ params, searchParams }: Props) {
   let phoneVerified = false;
   let ageVerified = false;
   let showGraphicByDefault = false;
+  let hideSensitiveOverlay = false;
   let showNsfwContent = false;
 
   if (userId) {
@@ -75,6 +78,7 @@ export default async function PostPage({ params, searchParams }: Props) {
         dateOfBirth: true,
         ageVerified: true,
         showGraphicByDefault: true,
+        hideSensitiveOverlay: true,
         showNsfwContent: true,
       },
     });
@@ -84,6 +88,7 @@ export default async function PostPage({ params, searchParams }: Props) {
     phoneVerified = !!currentUser?.phoneVerified;
     ageVerified = !!currentUser?.ageVerified;
     showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
+    hideSensitiveOverlay = currentUser?.hideSensitiveOverlay ?? false;
     showNsfwContent = currentUser?.showNsfwContent ?? false;
   }
 
@@ -134,11 +139,26 @@ export default async function PostPage({ params, searchParams }: Props) {
           status: true,
           wallOwner: {
             select: {
+              id: true,
               username: true,
               displayName: true,
+              usernameFont: true,
+              profileBgColor: true,
+              profileTextColor: true,
+              profileLinkColor: true,
+              profileSecondaryColor: true,
+              profileContainerColor: true,
+              profileBgImage: true,
+              profileBgRepeat: true,
+              profileBgAttachment: true,
+              profileBgSize: true,
+              profileBgPosition: true,
             },
           },
         },
+      },
+      marketplacePost: {
+        select: { id: true },
       },
       // Comments are lazy-loaded by CommentSection via fetchComments
       // which builds the full nested tree (not just 2 levels)
@@ -146,6 +166,16 @@ export default async function PostPage({ params, searchParams }: Props) {
   });
 
   if (!post) notFound();
+
+  // Redirect marketplace posts to their dedicated URL
+  if (post.marketplacePost) {
+    if (post.slug && post.author?.username) {
+      const queryString = commentId ? `?commentId=${commentId}` : "";
+      permanentRedirect(`/${post.author.username}/marketplace/${post.slug}${queryString}`);
+    }
+    const queryString = commentId ? `?commentId=${commentId}` : "";
+    permanentRedirect(`/marketplace/${post.id}${queryString}`);
+  }
 
   // Redirect to slug-based URL if available
   if (post.slug && post.author?.username) {
@@ -186,6 +216,86 @@ export default async function PostPage({ params, searchParams }: Props) {
     }
   }
 
+  // Build theme from wall owner if this is a wall post
+  const wallOwner = post.wallPost?.wallOwner;
+  const hasWallOwnerTheme = !!(
+    wallOwner?.profileBgColor ||
+    wallOwner?.profileTextColor ||
+    wallOwner?.profileLinkColor ||
+    wallOwner?.profileSecondaryColor ||
+    wallOwner?.profileContainerColor
+  );
+
+  let wallThemeStyle: React.CSSProperties | undefined;
+  if (wallOwner && hasWallOwnerTheme) {
+    const userColors = {
+      profileBgColor: wallOwner.profileBgColor ?? "#ffffff",
+      profileTextColor: wallOwner.profileTextColor ?? "#18181b",
+      profileLinkColor: wallOwner.profileLinkColor ?? "#2563eb",
+      profileSecondaryColor: wallOwner.profileSecondaryColor ?? "#71717a",
+      profileContainerColor: wallOwner.profileContainerColor ?? "#f4f4f5",
+    };
+    let customPreset: {
+      darkBgColor: string;
+      darkTextColor: string;
+      darkLinkColor: string;
+      darkSecondaryColor: string;
+      darkContainerColor: string;
+    } | null = null;
+    try {
+      customPreset = await prisma.customThemePreset.findFirst({
+        where: {
+          userId: wallOwner.id,
+          lightBgColor: userColors.profileBgColor,
+          lightTextColor: userColors.profileTextColor,
+          lightLinkColor: userColors.profileLinkColor,
+          lightSecondaryColor: userColors.profileSecondaryColor,
+          lightContainerColor: userColors.profileContainerColor,
+        },
+      });
+    } catch {
+      // ignore
+    }
+    let light = userColors;
+    let dark;
+    if (customPreset) {
+      dark = {
+        profileBgColor: customPreset.darkBgColor,
+        profileTextColor: customPreset.darkTextColor,
+        profileLinkColor: customPreset.darkLinkColor,
+        profileSecondaryColor: customPreset.darkSecondaryColor,
+        profileContainerColor: customPreset.darkContainerColor,
+      };
+    } else {
+      const adaptive = generateAdaptiveTheme(userColors);
+      light = adaptive.light;
+      dark = adaptive.dark;
+    }
+    wallThemeStyle = {
+      "--profile-bg-light": light.profileBgColor,
+      "--profile-text-light": light.profileTextColor,
+      "--profile-link-light": light.profileLinkColor,
+      "--profile-secondary-light": light.profileSecondaryColor,
+      "--profile-container-light": light.profileContainerColor,
+      "--profile-bg-dark": dark.profileBgColor,
+      "--profile-text-dark": dark.profileTextColor,
+      "--profile-link-dark": dark.profileLinkColor,
+      "--profile-secondary-dark": dark.profileSecondaryColor,
+      "--profile-container-dark": dark.profileContainerColor,
+    } as React.CSSProperties;
+  }
+
+  const wallBgImageStyle: React.CSSProperties | undefined = wallOwner?.profileBgImage
+    ? {
+        backgroundImage: `url(${wallOwner.profileBgImage})`,
+        backgroundRepeat: wallOwner.profileBgRepeat ?? "no-repeat",
+        backgroundAttachment: wallOwner.profileBgAttachment ?? "scroll",
+        backgroundSize: wallOwner.profileBgSize ?? "cover",
+        backgroundPosition: wallOwner.profileBgPosition ?? "center",
+        minHeight: "calc(100vh - 57px)",
+      }
+    : undefined;
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
       <PostPageClient
@@ -194,9 +304,14 @@ export default async function PostPage({ params, searchParams }: Props) {
         phoneVerified={phoneVerified}
         ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
+        hideSensitiveOverlay={hideSensitiveOverlay}
         showNsfwContent={showNsfwContent}
         highlightCommentId={commentId ?? null}
         wallPost={post.wallPost}
+        wallThemeStyle={wallThemeStyle}
+        wallBgImageStyle={wallBgImageStyle}
+        hasWallOwnerTheme={hasWallOwnerTheme || !!wallOwner?.profileBgImage}
+        marketplacePostId={undefined}
       />
     </main>
   );

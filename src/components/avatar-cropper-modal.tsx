@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Cropper from "react-easy-crop";
+import { useModal } from "@/hooks/use-modal";
 import type { Area } from "react-easy-crop";
 
 interface AvatarCropperModalProps {
@@ -71,17 +72,7 @@ export function AvatarCropperModal({
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  useEffect(() => {
-    function handleEscape(e: KeyboardEvent) {
-      if (e.key === "Escape" && !uploading) onCancel();
-    }
-    document.addEventListener("keydown", handleEscape);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "";
-    };
-  }, [onCancel, uploading]);
+  useModal(true, onCancel, { enabled: !uploading });
 
   const onCropComplete = useCallback((_: Area, croppedPixels: Area) => {
     setCroppedAreaPixels(croppedPixels);

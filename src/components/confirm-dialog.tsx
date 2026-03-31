@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 
 interface ConfirmDialogProps {
   open: boolean;
   title: string;
   message: string;
+  children?: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   onConfirm: () => void;
@@ -17,6 +18,7 @@ export function ConfirmDialog({
   open,
   title,
   message,
+  children,
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
   onConfirm,
@@ -55,6 +57,7 @@ export function ConfirmDialog({
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
           {message}
         </p>
+        {children}
         <div className="mt-5 flex justify-end gap-3">
           <button
             type="button"

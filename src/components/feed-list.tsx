@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useTransition } from "react";
-import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { PostCard } from "@/components/post-card";
 import { RepostCard } from "@/components/repost-card";
 import { fetchFeedPage } from "@/app/feed/feed-actions";
@@ -17,6 +16,7 @@ export function FeedList({
   ageVerified,
   showGraphicByDefault,
   showNsfwContent,
+  hideSensitiveOverlay,
   newItems = [],
 }: {
   initialItems: FeedItem[];
@@ -26,9 +26,19 @@ export function FeedList({
   ageVerified: boolean;
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
+  hideSensitiveOverlay: boolean;
   newItems?: FeedItem[];
 }) {
   const [items, setItems] = useState(initialItems);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [isPending, startTransition] = useTransition();
+  const loadingRef = useRef(false);
+
+  // Keep items and hasMore in refs so loadMore stays stable
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  const hasMoreRef = useRef(hasMore);
+  hasMoreRef.current = hasMore;
 
   // Prepend newly created posts
   useEffect(() => {
@@ -47,16 +57,6 @@ export function FeedList({
       return toAdd.length > 0 ? [...toAdd, ...prev] : prev;
     });
   }, [newItems]);
-
-  const [hasMore, setHasMore] = useState(initialHasMore);
-  const [isPending, startTransition] = useTransition();
-  const loadingRef = useRef(false);
-
-  // Keep items and hasMore in refs so loadMore stays stable
-  const itemsRef = useRef(items);
-  itemsRef.current = items;
-  const hasMoreRef = useRef(hasMore);
-  hasMoreRef.current = hasMore;
 
   const loadMore = useCallback(() => {
     if (loadingRef.current || !hasMoreRef.current) return;
@@ -90,46 +90,29 @@ export function FeedList({
     });
   }, []);
 
-  const getItemKey = useCallback(
-    (index: number) => {
-      const item = items[index];
-      return item.type === "post" ? item.data.id : `repost-${item.data.id}`;
-    },
-    [items]
-  );
-
-  // Virtualizer for window-based scrolling
-  const virtualizer = useWindowVirtualizer({
-    count: items.length,
-    estimateSize: () => 250,
-    overscan: 5,
-    gap: 16,
-    getItemKey,
-  });
-
   const handleDelete = useCallback((type: "post" | "repost", id: string) => {
-    setItems((prev) => {
-      const next = prev.filter((i) => !(i.type === type && i.data.id === id));
-      // Schedule measurement invalidation after React re-renders with new items
-      requestAnimationFrame(() => virtualizer.measure());
-      return next;
-    });
-  }, [virtualizer]);
+    setItems((prev) =>
+      prev.filter((i) => !(i.type === type && i.data.id === id))
+    );
+  }, []);
 
-  const virtualItems = virtualizer.getVirtualItems();
-
-  // Trigger loadMore when nearing the end of the list
+  // IntersectionObserver for infinite scroll
+  const sentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (virtualItems.length === 0) return;
-    const lastVirtualItem = virtualItems[virtualItems.length - 1];
-    if (
-      lastVirtualItem.index >= items.length - 3 &&
-      hasMoreRef.current &&
-      !loadingRef.current
-    ) {
-      loadMore();
-    }
-  }, [virtualItems, items.length, loadMore]);
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMoreRef.current && !loadingRef.current) {
+          loadMore();
+        }
+      },
+      { rootMargin: "600px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMore]);
 
   if (items.length === 0) {
     return (
@@ -143,66 +126,57 @@ export function FeedList({
   }
 
   return (
-    <div className="mt-6">
-      <div
-        style={{
-          height: virtualizer.getTotalSize(),
-          width: "100%",
-          position: "relative",
-        }}
-      >
-        {virtualItems.map((virtualRow) => {
-          const item = items[virtualRow.index];
-          return (
-            <div
-              key={
-                item.type === "post"
-                  ? item.data.id
-                  : `repost-${item.data.id}`
-              }
-              data-index={virtualRow.index}
-              ref={virtualizer.measureElement}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                transform: `translateY(${virtualRow.start}px)`,
-              }}
-            >
-              {item.type === "post" ? (
-                <PostCard
-                  post={item.data}
-                  currentUserId={currentUserId}
-                  phoneVerified={phoneVerified}
-                  ageVerified={ageVerified}
-                  showGraphicByDefault={showGraphicByDefault}
-                  showNsfwContent={showNsfwContent}
-                  onDelete={() => handleDelete("post", item.data.id)}
-                  {...(item.data.wallPost && {
-                    wallOwner: {
-                      username: item.data.wallPost.wallOwner.username,
-                      displayName: item.data.wallPost.wallOwner.displayName,
-                    },
-                    wallPostId: item.data.wallPost.id,
-                    wallPostStatus: item.data.wallPost.status,
-                  })}
-                />
-              ) : (
-                <RepostCard
-                  repost={item.data}
-                  currentUserId={currentUserId}
-                  phoneVerified={phoneVerified}
-                  ageVerified={ageVerified}
-                  showGraphicByDefault={showGraphicByDefault}
-                  showNsfwContent={showNsfwContent}
-                  onDelete={() => handleDelete("repost", item.data.id)}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
+    <div className="mt-6 flex flex-col gap-4">
+      {items.map((item) => {
+        const key =
+          item.type === "post" ? item.data.id : `repost-${item.data.id}`;
+        return item.type === "post" ? (
+          <PostCard
+            key={key}
+            post={item.data}
+            currentUserId={currentUserId}
+            phoneVerified={phoneVerified}
+            ageVerified={ageVerified}
+            showGraphicByDefault={showGraphicByDefault}
+            showNsfwContent={showNsfwContent}
+            hideSensitiveOverlay={hideSensitiveOverlay}
+            onDelete={() => handleDelete("post", item.data.id)}
+            {...(item.data.wallPost && {
+              wallOwner: {
+                username: item.data.wallPost.wallOwner.username,
+                displayName: item.data.wallPost.wallOwner.displayName,
+                usernameFont: item.data.wallPost.wallOwner.usernameFont,
+              },
+              wallPostId: item.data.wallPost.id,
+              wallPostStatus: item.data.wallPost.status,
+            })}
+            {...(item.data.marketplacePost && {
+              marketplacePostId: item.data.marketplacePost.id,
+              marketplaceData: {
+                price: item.data.marketplacePost.price,
+                purchaseUrl: item.data.marketplacePost.purchaseUrl,
+                shippingOption: item.data.marketplacePost.shippingOption,
+                shippingPrice: item.data.marketplacePost.shippingPrice,
+              },
+            })}
+          />
+        ) : (
+          <RepostCard
+            key={key}
+            repost={item.data}
+            currentUserId={currentUserId}
+            phoneVerified={phoneVerified}
+            ageVerified={ageVerified}
+            showGraphicByDefault={showGraphicByDefault}
+            showNsfwContent={showNsfwContent}
+            hideSensitiveOverlay={hideSensitiveOverlay}
+            onDelete={() => handleDelete("repost", item.data.id)}
+          />
+        );
+      })}
+
+      {/* Sentinel element for infinite scroll */}
+      <div ref={sentinelRef} aria-hidden="true" />
 
       {isPending && (
         <div className="flex justify-center py-4">

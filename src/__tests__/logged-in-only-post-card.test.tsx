@@ -115,6 +115,7 @@ describe("PostCard - Logged-in Only", () => {
         ageVerified={true}
         showGraphicByDefault={false}
         showNsfwContent={false}
+        hideSensitiveOverlay={false}
       />
     );
     expect(screen.getByTitle("Logged-in users only")).toBeInTheDocument();
@@ -129,6 +130,7 @@ describe("PostCard - Logged-in Only", () => {
         ageVerified={true}
         showGraphicByDefault={false}
         showNsfwContent={false}
+        hideSensitiveOverlay={false}
       />
     );
     expect(screen.queryByTitle("Logged-in users only")).not.toBeInTheDocument();
@@ -143,6 +145,7 @@ describe("PostCard - Logged-in Only", () => {
         ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={false}
+        hideSensitiveOverlay={false}
       />
     );
     // PostCard returns null for logged-out users viewing logged-in-only posts
@@ -158,6 +161,7 @@ describe("PostCard - Logged-in Only", () => {
         ageVerified={true}
         showGraphicByDefault={false}
         showNsfwContent={false}
+        hideSensitiveOverlay={false}
       />
     );
     expect(screen.getByTestId("post-content")).toBeInTheDocument();
@@ -172,6 +176,7 @@ describe("PostCard - Logged-in Only", () => {
         ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={false}
+        hideSensitiveOverlay={false}
       />
     );
     expect(screen.getByTestId("post-content")).toBeInTheDocument();
@@ -186,6 +191,7 @@ describe("PostCard - Logged-in Only", () => {
         ageVerified={true}
         showGraphicByDefault={false}
         showNsfwContent={false}
+        hideSensitiveOverlay={false}
       />
     );
     expect(screen.getByTitle("Close friends only")).toBeInTheDocument();

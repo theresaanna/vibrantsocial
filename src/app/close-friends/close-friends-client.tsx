@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { addCloseFriend, removeCloseFriend } from "@/app/feed/close-friends-actions";
 import Link from "next/link";
 import { FramedAvatar } from "@/components/framed-avatar";
+import { StyledName } from "@/components/styled-name";
 
 interface FriendUser {
   id: string;
@@ -13,6 +14,7 @@ interface FriendUser {
   avatar: string | null;
   image: string | null;
   profileFrameId: string | null;
+  usernameFont: string | null;
 }
 
 interface CloseFriendEntry {
@@ -103,7 +105,7 @@ export function CloseFriendsClient({
                     href={`/${cf.friend.username}`}
                     className="block truncate text-sm font-semibold text-zinc-900 hover:underline dark:text-zinc-100"
                   >
-                    {cf.friend.displayName || cf.friend.name || cf.friend.username}
+                    <StyledName fontId={cf.friend.usernameFont}>{cf.friend.displayName || cf.friend.name || cf.friend.username}</StyledName>
                   </Link>
                   <span className="text-sm text-zinc-500">
                     @{cf.friend.username}
@@ -142,7 +144,7 @@ export function CloseFriendsClient({
                     href={`/${friend.username}`}
                     className="block truncate text-sm font-semibold text-zinc-900 hover:underline dark:text-zinc-100"
                   >
-                    {friend.displayName || friend.name || friend.username}
+                    <StyledName fontId={friend.usernameFont}>{friend.displayName || friend.name || friend.username}</StyledName>
                   </Link>
                   <span className="text-sm text-zinc-500">
                     @{friend.username}

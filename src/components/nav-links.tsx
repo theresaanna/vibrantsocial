@@ -88,14 +88,14 @@ export function NavLinks({ username }: { username?: string | null }) {
       ),
     },
     {
-      href: "/close-friends",
-      label: "Close Friends",
+      href: "/marketplace",
+      label: "Marketplace",
       matchPrefix: true,
-      color: "hover:bg-green-50 hover:text-green-500 dark:hover:bg-green-900/20 dark:hover:text-green-500",
-      activeColor: "bg-green-50 text-green-500 dark:bg-green-900/20 dark:text-green-500",
+      color: "hover:bg-pink-50 hover:text-pink-500 dark:hover:bg-pink-900/20 dark:hover:text-pink-500",
+      activeColor: "bg-pink-50 text-pink-500 dark:bg-pink-900/20 dark:text-pink-500",
       icon: (
-        <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M10.5 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-7 9a7 7 0 0 1 14 0H3.5ZM18 8.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5ZM16.5 13c0-.78.145-1.527.41-2.215A5.98 5.98 0 0 0 13.5 9.75a5.973 5.973 0 0 0-1.958.33A7.02 7.02 0 0 1 17.5 16h4a.5.5 0 0 0 .5-.5 5.5 5.5 0 0 0-5.5-2.5Z" />
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
         </svg>
       ),
     },
@@ -108,6 +108,17 @@ export function NavLinks({ username }: { username?: string | null }) {
       icon: (
         <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 8.25h15m-16.5 7.5h15m-1.8-13.5l-3.9 19.5m-2.1-19.5l-3.9 19.5" />
+        </svg>
+      ),
+    },
+    {
+      href: "/theme",
+      label: "Theme",
+      color: "hover:bg-pink-50 hover:text-pink-500 dark:hover:bg-pink-900/20 dark:hover:text-pink-500",
+      activeColor: "bg-pink-50 text-pink-500 dark:bg-pink-900/20 dark:text-pink-500",
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
         </svg>
       ),
     },

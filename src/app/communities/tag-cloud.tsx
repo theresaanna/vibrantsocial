@@ -36,7 +36,7 @@ export function TagCloud({ tags }: TagCloudProps) {
           <Link
             key={tag.name}
             href={`/tag/${tag.name}`}
-            className={`tag-pill inline-flex items-center gap-1 sm:gap-1.5 rounded-full font-semibold text-white transition-colors ${PILL_COLORS[i % PILL_COLORS.length]}`}
+            className={`tag-pill inline-flex items-center gap-1 sm:gap-1.5 rounded-full font-semibold transition-colors ${PILL_COLORS[i % PILL_COLORS.length]}`}
             style={{
               "--pill-fs": `${fontSize}px`,
               "--pill-px": `${px}px`,

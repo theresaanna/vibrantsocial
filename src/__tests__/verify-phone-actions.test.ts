@@ -10,6 +10,12 @@ vi.mock("@/lib/prisma", () => ({
       update: vi.fn(),
       findUnique: vi.fn(),
     },
+    phoneBlock: {
+      findMany: vi.fn(),
+    },
+    block: {
+      createMany: vi.fn(),
+    },
   },
 }));
 
@@ -251,6 +257,7 @@ describe("verifyPhoneCode", () => {
       status: "approved",
     } as never);
     mockPrisma.user.update.mockResolvedValueOnce({} as never);
+    mockPrisma.phoneBlock.findMany.mockResolvedValueOnce([] as never);
 
     const result = await verifyPhoneCode(
       verifyPrevState,
@@ -264,5 +271,49 @@ describe("verifyPhoneCode", () => {
       data: { phoneVerified: expect.any(Date) },
     });
     expect(mockRevalidate).toHaveBeenCalledWith("/profile");
+  });
+
+  it("auto-blocks user when phone number is phone-blocked by someone", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.user.findUnique.mockResolvedValueOnce({
+      id: "user1",
+      phoneNumber: "+15551234567",
+    } as never);
+    mockCheckCode.mockResolvedValueOnce({ status: "approved" } as never);
+    mockPrisma.user.update.mockResolvedValueOnce({} as never);
+    mockPrisma.phoneBlock.findMany.mockResolvedValueOnce([
+      { blockerId: "blocker1" },
+      { blockerId: "blocker2" },
+    ] as never);
+    mockPrisma.block.createMany.mockResolvedValueOnce({ count: 2 } as never);
+
+    const result = await verifyPhoneCode(
+      verifyPrevState,
+      makeFormData({ code: "123456" })
+    );
+
+    expect(result.success).toBe(true);
+    expect(mockPrisma.block.createMany).toHaveBeenCalledWith({
+      data: [
+        { blockerId: "blocker1", blockedId: "user1" },
+        { blockerId: "blocker2", blockedId: "user1" },
+      ],
+      skipDuplicates: true,
+    });
+  });
+
+  it("does not create blocks when no phone blocks exist", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.user.findUnique.mockResolvedValueOnce({
+      id: "user1",
+      phoneNumber: "+15551234567",
+    } as never);
+    mockCheckCode.mockResolvedValueOnce({ status: "approved" } as never);
+    mockPrisma.user.update.mockResolvedValueOnce({} as never);
+    mockPrisma.phoneBlock.findMany.mockResolvedValueOnce([] as never);
+
+    await verifyPhoneCode(verifyPrevState, makeFormData({ code: "123456" }));
+
+    expect(mockPrisma.block.createMany).not.toHaveBeenCalled();
   });
 });

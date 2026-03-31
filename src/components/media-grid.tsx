@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef, useTransition } from "react";
 import Link from "next/link";
 import { extractMediaFromLexicalJson, type MediaItem } from "@/lib/lexical-text";
 import { FramedAvatar } from "@/components/framed-avatar";
+import { StyledName } from "@/components/styled-name";
 import { timeAgo } from "@/lib/time";
 import { fetchMediaFeedPage } from "@/app/feed/media-actions";
 
@@ -20,6 +21,7 @@ export interface MediaPost {
     image: string | null;
     avatar: string | null;
     profileFrameId: string | null;
+    usernameFont: string | null;
   } | null;
 }
 
@@ -215,7 +217,7 @@ export function MediaGrid({ initialPosts, initialHasMore, fetchPage = fetchMedia
                       frameId={item.post.author.profileFrameId}
                     />
                     <span className="truncate text-xs font-medium text-white">
-                      {item.post.author.displayName ?? item.post.author.username}
+                      <StyledName fontId={item.post.author.usernameFont}>{item.post.author.displayName ?? item.post.author.username}</StyledName>
                     </span>
                   </>
                 )}

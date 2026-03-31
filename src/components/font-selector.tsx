@@ -54,9 +54,8 @@ export function FontSelector({
   const freeFonts = USERNAME_FONTS.filter((f) => f.tier === "free");
   const premiumFonts = USERNAME_FONTS.filter((f) => f.tier === "premium");
 
-  // Lazy-load all fonts for the selector preview
-  const fontsToLoad = isPremium ? USERNAME_FONTS : freeFonts;
-  useLazyFonts(fontsToLoad);
+  // Lazy-load all fonts so previews render for all users
+  useLazyFonts(USERNAME_FONTS);
 
   const selectedFont = getFontById(selectedFontId);
   const previewFontFamily = selectedFont ? `'${selectedFont.name}', sans-serif` : undefined;
@@ -74,7 +73,7 @@ export function FontSelector({
         className="flex w-full items-center justify-between"
         data-testid="font-selector-toggle"
       >
-        <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+        <span className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
           Username Font
           {selectedFont && (
             <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">
@@ -83,7 +82,7 @@ export function FontSelector({
           )}
         </span>
         <svg
-          className={`h-4 w-4 text-zinc-400 transition-transform ${expanded ? "rotate-180" : ""}`}
+          className={`h-5 w-5 text-zinc-400 transition-transform ${expanded ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           strokeWidth={2}
@@ -169,7 +168,7 @@ export function FontSelector({
             >
               <span
                 className="block text-base text-zinc-900 dark:text-zinc-100"
-                style={isPremium ? { fontFamily: `'${font.name}', sans-serif` } : undefined}
+                style={{ fontFamily: `'${font.name}', sans-serif` }}
               >
                 {font.name}
               </span>

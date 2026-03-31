@@ -13,6 +13,14 @@ interface ListItem {
   _count: { members: number };
 }
 
+interface CollaboratingListItem extends ListItem {
+  owner: {
+    username: string | null;
+    displayName: string | null;
+    name: string | null;
+  };
+}
+
 function DeleteListButton({ listId }: { listId: string }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [, formAction, isPending] = useActionState(deleteList, {
@@ -51,7 +59,7 @@ function DeleteListButton({ listId }: { listId: string }) {
   );
 }
 
-export function ListsPageClient({ lists }: { lists: ListItem[] }) {
+export function ListsPageClient({ lists, collaboratingLists }: { lists: ListItem[]; collaboratingLists: CollaboratingListItem[] }) {
   const [createState, createAction, isCreating] = useActionState(createList, {
     success: false,
     message: "",
@@ -132,6 +140,46 @@ export function ListsPageClient({ lists }: { lists: ListItem[] }) {
               <DeleteListButton listId={list.id} />
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Collaborating lists */}
+      {collaboratingLists.length > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            Collaborating
+          </h2>
+          <div className="space-y-2">
+            {collaboratingLists.map((list) => {
+              const ownerName = list.owner.displayName ?? list.owner.username ?? list.owner.name ?? "Unknown";
+              return (
+                <div
+                  key={list.id}
+                  className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm dark:bg-zinc-900"
+                >
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      href={`/lists/${list.id}`}
+                      className="block text-sm font-semibold text-zinc-900 hover:underline dark:text-zinc-100"
+                    >
+                      {list.name}
+                    </Link>
+                    <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                      {list._count.members} {list._count.members === 1 ? "member" : "members"}
+                      {" · "}by {ownerName}
+                    </span>
+                  </div>
+                  <ShareListButton listId={list.id} listName={list.name} />
+                  <Link
+                    href={`/feed?list=${list.id}`}
+                    className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-indigo-800 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
+                  >
+                    View Feed
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

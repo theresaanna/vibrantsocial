@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { getNotifications } from "./actions";
 import { NotificationList } from "@/components/notification-list";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 export const metadata: Metadata = {
   title: "Notifications",
@@ -13,10 +16,18 @@ export default async function NotificationsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const notifications = await getNotifications();
+  const [notifications, themeUser] = await Promise.all([
+    getNotifications(),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: userThemeSelect,
+    }),
+  ]);
+
+  const theme = themeUser ? buildUserTheme(themeUser) : null;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...(theme ?? NO_THEME)}>
       <div className="mb-6 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-indigo-600">
           <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -35,6 +46,6 @@ export default async function NotificationsPage() {
       <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <NotificationList initialNotifications={notifications} />
       </div>
-    </main>
+    </ThemedPage>
   );
 }

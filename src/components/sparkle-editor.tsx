@@ -13,7 +13,7 @@ interface SparkleEditorProps {
   initialConfig: SparklefallConfig;
   isPremium: boolean;
   userEmail?: string | null;
-  onChange: () => void;
+  onChange?: () => void;
 }
 
 export function SparkleEditor({
@@ -59,14 +59,18 @@ export function SparkleEditor({
     (presetName: string) => {
       setActivePreset(presetName);
       setCustomSparkles("");
-      onChange();
+      onChange?.();
     },
     [onChange]
   );
 
   const getSparklesJson = (): string => {
     if (customSparkles.trim()) {
-      const chars = [...customSparkles.trim()].filter((c) => c.trim());
+      // Use Intl.Segmenter to correctly split ZWJ emoji sequences (e.g. 🐈‍⬛)
+      const segmenter = new Intl.Segmenter("en", { granularity: "grapheme" });
+      const chars = [...segmenter.segment(customSparkles.trim())]
+        .map((s) => s.segment)
+        .filter((c) => c.trim());
       return JSON.stringify(chars);
     }
     if (activePreset && SPARKLEFALL_PRESETS[activePreset]) {
@@ -93,14 +97,11 @@ export function SparkleEditor({
         aria-controls={contentId}
         className="flex w-full items-center justify-between p-4 text-left"
       >
-        <span className="relative flex items-center gap-1">
-          <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Raining Emoji
-          </h2>
-          <PremiumCrown inline href="/premium" />
-        </span>
+        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+          Raining Emoji
+        </h2>
         <svg
-          className={`h-4 w-4 text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`h-5 w-5 text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           strokeWidth={2}
@@ -116,226 +117,237 @@ export function SparkleEditor({
 
       {isOpen && (
         <div id={contentId} className="space-y-4 px-4 pb-4">
-          <div className="relative">
-            <PremiumCrown href="/premium" />
-            <div
-              className={
-                !isPremium ? "pointer-events-none opacity-50" : undefined
-              }
-            >
-              {/* Enable toggle */}
-              <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-                <input
-                  type="checkbox"
-                  checked={enabled}
-                  onChange={(e) => {
-                    setEnabled(e.target.checked);
-                    onChange();
-                  }}
-                  disabled={!isPremium}
-                  className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600"
-                />
-                Enable raining emoji on your profile
-              </label>
+          {/* Enable toggle — available to all users */}
+          <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+            <input
+              type="checkbox"
+              checked={enabled}
+              onChange={(e) => {
+                setEnabled(e.target.checked);
+                if (e.target.checked && !isPremium) {
+                  setActivePreset("default");
+                }
+                onChange?.();
+              }}
+              className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600"
+            />
+            Enable raining emoji on your profile
+          </label>
 
-              {enabled && (
-                <div className="mt-4 space-y-4">
-                  {/* Preset buttons */}
+          {enabled && (
+            <div className="space-y-4">
+              {/* Preset buttons — default is free, rest are premium */}
+              <div>
+                <div className="mb-2 flex items-center gap-1.5">
+                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                    Presets
+                  </p>
+                  <PremiumCrown inline href="/premium" />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(SPARKLEFALL_PRESETS).map(
+                    ([name, preset]) => {
+                      const isFreePreset = name === "default";
+                      const isLocked = !isFreePreset && !isPremium;
+                      return (
+                        <button
+                          key={name}
+                          type="button"
+                          onClick={() => !isLocked && handlePresetSelect(name)}
+                          disabled={isLocked}
+                          className={`rounded-lg border px-3 py-1.5 text-sm transition-all ${
+                            activePreset === name
+                              ? "border-blue-500 ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-900"
+                              : "border-zinc-200 hover:border-zinc-300 dark:border-zinc-600 dark:hover:border-zinc-500"
+                          } ${isLocked ? "cursor-not-allowed opacity-50" : ""}`}
+                          aria-pressed={activePreset === name}
+                        >
+                          <span className="mr-1">{preset.emoji}</span>
+                          {preset.label}
+                        </button>
+                      );
+                    }
+                  )}
+                </div>
+              </div>
+
+              {/* Premium-only customization options */}
+              <div className={!isPremium ? "pointer-events-none opacity-50" : undefined}>
+                {/* Custom sparkle characters */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                    Custom characters (overrides preset)
+                  </label>
+                  <input
+                    type="text"
+                    value={customSparkles}
+                    onChange={(e) => {
+                      setCustomSparkles(e.target.value);
+                      if (e.target.value.trim()) setActivePreset(null);
+                      onChange?.();
+                    }}
+                    disabled={!isPremium}
+                    placeholder="e.g. 🌈 💖 ⭐"
+                    className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-600 dark:text-zinc-100"
+                  />
+                </div>
+
+                {/* Physics controls */}
+                <div className="mt-4 space-y-3">
+                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                    Physics
+                  </p>
+
+                  {/* Spawn Interval */}
                   <div>
-                    <p className="mb-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                      Presets
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {Object.entries(SPARKLEFALL_PRESETS).map(
-                        ([name, preset]) => (
-                          <button
-                            key={name}
-                            type="button"
-                            onClick={() => handlePresetSelect(name)}
-                            className={`rounded-lg border px-3 py-1.5 text-sm transition-all ${
-                              activePreset === name
-                                ? "border-blue-500 ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-900"
-                                : "border-zinc-200 hover:border-zinc-300 dark:border-zinc-600 dark:hover:border-zinc-500"
-                            }`}
-                            aria-pressed={activePreset === name}
-                          >
-                            <span className="mr-1">{preset.emoji}</span>
-                            {preset.label}
-                          </button>
-                        )
-                      )}
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs text-zinc-600 dark:text-zinc-400">
+                        Spawn Interval
+                      </label>
+                      <span className="text-xs tabular-nums text-zinc-500">
+                        {interval}ms
+                      </span>
                     </div>
-                  </div>
-
-                  {/* Custom sparkle characters */}
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                      Custom characters (overrides preset)
-                    </label>
                     <input
-                      type="text"
-                      value={customSparkles}
+                      type="range"
+                      min={100}
+                      max={3000}
+                      step={50}
+                      value={interval}
                       onChange={(e) => {
-                        setCustomSparkles(e.target.value);
-                        if (e.target.value.trim()) setActivePreset(null);
-                        onChange();
+                        setInterval_(Number(e.target.value));
+                        onChange?.();
                       }}
-                      placeholder="e.g. 🌈 💖 ⭐"
-                      className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-600 dark:text-zinc-100"
+                      disabled={!isPremium}
+                      className="w-full accent-blue-500"
                     />
                   </div>
 
-                  {/* Physics controls */}
-                  <div className="space-y-3">
-                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                      Physics
-                    </p>
-
-                    {/* Spawn Interval */}
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs text-zinc-600 dark:text-zinc-400">
-                          Spawn Interval
-                        </label>
-                        <span className="text-xs tabular-nums text-zinc-500">
-                          {interval}ms
-                        </span>
-                      </div>
-                      <input
-                        type="range"
-                        min={100}
-                        max={3000}
-                        step={50}
-                        value={interval}
-                        onChange={(e) => {
-                          setInterval_(Number(e.target.value));
-                          onChange();
-                        }}
-                        className="w-full accent-blue-500"
-                      />
+                  {/* Wind */}
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs text-zinc-600 dark:text-zinc-400">
+                        Wind Effect
+                      </label>
+                      <span className="text-xs tabular-nums text-zinc-500">
+                        {wind.toFixed(1)}
+                      </span>
                     </div>
+                    <input
+                      type="range"
+                      min={-1}
+                      max={1}
+                      step={0.1}
+                      value={wind}
+                      onChange={(e) => {
+                        setWind(Number(e.target.value));
+                        onChange?.();
+                      }}
+                      disabled={!isPremium}
+                      className="w-full accent-blue-500"
+                    />
+                  </div>
 
-                    {/* Wind */}
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs text-zinc-600 dark:text-zinc-400">
-                          Wind Effect
-                        </label>
-                        <span className="text-xs tabular-nums text-zinc-500">
-                          {wind.toFixed(1)}
-                        </span>
-                      </div>
-                      <input
-                        type="range"
-                        min={-1}
-                        max={1}
-                        step={0.1}
-                        value={wind}
-                        onChange={(e) => {
-                          setWind(Number(e.target.value));
-                          onChange();
-                        }}
-                        className="w-full accent-blue-500"
-                      />
+                  {/* Max Sparkles */}
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs text-zinc-600 dark:text-zinc-400">
+                        Max Sparkles
+                      </label>
+                      <span className="text-xs tabular-nums text-zinc-500">
+                        {maxSparkles}
+                      </span>
                     </div>
+                    <input
+                      type="range"
+                      min={5}
+                      max={200}
+                      step={5}
+                      value={maxSparkles}
+                      onChange={(e) => {
+                        setMaxSparkles(Number(e.target.value));
+                        onChange?.();
+                      }}
+                      disabled={!isPremium}
+                      className="w-full accent-blue-500"
+                    />
+                  </div>
 
-                    {/* Max Sparkles */}
+                  {/* Size Range */}
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <div className="flex items-center justify-between">
                         <label className="text-xs text-zinc-600 dark:text-zinc-400">
-                          Max Sparkles
+                          Min Size
                         </label>
                         <span className="text-xs tabular-nums text-zinc-500">
-                          {maxSparkles}
+                          {minSize}px
                         </span>
                       </div>
                       <input
                         type="range"
                         min={5}
-                        max={200}
-                        step={5}
-                        value={maxSparkles}
+                        max={100}
+                        step={1}
+                        value={minSize}
                         onChange={(e) => {
-                          setMaxSparkles(Number(e.target.value));
-                          onChange();
+                          const v = Number(e.target.value);
+                          setMinSize(v);
+                          if (v > maxSize) setMaxSize(v);
+                          onChange?.();
                         }}
+                        disabled={!isPremium}
                         className="w-full accent-blue-500"
                       />
                     </div>
-
-                    {/* Size Range */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <label className="text-xs text-zinc-600 dark:text-zinc-400">
-                            Min Size
-                          </label>
-                          <span className="text-xs tabular-nums text-zinc-500">
-                            {minSize}px
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min={5}
-                          max={100}
-                          step={1}
-                          value={minSize}
-                          onChange={(e) => {
-                            const v = Number(e.target.value);
-                            setMinSize(v);
-                            if (v > maxSize) setMaxSize(v);
-                            onChange();
-                          }}
-                          className="w-full accent-blue-500"
-                        />
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs text-zinc-600 dark:text-zinc-400">
+                          Max Size
+                        </label>
+                        <span className="text-xs tabular-nums text-zinc-500">
+                          {maxSize}px
+                        </span>
                       </div>
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <label className="text-xs text-zinc-600 dark:text-zinc-400">
-                            Max Size
-                          </label>
-                          <span className="text-xs tabular-nums text-zinc-500">
-                            {maxSize}px
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min={5}
-                          max={100}
-                          step={1}
-                          value={maxSize}
-                          onChange={(e) => {
-                            const v = Number(e.target.value);
-                            setMaxSize(v);
-                            if (v < minSize) setMinSize(v);
-                            onChange();
-                          }}
-                          className="w-full accent-blue-500"
-                        />
-                      </div>
+                      <input
+                        type="range"
+                        min={5}
+                        max={100}
+                        step={1}
+                        value={maxSize}
+                        onChange={(e) => {
+                          const v = Number(e.target.value);
+                          setMaxSize(v);
+                          if (v < minSize) setMinSize(v);
+                          onChange?.();
+                        }}
+                        disabled={!isPremium}
+                        className="w-full accent-blue-500"
+                      />
                     </div>
                   </div>
-
-                  {/* Custom colors */}
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                      Custom colors (leave empty for emoji defaults)
-                    </label>
-                    <input
-                      type="text"
-                      value={customColors}
-                      onChange={(e) => {
-                        setCustomColors(e.target.value);
-                        onChange();
-                      }}
-                      placeholder="e.g. #ff0000, #00ff00, #0000ff"
-                      className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-600 dark:text-zinc-100"
-                    />
-                  </div>
                 </div>
-              )}
+
+                {/* Custom colors */}
+                <div className="mt-4">
+                  <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                    Custom colors (leave empty for emoji defaults)
+                  </label>
+                  <input
+                    type="text"
+                    value={customColors}
+                    onChange={(e) => {
+                      setCustomColors(e.target.value);
+                      onChange?.();
+                    }}
+                    disabled={!isPremium}
+                    placeholder="e.g. #ff0000, #00ff00, #0000ff"
+                    className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-600 dark:text-zinc-100"
+                  />
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 

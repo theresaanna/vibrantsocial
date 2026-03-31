@@ -4,7 +4,7 @@ import { FeedClient } from "@/components/feed-client";
 import { calculateAge } from "@/lib/age-gate";
 import { getPostInclude, getRepostInclude, PAGE_SIZE } from "./feed-queries";
 import { cached, cacheKeys } from "@/lib/cache";
-import { getCloseFriendIds } from "@/app/feed/close-friends-actions";
+import { getCloseFriendIds, getCachedCloseFriendOfIds } from "@/app/feed/close-friends-actions";
 import { isProfileIncomplete } from "@/lib/require-profile";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 
@@ -24,6 +24,7 @@ export async function FeedContent({ userId, activeView = "posts" }: { userId: st
         dateOfBirth: true,
         ageVerified: true,
         showGraphicByDefault: true,
+        hideSensitiveOverlay: true,
         showNsfwContent: true,
         tier: true,
         lastSeenFeedAt: true,
@@ -40,11 +41,7 @@ export async function FeedContent({ userId, activeView = "posts" }: { userId: st
       },
       60 // cache for 60 seconds
     ),
-    // Fetch IDs of users who have added the current user as a close friend
-    prisma.closeFriend.findMany({
-      where: { friendId: userId },
-      select: { userId: true },
-    }).then((rows) => rows.map((r) => r.userId)),
+    getCachedCloseFriendOfIds(userId),
     getAllBlockRelatedIds(userId),
   ]);
 
@@ -56,6 +53,7 @@ export async function FeedContent({ userId, activeView = "posts" }: { userId: st
   const phoneVerified = !!currentUser.phoneVerified;
   const ageVerified = !!currentUser.ageVerified;
   const showGraphicByDefault = currentUser.showGraphicByDefault ?? false;
+  const hideSensitiveOverlay = currentUser.hideSensitiveOverlay ?? false;
   const showNsfwContent = currentUser.showNsfwContent ?? false;
   const isOldEnough = currentUser.dateOfBirth
     ? calculateAge(currentUser.dateOfBirth) >= 18
@@ -74,10 +72,19 @@ export async function FeedContent({ userId, activeView = "posts" }: { userId: st
         authorId: { in: [...followingIds, userId] },
         ...(!showNsfwContent ? { isNsfw: false } : {}),
         ...(!ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
+        // Exclude marketplace posts unless promoted to feed
         OR: [
-          { isCloseFriendsOnly: false, hasCustomAudience: false },
-          { isCloseFriendsOnly: true, authorId: { in: closeFriendAuthors } },
-          { hasCustomAudience: true, audience: { some: { userId } } },
+          { marketplacePost: null },
+          { marketplacePost: { promotedToFeed: true } },
+        ],
+        AND: [
+          {
+            OR: [
+              { isCloseFriendsOnly: false, hasCustomAudience: false },
+              { isCloseFriendsOnly: true, authorId: { in: closeFriendAuthors } },
+              { hasCustomAudience: true, audience: { some: { userId } } },
+            ],
+          },
         ],
       },
       orderBy: { createdAt: "desc" },
@@ -142,6 +149,7 @@ export async function FeedContent({ userId, activeView = "posts" }: { userId: st
       currentUserId={userId}
       ageVerified={ageVerified}
       showGraphicByDefault={showGraphicByDefault}
+      hideSensitiveOverlay={hideSensitiveOverlay}
       showNsfwContent={showNsfwContent}
       hasEmail={!!currentUser.email}
       isPremium={currentUser.tier === "premium"}

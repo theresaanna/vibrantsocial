@@ -13,20 +13,17 @@ vi.mock("@/components/post-card", () => ({
   ),
 }));
 
-// Mock @tanstack/react-virtual since jsdom doesn't support window scrolling
-vi.mock("@tanstack/react-virtual", () => ({
-  useWindowVirtualizer: (options: { count: number }) => ({
-    getVirtualItems: () =>
-      Array.from({ length: options.count }, (_, i) => ({
-        index: i,
-        start: i * 250,
-        size: 250,
-        key: i,
-      })),
-    getTotalSize: () => options.count * 250,
-    measureElement: () => {},
-  }),
-}));
+// Mock IntersectionObserver for jsdom
+const mockObserve = vi.fn();
+const mockDisconnect = vi.fn();
+vi.stubGlobal(
+  "IntersectionObserver",
+  vi.fn(() => ({
+    observe: mockObserve,
+    disconnect: mockDisconnect,
+    unobserve: vi.fn(),
+  }))
+);
 
 import { TagPostList } from "@/app/tag/[name]/tag-post-list";
 
@@ -39,6 +36,7 @@ const defaultProps = {
   ageVerified: false,
   showGraphicByDefault: false,
   showNsfwContent: false,
+  hideSensitiveOverlay: false,
 };
 
 beforeEach(() => {
@@ -75,7 +73,7 @@ describe("TagPostList", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("uses virtualization for rendering items", () => {
+  it("uses flow layout with gap for rendering items", () => {
     const posts = [
       { id: "p1", postTagId: "pt1" },
       { id: "p2", postTagId: "pt2" },
@@ -83,9 +81,19 @@ describe("TagPostList", () => {
     const { container } = render(
       <TagPostList {...defaultProps} initialPosts={posts} initialHasMore={true} />
     );
-    // Virtualized items use absolute positioning with translateY
+    // Posts use flex column layout, not absolute positioning
+    const flexContainer = container.querySelector(".flex.flex-col.gap-4");
+    expect(flexContainer).toBeInTheDocument();
     const positioned = container.querySelectorAll('[style*="position: absolute"]');
-    expect(positioned.length).toBe(2);
+    expect(positioned.length).toBe(0);
+  });
+
+  it("sets up IntersectionObserver for infinite scroll", () => {
+    const posts = [{ id: "p1", postTagId: "pt1" }];
+    render(
+      <TagPostList {...defaultProps} initialPosts={posts} initialHasMore={true} />
+    );
+    expect(mockObserve).toHaveBeenCalled();
   });
 
   it("renders without currentUserId", () => {
