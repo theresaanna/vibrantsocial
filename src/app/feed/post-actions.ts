@@ -868,14 +868,9 @@ export async function toggleRepostCommentReaction(data: {
   commentId: string;
   emoji: string;
 }): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `post:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("post");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const { commentId, emoji } = data;
 
@@ -906,14 +901,9 @@ export async function editRepostComment(data: {
   commentId: string;
   content: string;
 }): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `post:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("post");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const { commentId, content } = data;
   const trimmed = content.trim();
@@ -949,14 +939,9 @@ export async function editRepostComment(data: {
 export async function deleteRepostComment(data: {
   commentId: string;
 }): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `post:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+  const authResult = await requireAuthWithRateLimit("post");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const comment = await prisma.repostComment.findUnique({
     where: { id: data.commentId },
