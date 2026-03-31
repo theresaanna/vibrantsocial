@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import Link from "next/link";
 import { PostCard } from "@/components/post-card";
 
@@ -21,6 +22,9 @@ interface PostPageClientProps {
   showNsfwContent: boolean;
   highlightCommentId: string | null;
   wallPost?: WallPostData | null;
+  wallThemeStyle?: React.CSSProperties;
+  wallBgImageStyle?: React.CSSProperties;
+  hasWallOwnerTheme?: boolean;
 }
 
 export function PostPageClient({
@@ -32,9 +36,15 @@ export function PostPageClient({
   showNsfwContent,
   highlightCommentId,
   wallPost,
+  wallThemeStyle,
+  wallBgImageStyle,
+  hasWallOwnerTheme,
 }: PostPageClientProps) {
   return (
-    <div>
+    <div
+      className={hasWallOwnerTheme ? "profile-themed" : ""}
+      style={{ ...wallThemeStyle, ...wallBgImageStyle }}
+    >
       <Link
         href={currentUserId ? "/feed" : "/"}
         className="mb-4 inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"

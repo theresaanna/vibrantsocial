@@ -3,12 +3,23 @@
 import { useState, useCallback, useRef, useId } from "react";
 import type { BackgroundDefinition } from "@/lib/profile-backgrounds";
 import {
-  VALID_BG_REPEAT,
   VALID_BG_ATTACHMENT,
-  VALID_BG_SIZE,
   VALID_BG_POSITION,
   getDefaultsForBackground,
 } from "@/lib/profile-backgrounds";
+
+const BG_REPEAT_OPTIONS = [
+  { value: "repeat", label: "Repeat Both" },
+  { value: "repeat-x", label: "Repeat Horizontal" },
+  { value: "repeat-y", label: "Repeat Vertical" },
+  { value: "no-repeat", label: "No Repeat" },
+] as const;
+
+const BG_SIZE_OPTIONS = [
+  { value: "contain", label: "None" },
+  { value: "cover", label: "Stretch" },
+] as const;
+
 import { PremiumCrown } from "./premium-crown";
 
 interface BackgroundEditorProps {
@@ -35,7 +46,7 @@ export function BackgroundEditor({
   const [bgImage, setBgImage] = useState(initialBackground.profileBgImage);
   const [bgRepeat, setBgRepeat] = useState(initialBackground.profileBgRepeat ?? "no-repeat");
   const [bgAttachment, setBgAttachment] = useState(initialBackground.profileBgAttachment ?? "scroll");
-  const [bgSize, setBgSize] = useState(initialBackground.profileBgSize ?? "cover");
+  const [bgSize, setBgSize] = useState(initialBackground.profileBgSize ?? "contain");
   const [bgPosition, setBgPosition] = useState(initialBackground.profileBgPosition ?? "center");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +68,7 @@ export function BackgroundEditor({
       } else {
         setBgImage(null);
         setBgRepeat("no-repeat");
-        setBgSize("cover");
+        setBgSize("contain");
         setBgPosition("center");
         setBgAttachment("scroll");
       }
@@ -241,13 +252,13 @@ export function BackgroundEditor({
               onChange={handleSettingChange(setBgRepeat)}
               className="w-full rounded-lg border border-zinc-200 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
             >
-              {VALID_BG_REPEAT.map((v) => (
-                <option key={v} value={v}>{v}</option>
+              {BG_REPEAT_OPTIONS.map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
               ))}
             </select>
           </label>
           <label className="space-y-1">
-            <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Attachment</span>
+            <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Movement</span>
             <select
               value={bgAttachment}
               onChange={handleSettingChange(setBgAttachment)}
@@ -259,14 +270,14 @@ export function BackgroundEditor({
             </select>
           </label>
           <label className="space-y-1">
-            <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Size</span>
+            <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Stretch</span>
             <select
-              value={bgSize}
+              value={bgSize === "auto" ? "contain" : bgSize}
               onChange={handleSettingChange(setBgSize)}
               className="w-full rounded-lg border border-zinc-200 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
             >
-              {VALID_BG_SIZE.map((v) => (
-                <option key={v} value={v}>{v}</option>
+              {BG_SIZE_OPTIONS.map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
               ))}
             </select>
           </label>
