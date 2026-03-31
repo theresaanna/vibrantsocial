@@ -15,7 +15,7 @@ export function isConvertibleImage(mimeType: string): boolean {
 export async function convertToWebP(
   inputBuffer: Uint8Array
 ): Promise<ConversionResult> {
-  const buffer: Uint8Array = await sharp(inputBuffer).webp({ quality: 80 }).toBuffer();
+  const buffer: Uint8Array = await sharp(inputBuffer).rotate().webp({ quality: 80 }).toBuffer();
 
   return {
     buffer,
@@ -33,6 +33,7 @@ export function isResizableImage(mimeType: string): boolean {
 
 export async function resizeImage(inputBuffer: Uint8Array): Promise<Uint8Array> {
   return sharp(inputBuffer)
+    .rotate()
     .resize(MAX_IMAGE_DIMENSION, MAX_IMAGE_DIMENSION, {
       fit: "inside",
       withoutEnlargement: true,

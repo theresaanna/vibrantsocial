@@ -35,7 +35,7 @@ interface ThemeEditorProps {
 
 export function ThemeEditor({
   initialColors,
-  initialContainerOpacity = 0,
+  initialContainerOpacity = 100,
   username,
   displayName,
   bio,
@@ -66,7 +66,7 @@ export function ThemeEditor({
       defaultPreset.profileContainerColor,
   });
   const [containerOpacity, setContainerOpacity] = useState(
-    Math.min(20, Math.max(0, initialContainerOpacity))
+    Math.min(100, Math.max(80, initialContainerOpacity))
   );
   const [colors, setColors] = useState<ProfileThemeColors>({ ...savedColors.current });
   const [activePreset, setActivePreset] = useState<string | null>(null);
@@ -609,8 +609,8 @@ export function ThemeEditor({
             <input
               id="container-opacity-slider"
               type="range"
-              min={0}
-              max={20}
+              min={80}
+              max={100}
               step={1}
               value={containerOpacity}
               onChange={(e) => {

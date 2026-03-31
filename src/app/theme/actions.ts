@@ -122,8 +122,8 @@ export async function updateTheme(
   // Parse container opacity (0–20, available to all users)
   const rawContainerOpacity = formData.get("profileContainerOpacity");
   const profileContainerOpacity = rawContainerOpacity !== null
-    ? Math.min(20, Math.max(0, Math.round(Number(rawContainerOpacity))))
-    : 0;
+    ? Math.min(100, Math.max(80, Math.round(Number(rawContainerOpacity))))
+    : 100;
 
   // Parse sparklefall settings (premium only)
   const sparklefallEnabled = formData.get("sparklefallEnabled") === "true";

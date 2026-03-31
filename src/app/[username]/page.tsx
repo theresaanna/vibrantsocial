@@ -509,7 +509,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
         "--profile-link": user.profileLinkColor ?? "#2563eb",
         "--profile-secondary": user.profileSecondaryColor ?? "#71717a",
         "--profile-container": user.profileContainerColor ?? "#f4f4f5",
-        "--profile-container-alpha": `${100 - (user.profileContainerOpacity ?? 0)}%`,
+        "--profile-container-alpha": `${user.profileContainerOpacity ?? 100}%`,
       } as React.CSSProperties)
     : undefined;
 

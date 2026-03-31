@@ -80,13 +80,15 @@ h6 {
  */
 
 /* Backgrounds: white / zinc-50 / zinc-100 / zinc-800 / zinc-900 → container */
-.profile-themed .bg-white,
-.profile-themed .dark\:bg-zinc-900,
-.profile-themed .bg-zinc-50,
-.profile-themed .dark\:bg-zinc-800,
-.profile-themed .bg-zinc-100,
-.profile-themed .dark\:bg-zinc-950 {
-  background-color: color-mix(in srgb, var(--profile-container) 90%, transparent) !important;
+@supports (color: color-mix(in lab, red, red)) {
+  .profile-themed .bg-white,
+  .profile-themed .dark\:bg-zinc-900,
+  .profile-themed .bg-zinc-50,
+  .profile-themed .dark\:bg-zinc-800,
+  .profile-themed .bg-zinc-100,
+  .profile-themed .dark\:bg-zinc-950 {
+    background-color: color-mix(in srgb, var(--profile-container) var(--profile-container-alpha, 100%), transparent) !important;
+  }
 }
 
 /* Muted backgrounds (avatar fallback, badges, pills): zinc-200/300/600/700 */
@@ -349,19 +351,19 @@ h6 {
   color: var(--profile-secondary);
 }
 
-/* Profile-themed post cards: use container color at 80% opacity for backgrounds */
+/* Profile-themed post cards: use container color at user-chosen opacity */
 .profile-themed [data-testid="post-card"] {
-  background-color: color-mix(in srgb, var(--profile-container) 80%, transparent);
+  background-color: color-mix(in srgb, var(--profile-container) var(--profile-container-alpha, 100%), transparent);
 }
 
 /* Profile-themed post truncation gradient: match container color */
 .profile-themed .post-truncation-gradient {
-  background: linear-gradient(to top, color-mix(in srgb, var(--profile-container) 80%, transparent), transparent);
+  background: linear-gradient(to top, color-mix(in srgb, var(--profile-container) var(--profile-container-alpha, 100%), transparent), transparent);
 }
 
 /* Profile-themed tabs bar: container-colored background behind tab pills */
 .profile-themed .profile-tabs-bar {
-  background-color: color-mix(in srgb, var(--profile-container) 80%, transparent);
+  background-color: color-mix(in srgb, var(--profile-container) var(--profile-container-alpha, 100%), transparent);
   border-radius: 1rem;
   padding: 0.75rem;
 }
