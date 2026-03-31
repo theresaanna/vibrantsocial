@@ -62,6 +62,7 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
   const [liveThemeStyle, setLiveThemeStyle] = useState<React.CSSProperties | undefined>(initialTheme.themeStyle);
   const [liveBgImageStyle, setLiveBgImageStyle] = useState<React.CSSProperties | undefined>(initialTheme.bgImageStyle);
   const [liveHasCustomTheme, setLiveHasCustomTheme] = useState(initialTheme.hasCustomTheme);
+  const [currentBgImage, setCurrentBgImage] = useState<string | null>(user.profileBgImage ?? null);
 
   const [state, formAction, isPending] = useActionState(
     async (prevState: ThemeState, formData: FormData) => {
@@ -121,6 +122,7 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
     size: string;
     position: string;
   }) => {
+    setCurrentBgImage(bg.image);
     setLiveBgImageStyle(
       bg.image
         ? {
@@ -201,7 +203,7 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
               isPremium={isPremium}
               userEmail={userEmail}
               customPresets={customPresets}
-              backgrounds={[...backgrounds, ...premiumBackgrounds]}
+              currentBgImage={currentBgImage}
             />
 
             <BackgroundEditor
