@@ -97,4 +97,7 @@ export const cacheKeys = {
   userNotifications: (userId: string) => `user:${userId}:notifications`,
   userRecentNotifications: (userId: string) => `user:${userId}:recent-notifications`,
   unreadNotificationCount: (userId: string) => `user:${userId}:unread-notif-count`,
+  userConversations: (userId: string) => `user:${userId}:conversations`,
+  linkedAccountNotifCounts: (userId: string) => `user:${userId}:linked-notif-counts`,
+  linkedAccounts: (userId: string) => `user:${userId}:linked-accounts`,
 } as const;

@@ -7,6 +7,7 @@ import { requirePhoneVerification } from "@/lib/phone-gate";
 import { requireNotSuspended } from "@/lib/suspension-gate";
 import { getAblyRestClient } from "@/lib/ably";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
+import { cached, cacheKeys } from "@/lib/cache";
 import { inngest } from "@/lib/inngest";
 import {
   requireAuthWithRateLimit,
@@ -87,57 +88,61 @@ export async function getConversations(): Promise<ConversationListItem[]> {
 
   const userId = session.user.id;
 
-  const participantRecords = await prisma.conversationParticipant.findMany({
-    where: { userId },
-    include: {
-      conversation: {
-        include: {
-          participants: {
-            include: { user: { select: USER_PROFILE_SELECT } },
-          },
-          messages: {
-            orderBy: { createdAt: "desc" },
-            take: 1,
-            where: { deletedAt: null },
+  return cached(cacheKeys.userConversations(userId), async () => {
+    const participantRecords = await prisma.conversationParticipant.findMany({
+      where: { userId },
+      include: {
+        conversation: {
+          include: {
+            participants: {
+              include: { user: { select: USER_PROFILE_SELECT } },
+            },
+            messages: {
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              where: { deletedAt: null },
+            },
           },
         },
       },
-    },
-    orderBy: { conversation: { updatedAt: "desc" } },
-  });
+      orderBy: { conversation: { updatedAt: "desc" } },
+    });
 
-  return (participantRecords as ConversationParticipantRecord[]).map((pr) => {
-    const conv = pr.conversation;
-    const otherParticipants = conv.participants
-      .filter((p) => p.userId !== userId)
-      .map((p) => p.user);
+    const result = (participantRecords as ConversationParticipantRecord[]).map((pr) => {
+      const conv = pr.conversation;
+      const otherParticipants = conv.participants
+        .filter((p) => p.userId !== userId)
+        .map((p) => p.user);
 
-    const lastMessage = conv.messages[0] ?? null;
-    const unreadCount = lastMessage
-      ? pr.lastReadAt
-        ? lastMessage.createdAt > pr.lastReadAt
-          ? 1
-          : 0
-        : 1
-      : 0;
+      const lastMessage = conv.messages[0] ?? null;
+      const unreadCount = lastMessage
+        ? pr.lastReadAt
+          ? lastMessage.createdAt > pr.lastReadAt
+            ? 1
+            : 0
+          : 1
+        : 0;
 
-    return {
-      id: conv.id,
-      isGroup: conv.isGroup,
-      name: conv.name,
-      avatarUrl: conv.avatarUrl,
-      participants: otherParticipants,
-      lastMessage: lastMessage
-        ? {
-            content: lastMessage.content,
-            senderId: lastMessage.senderId,
-            createdAt: lastMessage.createdAt,
-            mediaType: (lastMessage.mediaType as import("@/types/chat").MediaType) ?? null,
-          }
-        : null,
-      unreadCount,
-    };
-  });
+      return {
+        id: conv.id,
+        isGroup: conv.isGroup,
+        name: conv.name,
+        avatarUrl: conv.avatarUrl,
+        participants: otherParticipants,
+        lastMessage: lastMessage
+          ? {
+              content: lastMessage.content,
+              senderId: lastMessage.senderId,
+              createdAt: lastMessage.createdAt,
+              mediaType: (lastMessage.mediaType as import("@/types/chat").MediaType) ?? null,
+            }
+          : null,
+        unreadCount,
+      };
+    });
+
+    return JSON.parse(JSON.stringify(result)) as ConversationListItem[];
+  }, 30);
 }
 
 export async function getMessages(
