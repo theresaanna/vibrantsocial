@@ -7,7 +7,7 @@ import { useEffect, useState, useCallback } from "react";
 
 const MIN_SIZE = 10;
 const MAX_SIZE = 72;
-const DEFAULT_SIZE = "15";
+const DEFAULT_SIZE = "18";
 
 export function FontSizeControls() {
   const [editor] = useLexicalComposerContext();
