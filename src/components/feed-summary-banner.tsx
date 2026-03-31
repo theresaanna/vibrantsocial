@@ -66,7 +66,17 @@ export function FeedSummaryBanner({ lastSeenFeedAt }: FeedSummaryBannerProps) {
           </div>
         )}
 
-        {!generating && summary && <p className="mt-1">{summary}</p>}
+        {!generating && summary && (
+          <div className="mt-1">
+            <p>{summary}</p>
+            <button
+              onClick={handleSummarize}
+              className="mt-2 rounded-lg bg-fuchsia-600/80 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-fuchsia-700"
+            >
+              Regenerate summary
+            </button>
+          </div>
+        )}
 
         {!generating && !summary && missedCount > 0 && (
           <div className="mt-1">
