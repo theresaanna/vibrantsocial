@@ -519,7 +519,7 @@ export function RepostCard({
 
           {/* Embedded content: quoted repost or original post */}
           {repost.quotedRepost ? (
-            <div className="border-t border-zinc-100 dark:border-zinc-800">
+            <div className="border-t border-zinc-100 bg-white dark:border-zinc-800 dark:bg-zinc-900">
               <div className="px-4 py-3">
                 <div className="flex items-center gap-2 mb-2">
                   {repost.quotedRepost.user.avatar || repost.quotedRepost.user.image ? (
