@@ -64,6 +64,7 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
   const [liveBgImageStyle, setLiveBgImageStyle] = useState<React.CSSProperties | undefined>(initialTheme.bgImageStyle);
   const [liveHasCustomTheme, setLiveHasCustomTheme] = useState(initialTheme.hasCustomTheme);
   const [currentBgImage, setCurrentBgImage] = useState<string | null>(user.profileBgImage ?? null);
+  const liveContainerOpacityRef = useRef(user.profileContainerOpacity ?? 0);
 
   const [state, formAction, isPending] = useActionState(
     async (prevState: ThemeState, formData: FormData) => {
@@ -110,8 +111,16 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
             "--profile-link": colors.profileLinkColor ?? "#2563eb",
             "--profile-secondary": colors.profileSecondaryColor ?? "#71717a",
             "--profile-container": colors.profileContainerColor ?? "#f4f4f5",
+            "--profile-container-alpha": `${100 - liveContainerOpacityRef.current}%`,
           } as React.CSSProperties
         : undefined
+    );
+  }, []);
+
+  const handleContainerOpacityChange = useCallback((opacity: number) => {
+    liveContainerOpacityRef.current = opacity;
+    setLiveThemeStyle((prev) =>
+      prev ? { ...prev, "--profile-container-alpha": `${100 - opacity}%` } as React.CSSProperties : prev
     );
   }, []);
 
@@ -202,6 +211,7 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
               onSave={handleSave}
               isSavingForm={isPending}
               onColorsChange={handleColorsChange}
+              onContainerOpacityChange={handleContainerOpacityChange}
               isPremium={isPremium}
               userEmail={userEmail}
               customPresets={customPresets}

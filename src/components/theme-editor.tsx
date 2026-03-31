@@ -26,6 +26,7 @@ interface ThemeEditorProps {
   onSave?: () => void;
   isSavingForm?: boolean;
   onColorsChange?: (colors: ProfileThemeColors) => void;
+  onContainerOpacityChange?: (opacity: number) => void;
   isPremium?: boolean;
   userEmail?: string | null;
   customPresets?: CustomPresetData[];
@@ -43,6 +44,7 @@ export function ThemeEditor({
   onSave,
   isSavingForm = false,
   onColorsChange,
+  onContainerOpacityChange,
   isPremium = true,
   userEmail,
   customPresets: initialCustomPresets = [],
@@ -612,7 +614,9 @@ export function ThemeEditor({
               step={1}
               value={containerOpacity}
               onChange={(e) => {
-                setContainerOpacity(Number(e.target.value));
+                const opacity = Number(e.target.value);
+                setContainerOpacity(opacity);
+                onContainerOpacityChange?.(opacity);
                 onChange?.();
               }}
               className="flex-1 accent-blue-600"
