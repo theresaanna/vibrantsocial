@@ -275,7 +275,7 @@ h6 {
 .profile-themed .shadow-lg,
 .profile-themed .shadow-md,
 .profile-themed .shadow-sm {
-  --tw-shadow-color: color-mix(in srgb, var(--profile-text) 8%, transparent);
+  --tw-shadow-color: color-mix(in srgb, var(--profile-text) 50%, transparent);
 }
 
 /* Placeholder text */
