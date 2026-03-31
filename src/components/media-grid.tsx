@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useCallback, useEffect, useRef, useTransition } from "react";
 import Link from "next/link";
 import { extractMediaFromLexicalJson, type MediaItem } from "@/lib/lexical-text";
@@ -52,11 +53,12 @@ function extractMediaGridItems(posts: MediaPost[]): MediaGridItem[] {
 
 function YouTubeThumbnail({ videoID }: { videoID: string }) {
   return (
-    <img
+    <Image
       src={`https://img.youtube.com/vi/${videoID}/hqdefault.jpg`}
       alt="YouTube video thumbnail"
-      className="h-full w-full object-cover"
-      loading="lazy"
+      fill
+      unoptimized
+      className="object-cover"
     />
   );
 }
@@ -66,11 +68,12 @@ function MediaThumbnail({ item }: { item: MediaGridItem }) {
 
   if (media.type === "image") {
     return (
-      <img
+      <Image
         src={media.src}
         alt={media.altText ?? "Post image"}
-        className="h-full w-full object-cover"
-        loading="lazy"
+        fill
+        unoptimized
+        className="object-cover"
       />
     );
   }

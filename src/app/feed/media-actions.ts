@@ -2,7 +2,6 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { extractMediaFromLexicalJson } from "@/lib/lexical-text";
 import { cached, cacheKeys } from "@/lib/cache";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 import { getUserPrefs } from "@/lib/user-prefs";
@@ -72,21 +71,26 @@ export async function fetchMediaFeedPage(
 
   const dateFilter = cursor ? { lt: new Date(cursor) } : undefined;
 
-  // Fetch more posts than needed since many won't have media
-  const fetchCount = MEDIA_PAGE_SIZE * 3;
-
   const posts = await prisma.post.findMany({
     where: {
       authorId: { in: [...followingIds, userId] },
       ...(dateFilter ? { createdAt: dateFilter } : {}),
       ...(!showNsfwContent ? { isNsfw: false } : {}),
       ...(!ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
-      // Exclude marketplace posts unless promoted to feed
+      // Only fetch posts that contain media nodes in their Lexical JSON content
       OR: [
-        { marketplacePost: null },
-        { marketplacePost: { promotedToFeed: true } },
+        { content: { contains: '"type":"image"' } },
+        { content: { contains: '"type":"video"' } },
+        { content: { contains: '"type":"youtube"' } },
       ],
       AND: [
+        {
+          // Exclude marketplace posts unless promoted to feed
+          OR: [
+            { marketplacePost: null },
+            { marketplacePost: { promotedToFeed: true } },
+          ],
+        },
         {
           OR: [
             { isCloseFriendsOnly: false, hasCustomAudience: false },
@@ -97,7 +101,7 @@ export async function fetchMediaFeedPage(
       ],
     },
     orderBy: { createdAt: "desc" },
-    take: fetchCount,
+    take: MEDIA_PAGE_SIZE + 1,
     select: {
       id: true,
       slug: true,
@@ -118,25 +122,14 @@ export async function fetchMediaFeedPage(
     },
   });
 
-  // Filter to posts that contain media
-  const mediaPosts: MediaPost[] = [];
-  for (const post of posts) {
-    const media = extractMediaFromLexicalJson(post.content);
-    if (media.length > 0) {
-      mediaPosts.push({
-        id: post.id,
-        slug: post.slug,
-        content: post.content,
-        createdAt: post.createdAt.toISOString(),
-        author: post.author,
-      });
-    }
-    if (mediaPosts.length >= MEDIA_PAGE_SIZE + 1) break;
-  }
+  const hasMore = posts.length > MEDIA_PAGE_SIZE;
+  const mediaPosts: MediaPost[] = posts.slice(0, MEDIA_PAGE_SIZE).map((post) => ({
+    id: post.id,
+    slug: post.slug,
+    content: post.content,
+    createdAt: post.createdAt.toISOString(),
+    author: post.author,
+  }));
 
-  const hasMore = mediaPosts.length > MEDIA_PAGE_SIZE;
-  return {
-    posts: mediaPosts.slice(0, MEDIA_PAGE_SIZE),
-    hasMore,
-  };
+  return { posts: mediaPosts, hasMore };
 }
