@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useTransition } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
 import { PostCard } from "@/components/post-card";
 import { RepostCard } from "@/components/repost-card";
 import { fetchFeedPage } from "@/app/feed/feed-actions";
@@ -97,18 +96,7 @@ export function FeedList({
     );
   }, []);
 
-  const parentRef = useRef<HTMLDivElement>(null);
-
-  const virtualizer = useVirtualizer({
-    count: items.length,
-    getScrollElement: () => document.documentElement,
-    estimateSize: () => 400,
-    overscan: 3,
-  });
-
-  const virtualItems = virtualizer.getVirtualItems();
-
-  // IntersectionObserver for infinite scroll — watches the last virtual item
+  // IntersectionObserver for infinite scroll
   const sentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -138,72 +126,54 @@ export function FeedList({
   }
 
   return (
-    <div ref={parentRef} className="mt-6">
-      {/* Total height spacer so the page scrollbar is correctly sized */}
-      <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
-        {virtualItems.map((virtualRow) => {
-          const item = items[virtualRow.index];
-          const key =
-            item.type === "post" ? item.data.id : `repost-${item.data.id}`;
-          return (
-            <div
-              key={key}
-              data-index={virtualRow.index}
-              ref={virtualizer.measureElement}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                transform: `translateY(${virtualRow.start}px)`,
-                paddingBottom: "1rem",
-              }}
-            >
-              {item.type === "post" ? (
-                <PostCard
-                  post={item.data}
-                  currentUserId={currentUserId}
-                  phoneVerified={phoneVerified}
-                  ageVerified={ageVerified}
-                  showGraphicByDefault={showGraphicByDefault}
-                  showNsfwContent={showNsfwContent}
-                  hideSensitiveOverlay={hideSensitiveOverlay}
-                  onDelete={() => handleDelete("post", item.data.id)}
-                  {...(item.data.wallPost && {
-                    wallOwner: {
-                      username: item.data.wallPost.wallOwner.username,
-                      displayName: item.data.wallPost.wallOwner.displayName,
-                      usernameFont: item.data.wallPost.wallOwner.usernameFont,
-                    },
-                    wallPostId: item.data.wallPost.id,
-                    wallPostStatus: item.data.wallPost.status,
-                  })}
-                  {...(item.data.marketplacePost && {
-                    marketplacePostId: item.data.marketplacePost.id,
-                    marketplaceData: {
-                      price: item.data.marketplacePost.price,
-                      purchaseUrl: item.data.marketplacePost.purchaseUrl,
-                      shippingOption: item.data.marketplacePost.shippingOption,
-                      shippingPrice: item.data.marketplacePost.shippingPrice,
-                    },
-                  })}
-                />
-              ) : (
-                <RepostCard
-                  repost={item.data}
-                  currentUserId={currentUserId}
-                  phoneVerified={phoneVerified}
-                  ageVerified={ageVerified}
-                  showGraphicByDefault={showGraphicByDefault}
-                  showNsfwContent={showNsfwContent}
-                  hideSensitiveOverlay={hideSensitiveOverlay}
-                  onDelete={() => handleDelete("repost", item.data.id)}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
+    <div className="mt-6 flex flex-col gap-4">
+      {items.map((item) => {
+        const key =
+          item.type === "post" ? item.data.id : `repost-${item.data.id}`;
+        return item.type === "post" ? (
+          <PostCard
+            key={key}
+            post={item.data}
+            currentUserId={currentUserId}
+            phoneVerified={phoneVerified}
+            ageVerified={ageVerified}
+            showGraphicByDefault={showGraphicByDefault}
+            showNsfwContent={showNsfwContent}
+            hideSensitiveOverlay={hideSensitiveOverlay}
+            onDelete={() => handleDelete("post", item.data.id)}
+            {...(item.data.wallPost && {
+              wallOwner: {
+                username: item.data.wallPost.wallOwner.username,
+                displayName: item.data.wallPost.wallOwner.displayName,
+                usernameFont: item.data.wallPost.wallOwner.usernameFont,
+              },
+              wallPostId: item.data.wallPost.id,
+              wallPostStatus: item.data.wallPost.status,
+            })}
+            {...(item.data.marketplacePost && {
+              marketplacePostId: item.data.marketplacePost.id,
+              marketplaceData: {
+                price: item.data.marketplacePost.price,
+                purchaseUrl: item.data.marketplacePost.purchaseUrl,
+                shippingOption: item.data.marketplacePost.shippingOption,
+                shippingPrice: item.data.marketplacePost.shippingPrice,
+              },
+            })}
+          />
+        ) : (
+          <RepostCard
+            key={key}
+            repost={item.data}
+            currentUserId={currentUserId}
+            phoneVerified={phoneVerified}
+            ageVerified={ageVerified}
+            showGraphicByDefault={showGraphicByDefault}
+            showNsfwContent={showNsfwContent}
+            hideSensitiveOverlay={hideSensitiveOverlay}
+            onDelete={() => handleDelete("repost", item.data.id)}
+          />
+        );
+      })}
 
       {/* Sentinel element for infinite scroll */}
       <div ref={sentinelRef} aria-hidden="true" />
