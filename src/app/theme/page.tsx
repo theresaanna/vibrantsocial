@@ -85,6 +85,7 @@ export default async function ThemePage() {
         profileLinkColor: user.profileLinkColor ?? null,
         profileSecondaryColor: user.profileSecondaryColor ?? null,
         profileContainerColor: user.profileContainerColor ?? null,
+        profileContainerOpacity: user.profileContainerOpacity ?? 0,
         profileBgImage: user.profileBgImage ?? null,
         profileBgRepeat: user.profileBgRepeat ?? null,
         profileBgAttachment: user.profileBgAttachment ?? null,

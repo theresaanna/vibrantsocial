@@ -8,6 +8,21 @@ export const metadata: Metadata = {
   title: "VibrantSocial — Social media for adults",
   description:
     "Return to the good ol' days of the internet, before revenue-driving algorithms and AI generated nonsense.",
+  openGraph: {
+    title: "VibrantSocial — Social media for adults",
+    description:
+      "Return to the good ol' days of the internet, before revenue-driving algorithms and AI generated nonsense.",
+    siteName: "VibrantSocial",
+    type: "website",
+    images: [{ url: "/api/og", width: 1200, height: 630, alt: "VibrantSocial" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "VibrantSocial — Social media for adults",
+    description:
+      "Return to the good ol' days of the internet, before revenue-driving algorithms and AI generated nonsense.",
+    images: ["/api/og"],
+  },
 };
 
 export default async function Home() {

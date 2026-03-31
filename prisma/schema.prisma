@@ -31,11 +31,12 @@ model User {
   usernameFont String?
 
   // Profile theme colors
-  profileBgColor        String?
-  profileTextColor      String?
-  profileLinkColor      String?
-  profileSecondaryColor String?
-  profileContainerColor String?
+  profileBgColor           String?
+  profileTextColor         String?
+  profileLinkColor         String?
+  profileSecondaryColor    String?
+  profileContainerColor    String?
+  profileContainerOpacity  Int?    @default(0)
 
   // Profile background image
   profileBgImage      String?

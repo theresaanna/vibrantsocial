@@ -23,6 +23,7 @@ interface ProfileFormProps {
     username: string | null;
     displayName: string | null;
     bio: string | null;
+    profileContainerOpacity: number | null;
     profileFrameId: string | null;
   };
   email: string | null;

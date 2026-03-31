@@ -33,6 +33,7 @@ export default async function ProfilePage() {
       avatar: true,
       image: true,
       profileFrameId: true,
+      profileContainerOpacity: true,
       ageVerified: true,
       showGraphicByDefault: true,
       showNsfwContent: true,
@@ -86,6 +87,7 @@ export default async function ProfilePage() {
         <ProfileForm
           user={{
             ...session.user,
+            profileContainerOpacity: user?.profileContainerOpacity ?? null,
             profileFrameId: user?.profileFrameId ?? null,
           }}
           currentAvatar={user?.avatar ?? null}

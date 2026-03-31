@@ -24,6 +24,7 @@ interface ThemeFormProps {
     profileLinkColor: string | null;
     profileSecondaryColor: string | null;
     profileContainerColor: string | null;
+    profileContainerOpacity: number | null;
     profileBgImage: string | null;
     profileBgRepeat: string | null;
     profileBgAttachment: string | null;
@@ -193,6 +194,7 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
                 profileSecondaryColor: user.profileSecondaryColor ?? undefined,
                 profileContainerColor: user.profileContainerColor ?? undefined,
               }}
+              initialContainerOpacity={user.profileContainerOpacity ?? 0}
               username={user.username ?? null}
               displayName={user.displayName}
               bio={user.bio}

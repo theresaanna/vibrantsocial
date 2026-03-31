@@ -119,6 +119,12 @@ export async function updateTheme(
     }
   }
 
+  // Parse container opacity (0–20, available to all users)
+  const rawContainerOpacity = formData.get("profileContainerOpacity");
+  const profileContainerOpacity = rawContainerOpacity !== null
+    ? Math.min(20, Math.max(0, Math.round(Number(rawContainerOpacity))))
+    : 0;
+
   // Parse sparklefall settings (premium only)
   const sparklefallEnabled = formData.get("sparklefallEnabled") === "true";
   const sparklefallData: Record<string, boolean | string | number | null> = {
@@ -182,6 +188,7 @@ export async function updateTheme(
     data: {
       usernameFont,
       ...themeColors,
+      profileContainerOpacity,
       ...bgData,
       ...sparklefallData,
     },
