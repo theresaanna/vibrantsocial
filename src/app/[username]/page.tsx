@@ -764,27 +764,27 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             </div>
           )
         ) : activeTab === "wall" ? (
-          wallFeedItems.length === 0 ? (
-            <div className="mt-8 text-center">
-              <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
-                No wall posts yet.
-              </p>
-            </div>
-          ) : (
-            <div className="mt-6 space-y-4">
-              {currentUserId && isFriend && !isOwnProfile && (
-                <WallPostComposer
-                  wallOwnerId={user.id}
-                  wallOwnerName={displayName || "this user"}
-                />
-              )}
-              {wallFeedItems.map((item) =>
+          <div className="mt-6 space-y-4">
+            {currentUserId && isFriend && !isOwnProfile && (
+              <WallPostComposer
+                wallOwnerId={user.id}
+                wallOwnerName={displayName || "this user"}
+              />
+            )}
+            {wallFeedItems.length === 0 ? (
+              <div className={`rounded-xl p-6 text-center ${hasCustomTheme ? "profile-container" : "bg-zinc-50 dark:bg-zinc-800/50"}`}>
+                <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                  No wall posts yet.
+                </p>
+              </div>
+            ) : (
+              wallFeedItems.map((item) =>
                 item.type === "wall" ? (
                   <PostCard key={`wall-${item.data.id}`} post={item.data.post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} hideSensitiveOverlay={hideSensitiveOverlay} showNsfwContent={showNsfwContent} wallOwner={{ username: item.data.wallOwner.username!, displayName: item.data.wallOwner.displayName, usernameFont: item.data.wallOwner.usernameFont }} wallPostId={item.data.id} wallPostStatus={item.data.status} isWallOwner={isOwnProfile} />
                 ) : null
-              )}
-            </div>
-          )
+              )
+            )}
+          </div>
         ) : activeTab === "sensitive" ? (
           !currentUserId ? (
             <div className="mt-8 text-center">
