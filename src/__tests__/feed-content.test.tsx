@@ -76,6 +76,7 @@ describe("FeedContent", () => {
       ageVerified: true,
       showGraphicByDefault: false,
       showNsfwContent: false,
+      hideSensitiveOverlay: false,
     } as any);
 
     vi.mocked(prisma.follow.findMany).mockResolvedValue([]);
@@ -130,6 +131,7 @@ describe("FeedContent", () => {
       ageVerified: false,
       showGraphicByDefault: false,
       showNsfwContent: false,
+      hideSensitiveOverlay: false,
     } as any);
 
     await renderAsync(FeedContent({ userId: "user1" }) as any);
@@ -147,6 +149,7 @@ describe("FeedContent", () => {
       ageVerified: false,
       showGraphicByDefault: false,
       showNsfwContent: false,
+      hideSensitiveOverlay: false,
     } as any);
 
     await renderAsync(FeedContent({ userId: "user1" }) as any);

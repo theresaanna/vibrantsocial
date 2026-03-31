@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { FeedContent } from "./feed-content";
 import { ListFeedContent } from "./list-feed-content";
+import { CloseFriendsFeedContent } from "./close-friends-feed-content";
 import { FeedSkeleton } from "@/components/feed-skeleton";
 import { FeedTabs } from "@/components/feed-tabs";
 import { getUserLists, getSubscribedLists, getListInfo } from "@/app/lists/actions";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 export const metadata: Metadata = {
   title: "Feed",
@@ -23,10 +27,16 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
 
   const { list: activeListId, view } = await searchParams;
   const activeView = view === "media" ? "media" : "posts";
-  const [ownedLists, subscribedLists] = await Promise.all([
+  const [ownedLists, subscribedLists, themeUser] = await Promise.all([
     getUserLists(),
     getSubscribedLists(),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: userThemeSelect,
+    }),
   ]);
+
+  const theme = themeUser ? buildUserTheme(themeUser) : null;
 
   // Owned lists (no owner prefix) + subscribed lists (with owner prefix)
   const allTabs = [
@@ -48,7 +58,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
     : null;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...(theme ?? NO_THEME)}>
       <FeedTabs
         lists={allTabs}
         activeListId={activeListId}
@@ -59,12 +69,14 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
         } : null}
       />
       <Suspense key={`${activeListId ?? "main-feed"}-${activeView}`} fallback={<FeedSkeleton />}>
-        {activeListId ? (
+        {activeListId === "close-friends" ? (
+          <CloseFriendsFeedContent userId={session.user.id} />
+        ) : activeListId ? (
           <ListFeedContent userId={session.user.id} listId={activeListId} />
         ) : (
           <FeedContent userId={session.user.id} activeView={activeView} />
         )}
       </Suspense>
-    </main>
+    </ThemedPage>
   );
 }

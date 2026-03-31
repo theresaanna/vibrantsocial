@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import Link from "next/link";
 import { PostCard } from "@/components/post-card";
 
@@ -9,6 +10,7 @@ interface WallPostData {
   wallOwner: {
     username: string | null;
     displayName: string | null;
+    usernameFont: string | null;
   };
 }
 
@@ -18,9 +20,20 @@ interface PostPageClientProps {
   phoneVerified: boolean;
   ageVerified: boolean;
   showGraphicByDefault: boolean;
+  hideSensitiveOverlay: boolean;
   showNsfwContent: boolean;
   highlightCommentId: string | null;
   wallPost?: WallPostData | null;
+  wallThemeStyle?: React.CSSProperties;
+  wallBgImageStyle?: React.CSSProperties;
+  hasWallOwnerTheme?: boolean;
+  marketplacePostId?: string;
+  marketplaceData?: {
+    price: number;
+    purchaseUrl: string;
+    shippingOption: string;
+    shippingPrice: number | null;
+  };
 }
 
 export function PostPageClient({
@@ -29,12 +42,21 @@ export function PostPageClient({
   phoneVerified,
   ageVerified,
   showGraphicByDefault,
+  hideSensitiveOverlay,
   showNsfwContent,
   highlightCommentId,
   wallPost,
+  wallThemeStyle,
+  wallBgImageStyle,
+  hasWallOwnerTheme,
+  marketplacePostId,
+  marketplaceData,
 }: PostPageClientProps) {
   return (
-    <div>
+    <div
+      className={hasWallOwnerTheme ? "profile-themed" : ""}
+      style={{ ...wallThemeStyle, ...wallBgImageStyle }}
+    >
       <Link
         href={currentUserId ? "/feed" : "/"}
         className="mb-4 inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
@@ -60,6 +82,7 @@ export function PostPageClient({
         phoneVerified={phoneVerified}
         ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
+        hideSensitiveOverlay={hideSensitiveOverlay}
         showNsfwContent={showNsfwContent}
         defaultShowComments
         defaultExpanded
@@ -68,10 +91,13 @@ export function PostPageClient({
           wallOwner: {
             username: wallPost.wallOwner.username,
             displayName: wallPost.wallOwner.displayName,
+            usernameFont: wallPost.wallOwner.usernameFont,
           },
           wallPostId: wallPost.id,
           wallPostStatus: wallPost.status,
         })}
+        marketplacePostId={marketplacePostId}
+        marketplaceData={marketplaceData}
       />
     </div>
   );

@@ -81,6 +81,7 @@ interface RepostCardProps {
         wallOwner: {
           username: string | null;
           displayName: string | null;
+          usernameFont: string | null;
         };
       } | null;
     };
@@ -90,6 +91,7 @@ interface RepostCardProps {
   ageVerified: boolean;
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
+  hideSensitiveOverlay: boolean;
   showPinnedIndicator?: boolean;
   onDelete?: () => void;
 }
@@ -101,6 +103,7 @@ export function RepostCard({
   ageVerified,
   showGraphicByDefault,
   showNsfwContent,
+  hideSensitiveOverlay,
   showPinnedIndicator = false,
   onDelete,
 }: RepostCardProps) {
@@ -430,7 +433,7 @@ export function RepostCard({
                 </div>
               </form>
             ) : (
-              <PostContent content={currentContent!} isPostAuthor={isAuthor} />
+              <PostContent content={currentContent!} isPostAuthor={isAuthor} postId={repost.post.id} currentUserId={currentUserId} />
             )}
           </div>
 
@@ -474,6 +477,7 @@ export function RepostCard({
                 repostId={repost.id}
                 phoneVerified={phoneVerified}
                 isAuthenticated={!!currentUserId}
+                currentUserId={currentUserId}
                 onCommentCountChange={setCommentCount}
               />
             </div>
@@ -487,10 +491,12 @@ export function RepostCard({
             ageVerified={ageVerified}
             showGraphicByDefault={showGraphicByDefault}
             showNsfwContent={showNsfwContent}
+            hideSensitiveOverlay={hideSensitiveOverlay}
             {...(repost.post.wallPost && repost.post.wallPost.wallOwner.username && {
               wallOwner: {
                 username: repost.post.wallPost.wallOwner.username,
                 displayName: repost.post.wallPost.wallOwner.displayName,
+                usernameFont: repost.post.wallPost.wallOwner.usernameFont,
               },
               wallPostId: repost.post.wallPost.id,
               wallPostStatus: repost.post.wallPost.status,
@@ -504,6 +510,7 @@ export function RepostCard({
           phoneVerified={phoneVerified}
           ageVerified={ageVerified}
           showGraphicByDefault={showGraphicByDefault}
+          hideSensitiveOverlay={hideSensitiveOverlay}
           showNsfwContent={showNsfwContent}
         />
       )}

@@ -24,6 +24,10 @@ interface EditorContentProps {
   onContentChange?: (json: string) => void;
   /** When true, polls show results instead of voting UI. */
   isPostAuthor?: boolean;
+  /** Post ID — needed for poll voting. */
+  postId?: string;
+  /** Current user ID — needed for poll voting. */
+  currentUserId?: string;
 }
 
 function isLexicalJson(str: string): boolean {
@@ -73,6 +77,8 @@ export function EditorContent({
   allowChecklistToggle = false,
   onContentChange,
   isPostAuthor = false,
+  postId,
+  currentUserId,
 }: EditorContentProps) {
   const editorState = isLexicalJson(content)
     ? content
@@ -96,7 +102,7 @@ export function EditorContent({
   }
 
   return (
-    <PostAuthorProvider isPostAuthor={isPostAuthor}>
+    <PostAuthorProvider isPostAuthor={isPostAuthor} postId={postId} currentUserId={currentUserId}>
       <LexicalComposer initialConfig={editorConfig}>
         <RichTextPlugin
           contentEditable={

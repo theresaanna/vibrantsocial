@@ -71,6 +71,7 @@ const defaultProps = {
   ageVerified: false,
   showGraphicByDefault: false,
   showNsfwContent: false,
+  hideSensitiveOverlay: false,
 };
 
 describe("QuotePageClient", () => {

@@ -15,23 +15,33 @@ const COMBINED_REGEX = new RegExp(
   "g"
 );
 
+const DEFAULT_LINK_CLASS = "font-medium text-blue-600 dark:text-blue-400 hover:underline";
+const THEMED_LINK_STYLE: React.CSSProperties = { color: "var(--chat-link-color)" };
+
 /**
  * @param text - The plain text to parse
  * @param asSpans - When true, renders mentions/hashtags/links as styled
  *   <span> elements instead of <a> tags.  Use this when LinkifyText is
  *   rendered inside an interactive parent (<a>, <button>, <Link>) to
  *   avoid invalid nested interactive HTML.
+ * @param themed - When true, uses the chat theme link color CSS variable
+ *   instead of the default blue.
  */
 export function LinkifyText({
   text,
   asSpans = false,
+  themed = false,
 }: {
   text: string;
   asSpans?: boolean;
+  themed?: boolean;
 }) {
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
+
+  const linkClass = themed ? "font-medium hover:underline" : DEFAULT_LINK_CLASS;
+  const linkStyle = themed ? THEMED_LINK_STYLE : undefined;
 
   COMBINED_REGEX.lastIndex = 0;
   while ((match = COMBINED_REGEX.exec(text)) !== null) {
@@ -48,7 +58,8 @@ export function LinkifyText({
         <Tag
           key={match.index}
           {...(!asSpans ? { href: `/${match[5]}` } : {})}
-          className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+          className={linkClass}
+          style={linkStyle}
         >
           {matched}
         </Tag>
@@ -60,7 +71,8 @@ export function LinkifyText({
         <Tag
           key={match.index}
           {...(!asSpans ? { href: `/tag/${normalizeTag(match[4])}` } : {})}
-          className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+          className={linkClass}
+          style={linkStyle}
         >
           {matched}
         </Tag>
@@ -78,7 +90,7 @@ export function LinkifyText({
 
       if (asSpans) {
         parts.push(
-          <span key={match.index} className="underline break-all">
+          <span key={match.index} className="underline break-all" style={linkStyle}>
             {matched}
           </span>
         );
@@ -90,6 +102,7 @@ export function LinkifyText({
             target="_blank"
             rel="noopener noreferrer"
             className="underline break-all"
+            style={linkStyle}
           >
             {matched}
           </a>

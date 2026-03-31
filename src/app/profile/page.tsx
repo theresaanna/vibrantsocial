@@ -6,8 +6,8 @@ import { isProfileIncomplete } from "@/lib/require-profile";
 import { ProfileForm } from "./profile-form";
 import { Suspense } from "react";
 import { AutoAccountSwitch } from "@/components/auto-account-switch";
-import { getProfileBackgrounds } from "@/lib/profile-backgrounds.server";
-import type { CustomPresetData } from "@/lib/profile-themes";
+import { userThemeSelect, buildUserTheme } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 export const metadata: Metadata = {
   title: "Edit Profile",
@@ -21,8 +21,10 @@ export default async function ProfilePage() {
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
+      ...userThemeSelect,
       username: true,
       email: true,
+      emailVerified: true,
       pendingEmail: true,
       dateOfBirth: true,
       phoneNumber: true,
@@ -31,32 +33,11 @@ export default async function ProfilePage() {
       avatar: true,
       image: true,
       profileFrameId: true,
-      usernameFont: true,
-      profileBgColor: true,
-      profileTextColor: true,
-      profileLinkColor: true,
-      profileSecondaryColor: true,
-      profileContainerColor: true,
       profileContainerOpacity: true,
-      profileBgImage: true,
-      profileBgRepeat: true,
-      profileBgAttachment: true,
-      profileBgSize: true,
-      profileBgPosition: true,
-      sparklefallEnabled: true,
-      sparklefallPreset: true,
-      sparklefallSparkles: true,
-      sparklefallColors: true,
-      sparklefallInterval: true,
-      sparklefallWind: true,
-      sparklefallMaxSparkles: true,
-      sparklefallMinSize: true,
-      sparklefallMaxSize: true,
-      birthdayMonth: true,
-      birthdayDay: true,
       ageVerified: true,
       showGraphicByDefault: true,
       showNsfwContent: true,
+      hideSensitiveOverlay: true,
       emailOnComment: true,
       emailOnNewChat: true,
       emailOnMention: true,
@@ -66,7 +47,6 @@ export default async function ProfilePage() {
       pushEnabled: true,
       isProfilePublic: true,
       hideWallFromFeed: true,
-      tier: true,
       stars: true,
       starsSpent: true,
       referralCode: true,
@@ -78,41 +58,11 @@ export default async function ProfilePage() {
   const isCredentialsUser = !!user?.passwordHash;
   const isPremium = user?.tier === "premium";
   const oauthImage = user?.image ?? session.user.image ?? null;
-  const backgrounds = getProfileBackgrounds();
 
-  let customPresets: CustomPresetData[] = [];
-  if (isPremium) {
-    try {
-      customPresets = (
-        await prisma.customThemePreset.findMany({
-          where: { userId: session.user.id },
-          orderBy: { createdAt: "asc" },
-        })
-      ).map((p) => ({
-        id: p.id,
-        name: p.name,
-        prompt: p.prompt,
-        light: {
-          profileBgColor: p.lightBgColor,
-          profileTextColor: p.lightTextColor,
-          profileLinkColor: p.lightLinkColor,
-          profileSecondaryColor: p.lightSecondaryColor,
-          profileContainerColor: p.lightContainerColor,
-        },
-        dark: {
-          profileBgColor: p.darkBgColor,
-          profileTextColor: p.darkTextColor,
-          profileLinkColor: p.darkLinkColor,
-          profileSecondaryColor: p.darkSecondaryColor,
-          profileContainerColor: p.darkContainerColor,
-        },
-      }));
-    } catch {
-      // Table may not exist yet during migration rollout
-    }
-  }
+  const profileTheme = buildUserTheme(user);
 
   return (
+    <ThemedPage {...profileTheme} bare>
     <div className="flex min-h-[calc(100vh-57px)] items-center justify-center">
       <Suspense>
         <AutoAccountSwitch />
@@ -137,34 +87,15 @@ export default async function ProfilePage() {
         <ProfileForm
           user={{
             ...session.user,
-            profileBgColor: user?.profileBgColor ?? null,
-            profileTextColor: user?.profileTextColor ?? null,
-            profileLinkColor: user?.profileLinkColor ?? null,
-            profileSecondaryColor: user?.profileSecondaryColor ?? null,
-            profileContainerColor: user?.profileContainerColor ?? null,
             profileContainerOpacity: user?.profileContainerOpacity ?? null,
             profileFrameId: user?.profileFrameId ?? null,
-            profileBgImage: user?.profileBgImage ?? null,
-            profileBgRepeat: user?.profileBgRepeat ?? null,
-            profileBgAttachment: user?.profileBgAttachment ?? null,
-            profileBgSize: user?.profileBgSize ?? null,
-            profileBgPosition: user?.profileBgPosition ?? null,
-            sparklefallEnabled: user?.sparklefallEnabled ?? false,
-            sparklefallPreset: user?.sparklefallPreset ?? null,
-            sparklefallSparkles: user?.sparklefallSparkles ?? null,
-            sparklefallColors: user?.sparklefallColors ?? null,
-            sparklefallInterval: user?.sparklefallInterval ?? null,
-            sparklefallWind: user?.sparklefallWind ?? null,
-            sparklefallMaxSparkles: user?.sparklefallMaxSparkles ?? null,
-            sparklefallMinSize: user?.sparklefallMinSize ?? null,
-            sparklefallMaxSize: user?.sparklefallMaxSize ?? null,
-            usernameFont: user?.usernameFont ?? null,
           }}
           currentAvatar={user?.avatar ?? null}
           oauthImage={oauthImage}
           ageVerified={!!user?.ageVerified}
           showGraphicByDefault={user?.showGraphicByDefault ?? false}
           showNsfwContent={user?.showNsfwContent ?? false}
+          hideSensitiveOverlay={user?.hideSensitiveOverlay ?? false}
           emailOnComment={user?.emailOnComment ?? true}
           emailOnNewChat={user?.emailOnNewChat ?? true}
           emailOnMention={user?.emailOnMention ?? true}
@@ -177,6 +108,7 @@ export default async function ProfilePage() {
           birthdayMonth={user?.birthdayMonth ?? null}
           birthdayDay={user?.birthdayDay ?? null}
           email={user?.email ?? null}
+          emailVerified={!!user?.emailVerified}
           pendingEmail={user?.pendingEmail ?? null}
           phoneVerified={!!user?.phoneVerified}
           phoneNumber={user?.phoneNumber ?? null}
@@ -185,9 +117,7 @@ export default async function ProfilePage() {
           stars={user?.stars ?? 0}
           starsSpent={user?.starsSpent ?? 0}
           referralCode={user?.referralCode ?? ""}
-          backgrounds={backgrounds}
           userEmail={user?.email ?? null}
-          customPresets={customPresets}
         />
 
         <form
@@ -205,5 +135,6 @@ export default async function ProfilePage() {
         </form>
       </div>
     </div>
+    </ThemedPage>
   );
 }

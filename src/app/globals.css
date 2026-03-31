@@ -23,12 +23,13 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-lexend), Arial, Helvetica, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
-  font-weight: 200;
+  font-weight: 300;
+  font-size: 18px;
 }
 
 strong,
 b {
-  font-weight: 400;
+  font-weight: 500;
 }
 
 h1,
@@ -37,7 +38,7 @@ h3,
 h4,
 h5,
 h6 {
-  font-weight: 400;
+  font-weight: 500;
 }
 
 @layer base {
@@ -65,28 +66,225 @@ h6 {
   }
 }
 
-/* Profile theme overrides — light mode (default) */
+/* Profile theme overrides — user's chosen colors applied directly */
 .profile-themed {
-  --profile-bg: var(--profile-bg-light);
-  --profile-text: var(--profile-text-light);
-  --profile-link: var(--profile-link-light);
-  --profile-secondary: var(--profile-secondary-light);
-  --profile-container: var(--profile-container-light);
-
   background-color: var(--profile-bg);
   color: var(--profile-text);
   min-height: calc(100vh - 57px);
 }
 
-/* Profile theme overrides — dark mode */
-.dark .profile-themed {
-  --profile-bg: var(--profile-bg-dark);
-  --profile-text: var(--profile-text-dark);
-  --profile-link: var(--profile-link-dark);
-  --profile-secondary: var(--profile-secondary-dark);
-  --profile-container: var(--profile-container-dark);
+/*
+ * Broad overrides: force all Tailwind background/text/border colors inside
+ * .profile-themed to use the theme palette. !important is needed to beat
+ * Tailwind utility specificity + the .dark variant selectors.
+ */
+
+/* Backgrounds: white / zinc-50 / zinc-100 / zinc-800 / zinc-900 → container */
+.profile-themed .bg-white,
+.profile-themed .dark\:bg-zinc-900,
+.profile-themed .bg-zinc-50,
+.profile-themed .dark\:bg-zinc-800,
+.profile-themed .bg-zinc-100,
+.profile-themed .dark\:bg-zinc-950 {
+  background-color: color-mix(in srgb, var(--profile-container) 90%, transparent) !important;
 }
 
+/* Muted backgrounds (avatar fallback, badges, pills): zinc-200/300/600/700 */
+.profile-themed .bg-zinc-200,
+.profile-themed .dark\:bg-zinc-700,
+.profile-themed .bg-zinc-300,
+.profile-themed .dark\:bg-zinc-600 {
+  background-color: color-mix(in srgb, var(--profile-secondary) 30%, transparent) !important;
+}
+
+/* Banner/notice containers (feed summary, marketplace, update banners): standout theme tint */
+.profile-themed .from-fuchsia-50,
+.profile-themed .dark\:from-fuchsia-950\/30 {
+  --tw-gradient-from: color-mix(in srgb, var(--profile-link) 18%, transparent) !important;
+  --tw-gradient-to: color-mix(in srgb, var(--profile-link) 8%, transparent) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+/* Post tag pills: use theme link color tint instead of fuchsia/zinc light/dark */
+.profile-themed .bg-fuchsia-50,
+.profile-themed .dark\:bg-fuchsia-950\/30 {
+  background-color: color-mix(in srgb, var(--profile-link) 15%, transparent) !important;
+}
+
+.profile-themed .text-fuchsia-600,
+.profile-themed .dark\:text-fuchsia-400 {
+  color: var(--profile-link) !important;
+}
+
+.profile-themed .hover\:bg-fuchsia-100:hover,
+.profile-themed .dark\:hover\:bg-fuchsia-900\/40:hover {
+  background-color: color-mix(in srgb, var(--profile-link) 25%, transparent) !important;
+}
+
+/* Notification-specific: unread/selected/hover backgrounds use theme container tint */
+.profile-themed .bg-blue-50\/50,
+.profile-themed .dark\:bg-blue-950\/20,
+.profile-themed .bg-fuchsia-50\/50,
+.profile-themed .dark\:bg-fuchsia-950\/20 {
+  background-color: color-mix(in srgb, var(--profile-link) 12%, transparent) !important;
+}
+
+/* Hover backgrounds: all zinc hover variants → themed */
+.profile-themed .hover\:bg-zinc-50:hover,
+.profile-themed .hover\:bg-zinc-100:hover,
+.profile-themed .hover\:bg-zinc-200:hover,
+.profile-themed .hover\:bg-zinc-200\/50:hover,
+.profile-themed .hover\:bg-zinc-300:hover {
+  background-color: color-mix(in srgb, var(--profile-secondary) 15%, transparent) !important;
+}
+
+.profile-themed .dark\:hover\:bg-zinc-200:hover {
+  background-color: color-mix(in srgb, var(--profile-secondary) 15%, transparent) !important;
+}
+
+.profile-themed .dark\:hover\:bg-zinc-700:hover,
+.profile-themed .dark\:hover\:bg-zinc-700\/50:hover,
+.profile-themed .dark\:hover\:bg-zinc-800:hover,
+.profile-themed .dark\:hover\:bg-zinc-800\/50:hover,
+.profile-themed .dark\:hover\:bg-zinc-900:hover {
+  background-color: color-mix(in srgb, var(--profile-secondary) 15%, transparent) !important;
+}
+
+.profile-themed .hover\:bg-zinc-800:hover,
+.profile-themed .hover\:bg-zinc-600:hover {
+  background-color: color-mix(in srgb, var(--profile-secondary) 15%, transparent) !important;
+}
+
+/* Dark-mode static button backgrounds → themed container */
+.profile-themed .dark\:bg-zinc-100 {
+  background-color: var(--profile-container) !important;
+}
+
+/* Checkbox / radio accent colors → theme link */
+.profile-themed .accent-blue-500,
+.profile-themed .accent-fuchsia-500 {
+  accent-color: var(--profile-link) !important;
+}
+
+/* Generic checkbox/radio inputs inside themed areas */
+.profile-themed input[type="checkbox"],
+.profile-themed input[type="radio"] {
+  accent-color: var(--profile-link);
+  color-scheme: light;
+  background-color: var(--profile-container);
+  border-color: color-mix(in srgb, var(--profile-secondary) 40%, transparent);
+}
+
+/* Force color-scheme on themed area so form controls match the theme bg */
+.profile-themed {
+  color-scheme: normal;
+}
+
+/* Primary text: all strong zinc text → theme text */
+.profile-themed .text-zinc-900,
+.profile-themed .text-zinc-800,
+.profile-themed .dark\:text-zinc-100,
+.profile-themed .dark\:text-zinc-200,
+.profile-themed .dark\:text-zinc-50 {
+  color: var(--profile-text) !important;
+}
+
+/* Secondary/muted text: all mid-tone zinc text → theme secondary */
+.profile-themed .text-zinc-700,
+.profile-themed .text-zinc-600,
+.profile-themed .text-zinc-500,
+.profile-themed .text-zinc-400,
+.profile-themed .text-zinc-300,
+.profile-themed .text-zinc-200,
+.profile-themed .text-zinc-100,
+.profile-themed .dark\:text-zinc-500,
+.profile-themed .dark\:text-zinc-400,
+.profile-themed .dark\:text-zinc-300,
+.profile-themed .dark\:text-zinc-700,
+.profile-themed .dark\:text-zinc-600,
+.profile-themed .dark\:text-zinc-900 {
+  color: var(--profile-secondary) !important;
+}
+
+/* Hover text: zinc hover states → themed */
+.profile-themed .hover\:text-zinc-900:hover,
+.profile-themed .hover\:text-zinc-800:hover,
+.profile-themed .hover\:text-zinc-700:hover,
+.profile-themed .hover\:text-zinc-600:hover,
+.profile-themed .hover\:text-zinc-500:hover,
+.profile-themed .dark\:hover\:text-zinc-100:hover,
+.profile-themed .dark\:hover\:text-zinc-200:hover {
+  color: var(--profile-text) !important;
+}
+
+.profile-themed .dark\:hover\:text-zinc-300:hover,
+.profile-themed .dark\:hover\:text-zinc-400:hover {
+  color: var(--profile-secondary) !important;
+}
+
+/* Borders: all zinc shades → themed border */
+.profile-themed .border-zinc-100,
+.profile-themed .border-zinc-200,
+.profile-themed .border-zinc-300,
+.profile-themed .border-zinc-400,
+.profile-themed .border-zinc-500,
+.profile-themed .border-zinc-600,
+.profile-themed .border-zinc-900,
+.profile-themed .dark\:border-zinc-100,
+.profile-themed .dark\:border-zinc-500,
+.profile-themed .dark\:border-zinc-600,
+.profile-themed .dark\:border-zinc-700,
+.profile-themed .dark\:border-zinc-800,
+.profile-themed .dark\:border-zinc-900 {
+  border-color: color-mix(in srgb, var(--profile-secondary) 25%, transparent) !important;
+}
+
+/* Active tab underlines: use theme link color for emphasis */
+.profile-themed .border-b-2.border-zinc-900,
+.profile-themed .border-b-2.dark\:border-zinc-100 {
+  border-color: var(--profile-link) !important;
+}
+
+/* Focus borders */
+.profile-themed .focus\:border-zinc-400:focus,
+.profile-themed .focus\:border-zinc-500:focus,
+.profile-themed .dark\:focus\:border-zinc-400:focus,
+.profile-themed .dark\:focus\:border-zinc-500:focus {
+  border-color: color-mix(in srgb, var(--profile-link) 60%, transparent) !important;
+}
+
+/* Divide colors */
+.profile-themed .divide-zinc-100 > :not([hidden]) ~ :not([hidden]),
+.profile-themed .divide-zinc-200 > :not([hidden]) ~ :not([hidden]),
+.profile-themed .dark\:divide-zinc-800 > :not([hidden]) ~ :not([hidden]) {
+  border-color: color-mix(in srgb, var(--profile-secondary) 25%, transparent) !important;
+}
+
+/* Ring colors */
+.profile-themed .ring-zinc-200,
+.profile-themed .ring-zinc-300,
+.profile-themed .dark\:ring-zinc-700,
+.profile-themed .dark\:ring-zinc-800,
+.profile-themed .focus\:ring-zinc-400:focus {
+  --tw-ring-color: color-mix(in srgb, var(--profile-secondary) 25%, transparent) !important;
+}
+
+/* Shadow overrides: drop tinted shadows that clash with theme */
+.profile-themed .shadow-lg,
+.profile-themed .shadow-md,
+.profile-themed .shadow-sm {
+  --tw-shadow-color: color-mix(in srgb, var(--profile-text) 8%, transparent);
+}
+
+/* Placeholder text */
+.profile-themed .placeholder-zinc-400::placeholder,
+.profile-themed .placeholder\:text-zinc-400::placeholder,
+.profile-themed .dark\:placeholder-zinc-500::placeholder {
+  color: var(--profile-secondary) !important;
+  opacity: 0.7;
+}
+
+/* Existing class-based overrides */
 .profile-themed .profile-container {
   background-color: color-mix(in srgb, var(--profile-container) var(--profile-container-alpha, 100%), transparent);
 }
@@ -96,42 +294,105 @@ h6 {
 }
 
 .profile-themed .profile-link,
-.profile-themed a {
+.profile-themed a:not(.tag-pill) {
   color: var(--profile-link);
+}
+
+/* Tag cloud pills: always white text on colored backgrounds */
+.tag-pill {
+  color: white !important;
 }
 
 .profile-themed .profile-share-btn:hover {
   background-color: color-mix(in srgb, var(--profile-container) var(--profile-container-alpha, 100%), transparent);
 }
 
-/* Chat theme overrides — light mode (default) */
-.chat-themed {
-  --chat-bubble-bg: var(--chat-bubble-bg-light);
-  --chat-bubble-text: var(--chat-bubble-text-light);
-  --chat-active-bg: var(--chat-active-bg-light);
-  --chat-active-text: var(--chat-active-text-light);
+/* Poll theme overrides inside profile pages */
+.profile-themed .poll-border {
+  border-color: color-mix(in srgb, var(--profile-text) 20%, transparent);
 }
 
-/* Chat theme overrides — dark mode */
-.dark .chat-themed {
-  --chat-bubble-bg: var(--chat-bubble-bg-dark);
-  --chat-bubble-text: var(--chat-bubble-text-dark);
-  --chat-active-bg: var(--chat-active-bg-dark);
-  --chat-active-text: var(--chat-active-text-dark);
+.profile-themed .poll-question {
+  color: var(--profile-text);
 }
+
+.profile-themed .poll-option {
+  border-color: color-mix(in srgb, var(--profile-text) 25%, transparent);
+}
+
+.profile-themed .poll-option:not(:disabled):hover {
+  border-color: var(--profile-link);
+  background-color: color-mix(in srgb, var(--profile-link) 10%, transparent);
+}
+
+.profile-themed .poll-option-result {
+  border-color: color-mix(in srgb, var(--profile-text) 20%, transparent);
+}
+
+.profile-themed .poll-bar-voted {
+  background-color: color-mix(in srgb, var(--profile-link) 25%, transparent);
+}
+
+.profile-themed .poll-bar-default {
+  background-color: color-mix(in srgb, var(--profile-text) 10%, transparent);
+}
+
+.profile-themed .poll-meta {
+  color: var(--profile-secondary);
+}
+
+.profile-themed .poll-option-text {
+  color: var(--profile-text);
+}
+
+.profile-themed .poll-pct {
+  color: var(--profile-secondary);
+}
+
+/* Profile-themed post cards: use container color at 80% opacity for backgrounds */
+.profile-themed [data-testid="post-card"] {
+  background-color: color-mix(in srgb, var(--profile-container) 80%, transparent);
+}
+
+/* Profile-themed post truncation gradient: match container color */
+.profile-themed .post-truncation-gradient {
+  background: linear-gradient(to top, color-mix(in srgb, var(--profile-container) 80%, transparent), transparent);
+}
+
+/* Profile-themed tabs bar: container-colored background behind tab pills */
+.profile-themed .profile-tabs-bar {
+  background-color: color-mix(in srgb, var(--profile-container) 80%, transparent);
+  border-radius: 1rem;
+  padding: 0.75rem;
+}
+
+/* Chat theme overrides — user's chosen colors applied directly */
+.chat-themed {}
 
 .chat-themed .chat-input-themed:focus {
-  border-color: var(--chat-bubble-text);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--chat-bubble-text) 20%, transparent);
+  border-color: var(--chat-link-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--chat-link-color) 20%, transparent);
 }
 
 .chat-themed .chat-btn-themed {
-  background-color: var(--chat-bubble-text);
+  background-color: var(--chat-link-color);
   color: var(--chat-bubble-bg);
 }
 
 .chat-themed .chat-btn-themed:hover {
   filter: brightness(0.9);
+}
+
+/* Themed unread badge */
+.chat-themed .chat-unread-badge {
+  background-color: var(--chat-link-color);
+}
+
+/* Themed reaction button (reacted state) */
+.chat-themed .chat-reaction-active {
+  border-color: color-mix(in srgb, var(--chat-link-color) 50%, transparent);
+  background-color: color-mix(in srgb, var(--chat-link-color) 10%, transparent);
+  color: var(--chat-link-color);
 }
 
 /* Collapsible section delete button — show on hover */

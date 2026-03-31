@@ -1,10 +1,17 @@
 "use server";
 
 import { auth } from "@/auth";
-import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { invalidate, cacheKeys } from "@/lib/cache";
-import { createNotification } from "@/lib/notifications";
+import {
+  requireAuthWithRateLimit,
+  isActionError,
+  hasBlock,
+  createNotificationSafe,
+  USER_PROFILE_SELECT,
+} from "@/lib/action-utils";
+import type { ActionState } from "@/lib/action-utils";
 
 export interface FollowUser {
   id: string;
@@ -18,17 +25,6 @@ export interface FollowUser {
   isFollowing: boolean;
 }
 
-const userSelect = {
-  id: true,
-  username: true,
-  displayName: true,
-  name: true,
-  avatar: true,
-  image: true,
-  profileFrameId: true,
-  usernameFont: true,
-} as const;
-
 export async function getFollowers(username: string): Promise<FollowUser[]> {
   const user = await prisma.user.findUnique({
     where: { username },
@@ -41,7 +37,7 @@ export async function getFollowers(username: string): Promise<FollowUser[]> {
 
   const follows = await prisma.follow.findMany({
     where: { followingId: user.id },
-    include: { follower: { select: userSelect } },
+    include: { follower: { select: USER_PROFILE_SELECT } },
     orderBy: { createdAt: "desc" },
   });
 
@@ -72,7 +68,7 @@ export async function getFollowing(username: string): Promise<FollowUser[]> {
 
   const follows = await prisma.follow.findMany({
     where: { followerId: user.id },
-    include: { following: { select: userSelect } },
+    include: { following: { select: USER_PROFILE_SELECT } },
     orderBy: { createdAt: "desc" },
   });
 
@@ -91,23 +87,13 @@ export async function getFollowing(username: string): Promise<FollowUser[]> {
   }));
 }
 
-interface FollowState {
-  success: boolean;
-  message: string;
-}
-
 export async function toggleFollow(
-  _prevState: FollowState,
+  _prevState: ActionState,
   formData: FormData
-): Promise<FollowState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: "Not authenticated" };
-  }
-
-  if (await isRateLimited(apiLimiter, `follow:${session.user.id}`)) {
-    return { success: false, message: "Too many requests. Please try again later." };
-  }
+): Promise<ActionState> {
+  const authResult = await requireAuthWithRateLimit("follow");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
 
   const targetUserId = formData.get("userId") as string;
 
@@ -115,16 +101,7 @@ export async function toggleFollow(
     return { success: false, message: "Cannot follow yourself" };
   }
 
-  // Check if a block exists between the two users
-  const block = await prisma.block.findFirst({
-    where: {
-      OR: [
-        { blockerId: session.user.id, blockedId: targetUserId },
-        { blockerId: targetUserId, blockedId: session.user.id },
-      ],
-    },
-  });
-  if (block) {
+  if (await hasBlock(session.user.id, targetUserId)) {
     return { success: false, message: "Cannot follow this user" };
   }
 
@@ -144,15 +121,11 @@ export async function toggleFollow(
       data: { followerId: session.user.id, followingId: targetUserId },
     });
 
-    try {
-      await createNotification({
-        type: "FOLLOW",
-        actorId: session.user.id,
-        targetUserId,
-      });
-    } catch {
-      // Non-critical
-    }
+    await createNotificationSafe({
+      type: "FOLLOW",
+      actorId: session.user.id,
+      targetUserId,
+    });
   }
 
   const [currentUserData, targetUserData] = await Promise.all([

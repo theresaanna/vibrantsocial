@@ -1,25 +1,28 @@
 import { prisma } from "@/lib/prisma";
+import { cached, cacheKeys } from "@/lib/cache";
 import type { LinkedAccount } from "@/types/next-auth";
 
 export async function loadLinkedAccounts(
   userId: string
 ): Promise<LinkedAccount[]> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { linkedAccountGroupId: true },
-  });
+  return cached(cacheKeys.linkedAccounts(userId), async () => {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { linkedAccountGroupId: true },
+    });
 
-  if (!user?.linkedAccountGroupId) return [];
+    if (!user?.linkedAccountGroupId) return [];
 
-  const members = await prisma.user.findMany({
-    where: {
-      linkedAccountGroupId: user.linkedAccountGroupId,
-      id: { not: userId },
-    },
-    select: { id: true, username: true, displayName: true, avatar: true, profileFrameId: true },
-  });
+    const members = await prisma.user.findMany({
+      where: {
+        linkedAccountGroupId: user.linkedAccountGroupId,
+        id: { not: userId },
+      },
+      select: { id: true, username: true, displayName: true, avatar: true, profileFrameId: true, usernameFont: true },
+    });
 
-  return members;
+    return members;
+  }, 60);
 }
 
 export async function linkUsersInGroup(userIdA: string, userIdB: string) {

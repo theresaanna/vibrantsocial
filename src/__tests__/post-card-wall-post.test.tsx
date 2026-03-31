@@ -103,6 +103,7 @@ const defaultProps = {
   ageVerified: false,
   showGraphicByDefault: false,
   showNsfwContent: false,
+  hideSensitiveOverlay: false,
 };
 
 describe("PostCard - wall post banner", () => {

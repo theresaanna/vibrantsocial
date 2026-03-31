@@ -2,7 +2,6 @@
 
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $insertNodes, $createParagraphNode } from "lexical";
-import { INSERT_HORIZONTAL_RULE_COMMAND } from "@lexical/react/LexicalHorizontalRuleNode";
 import {
   INSERT_TABLE_COMMAND,
   type InsertTableCommandPayload,
@@ -14,9 +13,6 @@ import { $createImageNode } from "../nodes/ImageNode";
 import { $createVideoNode } from "../nodes/VideoNode";
 import { $createFileNode } from "../nodes/FileNode";
 import { $createYouTubeNode } from "../nodes/YouTubeNode";
-import { $createEquationNode } from "../nodes/EquationNode";
-
-import { $createStickyNoteNode } from "../nodes/StickyNoteNode";
 import { $createPollNode, type PollOption } from "../nodes/PollNode";
 import { extractYouTubeVideoID } from "../utils/url";
 import { upload } from "@vercel/blob/client";
@@ -69,21 +65,6 @@ export function FileUploadButton() {
         />
       )}
     </>
-  );
-}
-
-/* ── Horizontal Rule ─────────────────────────────── */
-export function HorizontalRuleButton() {
-  const [editor] = useLexicalComposerContext();
-  return (
-    <ToolbarButton
-      onClick={() => editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined)}
-      label="Horizontal rule"
-    >
-      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12h16" />
-      </svg>
-    </ToolbarButton>
   );
 }
 
@@ -166,51 +147,6 @@ export function PollButton() {
         />
       )}
     </>
-  );
-}
-
-/* ── Equation ────────────────────────────────────── */
-export function EquationButton() {
-  const [editor] = useLexicalComposerContext();
-  const [modal, setModal] = useState(false);
-  return (
-    <>
-      <ToolbarButton onClick={() => setModal(true)} label="Equation">
-        <span className="text-sm font-serif italic leading-none">fx</span>
-      </ToolbarButton>
-      {modal && (
-        <EquationInsertModal
-          onClose={() => setModal(false)}
-          onInsert={(equation, inline) => {
-            editor.update(() => {
-              const node = $createEquationNode(equation, inline);
-              $insertNodes([node]);
-            });
-            setModal(false);
-          }}
-        />
-      )}
-    </>
-  );
-}
-
-/* ── Sticky Note ─────────────────────────────────── */
-export function StickyNoteButton() {
-  const [editor] = useLexicalComposerContext();
-  return (
-    <ToolbarButton
-      onClick={() => {
-        editor.update(() => {
-          const node = $createStickyNoteNode();
-          $insertNodes([node, $createParagraphNode()]);
-        });
-      }}
-      label="Sticky note"
-    >
-      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-      </svg>
-    </ToolbarButton>
   );
 }
 
@@ -403,50 +339,6 @@ function YouTubeInsertModal({
   );
 }
 
-/* ── Equation Insert Modal ────────────────────────── */
-function EquationInsertModal({
-  onClose,
-  onInsert,
-}: {
-  onClose: () => void;
-  onInsert: (equation: string, inline: boolean) => void;
-}) {
-  const [equation, setEquation] = useState("");
-  const [inline, setInline] = useState(true);
-
-  return (
-    <Modal title="Insert Equation" onClose={onClose}>
-      <div className="space-y-3">
-        <textarea
-          value={equation}
-          onChange={(e) => setEquation(e.target.value)}
-          placeholder="e.g. E = mc^2"
-          className="w-full rounded border border-zinc-300 px-3 py-2 font-mono text-sm dark:border-zinc-600 dark:bg-zinc-800"
-          rows={3}
-          autoFocus
-        />
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={inline}
-            onChange={(e) => setInline(e.target.checked)}
-          />
-          Inline equation
-        </label>
-        <button
-          type="button"
-          onClick={() => {
-            if (equation.trim()) onInsert(equation.trim(), inline);
-          }}
-          disabled={!equation.trim()}
-          className="rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600 disabled:opacity-50"
-        >
-          Insert
-        </button>
-      </div>
-    </Modal>
-  );
-}
 
 /* ── Table Insert Modal ───────────────────────────── */
 function TableInsertModal({

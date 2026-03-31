@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { getFollowing } from "@/app/feed/follow-actions";
 import { getBatchFriendshipStatuses } from "@/app/feed/friend-actions";
 import { UserList } from "@/components/user-list";
+import { ThemedPage } from "@/components/themed-page";
+import { userThemeSelect, buildUserTheme } from "@/lib/user-theme";
 import Link from "next/link";
 
 interface FollowingPageProps {
@@ -29,7 +31,7 @@ export default async function FollowingPage({ params }: FollowingPageProps) {
   // Only the profile owner can view their following list
   const profileUser = await prisma.user.findUnique({
     where: { username },
-    select: { id: true },
+    select: { ...userThemeSelect },
   });
   if (!profileUser) notFound();
   if (profileUser.id !== currentUserId) redirect(`/${username}`);
@@ -37,9 +39,10 @@ export default async function FollowingPage({ params }: FollowingPageProps) {
   const following = await getFollowing(username);
   const otherUserIds = following.filter(u => u.id !== currentUserId).map(u => u.id);
   const friendshipStatuses = await getBatchFriendshipStatuses(otherUserIds);
+  const theme = buildUserTheme(profileUser);
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...theme}>
       <div className="rounded-2xl bg-white shadow-lg dark:bg-zinc-900">
         <div className="flex items-center gap-3 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
           <Link
@@ -63,6 +66,6 @@ export default async function FollowingPage({ params }: FollowingPageProps) {
           friendshipStatuses={friendshipStatuses}
         />
       </div>
-    </main>
+    </ThemedPage>
   );
 }

@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+// Undo the global mock from setup.ts so we can test the real module
+vi.unmock("@/lib/rate-limit");
+
 vi.mock("@upstash/redis", () => ({
   Redis: vi.fn().mockImplementation(() => ({})),
 }));

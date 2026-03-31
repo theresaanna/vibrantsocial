@@ -1,18 +1,30 @@
 "use client";
 
-import { useState, useCallback, useRef, useId } from "react";
+import { useState, useCallback, useRef, useId, useEffect } from "react";
 import type { BackgroundDefinition } from "@/lib/profile-backgrounds";
 import {
-  VALID_BG_REPEAT,
   VALID_BG_ATTACHMENT,
-  VALID_BG_SIZE,
   VALID_BG_POSITION,
   getDefaultsForBackground,
 } from "@/lib/profile-backgrounds";
+
+const BG_REPEAT_OPTIONS = [
+  { value: "repeat", label: "Repeat Both" },
+  { value: "repeat-x", label: "Repeat Horizontal" },
+  { value: "repeat-y", label: "Repeat Vertical" },
+  { value: "no-repeat", label: "No Repeat" },
+] as const;
+
+const BG_SIZE_OPTIONS = [
+  { value: "contain", label: "None" },
+  { value: "cover", label: "Stretch" },
+] as const;
+
 import { PremiumCrown } from "./premium-crown";
 
 interface BackgroundEditorProps {
   backgrounds: BackgroundDefinition[];
+  premiumBackgrounds: BackgroundDefinition[];
   initialBackground: {
     profileBgImage: string | null;
     profileBgRepeat: string | null;
@@ -22,26 +34,120 @@ interface BackgroundEditorProps {
   };
   isPremium: boolean;
   userEmail?: string | null;
-  onChange: () => void;
+  onChange?: () => void;
+  onBackgroundChange?: (bg: {
+    image: string | null;
+    repeat: string;
+    attachment: string;
+    size: string;
+    position: string;
+  }) => void;
+}
+
+function BackgroundGrid({
+  backgrounds,
+  selectedSrc,
+  onSelect,
+  disabled,
+}: {
+  backgrounds: BackgroundDefinition[];
+  selectedSrc: string | null;
+  onSelect: (bg: BackgroundDefinition) => void;
+  disabled?: boolean;
+}) {
+  const [hoveredBg, setHoveredBg] = useState<BackgroundDefinition | null>(null);
+  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null);
+
+  const handleMouseEnter = useCallback((bg: BackgroundDefinition, e: React.MouseEvent<HTMLButtonElement>) => {
+    const btn = e.currentTarget;
+    const btnRect = btn.getBoundingClientRect();
+    setPopoverPos({
+      top: btnRect.bottom + 8,
+      left: btnRect.left + btnRect.width / 2,
+    });
+    setHoveredBg(bg);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setHoveredBg(null);
+    setPopoverPos(null);
+  }, []);
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {backgrounds.map((bg) => (
+        <button
+          key={bg.id}
+          type="button"
+          onClick={() => onSelect(bg)}
+          onMouseEnter={(e) => handleMouseEnter(bg, e)}
+          onMouseLeave={handleMouseLeave}
+          title={bg.name}
+          disabled={disabled}
+          className={`h-12 w-12 overflow-hidden rounded-lg border transition-all ${
+            selectedSrc === bg.src
+              ? "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-900"
+              : "border-zinc-200 dark:border-zinc-700"
+          } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
+        >
+          <img
+            src={bg.thumbSrc}
+            alt={bg.name}
+            className="h-full w-full object-cover"
+          />
+        </button>
+      ))}
+      {hoveredBg && popoverPos && (
+        <div
+          className="pointer-events-none fixed z-[9999] h-40 w-64 -translate-x-1/2 overflow-hidden rounded-xl border border-zinc-200 shadow-lg dark:border-zinc-700"
+          style={{
+            top: popoverPos.top,
+            left: popoverPos.left,
+            backgroundImage: `url(${hoveredBg.src})`,
+            backgroundRepeat: getDefaultsForBackground(hoveredBg).repeat,
+            backgroundSize: getDefaultsForBackground(hoveredBg).size,
+            backgroundPosition: getDefaultsForBackground(hoveredBg).position,
+          }}
+        >
+          <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-2 py-1">
+            <p className="text-xs font-medium text-white">{hoveredBg.name}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function BackgroundEditor({
   backgrounds,
+  premiumBackgrounds,
   initialBackground,
   isPremium,
   userEmail,
   onChange,
+  onBackgroundChange,
 }: BackgroundEditorProps) {
   const [bgImage, setBgImage] = useState(initialBackground.profileBgImage);
   const [bgRepeat, setBgRepeat] = useState(initialBackground.profileBgRepeat ?? "no-repeat");
   const [bgAttachment, setBgAttachment] = useState(initialBackground.profileBgAttachment ?? "scroll");
-  const [bgSize, setBgSize] = useState(initialBackground.profileBgSize ?? "cover");
+  const [bgSize, setBgSize] = useState(initialBackground.profileBgSize ?? "contain");
   const [bgPosition, setBgPosition] = useState(initialBackground.profileBgPosition ?? "center");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const contentId = useId();
+
+  // Notify parent of live background changes for real-time preview
+  useEffect(() => {
+    onBackgroundChange?.({
+      image: bgImage,
+      repeat: bgRepeat,
+      attachment: bgAttachment,
+      size: bgSize,
+      position: bgPosition,
+    });
+  }, [bgImage, bgRepeat, bgAttachment, bgSize, bgPosition, onBackgroundChange]);
 
   const isCustomUpload = bgImage?.includes("blob.vercel-storage.com") ?? false;
 
@@ -57,12 +163,12 @@ export function BackgroundEditor({
       } else {
         setBgImage(null);
         setBgRepeat("no-repeat");
-        setBgSize("cover");
+        setBgSize("contain");
         setBgPosition("center");
         setBgAttachment("scroll");
       }
       setError(null);
-      onChange();
+      onChange?.();
     },
     [onChange]
   );
@@ -91,7 +197,7 @@ export function BackgroundEditor({
 
         const { url } = await res.json();
         setBgImage(url);
-        onChange();
+        onChange?.();
       } catch {
         setError("Upload failed");
       } finally {
@@ -107,7 +213,7 @@ export function BackgroundEditor({
     try {
       await fetch("/api/profile-background", { method: "DELETE" });
       setBgImage(null);
-      onChange();
+      onChange?.();
     } catch {
       setError("Failed to remove background");
     } finally {
@@ -118,7 +224,7 @@ export function BackgroundEditor({
   const handleSettingChange = useCallback(
     (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLSelectElement>) => {
       setter(e.target.value);
-      onChange();
+      onChange?.();
     },
     [onChange]
   );
@@ -133,7 +239,7 @@ export function BackgroundEditor({
         className="flex w-full items-center justify-between p-4 text-left"
       >
         <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          Profile Background
+          Background
         </h2>
         <svg
           className={`h-4 w-4 text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
@@ -162,26 +268,32 @@ export function BackgroundEditor({
         >
           None
         </button>
-        {backgrounds.map((bg) => (
-          <button
-            key={bg.id}
-            type="button"
-            onClick={() => handlePresetSelect(bg)}
-            title={bg.name}
-            className={`h-12 w-12 overflow-hidden rounded-lg border transition-all ${
-              bgImage === bg.src
-                ? "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-900"
-                : "border-zinc-200 dark:border-zinc-700"
-            }`}
-          >
-            <img
-              src={bg.thumbSrc}
-              alt={bg.name}
-              className="h-full w-full object-cover"
-            />
-          </button>
-        ))}
+        <BackgroundGrid
+          backgrounds={backgrounds}
+          selectedSrc={bgImage}
+          onSelect={handlePresetSelect}
+        />
       </div>
+
+      {/* Premium backgrounds */}
+      {premiumBackgrounds.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5">
+            <PremiumCrown href="/premium" inline />
+            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              Premium Backgrounds
+            </span>
+          </div>
+          <div className={`flex flex-wrap gap-2 ${!isPremium ? "pointer-events-none opacity-50" : ""}`}>
+            <BackgroundGrid
+              backgrounds={premiumBackgrounds}
+              selectedSrc={bgImage}
+              onSelect={handlePresetSelect}
+              disabled={!isPremium}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Live preview */}
       {bgImage && (
@@ -241,13 +353,13 @@ export function BackgroundEditor({
               onChange={handleSettingChange(setBgRepeat)}
               className="w-full rounded-lg border border-zinc-200 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
             >
-              {VALID_BG_REPEAT.map((v) => (
-                <option key={v} value={v}>{v}</option>
+              {BG_REPEAT_OPTIONS.map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
               ))}
             </select>
           </label>
           <label className="space-y-1">
-            <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Attachment</span>
+            <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Movement</span>
             <select
               value={bgAttachment}
               onChange={handleSettingChange(setBgAttachment)}
@@ -259,14 +371,14 @@ export function BackgroundEditor({
             </select>
           </label>
           <label className="space-y-1">
-            <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Size</span>
+            <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Stretch</span>
             <select
-              value={bgSize}
+              value={bgSize === "auto" ? "contain" : bgSize}
               onChange={handleSettingChange(setBgSize)}
               className="w-full rounded-lg border border-zinc-200 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
             >
-              {VALID_BG_SIZE.map((v) => (
-                <option key={v} value={v}>{v}</option>
+              {BG_SIZE_OPTIONS.map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
               ))}
             </select>
           </label>

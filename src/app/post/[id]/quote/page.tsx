@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import { isProfileIncomplete } from "@/lib/require-profile";
 import { QuotePostPage } from "./quote-post-page";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 export const metadata: Metadata = {
   title: "Quote Post",
@@ -36,6 +38,7 @@ export default async function QuotePage({ params }: Props) {
       createdAt: true,
       author: {
         select: {
+          ...userThemeSelect,
           id: true,
           username: true,
           displayName: true,
@@ -43,6 +46,7 @@ export default async function QuotePage({ params }: Props) {
           image: true,
           avatar: true,
           profileFrameId: true,
+          usernameFont: true,
         },
       },
     },
@@ -50,16 +54,20 @@ export default async function QuotePage({ params }: Props) {
 
   if (!post || !post.author) notFound();
 
+  const theme = buildUserTheme(post.author);
+
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
-      <QuotePostPage
-        postId={post.id}
-        originalAuthor={post.author.username || "unknown"}
-        originalAuthorDisplayName={post.author.displayName || post.author.name || post.author.username || "Anonymous"}
-        originalAuthorAvatar={post.author.avatar || post.author.image}
-        originalContent={post.content}
-        originalCreatedAt={post.createdAt.toISOString()}
-      />
-    </main>
+    <ThemedPage {...(theme ?? NO_THEME)}>
+      <main className="mx-auto max-w-3xl px-4 py-6">
+        <QuotePostPage
+          postId={post.id}
+          originalAuthor={post.author.username || "unknown"}
+          originalAuthorDisplayName={post.author.displayName || post.author.name || post.author.username || "Anonymous"}
+          originalAuthorAvatar={post.author.avatar || post.author.image}
+          originalContent={post.content}
+          originalCreatedAt={post.createdAt.toISOString()}
+        />
+      </main>
+    </ThemedPage>
   );
 }

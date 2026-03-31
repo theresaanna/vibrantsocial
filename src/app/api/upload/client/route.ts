@@ -37,6 +37,7 @@ export async function POST(req: Request) {
       return {
         allowedContentTypes: ALLOWED_CONTENT_TYPES,
         maximumSizeInBytes: maxSize,
+        addRandomSuffix: true,
         tokenPayload: JSON.stringify({
           userId: session.user!.id,
           category: clientPayload,

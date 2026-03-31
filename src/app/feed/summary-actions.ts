@@ -4,8 +4,10 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { anthropic } from "@/lib/anthropic";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
-import { cached, cacheKeys } from "@/lib/cache";
+import { cached, getCached, cacheKeys, invalidate } from "@/lib/cache";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
+import { getUserPrefs } from "@/lib/user-prefs";
+import { getCachedCloseFriendOfIds } from "@/app/feed/close-friends-actions";
 
 const SUMMARY_POST_LIMIT = 50;
 const MAX_CONTENT_CHARS = 4000;
@@ -46,23 +48,13 @@ async function fetchMissedPosts(userId: string, since: Date, limit: number) {
 
   if (followingIds.length === 0) return [];
 
-  const [closeFriendOfRows, currentUser] = await Promise.all([
-    prisma.closeFriend.findMany({
-      where: { friendId: userId },
-      select: { userId: true },
-    }),
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { showNsfwContent: true, ageVerified: true },
-    }),
+  const [prefs, closeFriendOfIds] = await Promise.all([
+    getUserPrefs(userId),
+    getCachedCloseFriendOfIds(userId),
   ]);
 
-  const showNsfwContent = currentUser?.showNsfwContent ?? false;
-  const ageVerified = !!currentUser?.ageVerified;
-  const closeFriendAuthors = [
-    ...closeFriendOfRows.map((r: { userId: string }) => r.userId),
-    userId,
-  ];
+  const { showNsfwContent, ageVerified } = prefs;
+  const closeFriendAuthors = [...closeFriendOfIds, userId];
 
   return prisma.post.findMany({
     where: {
@@ -91,6 +83,12 @@ async function fetchMissedPosts(userId: string, since: Date, limit: number) {
   });
 }
 
+/** Strip lone surrogates that would produce invalid JSON. */
+function sanitizeText(str: string): string {
+  // eslint-disable-next-line no-control-regex
+  return str.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "\uFFFD");
+}
+
 function buildPostsText(posts: SummaryPost[]): string {
   let totalChars = 0;
   const lines: string[] = [];
@@ -100,9 +98,9 @@ function buildPostsText(posts: SummaryPost[]): string {
       post.author?.displayName || post.author?.username || "Someone";
     let text = extractTextFromLexicalJson(post.content);
     if (!text) text = "(media post)";
-    if (text.length > 200) text = text.slice(0, 200) + "...";
+    if (text.length > 200) text = [...text].slice(0, 200).join("") + "...";
 
-    const line = `@${name}: ${text} (${post._count.likes} likes, ${post._count.comments} comments, ${post._count.reposts} reposts)`;
+    const line = `@${sanitizeText(name)}: ${sanitizeText(text)} (${post._count.likes} likes, ${post._count.comments} comments, ${post._count.reposts} reposts)`;
 
     if (totalChars + line.length > MAX_CONTENT_CHARS) break;
     lines.push(line);
@@ -118,8 +116,10 @@ async function generateSummary(
 ): Promise<string> {
   const postsText = buildPostsText(posts);
 
+  console.log("[FeedSummary] Calling Anthropic API with", count, "posts,", postsText.length, "chars");
+
   const response = await anthropic.messages.create({
-    model: "claude-haiku-4-5",
+    model: "claude-haiku-4-5-20251001",
     max_tokens: 200,
     system:
       "You are a friendly social media assistant. Summarize what happened in a user's feed while they were away. Be brief, warm, and highlight the most interesting or popular posts. 2-4 sentences max.",
@@ -130,6 +130,8 @@ async function generateSummary(
       },
     ],
   });
+
+  console.log("[FeedSummary] Anthropic API responded successfully");
 
   const textBlock = response.content.find((block) => block.type === "text");
   if (!textBlock || textBlock.type !== "text") {
@@ -170,8 +172,16 @@ export async function fetchFeedSummary(
       return { summary: null, missedCount: 0, tooMany: false };
     }
 
-    // Always return the count and let the user choose to generate
-    return { summary: null, missedCount: posts.length, tooMany: posts.length > SUMMARY_POST_LIMIT };
+    // Return the cached summary if available, otherwise let the user generate on demand
+    const cachedSummary = await getCached<string>(
+      cacheKeys.feedSummary(session.user.id)
+    );
+
+    return {
+      summary: cachedSummary,
+      missedCount: posts.length,
+      tooMany: posts.length > SUMMARY_POST_LIMIT,
+    };
   } catch (error) {
     console.error("Feed summary error:", error);
     return { summary: null, missedCount: 0, tooMany: false };
@@ -185,26 +195,42 @@ export async function generateFeedSummaryOnDemand(
   if (!session?.user?.id) return null;
 
   try {
-    let posts = await fetchMissedPosts(
-      session.user.id,
-      new Date(lastSeenFeedAt),
-      SUMMARY_POST_LIMIT
+    return await cached(
+      cacheKeys.feedSummary(session.user.id),
+      async () => {
+        let posts = await fetchMissedPosts(
+          session.user.id!,
+          new Date(lastSeenFeedAt),
+          SUMMARY_POST_LIMIT
+        );
+
+        // Fall back to last 24 hours if no posts since last seen
+        if (posts.length === 0) {
+          posts = await fetchMissedPosts(
+            session.user.id!,
+            new Date(Date.now() - 24 * 60 * 60 * 1000),
+            SUMMARY_POST_LIMIT
+          );
+        }
+
+        if (posts.length === 0) return null;
+
+        return await generateSummary(posts, posts.length);
+      },
+      // Cache indefinitely (24h TTL as safety net); invalidated when new posts are created
+      86400
     );
-
-    // Fall back to last 24 hours if no posts since last seen
-    if (posts.length === 0) {
-      posts = await fetchMissedPosts(
-        session.user.id,
-        new Date(Date.now() - 24 * 60 * 60 * 1000),
-        SUMMARY_POST_LIMIT
-      );
-    }
-
-    if (posts.length === 0) return null;
-
-    return await generateSummary(posts, posts.length);
   } catch (error) {
-    console.error("Feed summary on-demand error:", error);
-    return null;
+    console.error("[FeedSummary] on-demand error:", error);
+    if (error instanceof Error) {
+      console.error("[FeedSummary] error name:", error.name);
+      console.error("[FeedSummary] error message:", error.message);
+    }
+    // Return a friendly fallback instead of null so the banner doesn't reset
+    return "Your friends have been posting! Scroll down to see what's new.";
   }
+}
+
+export async function invalidateFeedSummary(userId: string) {
+  await invalidate(cacheKeys.feedSummary(userId));
 }

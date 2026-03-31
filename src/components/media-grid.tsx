@@ -1,9 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useCallback, useEffect, useRef, useTransition } from "react";
 import Link from "next/link";
 import { extractMediaFromLexicalJson, type MediaItem } from "@/lib/lexical-text";
 import { FramedAvatar } from "@/components/framed-avatar";
+import { StyledName } from "@/components/styled-name";
 import { timeAgo } from "@/lib/time";
 import { fetchMediaFeedPage } from "@/app/feed/media-actions";
 
@@ -20,6 +22,7 @@ export interface MediaPost {
     image: string | null;
     avatar: string | null;
     profileFrameId: string | null;
+    usernameFont: string | null;
   } | null;
 }
 
@@ -50,11 +53,12 @@ function extractMediaGridItems(posts: MediaPost[]): MediaGridItem[] {
 
 function YouTubeThumbnail({ videoID }: { videoID: string }) {
   return (
-    <img
+    <Image
       src={`https://img.youtube.com/vi/${videoID}/hqdefault.jpg`}
       alt="YouTube video thumbnail"
-      className="h-full w-full object-cover"
-      loading="lazy"
+      fill
+      unoptimized
+      className="object-cover"
     />
   );
 }
@@ -64,11 +68,12 @@ function MediaThumbnail({ item }: { item: MediaGridItem }) {
 
   if (media.type === "image") {
     return (
-      <img
+      <Image
         src={media.src}
         alt={media.altText ?? "Post image"}
-        className="h-full w-full object-cover"
-        loading="lazy"
+        fill
+        unoptimized
+        className="object-cover"
       />
     );
   }
@@ -215,7 +220,7 @@ export function MediaGrid({ initialPosts, initialHasMore, fetchPage = fetchMedia
                       frameId={item.post.author.profileFrameId}
                     />
                     <span className="truncate text-xs font-medium text-white">
-                      {item.post.author.displayName ?? item.post.author.username}
+                      <StyledName fontId={item.post.author.usernameFont}>{item.post.author.displayName ?? item.post.author.username}</StyledName>
                     </span>
                   </>
                 )}

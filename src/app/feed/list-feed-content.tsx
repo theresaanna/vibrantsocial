@@ -4,7 +4,7 @@ import { FeedClient } from "@/components/feed-client";
 import { calculateAge } from "@/lib/age-gate";
 import { getPostInclude, getRepostInclude, PAGE_SIZE } from "./feed-queries";
 import { cached, cacheKeys } from "@/lib/cache";
-import { getCloseFriendIds } from "@/app/feed/close-friends-actions";
+import { getCloseFriendIds, getCachedCloseFriendOfIds } from "@/app/feed/close-friends-actions";
 import { isProfileIncomplete } from "@/lib/require-profile";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 
@@ -27,6 +27,7 @@ export async function ListFeedContent({ userId, listId }: { userId: string; list
         dateOfBirth: true,
         ageVerified: true,
         showGraphicByDefault: true,
+        hideSensitiveOverlay: true,
         showNsfwContent: true,
         tier: true,
       },
@@ -42,10 +43,7 @@ export async function ListFeedContent({ userId, listId }: { userId: string; list
       },
       60
     ),
-    prisma.closeFriend.findMany({
-      where: { friendId: userId },
-      select: { userId: true },
-    }).then((rows) => rows.map((r) => r.userId)),
+    getCachedCloseFriendOfIds(userId),
     getAllBlockRelatedIds(userId),
   ]);
 
@@ -57,6 +55,7 @@ export async function ListFeedContent({ userId, listId }: { userId: string; list
   const phoneVerified = !!currentUser.phoneVerified;
   const ageVerified = !!currentUser.ageVerified;
   const showGraphicByDefault = currentUser.showGraphicByDefault ?? false;
+  const hideSensitiveOverlay = currentUser.hideSensitiveOverlay ?? false;
   const showNsfwContent = currentUser.showNsfwContent ?? false;
   const isOldEnough = currentUser.dateOfBirth
     ? calculateAge(currentUser.dateOfBirth) >= 18
@@ -77,6 +76,7 @@ export async function ListFeedContent({ userId, listId }: { userId: string; list
         currentUserId={userId}
         ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
+        hideSensitiveOverlay={hideSensitiveOverlay}
         showNsfwContent={showNsfwContent}
         hasEmail={!!currentUser.email}
         isPremium={currentUser.tier === "premium"}
@@ -147,6 +147,7 @@ export async function ListFeedContent({ userId, listId }: { userId: string; list
       currentUserId={userId}
       ageVerified={ageVerified}
       showGraphicByDefault={showGraphicByDefault}
+      hideSensitiveOverlay={hideSensitiveOverlay}
       showNsfwContent={showNsfwContent}
       hasEmail={!!currentUser.email}
       isPremium={currentUser.tier === "premium"}

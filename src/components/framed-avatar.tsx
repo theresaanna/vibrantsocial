@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { getFrameById } from "@/lib/profile-frames";
 
 interface FramedAvatarProps {
@@ -36,10 +37,13 @@ export function FramedAvatar({
       style={{ width: size, height: size }}
     >
       {src ? (
-        <img
+        <Image
           src={src}
           alt={alt}
           referrerPolicy={referrerPolicy}
+          width={avatarSize}
+          height={avatarSize}
+          unoptimized
           className="rounded-full object-cover"
           style={{ width: avatarSize, height: avatarSize }}
         />
@@ -62,10 +66,12 @@ export function FramedAvatar({
         const ox = frame.offsetX ?? 0;
         const oy = frame.offsetY ?? 0;
         return (
-          <img
+          <Image
             src={frame.src}
             alt=""
             aria-hidden="true"
+            width={Math.round(size * scale)}
+            height={Math.round(size * scale)}
             className="pointer-events-none absolute"
             style={{
               width: size * scale,

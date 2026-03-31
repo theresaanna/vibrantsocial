@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { createEditor, type LexicalEditor } from "lexical";
 import { ImageNode } from "@/components/editor/nodes/ImageNode";
 import { YouTubeNode } from "@/components/editor/nodes/YouTubeNode";
-import { EquationNode } from "@/components/editor/nodes/EquationNode";
 import { PageBreakNode } from "@/components/editor/nodes/PageBreakNode";
 import { DateNode } from "@/components/editor/nodes/DateNode";
 import { StickyNoteNode } from "@/components/editor/nodes/StickyNoteNode";
@@ -15,7 +14,6 @@ import { MentionNode } from "@/components/editor/nodes/MentionNode";
 const allNodes = [
   ImageNode,
   YouTubeNode,
-  EquationNode,
   PageBreakNode,
   DateNode,
   StickyNoteNode,
@@ -133,40 +131,6 @@ describe("YouTubeNode", () => {
       expect(iframe).toBeTruthy();
       expect(iframe?.getAttribute("src")).toContain("dQw4w9WgXcQ");
     });
-  });
-});
-
-describe("EquationNode", () => {
-  let editor: LexicalEditor;
-  beforeEach(() => {
-    editor = createTestEditor();
-  });
-
-  it("has correct type", () => {
-    expect(EquationNode.getType()).toBe("equation");
-  });
-
-  it("serializes inline and block equations", () => {
-    const inlineJson = withEditor(editor, () => {
-      return new EquationNode("E = mc^2", true).exportJSON();
-    });
-    const blockJson = withEditor(editor, () => {
-      return new EquationNode("\\sum_{i=0}^n x_i", false).exportJSON();
-    });
-
-    expect(inlineJson.inline).toBe(true);
-    expect(inlineJson.equation).toBe("E = mc^2");
-
-    expect(blockJson.inline).toBe(false);
-    expect(blockJson.equation).toBe("\\sum_{i=0}^n x_i");
-  });
-
-  it("can read equation text", () => {
-    const eq = withEditor(editor, () => {
-      const node = new EquationNode("x^2", true);
-      return node.getEquation();
-    });
-    expect(eq).toBe("x^2");
   });
 });
 
@@ -368,12 +332,37 @@ describe("VideoNode", () => {
     expect(json.src).toBe("https://example.com/video.mp4");
     expect(json.fileName).toBe("video.mp4");
     expect(json.mimeType).toBe("video/mp4");
+    expect(json.width).toBe("inherit");
+    expect(json.height).toBe("inherit");
 
     const restoredJson = withEditor(editor, () => {
       const restored = VideoNode.importJSON(json);
       return restored.exportJSON();
     });
     expect(restoredJson).toEqual(json);
+  });
+
+  it("serializes width and height when set", () => {
+    const json = withEditor(editor, () => {
+      const node = new VideoNode(
+        "https://example.com/video.mp4",
+        "video.mp4",
+        "video/mp4",
+        400,
+        225
+      );
+      return node.exportJSON();
+    });
+
+    expect(json.width).toBe(400);
+    expect(json.height).toBe(225);
+
+    const restoredJson = withEditor(editor, () => {
+      const restored = VideoNode.importJSON(json);
+      return restored.exportJSON();
+    });
+    expect(restoredJson.width).toBe(400);
+    expect(restoredJson.height).toBe(225);
   });
 
   it("exports to DOM with video element", () => {
@@ -390,6 +379,21 @@ describe("VideoNode", () => {
         "https://example.com/video.mp4"
       );
       expect((element as HTMLElement).getAttribute("controls")).toBe("true");
+    });
+  });
+
+  it("exports to DOM with width and height styles when set", () => {
+    withEditor(editor, () => {
+      const node = new VideoNode(
+        "https://example.com/video.mp4",
+        "video.mp4",
+        "video/mp4",
+        400,
+        225
+      );
+      const { element } = node.exportDOM();
+      expect((element as HTMLElement).style.width).toBe("400px");
+      expect((element as HTMLElement).style.height).toBe("225px");
     });
   });
 });
@@ -505,20 +509,17 @@ describe("MentionNode", () => {
 describe("editorNodes registry", () => {
   it("exports all node types", async () => {
     const { editorNodes } = await import("@/components/editor/nodes");
-    expect(editorNodes.length).toBeGreaterThanOrEqual(14);
+    expect(editorNodes.length).toBeGreaterThanOrEqual(11);
 
     const types = editorNodes.map((n) => n.getType());
     expect(types).toContain("image");
     expect(types).toContain("youtube");
-    expect(types).toContain("equation");
     expect(types).toContain("page-break");
     expect(types).toContain("date");
-    expect(types).toContain("sticky-note");
     expect(types).toContain("poll");
 
     expect(types).toContain("heading");
     expect(types).toContain("quote");
-    expect(types).toContain("code");
     expect(types).toContain("link");
     expect(types).toContain("table");
     expect(types).toContain("horizontalrule");
