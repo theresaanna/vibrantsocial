@@ -110,7 +110,7 @@ export function ThemePreview({
 
             {bio ? (
               <div
-                className="mt-3 text-sm"
+                className="mt-3 max-h-[25vh] overflow-hidden text-sm"
                 style={{ color: colors.profileSecondaryColor }}
               >
                 <BioContent content={bio} />
