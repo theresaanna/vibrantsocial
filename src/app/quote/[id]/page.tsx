@@ -101,7 +101,7 @@ export default async function QuotePage({ params }: Props) {
   const repost = await prisma.repost.findUnique({
     where: { id },
     include: {
-      user: { select: repostUserSelect },
+      user: { select: { ...repostUserSelect, ...userThemeSelect } },
       post: {
         include: getPostInclude(userId ?? ""),
       },
@@ -146,14 +146,7 @@ export default async function QuotePage({ params }: Props) {
     redirect("/login");
   }
 
-  const originalAuthorId = repost.post?.author?.id;
-  const originalAuthor = originalAuthorId
-    ? await prisma.user.findUnique({
-        where: { id: originalAuthorId },
-        select: userThemeSelect,
-      })
-    : null;
-  const theme = originalAuthor ? buildUserTheme(originalAuthor) : undefined;
+  const theme = repost.user ? buildUserTheme(repost.user) : undefined;
 
   const { hasCustomTheme } = theme ?? NO_THEME;
 
