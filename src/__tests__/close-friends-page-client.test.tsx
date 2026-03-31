@@ -59,6 +59,8 @@ const makeFriend = (id: string, username: string, displayName: string | null = n
   name: displayName,
   avatar: null,
   image: null,
+  profileFrameId: null,
+  usernameFont: null,
 });
 
 const defaultProps = {
@@ -69,6 +71,7 @@ const defaultProps = {
   ageVerified: false,
   showGraphicByDefault: false,
   showNsfwContent: false,
+  hideSensitiveOverlay: false,
   closeFriends: [
     {
       id: "cf1",

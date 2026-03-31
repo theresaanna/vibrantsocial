@@ -7,6 +7,8 @@ import { QuotePageClient } from "./quote-page-client";
 import { getPostInclude } from "@/app/feed/feed-queries";
 import { extractContentFromLexicalJson } from "@/lib/lexical-text";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -58,6 +60,7 @@ export default async function QuotePage({ params }: Props) {
   let phoneVerified = false;
   let ageVerified = false;
   let showGraphicByDefault = false;
+  let hideSensitiveOverlay = false;
   let showNsfwContent = false;
 
   if (userId) {
@@ -70,6 +73,7 @@ export default async function QuotePage({ params }: Props) {
         dateOfBirth: true,
         ageVerified: true,
         showGraphicByDefault: true,
+        hideSensitiveOverlay: true,
         showNsfwContent: true,
       },
     });
@@ -79,6 +83,7 @@ export default async function QuotePage({ params }: Props) {
     phoneVerified = !!currentUser?.phoneVerified;
     ageVerified = !!currentUser?.ageVerified;
     showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
+    hideSensitiveOverlay = currentUser?.hideSensitiveOverlay ?? false;
     showNsfwContent = currentUser?.showNsfwContent ?? false;
   }
 
@@ -131,16 +136,29 @@ export default async function QuotePage({ params }: Props) {
     redirect("/login");
   }
 
+  const originalAuthorId = repost.post?.author?.id;
+  const originalAuthor = originalAuthorId
+    ? await prisma.user.findUnique({
+        where: { id: originalAuthorId },
+        select: userThemeSelect,
+      })
+    : null;
+  const theme = originalAuthor ? buildUserTheme(originalAuthor) : undefined;
+
+  const { hasCustomTheme } = theme ?? NO_THEME;
+
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...(theme ?? NO_THEME)}>
       <QuotePageClient
+        hasCustomTheme={hasCustomTheme}
         repost={JSON.parse(JSON.stringify(repost))}
         currentUserId={userId}
         phoneVerified={phoneVerified}
         ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
+        hideSensitiveOverlay={hideSensitiveOverlay}
         showNsfwContent={showNsfwContent}
       />
-    </main>
+    </ThemedPage>
   );
 }

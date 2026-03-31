@@ -6,6 +6,8 @@ import { isProfileIncomplete } from "@/lib/require-profile";
 import { PostPageClient } from "@/app/post/[id]/post-page-client";
 import { extractContentFromLexicalJson } from "@/lib/lexical-text";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 interface Props {
   params: Promise<{ username: string; slug: string }>;
@@ -75,6 +77,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
   let phoneVerified = false;
   let ageVerified = false;
   let showGraphicByDefault = false;
+  let hideSensitiveOverlay = false;
   let showNsfwContent = false;
 
   if (userId) {
@@ -87,6 +90,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
         dateOfBirth: true,
         ageVerified: true,
         showGraphicByDefault: true,
+        hideSensitiveOverlay: true,
         showNsfwContent: true,
       },
     });
@@ -97,6 +101,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
     phoneVerified = !!currentUser?.phoneVerified;
     ageVerified = !!currentUser?.ageVerified;
     showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
+    hideSensitiveOverlay = currentUser?.hideSensitiveOverlay ?? false;
     showNsfwContent = currentUser?.showNsfwContent ?? false;
   }
 
@@ -105,13 +110,14 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
     include: {
       author: {
         select: {
-          id: true,
+          ...userThemeSelect,
           username: true,
           displayName: true,
           name: true,
           image: true,
           avatar: true,
           profileFrameId: true,
+          usernameFont: true,
           isProfilePublic: true,
         },
       },
@@ -148,14 +154,23 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
             select: {
               username: true,
               displayName: true,
+              usernameFont: true,
             },
           },
         },
+      },
+      marketplacePost: {
+        select: { id: true },
       },
     },
   });
 
   if (!post) notFound();
+
+  // Redirect marketplace posts to their dedicated URL
+  if (post.marketplacePost) {
+    redirect(`/${username}/marketplace/${slug}`);
+  }
 
   // Redirect unauthenticated visitors if author's profile is private
   if (post.author && !post.author.isProfilePublic && !userId)
@@ -195,18 +210,22 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
     }
   }
 
+  const theme = post.author ? buildUserTheme(post.author) : undefined;
+
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...(theme ?? NO_THEME)}>
       <PostPageClient
         post={post}
         currentUserId={userId}
         phoneVerified={phoneVerified}
         ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
+        hideSensitiveOverlay={hideSensitiveOverlay}
         showNsfwContent={showNsfwContent}
         highlightCommentId={commentId ?? null}
         wallPost={post.wallPost}
+        marketplacePostId={undefined}
       />
-    </main>
+    </ThemedPage>
   );
 }

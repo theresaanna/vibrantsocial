@@ -60,6 +60,9 @@ export async function PUT(request: NextRequest) {
       where: { id: user.id },
       data: { ageVerified: new Date() },
     });
+
+    const { invalidateUserPrefs } = await import("@/lib/user-prefs");
+    await invalidateUserPrefs(user.id);
   }
 
   // For denied status, we don't take action — user can retry

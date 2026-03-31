@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { UserSearch } from "./user-search";
 import { FramedAvatar } from "@/components/framed-avatar";
+import { StyledName } from "@/components/styled-name";
 import {
   updateGroupName,
   addGroupMembers,
@@ -189,7 +190,7 @@ export function GroupChatSettings({
 
               const nameEl = (
                 <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                  {name}
+                  <StyledName fontId={user.usernameFont}>{name}</StyledName>
                   {isMe && (
                     <span className="ml-1 text-xs text-zinc-400">(you)</span>
                   )}

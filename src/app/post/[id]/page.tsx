@@ -65,6 +65,7 @@ export default async function PostPage({ params, searchParams }: Props) {
   let phoneVerified = false;
   let ageVerified = false;
   let showGraphicByDefault = false;
+  let hideSensitiveOverlay = false;
   let showNsfwContent = false;
 
   if (userId) {
@@ -77,6 +78,7 @@ export default async function PostPage({ params, searchParams }: Props) {
         dateOfBirth: true,
         ageVerified: true,
         showGraphicByDefault: true,
+        hideSensitiveOverlay: true,
         showNsfwContent: true,
       },
     });
@@ -86,6 +88,7 @@ export default async function PostPage({ params, searchParams }: Props) {
     phoneVerified = !!currentUser?.phoneVerified;
     ageVerified = !!currentUser?.ageVerified;
     showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
+    hideSensitiveOverlay = currentUser?.hideSensitiveOverlay ?? false;
     showNsfwContent = currentUser?.showNsfwContent ?? false;
   }
 
@@ -139,6 +142,7 @@ export default async function PostPage({ params, searchParams }: Props) {
               id: true,
               username: true,
               displayName: true,
+              usernameFont: true,
               profileBgColor: true,
               profileTextColor: true,
               profileLinkColor: true,
@@ -153,12 +157,25 @@ export default async function PostPage({ params, searchParams }: Props) {
           },
         },
       },
+      marketplacePost: {
+        select: { id: true },
+      },
       // Comments are lazy-loaded by CommentSection via fetchComments
       // which builds the full nested tree (not just 2 levels)
     },
   });
 
   if (!post) notFound();
+
+  // Redirect marketplace posts to their dedicated URL
+  if (post.marketplacePost) {
+    if (post.slug && post.author?.username) {
+      const queryString = commentId ? `?commentId=${commentId}` : "";
+      permanentRedirect(`/${post.author.username}/marketplace/${post.slug}${queryString}`);
+    }
+    const queryString = commentId ? `?commentId=${commentId}` : "";
+    permanentRedirect(`/marketplace/${post.id}${queryString}`);
+  }
 
   // Redirect to slug-based URL if available
   if (post.slug && post.author?.username) {
@@ -287,12 +304,14 @@ export default async function PostPage({ params, searchParams }: Props) {
         phoneVerified={phoneVerified}
         ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
+        hideSensitiveOverlay={hideSensitiveOverlay}
         showNsfwContent={showNsfwContent}
         highlightCommentId={commentId ?? null}
         wallPost={post.wallPost}
         wallThemeStyle={wallThemeStyle}
         wallBgImageStyle={wallBgImageStyle}
         hasWallOwnerTheme={hasWallOwnerTheme || !!wallOwner?.profileBgImage}
+        marketplacePostId={undefined}
       />
     </main>
   );

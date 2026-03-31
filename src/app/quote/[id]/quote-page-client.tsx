@@ -12,6 +12,7 @@ interface RepostUser {
 }
 
 interface QuotePageClientProps {
+  hasCustomTheme: boolean;
   repost: {
     id: string;
     content: string | null;
@@ -69,25 +70,29 @@ interface QuotePageClientProps {
   phoneVerified: boolean;
   ageVerified: boolean;
   showGraphicByDefault: boolean;
+  hideSensitiveOverlay: boolean;
   showNsfwContent: boolean;
 }
 
 export function QuotePageClient({
+  hasCustomTheme,
   repost,
   currentUserId,
   phoneVerified,
   ageVerified,
   showGraphicByDefault,
+  hideSensitiveOverlay,
   showNsfwContent,
 }: QuotePageClientProps) {
   return (
-    <div className="rounded-2xl bg-white shadow-lg dark:bg-zinc-900">
+    <div className={`rounded-2xl shadow-lg ${hasCustomTheme ? "profile-container" : "bg-white dark:bg-zinc-900"}`}>
       <RepostCard
         repost={repost as any}
         currentUserId={currentUserId}
         phoneVerified={phoneVerified}
         ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
+        hideSensitiveOverlay={hideSensitiveOverlay}
         showNsfwContent={showNsfwContent}
       />
     </div>

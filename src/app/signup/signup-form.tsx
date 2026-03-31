@@ -3,6 +3,7 @@
 import { useActionState, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { signup } from "./actions";
+import { TurnstileWidget } from "@/components/turnstile-widget";
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
@@ -203,6 +204,8 @@ export function SignupForm({ referralCode }: { referralCode?: string }) {
           </Link>
         </label>
       </div>
+
+      <TurnstileWidget />
 
       <button
         type="submit"

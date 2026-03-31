@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { upload as blobUpload } from "@vercel/blob/client";
 import { VoiceRecorder } from "./voice-recorder";
 import { getChatFileLimitsHint, getLimitsForTier, type UserTier } from "@/lib/limits";
+import { useTypeahead } from "@/hooks/use-typeahead";
+import { TypeaheadDropdown } from "@/components/typeahead-dropdown";
 import type { MessageData } from "@/types/chat";
 
 export interface MediaAttachment {
@@ -54,6 +56,13 @@ export function MessageInput({
   const limits = useMemo(() => getLimitsForTier(tier), [tier]);
 
   const hasMedia = selectedFiles.length > 0 || !!voiceBlob;
+
+  const setValueStable = useCallback((v: string) => setValue(v), []);
+  const typeahead = useTypeahead({
+    value,
+    setValue: setValueStable,
+    inputRef: textareaRef as React.RefObject<HTMLTextAreaElement | null>,
+  });
 
   // Focus textarea when replying starts
   useEffect(() => {
@@ -167,6 +176,9 @@ export function MessageInput({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Let typeahead handle key events first (Enter, Arrow, Escape, Tab)
+    if (typeahead.handleKeyDown(e)) return;
+
     if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       handleSubmit();
@@ -381,6 +393,8 @@ export function MessageInput({
           ref={textareaRef}
           value={value}
           onChange={handleChange}
+          onInput={typeahead.detectTrigger}
+          onClick={typeahead.detectTrigger}
           onKeyDown={handleKeyDown}
           placeholder="Type a message..."
           disabled={disabled || isSending}
@@ -441,6 +455,20 @@ export function MessageInput({
         >
           {getChatFileLimitsHint(limits)}
         </p>
+      )}
+
+      {/* @mention and #hashtag typeahead dropdown */}
+      {typeahead.isOpen && (
+        <TypeaheadDropdown
+          mode={typeahead.mode}
+          mentionResults={typeahead.mentionResults}
+          tagResults={typeahead.tagResults}
+          selectedIndex={typeahead.selectedIndex}
+          dropdownPos={typeahead.dropdownPos}
+          dropdownRef={typeahead.dropdownRef}
+          insertMention={typeahead.insertMention}
+          insertHashtag={typeahead.insertHashtag}
+        />
       )}
     </div>
   );

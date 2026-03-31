@@ -105,4 +105,103 @@ describe("BlockButton", () => {
     render(<BlockButton userId="u1" isBlocked={false} />);
     expect(screen.getByTestId("profile-block-button")).toBeInTheDocument();
   });
+
+  it("has hidden blockByPhone input defaulting to false", () => {
+    const { container } = render(<BlockButton userId="u1" isBlocked={false} />);
+    const hidden = container.querySelector("input[name='blockByPhone']");
+    expect(hidden).toBeInTheDocument();
+    expect(hidden).toHaveAttribute("value", "false");
+  });
+});
+
+describe("BlockButton phone blocking option", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("does not show phone option when hasVerifiedPhone is false", async () => {
+    const user = userEvent.setup();
+    render(<BlockButton userId="u1" isBlocked={false} hasVerifiedPhone={false} />);
+
+    await user.click(screen.getByTestId("profile-block-button"));
+
+    expect(screen.queryByTestId("block-by-phone-option")).not.toBeInTheDocument();
+  });
+
+  it("does not show phone option when hasVerifiedPhone not provided", async () => {
+    const user = userEvent.setup();
+    render(<BlockButton userId="u1" isBlocked={false} />);
+
+    await user.click(screen.getByTestId("profile-block-button"));
+
+    expect(screen.queryByTestId("block-by-phone-option")).not.toBeInTheDocument();
+  });
+
+  it("does not show phone option when unblocking (even if hasVerifiedPhone)", async () => {
+    const user = userEvent.setup();
+    render(<BlockButton userId="u1" isBlocked={true} hasVerifiedPhone={true} />);
+
+    await user.click(screen.getByTestId("profile-block-button"));
+
+    expect(screen.queryByTestId("block-by-phone-option")).not.toBeInTheDocument();
+  });
+
+  it("shows phone option checkbox when blocking and target has verified phone", async () => {
+    const user = userEvent.setup();
+    render(<BlockButton userId="u1" isBlocked={false} hasVerifiedPhone={true} />);
+
+    await user.click(screen.getByTestId("profile-block-button"));
+
+    expect(screen.getByTestId("block-by-phone-option")).toBeInTheDocument();
+    expect(screen.getByTestId("block-by-phone-checkbox")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Also block all current and future accounts using the same phone number/)
+    ).toBeInTheDocument();
+  });
+
+  it("checkbox is unchecked by default", async () => {
+    const user = userEvent.setup();
+    render(<BlockButton userId="u1" isBlocked={false} hasVerifiedPhone={true} />);
+
+    await user.click(screen.getByTestId("profile-block-button"));
+
+    const checkbox = screen.getByTestId("block-by-phone-checkbox");
+    expect(checkbox).not.toBeChecked();
+  });
+
+  it("updates blockByPhone hidden input when checkbox is toggled", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <BlockButton userId="u1" isBlocked={false} hasVerifiedPhone={true} />
+    );
+
+    await user.click(screen.getByTestId("profile-block-button"));
+
+    // Initially false
+    const hidden = container.querySelector("input[name='blockByPhone']") as HTMLInputElement;
+    expect(hidden.value).toBe("false");
+
+    // Check the checkbox
+    await user.click(screen.getByTestId("block-by-phone-checkbox"));
+    expect(hidden.value).toBe("true");
+
+    // Uncheck
+    await user.click(screen.getByTestId("block-by-phone-checkbox"));
+    expect(hidden.value).toBe("false");
+  });
+
+  it("resets checkbox when dialog is reopened", async () => {
+    const user = userEvent.setup();
+    render(<BlockButton userId="u1" isBlocked={false} hasVerifiedPhone={true} />);
+
+    // Open, check, cancel
+    await user.click(screen.getByTestId("profile-block-button"));
+    await user.click(screen.getByTestId("block-by-phone-checkbox"));
+    expect(screen.getByTestId("block-by-phone-checkbox")).toBeChecked();
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    // Reopen — should be unchecked
+    await user.click(screen.getByTestId("profile-block-button"));
+    expect(screen.getByTestId("block-by-phone-checkbox")).not.toBeChecked();
+  });
 });

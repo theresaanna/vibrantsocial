@@ -17,6 +17,7 @@ interface MediaPost {
     image: string | null;
     avatar: string | null;
     profileFrameId: string | null;
+    usernameFont: string | null;
   } | null;
 }
 

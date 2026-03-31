@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { apiLimiter, checkRateLimit } from "@/lib/rate-limit";
 
 const REDEEM_COST = 500;
 const PREMIUM_DAYS = 30;
@@ -10,6 +11,9 @@ export async function POST() {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const rateLimited = await checkRateLimit(apiLimiter, `redeem-stars:${session.user.id}`);
+  if (rateLimited) return rateLimited;
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
