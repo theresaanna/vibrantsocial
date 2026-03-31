@@ -145,6 +145,7 @@ export async function createNotificationSafe(params: {
   messageId?: string;
   repostId?: string;
   tagId?: string;
+  userListId?: string;
 }): Promise<void> {
   try {
     await createNotification(params);

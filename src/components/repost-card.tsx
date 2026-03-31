@@ -477,6 +477,7 @@ export function RepostCard({
                 repostId={repost.id}
                 phoneVerified={phoneVerified}
                 isAuthenticated={!!currentUserId}
+                currentUserId={currentUserId}
                 onCommentCountChange={setCommentCount}
               />
             </div>

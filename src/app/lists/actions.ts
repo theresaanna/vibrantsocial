@@ -170,6 +170,7 @@ export async function addMemberToList(
     type: "LIST_ADD",
     actorId: session.user.id,
     targetUserId: userId,
+    userListId: listId,
   });
 
   await invalidate(cacheKeys.userListMembers(listId));
@@ -271,12 +272,13 @@ export async function addUserToMultipleLists(
   }
   await Promise.all(operations);
 
-  // Notify user if they were added to any new lists
-  if (toAdd.length > 0) {
+  // Notify user for each new list they were added to
+  for (const listId of toAdd) {
     await createNotificationSafe({
       type: "LIST_ADD",
       actorId: session.user.id,
       targetUserId,
+      userListId: listId,
     });
   }
 
@@ -612,6 +614,7 @@ export async function addCollaboratorToList(
     type: "LIST_COLLABORATOR_ADD",
     actorId: session.user.id,
     targetUserId: userId,
+    userListId: listId,
   });
 
   await invalidate(cacheKeys.userListCollaborators(listId));

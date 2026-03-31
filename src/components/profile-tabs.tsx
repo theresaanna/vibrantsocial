@@ -15,7 +15,7 @@ interface ProfileTabsProps {
 }
 
 export function ProfileTabs({ username, activeTab, hasCustomTheme, showMediaTab, showWallTab, showSensitiveTab, showNsfwTab, showGraphicTab, showMarketplaceTab }: ProfileTabsProps) {
-  const baseClass = "px-5 py-2.5 rounded-lg text-sm font-semibold transition-all";
+  const baseClass = "shrink-0 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all";
 
   const activeClass = hasCustomTheme
     ? ""
@@ -41,7 +41,7 @@ export function ProfileTabs({ username, activeTab, hasCustomTheme, showMediaTab,
 
   return (
     <div className="mt-6">
-      <div className={`flex flex-wrap gap-2${hasCustomTheme ? " profile-tabs-bar" : ""}`}>
+      <div className={`flex gap-2 overflow-x-auto${hasCustomTheme ? " profile-tabs-bar" : ""}`}>
         <Link
           href={`/${username}`}
           className={`${baseClass} ${activeTab === "posts" ? activeClass : inactiveClass}`}

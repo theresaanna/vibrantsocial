@@ -145,7 +145,7 @@ export function NavLinks({ username }: { username?: string | null }) {
     return pathname === link.href;
   }
 
-  const baseClass = "rounded-lg p-1.5 transition-colors";
+  const baseClass = "rounded-lg p-1 sm:p-1.5 transition-colors";
   const inactiveText = "text-zinc-600 dark:text-zinc-400";
 
   return (
@@ -169,7 +169,7 @@ export function NavLinks({ username }: { username?: string | null }) {
 }
 
 function ProfileLink({ link, isActive, className }: { link: NavLink; isActive: boolean; className?: string }) {
-  const baseClass = "rounded-lg p-1.5 transition-colors";
+  const baseClass = "rounded-lg p-1 sm:p-1.5 transition-colors";
   const inactiveText = "text-zinc-600 dark:text-zinc-400";
 
   return (
