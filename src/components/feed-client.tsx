@@ -146,7 +146,7 @@ export function FeedClient({
         <FeedSummaryBanner lastSeenFeedAt={lastSeenFeedAt} />
       )}
       {!listId && (
-        <FriendsStatusesWidget statuses={friendStatuses} />
+        <FriendsStatusesWidget statuses={friendStatuses} currentUserId={currentUserId} />
       )}
       {!listId && activeView === "posts" && (
         <div className="mb-4 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 dark:border-indigo-800 dark:bg-indigo-950/50">

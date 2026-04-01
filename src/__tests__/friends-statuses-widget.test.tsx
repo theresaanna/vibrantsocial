@@ -7,8 +7,8 @@ vi.mock("@/components/framed-avatar", () => ({
 }));
 
 vi.mock("@/components/styled-name", () => ({
-  StyledName: ({ displayName, username }: { displayName?: string | null; username?: string | null }) => (
-    <span>{displayName || username}</span>
+  StyledName: ({ children }: { children: React.ReactNode }) => (
+    <span>{children}</span>
   ),
 }));
 
@@ -16,17 +16,21 @@ vi.mock("@/lib/time", () => ({
   timeAgo: () => "2m ago",
 }));
 
+let capturedOnStatusCreated: ((status: unknown) => void) | undefined;
 vi.mock("@/components/status-composer", () => ({
-  StatusComposer: () => <div data-testid="status-composer">composer</div>,
+  StatusComposer: ({ onStatusCreated }: { onStatusCreated?: (s: unknown) => void }) => {
+    capturedOnStatusCreated = onStatusCreated;
+    return <div data-testid="status-composer">composer</div>;
+  },
 }));
 
-function makeStatus(id: string, username: string, content: string) {
+function makeStatus(id: string, username: string, content: string, userId?: string) {
   return {
     id,
     content,
     createdAt: new Date().toISOString(),
     user: {
-      id: `uid-${username}`,
+      id: userId ?? `uid-${username}`,
       username,
       displayName: username,
       name: null,
@@ -41,6 +45,7 @@ function makeStatus(id: string, username: string, content: string) {
 describe("FriendsStatusesWidget", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    capturedOnStatusCreated = undefined;
   });
 
   afterEach(() => {
@@ -64,8 +69,8 @@ describe("FriendsStatusesWidget", () => {
 
     expect(screen.getByText("Feeling great!")).toBeDefined();
     expect(screen.getByText("Working hard")).toBeDefined();
-    expect(screen.getByText("alice")).toBeDefined();
-    expect(screen.getByText("bob")).toBeDefined();
+    expect(screen.getAllByText("alice").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("bob").length).toBeGreaterThan(0);
   });
 
   it("shows View all link pointing to /statuses", () => {
@@ -85,21 +90,17 @@ describe("FriendsStatusesWidget", () => {
       makeStatus("s4", "dave", "Status 4"),
     ];
 
-    // Ensure document.hidden is false so rotation fires
     Object.defineProperty(document, "hidden", { value: false, configurable: true });
 
     render(<FriendsStatusesWidget statuses={statuses} />);
 
-    // Initially shows first 2
     expect(screen.getByText("Status 1")).toBeDefined();
     expect(screen.getByText("Status 2")).toBeDefined();
 
-    // Advance timer to trigger rotation
     act(() => {
       vi.advanceTimersByTime(6_000);
     });
 
-    // Now shows next 2
     expect(screen.getByText("Status 3")).toBeDefined();
     expect(screen.getByText("Status 4")).toBeDefined();
   });
@@ -119,8 +120,38 @@ describe("FriendsStatusesWidget", () => {
       vi.advanceTimersByTime(6_000);
     });
 
-    // Should still show the first 2 (didn't rotate)
     expect(screen.getByText("Status 1")).toBeDefined();
     expect(screen.getByText("Status 2")).toBeDefined();
+  });
+
+  it("shows own status immediately after posting via callback", () => {
+    const statuses = [makeStatus("s1", "alice", "Friend status")];
+
+    render(<FriendsStatusesWidget statuses={statuses} currentUserId="me" />);
+
+    expect(screen.getByText("Friend status")).toBeDefined();
+
+    // Simulate StatusComposer calling onStatusCreated
+    act(() => {
+      capturedOnStatusCreated?.(makeStatus("own1", "me", "My new status", "me"));
+    });
+
+    // Own status should appear at the top
+    expect(screen.getByText("My new status")).toBeDefined();
+  });
+
+  it("bolds own statuses", () => {
+    const statuses = [
+      makeStatus("s1", "me", "My status", "current-user"),
+      makeStatus("s2", "alice", "Friend status"),
+    ];
+
+    render(<FriendsStatusesWidget statuses={statuses} currentUserId="current-user" />);
+
+    const ownStatus = screen.getByText("My status");
+    expect(ownStatus.className).toContain("font-bold");
+
+    const friendStatus = screen.getByText("Friend status");
+    expect(friendStatus.className).not.toContain("font-bold");
   });
 });

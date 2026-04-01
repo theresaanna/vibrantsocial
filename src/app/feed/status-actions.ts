@@ -61,6 +61,37 @@ export async function setStatus(
 }
 
 // ---------------------------------------------------------------------------
+// Set status and return data (for optimistic UI)
+// ---------------------------------------------------------------------------
+
+export async function setStatusAndReturn(
+  content: string,
+): Promise<FriendStatusData | null> {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+  const userId = session.user.id;
+
+  const trimmed = content.trim();
+  if (!trimmed || trimmed.length > MAX_STATUS_LENGTH) return null;
+
+  const status = await prisma.userStatus.create({
+    data: { userId, content: trimmed },
+    include: { user: { select: USER_PROFILE_SELECT } },
+  });
+
+  await invalidate(cacheKeys.friendStatuses(userId));
+  revalidatePath("/feed");
+  revalidatePath("/statuses");
+
+  return {
+    id: status.id,
+    content: status.content,
+    createdAt: status.createdAt.toISOString(),
+    user: status.user,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Delete status
 // ---------------------------------------------------------------------------
 
