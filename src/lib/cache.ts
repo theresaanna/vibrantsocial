@@ -100,4 +100,5 @@ export const cacheKeys = {
   userConversations: (userId: string) => `user:${userId}:conversations`,
   linkedAccountNotifCounts: (userId: string) => `user:${userId}:linked-notif-counts`,
   linkedAccounts: (userId: string) => `user:${userId}:linked-accounts`,
+  friendStatuses: (userId: string) => `user:${userId}:friend-statuses`,
 } as const;

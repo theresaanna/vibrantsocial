@@ -9,9 +9,11 @@ import { FeedList } from "@/components/feed-list";
 import { fetchSinglePost, fetchNewFeedItems } from "@/app/feed/feed-actions";
 import { fetchNewListFeedItems } from "@/app/lists/actions";
 import { FeedSummaryBanner } from "@/components/feed-summary-banner";
+import { FriendsStatusesWidget } from "@/components/friends-statuses-widget";
 import { FeedViewToggleWrapper } from "@/components/feed-view-toggle-wrapper";
 import { MediaFeedClientContent } from "@/components/media-feed-client-content";
 import type { FeedView } from "@/components/feed-view-toggle";
+import type { FriendStatusData } from "@/app/feed/status-actions";
 
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -35,6 +37,7 @@ interface FeedClientProps {
   lastSeenFeedAt?: string | null;
   activeView?: FeedView;
   fetchPage?: (cursor: string) => Promise<{ items: FeedItem[]; hasMore: boolean }>;
+  friendStatuses?: FriendStatusData[];
 }
 
 function FeedMarketplaceSubscription({
@@ -67,6 +70,7 @@ export function FeedClient({
   lastSeenFeedAt,
   activeView = "posts",
   fetchPage,
+  friendStatuses = [],
 }: FeedClientProps) {
   const isAblyReady = useAblyReady();
   const [newItems, setNewItems] = useState<FeedItem[]>([]);
@@ -140,6 +144,9 @@ export function FeedClient({
       <AddEmailBanner hasEmail={hasEmail} />
       {!listId && lastSeenFeedAt && (
         <FeedSummaryBanner lastSeenFeedAt={lastSeenFeedAt} />
+      )}
+      {!listId && friendStatuses.length > 0 && (
+        <FriendsStatusesWidget statuses={friendStatuses} />
       )}
       {!listId && activeView === "posts" && (
         <div className="mb-4 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 dark:border-indigo-800 dark:bg-indigo-950/50">
