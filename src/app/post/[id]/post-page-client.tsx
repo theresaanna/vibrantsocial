@@ -55,11 +55,10 @@ export function PostPageClient({
   marketplaceData,
 }: PostPageClientProps) {
   return (
-    <div
-      className={hasWallOwnerTheme ? "profile-themed" : ""}
-      style={{ ...wallThemeStyle, ...wallBgImageStyle }}
-    >
-      <div className={`rounded-2xl p-6 shadow-lg ${hasWallOwnerTheme ? "profile-container" : "bg-white dark:bg-zinc-900"}`}>
+      <div
+        className={`rounded-2xl p-6 shadow-lg ${hasWallOwnerTheme ? "profile-themed profile-container" : "bg-white dark:bg-zinc-900"}`}
+        style={{ ...wallThemeStyle, ...wallBgImageStyle }}
+      >
         <Link
           href={currentUserId ? "/feed" : "/"}
           className={`mb-4 inline-flex items-center gap-1 text-sm ${hasWallOwnerTheme ? "profile-text-secondary" : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"}`}
@@ -104,6 +103,5 @@ export function PostPageClient({
           marketplaceData={marketplaceData}
         />
       </div>
-    </div>
   );
 }
