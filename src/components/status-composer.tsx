@@ -1,21 +1,39 @@
 "use client";
 
-import { useActionState, useRef, useEffect } from "react";
-import { setStatus } from "@/app/feed/status-actions";
+import { useRef, useState, useTransition } from "react";
+import { setStatusAndReturn } from "@/app/feed/status-actions";
+import type { FriendStatusData } from "@/app/feed/status-actions";
 
-export function StatusComposer() {
-  const [state, formAction, isPending] = useActionState(setStatus, {
-    success: false,
-    message: "",
-  });
+interface StatusComposerProps {
+  onStatusCreated?: (status: FriendStatusData) => void;
+}
+
+export function StatusComposer({ onStatusCreated }: StatusComposerProps) {
   const formRef = useRef<HTMLFormElement>(null);
+  const [error, setError] = useState("");
+  const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
-    if (state.success) formRef.current?.reset();
-  }, [state]);
+  function handleSubmit(formData: FormData) {
+    const content = (formData.get("content") as string | null)?.trim() ?? "";
+    if (!content) {
+      setError("Status cannot be empty.");
+      return;
+    }
+
+    startTransition(async () => {
+      setError("");
+      const status = await setStatusAndReturn(content);
+      if (status) {
+        formRef.current?.reset();
+        onStatusCreated?.(status);
+      } else {
+        setError("Failed to set status. Try again.");
+      }
+    });
+  }
 
   return (
-    <form ref={formRef} action={formAction} className="flex gap-2">
+    <form ref={formRef} action={handleSubmit} className="flex gap-2">
       <input
         name="content"
         type="text"
@@ -32,8 +50,8 @@ export function StatusComposer() {
       >
         {isPending ? "..." : "Set status"}
       </button>
-      {state.message && !state.success && (
-        <p className="self-center text-xs text-red-500">{state.message}</p>
+      {error && (
+        <p className="self-center text-xs text-red-500">{error}</p>
       )}
     </form>
   );

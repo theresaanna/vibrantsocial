@@ -85,7 +85,13 @@ export default async function StatusesPage() {
                       {timeAgo(status.createdAt)}
                     </span>
                   </div>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  <p
+                    className={`text-sm ${
+                      status.user.id === session.user.id
+                        ? "font-bold text-zinc-900 dark:text-zinc-100"
+                        : "text-zinc-600 dark:text-zinc-400"
+                    }`}
+                  >
                     {status.content}
                   </p>
                 </div>
