@@ -6,7 +6,6 @@ export async function fetchNewcomers() {
   const users = await prisma.user.findMany({
     where: {
       username: { not: null },
-      deletedAt: null,
     },
     orderBy: { createdAt: "desc" },
     take: 40,
