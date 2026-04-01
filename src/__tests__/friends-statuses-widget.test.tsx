@@ -16,6 +16,10 @@ vi.mock("@/lib/time", () => ({
   timeAgo: () => "2m ago",
 }));
 
+vi.mock("@/components/status-composer", () => ({
+  StatusComposer: () => <div data-testid="status-composer">composer</div>,
+}));
+
 function makeStatus(id: string, username: string, content: string) {
   return {
     id,
@@ -43,10 +47,11 @@ describe("FriendsStatusesWidget", () => {
     vi.useRealTimers();
   });
 
-  it("renders nothing when statuses array is empty", () => {
-    const { container } = render(<FriendsStatusesWidget statuses={[]} />);
+  it("renders composer and empty message when no statuses", () => {
+    render(<FriendsStatusesWidget statuses={[]} />);
 
-    expect(container.innerHTML).toBe("");
+    expect(screen.getByTestId("status-composer")).toBeDefined();
+    expect(screen.getByText(/No friend statuses yet/)).toBeDefined();
   });
 
   it("renders status content and user names", () => {

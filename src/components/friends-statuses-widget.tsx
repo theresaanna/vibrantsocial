@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { StyledName } from "@/components/styled-name";
+import { StatusComposer } from "@/components/status-composer";
 import { timeAgo } from "@/lib/time";
 import type { FriendStatusData } from "@/app/feed/status-actions";
 
@@ -30,8 +31,6 @@ export function FriendsStatusesWidget({
     return () => clearInterval(interval);
   }, [rotate, statuses.length]);
 
-  if (statuses.length === 0) return null;
-
   // Circular slice
   const visible: FriendStatusData[] = [];
   for (let i = 0; i < Math.min(VISIBLE_COUNT, statuses.length); i++) {
@@ -47,14 +46,24 @@ export function FriendsStatusesWidget({
         <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
           Friends&apos; Statuses
         </h3>
-        <Link
-          href="/statuses"
-          className="text-xs font-medium text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300"
-          data-testid="view-all-statuses"
-        >
-          View all
-        </Link>
+        {statuses.length > 0 && (
+          <Link
+            href="/statuses"
+            className="text-xs font-medium text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300"
+            data-testid="view-all-statuses"
+          >
+            View all
+          </Link>
+        )}
       </div>
+      <div className="mb-3">
+        <StatusComposer />
+      </div>
+      {statuses.length === 0 ? (
+        <p className="text-center text-xs text-zinc-400 dark:text-zinc-500">
+          No friend statuses yet. Set yours above!
+        </p>
+      ) : (
       <div className="space-y-3">
         {visible.map((status) => (
           <div key={status.id} className="flex items-start gap-2.5">
@@ -87,6 +96,7 @@ export function FriendsStatusesWidget({
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }

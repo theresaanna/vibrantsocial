@@ -145,7 +145,7 @@ export function FeedClient({
       {!listId && lastSeenFeedAt && (
         <FeedSummaryBanner lastSeenFeedAt={lastSeenFeedAt} />
       )}
-      {!listId && friendStatuses.length > 0 && (
+      {!listId && (
         <FriendsStatusesWidget statuses={friendStatuses} />
       )}
       {!listId && activeView === "posts" && (
