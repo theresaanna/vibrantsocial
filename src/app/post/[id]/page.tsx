@@ -311,6 +311,7 @@ export default async function PostPage({ params, searchParams }: Props) {
         wallThemeStyle={wallThemeStyle}
         wallBgImageStyle={wallBgImageStyle}
         hasWallOwnerTheme={hasWallOwnerTheme || !!wallOwner?.profileBgImage}
+        isWallOwner={!!userId && !!wallOwner && wallOwner.id === userId}
         marketplacePostId={undefined}
       />
     </main>
