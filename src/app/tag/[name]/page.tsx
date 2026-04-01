@@ -81,11 +81,17 @@ export default async function TagPage({ params }: TagPageProps) {
       : { subscribed: false, frequency: "immediate", emailNotification: false };
   }
 
-  const initialData = await getPostsByTag(decodedName, currentUserId, undefined, showNsfwContent);
+  const [initialData, themeUser] = await Promise.all([
+    getPostsByTag(decodedName, currentUserId, undefined, showNsfwContent),
+    currentUserId
+      ? prisma.user.findUnique({ where: { id: currentUserId }, select: userThemeSelect })
+      : null,
+  ]);
   const userIsAdmin = isAdmin(currentUserId);
+  const theme = themeUser ? buildUserTheme(themeUser) : null;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...(theme ?? NO_THEME)}>
       <div className="mb-6">
         <div className="flex items-start justify-between">
           <div>
@@ -130,6 +136,6 @@ export default async function TagPage({ params }: TagPageProps) {
         hideSensitiveOverlay={hideSensitiveOverlay}
         showNsfwContent={showNsfwContent}
       />
-    </main>
+    </ThemedPage>
   );
 }
