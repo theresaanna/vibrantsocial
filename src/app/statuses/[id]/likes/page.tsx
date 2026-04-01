@@ -59,7 +59,7 @@ export default async function StatusLikesPage({ params }: Props) {
     include: { user: { select: USER_SELECT } },
   });
 
-  const users: FollowUser[] = likes.map((like: { user: FollowUser }) => ({
+  const users: FollowUser[] = likes.map((like) => ({
     ...like.user,
     isFollowing: false,
   }));
