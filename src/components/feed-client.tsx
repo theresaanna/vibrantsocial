@@ -39,6 +39,7 @@ interface FeedClientProps {
   listId?: string;
   lastSeenFeedAt?: string | null;
   activeView?: FeedView;
+  fetchPage?: (cursor: string) => Promise<{ items: FeedItem[]; hasMore: boolean }>;
 }
 
 function FeedMarketplaceSubscription({
@@ -70,6 +71,7 @@ export function FeedClient({
   listId,
   lastSeenFeedAt,
   activeView = "posts",
+  fetchPage,
 }: FeedClientProps) {
   const isAblyReady = useAblyReady();
   const [newItems, setNewItems] = useState<FeedItem[]>([]);
@@ -91,8 +93,10 @@ export function FeedClient({
     }
   }, []);
 
-  // Poll for new posts from followed users
+  // Poll for new posts from followed users (skip for "for-you" since it's randomized)
   useEffect(() => {
+    if (listId === "for-you") return;
+
     const interval = setInterval(async () => {
       // Only poll when tab is visible
       if (document.hidden) return;
@@ -167,6 +171,7 @@ export function FeedClient({
           showNsfwContent={showNsfwContent}
           hideSensitiveOverlay={hideSensitiveOverlay}
           newItems={newItems}
+          fetchPage={fetchPage}
         />
       )}
     </>

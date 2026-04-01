@@ -152,6 +152,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
           status: true,
           wallOwner: {
             select: {
+              id: true,
               username: true,
               displayName: true,
               usernameFont: true,
@@ -224,6 +225,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
         showNsfwContent={showNsfwContent}
         highlightCommentId={commentId ?? null}
         wallPost={post.wallPost}
+        isWallOwner={!!userId && !!post.wallPost?.wallOwner && post.wallPost.wallOwner.id === userId}
         marketplacePostId={undefined}
       />
     </ThemedPage>

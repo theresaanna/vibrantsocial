@@ -18,6 +18,7 @@ export function FeedList({
   showNsfwContent,
   hideSensitiveOverlay,
   newItems = [],
+  fetchPage,
 }: {
   initialItems: FeedItem[];
   initialHasMore: boolean;
@@ -28,6 +29,7 @@ export function FeedList({
   showNsfwContent: boolean;
   hideSensitiveOverlay: boolean;
   newItems?: FeedItem[];
+  fetchPage?: (cursor: string) => Promise<{ items: FeedItem[]; hasMore: boolean }>;
 }) {
   const [items, setItems] = useState(initialItems);
   const [hasMore, setHasMore] = useState(initialHasMore);
@@ -68,7 +70,7 @@ export function FeedList({
 
     startTransition(async () => {
       try {
-        const result = await fetchFeedPage(lastItem.date);
+        const result = fetchPage ? await fetchPage(lastItem.date) : await fetchFeedPage(lastItem.date);
 
         const existingIds = new Set(
           itemsRef.current.map((item) =>
