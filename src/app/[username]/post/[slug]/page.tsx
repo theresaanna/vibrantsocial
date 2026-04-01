@@ -216,7 +216,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
   const theme = themeSource ? buildUserTheme(themeSource) : undefined;
 
   return (
-    <ThemedPage {...(theme ?? NO_THEME)}>
+    <ThemedPage {...(theme ?? NO_THEME)} bare>
       <PostPageClient
         post={post}
         currentUserId={userId}
