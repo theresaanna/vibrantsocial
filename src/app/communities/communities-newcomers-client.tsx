@@ -47,10 +47,12 @@ export function CommunitiesNewcomersClient() {
   }
 
   return (
-    <div className="space-y-3" data-testid="newcomers-list">
-      {users.map((user) => (
-        <SearchUserCard key={user.id} user={user} />
-      ))}
+    <div className="rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-900" data-testid="newcomers-list">
+      <div className="space-y-3">
+        {users.map((user) => (
+          <SearchUserCard key={user.id} user={user} />
+        ))}
+      </div>
     </div>
   );
 }
