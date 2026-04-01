@@ -111,6 +111,7 @@ export async function createWallPost(
   }
 
   revalidatePath(`/${wallOwner.username}`);
+  revalidatePath("/feed");
 
   return { success: true, message: "Wall post created", postId: post.id };
 }
@@ -155,6 +156,7 @@ export async function updateWallPostStatus(
   if (wallPost.wallOwner.username) {
     revalidatePath(`/${wallPost.wallOwner.username}`);
   }
+  revalidatePath("/feed");
 
   return { success: true, message: `Wall post ${status}` };
 }

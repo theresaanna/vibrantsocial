@@ -56,15 +56,15 @@ export async function fetchFeedPage(cursor?: string) {
     getUserPrefs(userId),
     getCachedCloseFriendOfIds(userId),
   ]);
-  const { showNsfwContent, ageVerified } = prefs;
+  const { showNsfwContent, ageVerified, hideWallFromFeed } = prefs;
   const closeFriendAuthors = [...closeFriendOfIds, userId];
 
   const postInclude = getPostInclude(userId);
   const dateFilter = cursor ? { lt: new Date(cursor) } : undefined;
   const fetchCount = PAGE_SIZE + 1;
 
-  // Run posts + reposts queries in parallel
-  const [posts, reposts] = await Promise.all([
+  // Run posts + reposts + wall posts queries in parallel
+  const [posts, reposts, wallPosts] = await Promise.all([
     prisma.post.findMany({
       where: {
         authorId: { in: [...followingIds, userId] },
@@ -102,6 +102,29 @@ export async function fetchFeedPage(cursor?: string) {
       take: fetchCount,
       include: getRepostInclude(userId),
     }),
+    // Fetch accepted wall posts on the current user's wall (unless they prefer a separate tab)
+    !hideWallFromFeed
+      ? prisma.wallPost.findMany({
+          where: {
+            wallOwnerId: userId,
+            status: "accepted",
+            ...(dateFilter ? { createdAt: dateFilter } : {}),
+            post: {
+              authorId: { notIn: blockedIds },
+              ...(!showNsfwContent ? { isNsfw: false } : {}),
+              ...(!ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          take: fetchCount,
+          include: {
+            post: { include: postInclude },
+            wallOwner: {
+              select: { username: true, displayName: true, usernameFont: true },
+            },
+          },
+        })
+      : [],
   ]);
 
   // Deduplicate: skip simple reposts when the original post is already in the feed.
@@ -110,6 +133,11 @@ export async function fetchFeedPage(cursor?: string) {
   const filteredReposts = reposts.filter(
     (r: { content?: string | null; post: { id: string } }) =>
       r.content != null || !directPostIds.has(r.post.id)
+  );
+
+  // Deduplicate wall posts: skip if the underlying post already appears via following the author
+  const filteredWallPosts = wallPosts.filter(
+    (wp: { postId: string }) => !directPostIds.has(wp.postId)
   );
 
   const allItems = [
@@ -122,6 +150,11 @@ export async function fetchFeedPage(cursor?: string) {
       type: "repost" as const,
       data: JSON.parse(JSON.stringify(r)),
       date: r.createdAt.toISOString(),
+    })),
+    ...filteredWallPosts.map((wp: { post: { id: string }; createdAt: Date }) => ({
+      type: "post" as const,
+      data: JSON.parse(JSON.stringify(wp.post)),
+      date: wp.createdAt.toISOString(),
     })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -165,14 +198,13 @@ export async function fetchNewFeedItems(sinceDate: string) {
     getUserPrefs(userId),
     getCachedCloseFriendOfIds(userId),
   ]);
-  const showNsfwContent = prefs2.showNsfwContent;
-  const ageVerified = prefs2.ageVerified;
+  const { showNsfwContent, ageVerified, hideWallFromFeed } = prefs2;
   const closeFriendAuthors = [...closeFriendOfIds2, userId];
 
   const postInclude = getPostInclude(userId);
   const since = new Date(sinceDate);
 
-  const [posts, reposts] = await Promise.all([
+  const [posts, reposts, wallPosts] = await Promise.all([
     prisma.post.findMany({
       where: {
         authorId: { in: [...followingIds, userId] },
@@ -210,12 +242,37 @@ export async function fetchNewFeedItems(sinceDate: string) {
       take: PAGE_SIZE,
       include: getRepostInclude(userId),
     }),
+    !hideWallFromFeed
+      ? prisma.wallPost.findMany({
+          where: {
+            wallOwnerId: userId,
+            status: "accepted",
+            createdAt: { gt: since },
+            post: {
+              authorId: { notIn: blockedIds },
+              ...(!showNsfwContent ? { isNsfw: false } : {}),
+              ...(!ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          take: PAGE_SIZE,
+          include: {
+            post: { include: postInclude },
+            wallOwner: {
+              select: { username: true, displayName: true, usernameFont: true },
+            },
+          },
+        })
+      : [],
   ]);
 
   const directPostIds = new Set(posts.map((p: { id: string }) => p.id));
   const filteredReposts = reposts.filter(
     (r: { content?: string | null; post: { id: string } }) =>
       r.content != null || !directPostIds.has(r.post.id)
+  );
+  const filteredWallPosts = wallPosts.filter(
+    (wp: { postId: string }) => !directPostIds.has(wp.postId)
   );
 
   return [
@@ -228,6 +285,11 @@ export async function fetchNewFeedItems(sinceDate: string) {
       type: "repost" as const,
       data: JSON.parse(JSON.stringify(r)),
       date: r.createdAt.toISOString(),
+    })),
+    ...filteredWallPosts.map((wp: { post: { id: string }; createdAt: Date }) => ({
+      type: "post" as const,
+      data: JSON.parse(JSON.stringify(wp.post)),
+      date: wp.createdAt.toISOString(),
     })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
