@@ -152,7 +152,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
           status: true,
           wallOwner: {
             select: {
-              id: true,
+              ...userThemeSelect,
               username: true,
               displayName: true,
               usernameFont: true,
@@ -211,7 +211,9 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
     }
   }
 
-  const theme = post.author ? buildUserTheme(post.author) : undefined;
+  // Use wall owner's theme for wall posts, post author's theme otherwise
+  const themeSource = post.wallPost?.wallOwner ?? post.author;
+  const theme = themeSource ? buildUserTheme(themeSource) : undefined;
 
   return (
     <ThemedPage {...(theme ?? NO_THEME)}>
@@ -227,6 +229,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
         wallPost={post.wallPost}
         isWallOwner={!!userId && !!post.wallPost?.wallOwner && post.wallPost.wallOwner.id === userId}
         marketplacePostId={undefined}
+        bare
       />
     </ThemedPage>
   );
