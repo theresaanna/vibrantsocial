@@ -119,6 +119,7 @@ model User {
   accounts  Account[]
   sessions  Session[]
   posts     Post[]
+  postViews PostView[]
   comments  Comment[]
   likes     Like[]
   bookmarks Bookmark[]
@@ -277,10 +278,27 @@ model Post {
   wallPost          WallPost?
   marketplacePost   MarketplacePost?
   pollVotes         PollVote[]
+  views             PostView[]
 
   @@unique([authorId, slug])
   @@index([authorId])
   @@index([createdAt])
+}
+
+model PostView {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String?
+  referrer  String?
+  source    String?
+  createdAt DateTime @default(now())
+
+  post Post  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([postId, createdAt])
+  @@index([userId])
+  @@index([postId, userId])
 }
 
 model Tag {

@@ -3,6 +3,7 @@
 import type React from "react";
 import Link from "next/link";
 import { PostCard } from "@/components/post-card";
+import { usePostViewTracking } from "@/hooks/use-post-view-tracking";
 
 interface WallPostData {
   id: string;
@@ -57,6 +58,8 @@ export function PostPageClient({
   marketplaceData,
   bare,
 }: PostPageClientProps) {
+  usePostViewTracking(post.id, "direct");
+
   const backLink = (
     <Link
       href={currentUserId ? "/feed" : "/"}
