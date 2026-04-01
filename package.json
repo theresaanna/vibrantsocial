@@ -46,7 +46,7 @@
     "@lexical/yjs": "^0.42.0",
     "@marsidev/react-turnstile": "^1.4.2",
     "@prisma/adapter-pg": "^7.4.2",
-    "@prisma/client": "^6.19.2",
+    "@prisma/client": "^7.6.0",
     "@sentry/nextjs": "^10.42.0",
     "@tanstack/react-virtual": "^3.13.22",
     "@types/d3": "^7.4.3",
@@ -96,7 +96,7 @@
     "eslint": "^9",
     "eslint-config-next": "^16.2.1",
     "jsdom": "^27.0.1",
-    "prisma": "^6.19.2",
+    "prisma": "^7.6.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^3.2.4"
