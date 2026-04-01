@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import type React from "react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, permanentRedirect, notFound } from "next/navigation";
@@ -7,7 +6,8 @@ import { isProfileIncomplete } from "@/lib/require-profile";
 import { PostPageClient } from "./post-page-client";
 import { extractContentFromLexicalJson } from "@/lib/lexical-text";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
-import { generateAdaptiveTheme } from "@/lib/profile-themes";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -139,20 +139,10 @@ export default async function PostPage({ params, searchParams }: Props) {
           status: true,
           wallOwner: {
             select: {
-              id: true,
+              ...userThemeSelect,
               username: true,
               displayName: true,
               usernameFont: true,
-              profileBgColor: true,
-              profileTextColor: true,
-              profileLinkColor: true,
-              profileSecondaryColor: true,
-              profileContainerColor: true,
-              profileBgImage: true,
-              profileBgRepeat: true,
-              profileBgAttachment: true,
-              profileBgSize: true,
-              profileBgPosition: true,
             },
           },
         },
@@ -216,88 +206,12 @@ export default async function PostPage({ params, searchParams }: Props) {
     }
   }
 
-  // Build theme from wall owner if this is a wall post
+  // Use wall owner's theme for wall posts
   const wallOwner = post.wallPost?.wallOwner;
-  const hasWallOwnerTheme = !!(
-    wallOwner?.profileBgColor ||
-    wallOwner?.profileTextColor ||
-    wallOwner?.profileLinkColor ||
-    wallOwner?.profileSecondaryColor ||
-    wallOwner?.profileContainerColor
-  );
-
-  let wallThemeStyle: React.CSSProperties | undefined;
-  if (wallOwner && hasWallOwnerTheme) {
-    const userColors = {
-      profileBgColor: wallOwner.profileBgColor ?? "#ffffff",
-      profileTextColor: wallOwner.profileTextColor ?? "#18181b",
-      profileLinkColor: wallOwner.profileLinkColor ?? "#2563eb",
-      profileSecondaryColor: wallOwner.profileSecondaryColor ?? "#71717a",
-      profileContainerColor: wallOwner.profileContainerColor ?? "#f4f4f5",
-    };
-    let customPreset: {
-      darkBgColor: string;
-      darkTextColor: string;
-      darkLinkColor: string;
-      darkSecondaryColor: string;
-      darkContainerColor: string;
-    } | null = null;
-    try {
-      customPreset = await prisma.customThemePreset.findFirst({
-        where: {
-          userId: wallOwner.id,
-          lightBgColor: userColors.profileBgColor,
-          lightTextColor: userColors.profileTextColor,
-          lightLinkColor: userColors.profileLinkColor,
-          lightSecondaryColor: userColors.profileSecondaryColor,
-          lightContainerColor: userColors.profileContainerColor,
-        },
-      });
-    } catch {
-      // ignore
-    }
-    let light = userColors;
-    let dark;
-    if (customPreset) {
-      dark = {
-        profileBgColor: customPreset.darkBgColor,
-        profileTextColor: customPreset.darkTextColor,
-        profileLinkColor: customPreset.darkLinkColor,
-        profileSecondaryColor: customPreset.darkSecondaryColor,
-        profileContainerColor: customPreset.darkContainerColor,
-      };
-    } else {
-      const adaptive = generateAdaptiveTheme(userColors);
-      light = adaptive.light;
-      dark = adaptive.dark;
-    }
-    wallThemeStyle = {
-      "--profile-bg-light": light.profileBgColor,
-      "--profile-text-light": light.profileTextColor,
-      "--profile-link-light": light.profileLinkColor,
-      "--profile-secondary-light": light.profileSecondaryColor,
-      "--profile-container-light": light.profileContainerColor,
-      "--profile-bg-dark": dark.profileBgColor,
-      "--profile-text-dark": dark.profileTextColor,
-      "--profile-link-dark": dark.profileLinkColor,
-      "--profile-secondary-dark": dark.profileSecondaryColor,
-      "--profile-container-dark": dark.profileContainerColor,
-    } as React.CSSProperties;
-  }
-
-  const wallBgImageStyle: React.CSSProperties | undefined = wallOwner?.profileBgImage
-    ? {
-        backgroundImage: `url(${wallOwner.profileBgImage})`,
-        backgroundRepeat: wallOwner.profileBgRepeat ?? "no-repeat",
-        backgroundAttachment: wallOwner.profileBgAttachment ?? "scroll",
-        backgroundSize: wallOwner.profileBgSize ?? "cover",
-        backgroundPosition: wallOwner.profileBgPosition ?? "center",
-        minHeight: "calc(100vh - 57px)",
-      }
-    : undefined;
+  const theme = wallOwner ? buildUserTheme(wallOwner) : undefined;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...(theme ?? NO_THEME)} bare>
       <PostPageClient
         post={post}
         currentUserId={userId}
@@ -308,12 +222,10 @@ export default async function PostPage({ params, searchParams }: Props) {
         showNsfwContent={showNsfwContent}
         highlightCommentId={commentId ?? null}
         wallPost={post.wallPost}
-        wallThemeStyle={wallThemeStyle}
-        wallBgImageStyle={wallBgImageStyle}
-        hasWallOwnerTheme={hasWallOwnerTheme || !!wallOwner?.profileBgImage}
         isWallOwner={!!userId && !!wallOwner && wallOwner.id === userId}
         marketplacePostId={undefined}
+        bare
       />
-    </main>
+    </ThemedPage>
   );
 }
