@@ -3,7 +3,9 @@
 import { useState, useEffect, useRef, useCallback, useTransition } from "react";
 import { PostCard } from "@/components/post-card";
 import { RepostCard } from "@/components/repost-card";
+import { PostViewTracker } from "@/components/post-view-tracker";
 import { fetchFeedPage } from "@/app/feed/feed-actions";
+import type { ViewSource } from "@/app/feed/view-actions";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FeedItem = { type: "post" | "repost"; data: any; date: string };
@@ -19,6 +21,7 @@ export function FeedList({
   hideSensitiveOverlay,
   newItems = [],
   fetchPage,
+  viewSource = "feed",
 }: {
   initialItems: FeedItem[];
   initialHasMore: boolean;
@@ -30,6 +33,7 @@ export function FeedList({
   hideSensitiveOverlay: boolean;
   newItems?: FeedItem[];
   fetchPage?: (cursor: string) => Promise<{ items: FeedItem[]; hasMore: boolean }>;
+  viewSource?: ViewSource;
 }) {
   const [items, setItems] = useState(initialItems);
   const [hasMore, setHasMore] = useState(initialHasMore);
@@ -132,7 +136,8 @@ export function FeedList({
       {items.map((item) => {
         const key =
           item.type === "post" ? item.data.id : `repost-${item.data.id}`;
-        return item.type === "post" ? (
+        const postId = item.type === "post" ? item.data.id : item.data.postId;
+        const card = item.type === "post" ? (
           <PostCard
             key={key}
             post={item.data}
@@ -174,6 +179,11 @@ export function FeedList({
             hideSensitiveOverlay={hideSensitiveOverlay}
             onDelete={() => handleDelete("repost", item.data.id)}
           />
+        );
+        return (
+          <PostViewTracker key={key} postId={postId} source={viewSource}>
+            {card}
+          </PostViewTracker>
         );
       })}
 
