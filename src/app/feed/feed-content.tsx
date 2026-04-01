@@ -7,7 +7,7 @@ import { cached, cacheKeys } from "@/lib/cache";
 import { getCloseFriendIds, getCachedCloseFriendOfIds } from "@/app/feed/close-friends-actions";
 import { isProfileIncomplete } from "@/lib/require-profile";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
-import { getFriendStatuses } from "@/app/feed/status-actions";
+import { getFriendStatuses, pollStatuses } from "@/app/feed/status-actions";
 
 /**
  * Async server component that fetches all feed data.
@@ -66,8 +66,8 @@ export async function FeedContent({ userId, activeView = "posts" }: { userId: st
   // Authors whose close-friends-only posts the current user can see
   const closeFriendAuthors = [...closeFriendOfIds, userId];
 
-  // Phase 2: posts + reposts + friend statuses in parallel
-  const [posts, reposts, friendStatuses] = await Promise.all([
+  // Phase 2: posts + reposts + statuses in parallel
+  const [posts, reposts, statusData] = await Promise.all([
     prisma.post.findMany({
       where: {
         authorId: { in: [...followingIds, userId] },
@@ -104,7 +104,7 @@ export async function FeedContent({ userId, activeView = "posts" }: { userId: st
       take: fetchCount,
       include: getRepostInclude(userId),
     }),
-    getFriendStatuses(10),
+    pollStatuses(10),
   ]);
 
   // Deduplicate: if a post appears both directly and via simple repost, keep the direct post.
@@ -157,7 +157,8 @@ export async function FeedContent({ userId, activeView = "posts" }: { userId: st
       isPremium={currentUser.tier === "premium"}
       lastSeenFeedAt={lastSeenFeedAt}
       activeView={activeView}
-      friendStatuses={friendStatuses}
+      friendStatuses={statusData.friendStatuses}
+      initialOwnStatus={statusData.ownStatus}
     />
   );
 }

@@ -5,11 +5,12 @@ import Link from "next/link";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { StyledName } from "@/components/styled-name";
 import { StatusComposer } from "@/components/status-composer";
+import { pollStatuses } from "@/app/feed/status-actions";
 import { timeAgo } from "@/lib/time";
 import type { FriendStatusData } from "@/app/feed/status-actions";
 
 const ROTATE_INTERVAL_MS = 6_000;
-const VISIBLE_COUNT = 2;
+const POLL_INTERVAL_MS = 30_000;
 
 function StatusItem({
   status,
@@ -22,11 +23,8 @@ function StatusItem({
 }) {
   return (
     <div
-      key={status.id}
       className={`flex items-start gap-2.5 ${
-        animate
-          ? "animate-[statusSlideIn_0.4s_ease-out]"
-          : ""
+        animate ? "animate-[statusSlideIn_0.4s_ease-out]" : ""
       }`}
     >
       <Link href={`/${status.user.username}`} className="shrink-0">
@@ -66,44 +64,62 @@ function StatusItem({
 }
 
 export function FriendsStatusesWidget({
-  statuses,
+  statuses: initialStatuses,
   currentUserId,
+  initialOwnStatus = null,
 }: {
   statuses: FriendStatusData[];
   currentUserId?: string;
+  initialOwnStatus?: FriendStatusData | null;
 }) {
-  const [ownStatuses, setOwnStatuses] = useState<FriendStatusData[]>([]);
-  const [offset, setOffset] = useState(0);
+  const [ownStatus, setOwnStatus] = useState<FriendStatusData | null>(initialOwnStatus);
+  const [friendStatuses, setFriendStatuses] = useState<FriendStatusData[]>(initialStatuses);
+  const [friendOffset, setFriendOffset] = useState(0);
   const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set());
   const prevVisibleIdsRef = useRef<Set<string>>(new Set());
 
-  // Merge own statuses at the top, deduplicating
-  const ownIds = new Set(ownStatuses.map((s) => s.id));
-  const merged = [
-    ...ownStatuses,
-    ...statuses.filter((s) => !ownIds.has(s.id)),
-  ];
+  // How many friend slots are visible (1 if own status pinned, 2 otherwise)
+  const friendSlots = ownStatus ? 1 : 2;
 
+  // --- Rotation for friend statuses ---
   const rotate = useCallback(() => {
-    if (merged.length <= VISIBLE_COUNT) return;
-    setOffset((prev) => (prev + VISIBLE_COUNT) % merged.length);
-  }, [merged.length]);
+    if (friendStatuses.length <= friendSlots) return;
+    setFriendOffset((prev) => (prev + friendSlots) % friendStatuses.length);
+  }, [friendStatuses.length, friendSlots]);
 
   useEffect(() => {
-    if (merged.length <= VISIBLE_COUNT) return;
+    if (friendStatuses.length <= friendSlots) return;
     const interval = setInterval(() => {
       if (!document.hidden) rotate();
     }, ROTATE_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [rotate, merged.length]);
+  }, [rotate, friendStatuses.length, friendSlots]);
 
-  // Reset offset when own status is added so it's immediately visible
+  // --- Polling for fresh statuses ---
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (document.hidden) return;
+      try {
+        const data = await pollStatuses(10);
+        setFriendStatuses(data.friendStatuses);
+        if (data.ownStatus) {
+          setOwnStatus((prev) =>
+            prev?.id === data.ownStatus!.id ? prev : data.ownStatus
+          );
+        }
+      } catch {
+        // Non-critical — will retry next interval
+      }
+    }, POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, []);
+
+  // --- Handle new status from composer ---
   const handleStatusCreated = useCallback((status: FriendStatusData) => {
-    setOwnStatuses((prev) => [status, ...prev]);
-    setOffset(0);
-    // Mark the new status as animating
+    setOwnStatus(status);
+    setFriendOffset(0);
+    // Animate the new status
     setAnimatingIds((prev) => new Set(prev).add(status.id));
-    // Remove animation flag after it completes
     setTimeout(() => {
       setAnimatingIds((prev) => {
         const next = new Set(prev);
@@ -113,13 +129,20 @@ export function FriendsStatusesWidget({
     }, 500);
   }, []);
 
-  // Circular slice
-  const visible: FriendStatusData[] = [];
-  for (let i = 0; i < Math.min(VISIBLE_COUNT, merged.length); i++) {
-    visible.push(merged[(offset + i) % merged.length]);
+  // Build visible list: own status pinned at top + rotating friend statuses
+  const visibleFriends: FriendStatusData[] = [];
+  for (let i = 0; i < Math.min(friendSlots, friendStatuses.length); i++) {
+    visibleFriends.push(
+      friendStatuses[(friendOffset + i) % friendStatuses.length]
+    );
   }
 
-  // Detect newly visible statuses from rotation and animate them
+  const visible = [
+    ...(ownStatus ? [ownStatus] : []),
+    ...visibleFriends,
+  ];
+
+  // Detect newly visible statuses and animate them
   useEffect(() => {
     const currentIds = new Set(visible.map((s) => s.id));
     const newIds = new Set<string>();
@@ -145,8 +168,7 @@ export function FriendsStatusesWidget({
     prevVisibleIdsRef.current = currentIds;
   }, [visible]);
 
-  const isOwn = (status: FriendStatusData) =>
-    currentUserId != null && status.user.id === currentUserId;
+  const hasAny = visible.length > 0;
 
   return (
     <div
@@ -169,7 +191,7 @@ export function FriendsStatusesWidget({
         <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
           Friends&apos; Statuses
         </h3>
-        {merged.length > 0 && (
+        {hasAny && (
           <Link
             href="/statuses"
             className="text-xs font-medium text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300"
@@ -182,21 +204,21 @@ export function FriendsStatusesWidget({
       <div className="mb-3">
         <StatusComposer onStatusCreated={handleStatusCreated} />
       </div>
-      {merged.length === 0 ? (
+      {!hasAny ? (
         <p className="text-center text-xs text-zinc-400 dark:text-zinc-500">
           No friend statuses yet. Set yours above!
         </p>
       ) : (
-      <div className="space-y-3">
-        {visible.map((status) => (
-          <StatusItem
-            key={status.id}
-            status={status}
-            isOwn={isOwn(status)}
-            animate={animatingIds.has(status.id)}
-          />
-        ))}
-      </div>
+        <div className="space-y-3">
+          {visible.map((status) => (
+            <StatusItem
+              key={status.id}
+              status={status}
+              isOwn={currentUserId != null && status.user.id === currentUserId}
+              animate={animatingIds.has(status.id)}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

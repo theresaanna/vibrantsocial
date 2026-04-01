@@ -169,6 +169,39 @@ export async function getFriendStatuses(
 }
 
 // ---------------------------------------------------------------------------
+// Poll statuses (own + friends, for client-side polling)
+// ---------------------------------------------------------------------------
+
+export async function pollStatuses(
+  friendLimit = 10,
+): Promise<{ ownStatus: FriendStatusData | null; friendStatuses: FriendStatusData[] }> {
+  const session = await auth();
+  if (!session?.user?.id) return { ownStatus: null, friendStatuses: [] };
+  const userId = session.user.id;
+
+  const [ownStatuses, friendStatuses] = await Promise.all([
+    prisma.userStatus.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 1,
+      include: { user: { select: USER_PROFILE_SELECT } },
+    }),
+    getFriendStatuses(friendLimit),
+  ]);
+
+  const ownStatus = ownStatuses[0]
+    ? {
+        id: ownStatuses[0].id,
+        content: ownStatuses[0].content,
+        createdAt: ownStatuses[0].createdAt.toISOString(),
+        user: ownStatuses[0].user,
+      }
+    : null;
+
+  return { ownStatus, friendStatuses };
+}
+
+// ---------------------------------------------------------------------------
 // Get user status history (for /statuses/[username])
 // ---------------------------------------------------------------------------
 

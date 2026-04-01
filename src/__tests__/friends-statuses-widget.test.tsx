@@ -24,6 +24,10 @@ vi.mock("@/components/status-composer", () => ({
   },
 }));
 
+vi.mock("@/app/feed/status-actions", () => ({
+  pollStatuses: vi.fn().mockResolvedValue({ ownStatus: null, friendStatuses: [] }),
+}));
+
 function makeStatus(id: string, username: string, content: string, userId?: string) {
   return {
     id,
@@ -82,7 +86,7 @@ describe("FriendsStatusesWidget", () => {
     expect(link.getAttribute("href")).toBe("/statuses");
   });
 
-  it("cycles to next statuses after interval", () => {
+  it("cycles through friend statuses after interval", () => {
     const statuses = [
       makeStatus("s1", "alice", "Status 1"),
       makeStatus("s2", "bob", "Status 2"),
@@ -94,6 +98,7 @@ describe("FriendsStatusesWidget", () => {
 
     render(<FriendsStatusesWidget statuses={statuses} />);
 
+    // Initially shows first 2
     expect(screen.getByText("Status 1")).toBeDefined();
     expect(screen.getByText("Status 2")).toBeDefined();
 
@@ -101,6 +106,7 @@ describe("FriendsStatusesWidget", () => {
       vi.advanceTimersByTime(6_000);
     });
 
+    // Now shows next 2
     expect(screen.getByText("Status 3")).toBeDefined();
     expect(screen.getByText("Status 4")).toBeDefined();
   });
@@ -124,20 +130,55 @@ describe("FriendsStatusesWidget", () => {
     expect(screen.getByText("Status 2")).toBeDefined();
   });
 
-  it("shows own status immediately after posting via callback", () => {
-    const statuses = [makeStatus("s1", "alice", "Friend status")];
+  it("pins own status at the top and shows one rotating friend status", () => {
+    const friendStatuses = [
+      makeStatus("s1", "alice", "Friend 1"),
+      makeStatus("s2", "bob", "Friend 2"),
+      makeStatus("s3", "carol", "Friend 3"),
+    ];
+    const ownStatus = makeStatus("own1", "me", "My status", "current-user");
 
-    render(<FriendsStatusesWidget statuses={statuses} currentUserId="me" />);
+    Object.defineProperty(document, "hidden", { value: false, configurable: true });
+
+    render(
+      <FriendsStatusesWidget
+        statuses={friendStatuses}
+        currentUserId="current-user"
+        initialOwnStatus={ownStatus}
+      />
+    );
+
+    // Own status always visible
+    expect(screen.getByText("My status")).toBeDefined();
+    // First friend status visible
+    expect(screen.getByText("Friend 1")).toBeDefined();
+
+    // After rotation, own status still pinned, friend rotated
+    act(() => {
+      vi.advanceTimersByTime(6_000);
+    });
+
+    expect(screen.getByText("My status")).toBeDefined();
+    expect(screen.getByText("Friend 2")).toBeDefined();
+  });
+
+  it("shows own status immediately after posting via composer", () => {
+    const friendStatuses = [makeStatus("s1", "alice", "Friend status")];
+
+    render(
+      <FriendsStatusesWidget statuses={friendStatuses} currentUserId="me" />
+    );
 
     expect(screen.getByText("Friend status")).toBeDefined();
 
-    // Simulate StatusComposer calling onStatusCreated
     act(() => {
-      capturedOnStatusCreated?.(makeStatus("own1", "me", "My new status", "me"));
+      capturedOnStatusCreated?.(makeStatus("own1", "me", "Just posted!", "me"));
     });
 
-    // Own status should appear at the top
-    expect(screen.getByText("My new status")).toBeDefined();
+    // Own status appears immediately and is bold
+    const ownEl = screen.getByText("Just posted!");
+    expect(ownEl).toBeDefined();
+    expect(ownEl.className).toContain("font-bold");
   });
 
   it("bolds own statuses", () => {
@@ -146,7 +187,9 @@ describe("FriendsStatusesWidget", () => {
       makeStatus("s2", "alice", "Friend status"),
     ];
 
-    render(<FriendsStatusesWidget statuses={statuses} currentUserId="current-user" />);
+    render(
+      <FriendsStatusesWidget statuses={statuses} currentUserId="current-user" />
+    );
 
     const ownStatus = screen.getByText("My status");
     expect(ownStatus.className).toContain("font-bold");

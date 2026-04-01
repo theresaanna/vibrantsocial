@@ -38,6 +38,7 @@ interface FeedClientProps {
   activeView?: FeedView;
   fetchPage?: (cursor: string) => Promise<{ items: FeedItem[]; hasMore: boolean }>;
   friendStatuses?: FriendStatusData[];
+  initialOwnStatus?: FriendStatusData | null;
 }
 
 function FeedMarketplaceSubscription({
@@ -71,6 +72,7 @@ export function FeedClient({
   activeView = "posts",
   fetchPage,
   friendStatuses = [],
+  initialOwnStatus = null,
 }: FeedClientProps) {
   const isAblyReady = useAblyReady();
   const [newItems, setNewItems] = useState<FeedItem[]>([]);
@@ -146,7 +148,11 @@ export function FeedClient({
         <FeedSummaryBanner lastSeenFeedAt={lastSeenFeedAt} />
       )}
       {!listId && (
-        <FriendsStatusesWidget statuses={friendStatuses} currentUserId={currentUserId} />
+        <FriendsStatusesWidget
+          statuses={friendStatuses}
+          currentUserId={currentUserId}
+          initialOwnStatus={initialOwnStatus}
+        />
       )}
       {!listId && activeView === "posts" && (
         <div className="mb-4 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 dark:border-indigo-800 dark:bg-indigo-950/50">
