@@ -12,6 +12,11 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: vi.fn(),
       findMany: vi.fn(),
     },
+    statusLike: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      delete: vi.fn(),
+    },
     friendRequest: {
       findMany: vi.fn(),
     },
@@ -44,6 +49,7 @@ vi.mock("next/cache", () => ({
 import {
   setStatus,
   deleteStatus,
+  toggleStatusLike,
   getFriendStatuses,
   getUserStatusHistory,
 } from "@/app/feed/status-actions";
@@ -160,6 +166,63 @@ describe("deleteStatus", () => {
   });
 });
 
+describe("toggleStatusLike", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAuth.mockResolvedValue({ user: { id: "user1" } } as any);
+  });
+
+  it("creates a like when not already liked", async () => {
+    mockPrisma.statusLike.findUnique.mockResolvedValue(null);
+    mockPrisma.statusLike.create.mockResolvedValue({} as any);
+
+    const result = await toggleStatusLike(
+      defaultState,
+      makeFormData({ statusId: "s1" }),
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("Liked");
+    expect(mockPrisma.statusLike.create).toHaveBeenCalledWith({
+      data: { statusId: "s1", userId: "user1" },
+    });
+  });
+
+  it("removes a like when already liked", async () => {
+    mockPrisma.statusLike.findUnique.mockResolvedValue({ id: "like1" } as any);
+    mockPrisma.statusLike.delete.mockResolvedValue({} as any);
+
+    const result = await toggleStatusLike(
+      defaultState,
+      makeFormData({ statusId: "s1" }),
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("Unliked");
+    expect(mockPrisma.statusLike.delete).toHaveBeenCalledWith({
+      where: { id: "like1" },
+    });
+  });
+
+  it("returns error if not authenticated", async () => {
+    mockAuth.mockResolvedValue(null as any);
+
+    const result = await toggleStatusLike(
+      defaultState,
+      makeFormData({ statusId: "s1" }),
+    );
+
+    expect(result.success).toBe(false);
+  });
+
+  it("returns error if statusId is missing", async () => {
+    const result = await toggleStatusLike(defaultState, makeFormData({}));
+
+    expect(result.success).toBe(false);
+    expect(result.message).toContain("Missing");
+  });
+});
+
 describe("getFriendStatuses", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -186,6 +249,8 @@ describe("getFriendStatuses", () => {
         id: "s1",
         content: "Hey!",
         createdAt: now,
+        _count: { likes: 3 },
+        likes: [],
         user: {
           id: "friend1",
           username: "friend1",
@@ -204,6 +269,8 @@ describe("getFriendStatuses", () => {
     expect(result).toHaveLength(1);
     expect(result[0].content).toBe("Hey!");
     expect(result[0].user.username).toBe("friend1");
+    expect(result[0].likeCount).toBe(3);
+    expect(result[0].isLiked).toBe(false);
   });
 
   it("returns empty array when user has no friends", async () => {
@@ -232,6 +299,8 @@ describe("getUserStatusHistory", () => {
         id: "s1",
         content: "Status 1",
         createdAt: now,
+        _count: { likes: 1 },
+        likes: [{ id: "like1" }],
         user: {
           id: "user2",
           username: "alice",
@@ -249,6 +318,8 @@ describe("getUserStatusHistory", () => {
 
     expect(result).toHaveLength(1);
     expect(result[0].content).toBe("Status 1");
+    expect(result[0].likeCount).toBe(1);
+    expect(result[0].isLiked).toBe(true);
   });
 
   it("returns empty array if user not found", async () => {

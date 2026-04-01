@@ -120,7 +120,8 @@ model User {
   sessions  Session[]
   posts     Post[]
   postViews PostView[]
-  statuses  UserStatus[]
+  statuses    UserStatus[]
+  statusLikes StatusLike[]
   comments  Comment[]
   likes     Like[]
   bookmarks Bookmark[]
@@ -308,9 +309,22 @@ model UserStatus {
   content   String   @db.VarChar(280)
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes StatusLike[]
 
   @@index([userId, createdAt])
+}
+
+model StatusLike {
+  id        String   @id @default(cuid())
+  statusId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  status UserStatus @relation(fields: [statusId], references: [id], onDelete: Cascade)
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([statusId, userId])
 }
 
 model Tag {

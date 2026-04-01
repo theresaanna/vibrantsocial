@@ -22,6 +22,8 @@ export interface FriendStatusData {
   id: string;
   content: string;
   createdAt: string;
+  likeCount: number;
+  isLiked: boolean;
   user: {
     id: string;
     username: string | null;
@@ -87,6 +89,8 @@ export async function setStatusAndReturn(
     id: status.id,
     content: status.content,
     createdAt: status.createdAt.toISOString(),
+    likeCount: 0,
+    isLiked: false,
     user: status.user,
   };
 }
@@ -123,8 +127,68 @@ export async function deleteStatus(
 }
 
 // ---------------------------------------------------------------------------
+// Toggle status like
+// ---------------------------------------------------------------------------
+
+export async function toggleStatusLike(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const result = await requireAuthWithRateLimit("status");
+  if (isActionError(result)) return result;
+  const userId = result.user.id;
+
+  const statusId = formData.get("statusId") as string | null;
+  if (!statusId) return { success: false, message: "Missing status ID." };
+
+  const existing = await prisma.statusLike.findUnique({
+    where: { statusId_userId: { statusId, userId } },
+  });
+
+  if (existing) {
+    await prisma.statusLike.delete({ where: { id: existing.id } });
+  } else {
+    await prisma.statusLike.create({ data: { statusId, userId } });
+  }
+
+  revalidatePath("/feed");
+  revalidatePath("/statuses");
+
+  return { success: true, message: existing ? "Unliked" : "Liked" };
+}
+
+// ---------------------------------------------------------------------------
 // Get friend statuses (for feed widget + /statuses page)
 // ---------------------------------------------------------------------------
+
+// Shared include for status queries with like data
+function statusInclude(currentUserId: string) {
+  return {
+    user: { select: USER_PROFILE_SELECT },
+    _count: { select: { likes: true } },
+    likes: { where: { userId: currentUserId }, select: { id: true } },
+  } as const;
+}
+
+type StatusRow = {
+  id: string;
+  content: string;
+  createdAt: Date;
+  user: FriendStatusData["user"];
+  _count: { likes: number };
+  likes: { id: string }[];
+};
+
+function toStatusData(s: StatusRow): FriendStatusData {
+  return {
+    id: s.id,
+    content: s.content,
+    createdAt: s.createdAt.toISOString(),
+    likeCount: s._count.likes,
+    isLiked: s.likes.length > 0,
+    user: s.user,
+  };
+}
 
 export async function getFriendStatuses(
   limit = 10,
@@ -133,10 +197,10 @@ export async function getFriendStatuses(
   if (!session?.user?.id) return [];
   const userId = session.user.id;
 
-  return cached(
-    cacheKeys.friendStatuses(userId),
+  // Get accepted friend IDs (cached)
+  const friendIds = await cached(
+    cacheKeys.friendStatuses(userId) + ":ids",
     async () => {
-      // Get accepted friend IDs
       const friendships = await prisma.friendRequest.findMany({
         where: {
           status: "ACCEPTED",
@@ -145,27 +209,23 @@ export async function getFriendStatuses(
         select: { senderId: true, receiverId: true },
       });
 
-      const friendIds = friendships.map((f: { senderId: string; receiverId: string }) =>
+      return friendships.map((f: { senderId: string; receiverId: string }) =>
         f.senderId === userId ? f.receiverId : f.senderId,
       );
-      if (friendIds.length === 0) return [];
-
-      const statuses = await prisma.userStatus.findMany({
-        where: { userId: { in: friendIds } },
-        orderBy: { createdAt: "desc" },
-        take: limit,
-        include: { user: { select: USER_PROFILE_SELECT } },
-      });
-
-      return statuses.map((s: { id: string; content: string; createdAt: Date; user: FriendStatusData["user"] }) => ({
-        id: s.id,
-        content: s.content,
-        createdAt: s.createdAt.toISOString(),
-        user: s.user,
-      }));
     },
     60,
   );
+
+  if (friendIds.length === 0) return [];
+
+  const statuses = await prisma.userStatus.findMany({
+    where: { userId: { in: friendIds } },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    include: statusInclude(userId),
+  });
+
+  return statuses.map((s: StatusRow) => toStatusData(s));
 }
 
 // ---------------------------------------------------------------------------
@@ -184,18 +244,13 @@ export async function pollStatuses(
       where: { userId },
       orderBy: { createdAt: "desc" },
       take: 1,
-      include: { user: { select: USER_PROFILE_SELECT } },
+      include: statusInclude(userId),
     }),
     getFriendStatuses(friendLimit),
   ]);
 
   const ownStatus = ownStatuses[0]
-    ? {
-        id: ownStatuses[0].id,
-        content: ownStatuses[0].content,
-        createdAt: ownStatuses[0].createdAt.toISOString(),
-        user: ownStatuses[0].user,
-      }
+    ? toStatusData(ownStatuses[0] as StatusRow)
     : null;
 
   return { ownStatus, friendStatuses };
@@ -210,7 +265,7 @@ export async function getUserStatusHistory(
   limit = 30,
 ): Promise<FriendStatusData[]> {
   const session = await auth();
-  const currentUserId = session?.user?.id;
+  const currentUserId = session?.user?.id ?? "";
 
   const user = await prisma.user.findUnique({
     where: { username },
@@ -227,13 +282,8 @@ export async function getUserStatusHistory(
     where: { userId: user.id },
     orderBy: { createdAt: "desc" },
     take: limit,
-    include: { user: { select: USER_PROFILE_SELECT } },
+    include: statusInclude(currentUserId),
   });
 
-  return statuses.map((s: { id: string; content: string; createdAt: Date; user: FriendStatusData["user"] }) => ({
-    id: s.id,
-    content: s.content,
-    createdAt: s.createdAt.toISOString(),
-    user: s.user,
-  }));
+  return statuses.map((s: StatusRow) => toStatusData(s));
 }

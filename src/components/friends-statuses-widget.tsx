@@ -5,52 +5,48 @@ import Link from "next/link";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { StyledName } from "@/components/styled-name";
 import { StatusComposer } from "@/components/status-composer";
+import { StatusLikeButton } from "@/components/status-like-button";
 import { pollStatuses } from "@/app/feed/status-actions";
 import { timeAgo } from "@/lib/time";
 import type { FriendStatusData } from "@/app/feed/status-actions";
 
-const ROTATE_INTERVAL_MS = 6_000;
 const POLL_INTERVAL_MS = 30_000;
 
-function StatusItem({
+function StatusCard({
   status,
   isOwn,
-  animate,
 }: {
   status: FriendStatusData;
   isOwn: boolean;
-  animate: boolean;
 }) {
   return (
-    <div
-      className={`flex items-start gap-2.5 ${
-        animate ? "animate-[statusSlideIn_0.4s_ease-out]" : ""
-      }`}
-    >
-      <Link href={`/${status.user.username}`} className="shrink-0">
-        <FramedAvatar
-          src={status.user.avatar || status.user.image}
-          alt={status.user.displayName || status.user.username || "User"}
-          size={32}
-          frameId={status.user.profileFrameId}
-        />
-      </Link>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-1.5">
+    <div className="flex w-64 shrink-0 flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-900">
+      <div className="flex items-center gap-2">
+        <Link href={`/${status.user.username}`} className="shrink-0">
+          <FramedAvatar
+            src={status.user.avatar || status.user.image}
+            alt={status.user.displayName || status.user.username || "User"}
+            size={28}
+            frameId={status.user.profileFrameId}
+          />
+        </Link>
+        <div className="min-w-0 flex-1">
           <Link
             href={`/${status.user.username}`}
-            className="truncate text-sm font-medium text-zinc-900 hover:underline dark:text-zinc-100"
+            className="block truncate text-xs font-medium text-zinc-900 hover:underline dark:text-zinc-100"
           >
             <StyledName fontId={status.user.usernameFont}>
               {status.user.displayName || status.user.name || status.user.username}
             </StyledName>
           </Link>
-          <span className="shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
+          <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
             {timeAgo(status.createdAt)}
           </span>
         </div>
+      </div>
+      <div className="flex items-end justify-between gap-2">
         <p
-          className={`text-sm ${
+          className={`line-clamp-2 text-sm leading-snug ${
             isOwn
               ? "font-bold text-zinc-900 dark:text-zinc-100"
               : "text-zinc-600 dark:text-zinc-400"
@@ -58,6 +54,11 @@ function StatusItem({
         >
           {status.content}
         </p>
+        <StatusLikeButton
+          statusId={status.id}
+          likeCount={status.likeCount}
+          isLiked={status.isLiked}
+        />
       </div>
     </div>
   );
@@ -74,26 +75,47 @@ export function FriendsStatusesWidget({
 }) {
   const [ownStatus, setOwnStatus] = useState<FriendStatusData | null>(initialOwnStatus);
   const [friendStatuses, setFriendStatuses] = useState<FriendStatusData[]>(initialStatuses);
-  const [friendOffset, setFriendOffset] = useState(0);
-  const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set());
-  const prevVisibleIdsRef = useRef<Set<string>>(new Set());
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
 
-  // How many friend slots are visible (1 if own status pinned, 2 otherwise)
-  const friendSlots = ownStatus ? 1 : 2;
+  // Merge: own status first, then friends (deduplicated)
+  const allStatuses = [
+    ...(ownStatus ? [ownStatus] : []),
+    ...friendStatuses.filter((s) => s.id !== ownStatus?.id),
+  ];
 
-  // --- Rotation for friend statuses ---
-  const rotate = useCallback(() => {
-    if (friendStatuses.length <= friendSlots) return;
-    setFriendOffset((prev) => (prev + friendSlots) % friendStatuses.length);
-  }, [friendStatuses.length, friendSlots]);
+  // --- Check scroll state ---
+  const updateScrollState = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 1);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  }, []);
 
   useEffect(() => {
-    if (friendStatuses.length <= friendSlots) return;
-    const interval = setInterval(() => {
-      if (!document.hidden) rotate();
-    }, ROTATE_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [rotate, friendStatuses.length, friendSlots]);
+    updateScrollState();
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", updateScrollState, { passive: true });
+    const ro = new ResizeObserver(updateScrollState);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", updateScrollState);
+      ro.disconnect();
+    };
+  }, [updateScrollState, allStatuses.length]);
+
+  // --- Scroll handlers ---
+  const scroll = useCallback((direction: "left" | "right") => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const cardWidth = 272; // w-64 (256px) + gap (16px)
+    el.scrollBy({
+      left: direction === "right" ? cardWidth : -cardWidth,
+      behavior: "smooth",
+    });
+  }, []);
 
   // --- Polling for fresh statuses ---
   useEffect(() => {
@@ -117,76 +139,17 @@ export function FriendsStatusesWidget({
   // --- Handle new status from composer ---
   const handleStatusCreated = useCallback((status: FriendStatusData) => {
     setOwnStatus(status);
-    setFriendOffset(0);
-    // Animate the new status
-    setAnimatingIds((prev) => new Set(prev).add(status.id));
-    setTimeout(() => {
-      setAnimatingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(status.id);
-        return next;
-      });
-    }, 500);
+    // Scroll to start to show the new status
+    scrollRef.current?.scrollTo?.({ left: 0, behavior: "smooth" });
   }, []);
 
-  // Build visible list: own status pinned at top + rotating friend statuses
-  const visibleFriends: FriendStatusData[] = [];
-  for (let i = 0; i < Math.min(friendSlots, friendStatuses.length); i++) {
-    visibleFriends.push(
-      friendStatuses[(friendOffset + i) % friendStatuses.length]
-    );
-  }
-
-  const visible = [
-    ...(ownStatus ? [ownStatus] : []),
-    ...visibleFriends,
-  ];
-
-  // Detect newly visible statuses and animate them
-  useEffect(() => {
-    const currentIds = new Set(visible.map((s) => s.id));
-    const newIds = new Set<string>();
-    for (const id of currentIds) {
-      if (!prevVisibleIdsRef.current.has(id)) {
-        newIds.add(id);
-      }
-    }
-    if (newIds.size > 0) {
-      setAnimatingIds((prev) => {
-        const next = new Set(prev);
-        for (const id of newIds) next.add(id);
-        return next;
-      });
-      setTimeout(() => {
-        setAnimatingIds((prev) => {
-          const next = new Set(prev);
-          for (const id of newIds) next.delete(id);
-          return next;
-        });
-      }, 500);
-    }
-    prevVisibleIdsRef.current = currentIds;
-  }, [visible]);
-
-  const hasAny = visible.length > 0;
+  const hasAny = allStatuses.length > 0;
 
   return (
     <div
       className="mb-4 rounded-2xl bg-zinc-50 p-4 shadow-sm dark:bg-zinc-800"
       data-testid="friends-statuses-widget"
     >
-      <style>{`
-        @keyframes statusSlideIn {
-          from {
-            opacity: 0;
-            transform: translateY(-8px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
           Friends&apos; Statuses
@@ -209,15 +172,74 @@ export function FriendsStatusesWidget({
           No friend statuses yet. Set yours above!
         </p>
       ) : (
-        <div className="space-y-3">
-          {visible.map((status) => (
-            <StatusItem
-              key={status.id}
-              status={status}
-              isOwn={currentUserId != null && status.user.id === currentUserId}
-              animate={animatingIds.has(status.id)}
-            />
-          ))}
+        <div className="relative">
+          {/* Scrollable container */}
+          {/* Hide scrollbar across browsers */}
+          <style>{`
+            .status-scroll::-webkit-scrollbar { display: none; }
+            .status-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+          `}</style>
+          <div
+            ref={scrollRef}
+            className="status-scroll flex gap-3 overflow-x-auto scroll-smooth"
+            data-testid="status-scroll-container"
+          >
+            {allStatuses.map((status) => (
+              <StatusCard
+                key={status.id}
+                status={status}
+                isOwn={currentUserId != null && status.user.id === currentUserId}
+              />
+            ))}
+          </div>
+
+          {/* Left arrow */}
+          {canScrollLeft && (
+            <button
+              type="button"
+              onClick={() => scroll("left")}
+              className="absolute -left-2 top-1/2 -translate-y-1/2 rounded-full border border-zinc-200 bg-white p-1.5 shadow-md transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-700 dark:hover:bg-zinc-600"
+              aria-label="Scroll statuses left"
+              data-testid="status-scroll-left"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="h-4 w-4 text-zinc-600 dark:text-zinc-300"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+          )}
+
+          {/* Right arrow */}
+          {canScrollRight && (
+            <button
+              type="button"
+              onClick={() => scroll("right")}
+              className="absolute -right-2 top-1/2 -translate-y-1/2 rounded-full border border-zinc-200 bg-white p-1.5 shadow-md transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-700 dark:hover:bg-zinc-600"
+              aria-label="Scroll statuses right"
+              data-testid="status-scroll-right"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="h-4 w-4 text-zinc-600 dark:text-zinc-300"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+          )}
         </div>
       )}
     </div>

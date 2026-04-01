@@ -4,6 +4,13 @@ import { UserStatusHistory } from "@/components/user-status-history";
 
 vi.mock("@/app/feed/status-actions", () => ({
   deleteStatus: vi.fn(),
+  toggleStatusLike: vi.fn(),
+}));
+
+vi.mock("@/components/status-like-button", () => ({
+  StatusLikeButton: ({ likeCount }: { likeCount: number }) => (
+    <span data-testid="status-like-btn">{likeCount}</span>
+  ),
 }));
 
 vi.mock("@/components/framed-avatar", () => ({
@@ -11,8 +18,8 @@ vi.mock("@/components/framed-avatar", () => ({
 }));
 
 vi.mock("@/components/styled-name", () => ({
-  StyledName: ({ displayName, username }: { displayName?: string | null; username?: string | null }) => (
-    <span>{displayName || username}</span>
+  StyledName: ({ children }: { children: React.ReactNode }) => (
+    <span>{children}</span>
   ),
 }));
 
@@ -36,6 +43,8 @@ function makeStatus(id: string, content: string) {
     id,
     content,
     createdAt: new Date().toISOString(),
+    likeCount: 0,
+    isLiked: false,
     user,
   };
 }

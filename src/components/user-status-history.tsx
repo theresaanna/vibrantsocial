@@ -6,6 +6,7 @@ import { FramedAvatar } from "@/components/framed-avatar";
 import { StyledName } from "@/components/styled-name";
 import { timeAgo } from "@/lib/time";
 import { deleteStatus } from "@/app/feed/status-actions";
+import { StatusLikeButton } from "@/components/status-like-button";
 import type { FriendStatusData } from "@/app/feed/status-actions";
 
 function DeleteStatusButton({ statusId }: { statusId: string }) {
@@ -83,9 +84,16 @@ export function UserStatusHistory({
             <p className="text-sm text-zinc-800 dark:text-zinc-200">
               {status.content}
             </p>
-            <span className="text-xs text-zinc-400 dark:text-zinc-500">
-              {timeAgo(status.createdAt)}
-            </span>
+            <div className="mt-1 flex items-center gap-3">
+              <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                {timeAgo(status.createdAt)}
+              </span>
+              <StatusLikeButton
+                statusId={status.id}
+                likeCount={status.likeCount}
+                isLiked={status.isLiked}
+              />
+            </div>
           </div>
           {isOwner && <DeleteStatusButton statusId={status.id} />}
         </div>
