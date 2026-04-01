@@ -34,6 +34,8 @@ interface BackgroundEditorProps {
   };
   isPremium: boolean;
   userEmail?: string | null;
+  containerOpacity?: number;
+  onContainerOpacityChange?: (opacity: number) => void;
   onChange?: () => void;
   onBackgroundChange?: (bg: {
     image: string | null;
@@ -124,6 +126,8 @@ export function BackgroundEditor({
   initialBackground,
   isPremium,
   userEmail,
+  containerOpacity,
+  onContainerOpacityChange,
   onChange,
   onBackgroundChange,
 }: BackgroundEditorProps) {
@@ -394,6 +398,34 @@ export function BackgroundEditor({
               ))}
             </select>
           </label>
+        </div>
+      )}
+
+      {/* Container transparency slider */}
+      {containerOpacity !== undefined && (
+        <div className="flex items-center gap-3">
+          <label
+            htmlFor="bg-container-opacity-slider"
+            className="shrink-0 text-xs font-medium text-zinc-600 dark:text-zinc-400"
+          >
+            Container transparency
+          </label>
+          <input
+            id="bg-container-opacity-slider"
+            type="range"
+            min={80}
+            max={100}
+            step={1}
+            value={containerOpacity}
+            onChange={(e) => {
+              onContainerOpacityChange?.(Number(e.target.value));
+              onChange?.();
+            }}
+            className="flex-1 accent-blue-600"
+          />
+          <span className="w-8 shrink-0 text-right text-xs text-zinc-500">
+            {containerOpacity}%
+          </span>
         </div>
       )}
 

@@ -17,7 +17,7 @@ import { PremiumCrown } from "./premium-crown";
 
 interface ThemeEditorProps {
   initialColors: Partial<ProfileThemeColors>;
-  initialContainerOpacity?: number;
+  containerOpacity?: number;
   username: string | null;
   displayName: string | null;
   bio: string | null;
@@ -35,7 +35,7 @@ interface ThemeEditorProps {
 
 export function ThemeEditor({
   initialColors,
-  initialContainerOpacity = 100,
+  containerOpacity = 90,
   username,
   displayName,
   bio,
@@ -65,9 +65,6 @@ export function ThemeEditor({
       initialColors.profileContainerColor ??
       defaultPreset.profileContainerColor,
   });
-  const [containerOpacity, setContainerOpacity] = useState(
-    Math.min(100, Math.max(80, initialContainerOpacity))
-  );
   const [colors, setColors] = useState<ProfileThemeColors>({ ...savedColors.current });
   const [activePreset, setActivePreset] = useState<string | null>(null);
 
@@ -614,9 +611,7 @@ export function ThemeEditor({
               step={1}
               value={containerOpacity}
               onChange={(e) => {
-                const opacity = Number(e.target.value);
-                setContainerOpacity(opacity);
-                onContainerOpacityChange?.(opacity);
+                onContainerOpacityChange?.(Number(e.target.value));
                 onChange?.();
               }}
               className="flex-1 accent-blue-600"

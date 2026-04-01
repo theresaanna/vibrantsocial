@@ -64,7 +64,10 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
   const [liveBgImageStyle, setLiveBgImageStyle] = useState<React.CSSProperties | undefined>(initialTheme.bgImageStyle);
   const [liveHasCustomTheme, setLiveHasCustomTheme] = useState(initialTheme.hasCustomTheme);
   const [currentBgImage, setCurrentBgImage] = useState<string | null>(user.profileBgImage ?? null);
-  const liveContainerOpacityRef = useRef(user.profileContainerOpacity ?? 100);
+  const [containerOpacity, setContainerOpacity] = useState(
+    Math.min(100, Math.max(80, user.profileContainerOpacity ?? 90))
+  );
+  const liveContainerOpacityRef = useRef(containerOpacity);
 
   const [state, formAction, isPending] = useActionState(
     async (prevState: ThemeState, formData: FormData) => {
@@ -119,6 +122,7 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
 
   const handleContainerOpacityChange = useCallback((opacity: number) => {
     liveContainerOpacityRef.current = opacity;
+    setContainerOpacity(opacity);
     setLiveThemeStyle((prev) =>
       prev ? { ...prev, "--profile-container-alpha": `${opacity}%` } as React.CSSProperties : prev
     );
@@ -203,7 +207,8 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
                 profileSecondaryColor: user.profileSecondaryColor ?? undefined,
                 profileContainerColor: user.profileContainerColor ?? undefined,
               }}
-              initialContainerOpacity={user.profileContainerOpacity ?? 100}
+              containerOpacity={containerOpacity}
+              onContainerOpacityChange={handleContainerOpacityChange}
               username={user.username ?? null}
               displayName={user.displayName}
               bio={user.bio}
@@ -230,7 +235,8 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
               }}
               isPremium={isPremium}
               userEmail={userEmail}
-
+              containerOpacity={containerOpacity}
+              onContainerOpacityChange={handleContainerOpacityChange}
               onBackgroundChange={handleBackgroundChange}
             />
 
