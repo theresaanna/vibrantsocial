@@ -28,6 +28,28 @@ interface RepostUser {
   usernameFont?: string | null;
 }
 
+interface MarketplacePostData {
+  id: string;
+  price: number;
+  purchaseUrl: string;
+  shippingOption: string;
+  shippingPrice: number | null;
+}
+
+/** Extract marketplace props to spread onto PostCard, if present. */
+function marketplaceProps(post: { marketplacePost?: MarketplacePostData | null }) {
+  if (!post.marketplacePost) return {};
+  return {
+    marketplacePostId: post.marketplacePost.id,
+    marketplaceData: {
+      price: post.marketplacePost.price,
+      purchaseUrl: post.marketplacePost.purchaseUrl,
+      shippingOption: post.marketplacePost.shippingOption,
+      shippingPrice: post.marketplacePost.shippingPrice,
+    },
+  };
+}
+
 interface RepostCardProps {
   repost: {
     id: string;
@@ -80,6 +102,7 @@ interface RepostCardProps {
           createdAt: Date;
           author: RepostUser;
         }>;
+        marketplacePost?: MarketplacePostData | null;
       };
     } | null;
     post: {
@@ -109,6 +132,7 @@ interface RepostCardProps {
         createdAt: Date;
         author: RepostUser;
       }>;
+      marketplacePost?: MarketplacePostData | null;
       wallPost?: {
         id: string;
         status: string;
@@ -555,6 +579,7 @@ export function RepostCard({
                 showGraphicByDefault={showGraphicByDefault}
                 showNsfwContent={showNsfwContent}
                 hideSensitiveOverlay={hideSensitiveOverlay}
+                {...marketplaceProps(repost.quotedRepost.post)}
               />
             </div>
           ) : (
@@ -575,6 +600,7 @@ export function RepostCard({
                 wallPostId: repost.post.wallPost.id,
                 wallPostStatus: repost.post.wallPost.status,
               })}
+              {...marketplaceProps(repost.post)}
             />
           )}
         </div>
@@ -587,6 +613,7 @@ export function RepostCard({
           showGraphicByDefault={showGraphicByDefault}
           hideSensitiveOverlay={hideSensitiveOverlay}
           showNsfwContent={showNsfwContent}
+          {...marketplaceProps(repost.post)}
         />
       )}
 
