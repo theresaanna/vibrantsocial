@@ -398,6 +398,22 @@ export function PostCard({
             </button>
             {showMenu && (
               <div className="absolute right-0 top-full z-50 mt-1 w-44 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+                <Link
+                  href={`/post/${post.id}/likes`}
+                  onClick={() => setShowMenu(false)}
+                  className="block w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  data-testid="post-likes-list-button"
+                >
+                  Likes
+                </Link>
+                <Link
+                  href={`/post/${post.id}/reposts`}
+                  onClick={() => setShowMenu(false)}
+                  className="block w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  data-testid="post-reposts-list-button"
+                >
+                  Reposts &amp; quotes
+                </Link>
                 <button
                   type="button"
                   onClick={() => {

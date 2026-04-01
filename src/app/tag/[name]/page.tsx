@@ -8,6 +8,8 @@ import { TagSubscribeButton } from "./tag-subscribe-button";
 import { NsfwTagToggle } from "./nsfw-tag-toggle";
 import { buildMetadata, SITE_NAME } from "@/lib/metadata";
 import { isAdmin } from "@/lib/admin";
+import { ThemedPage } from "@/components/themed-page";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
 
 interface TagPageProps {
   params: Promise<{ name: string }>;
