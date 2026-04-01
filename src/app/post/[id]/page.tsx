@@ -97,7 +97,7 @@ export default async function PostPage({ params, searchParams }: Props) {
     include: {
       author: {
         select: {
-          id: true,
+          ...userThemeSelect,
           username: true,
           displayName: true,
           name: true,
@@ -206,9 +206,10 @@ export default async function PostPage({ params, searchParams }: Props) {
     }
   }
 
-  // Use wall owner's theme for wall posts
+  // Use wall owner's theme for wall posts, post author's theme otherwise
   const wallOwner = post.wallPost?.wallOwner;
-  const theme = wallOwner ? buildUserTheme(wallOwner) : undefined;
+  const themeSource = wallOwner ?? post.author;
+  const theme = themeSource ? buildUserTheme(themeSource) : undefined;
 
   return (
     <ThemedPage {...(theme ?? NO_THEME)} bare>
