@@ -216,7 +216,6 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
               onSave={handleSave}
               isSavingForm={isPending}
               onColorsChange={handleColorsChange}
-              onContainerOpacityChange={handleContainerOpacityChange}
               isPremium={isPremium}
               userEmail={userEmail}
               customPresets={customPresets}
