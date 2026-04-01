@@ -108,7 +108,7 @@ export function PostPageClient({
 
   if (bare) {
     return (
-      <main className="mx-auto max-w-3xl px-4 py-6">
+      <main className="mx-auto max-w-3xl px-4 py-6" style={{ "--profile-container-alpha": "100%" } as React.CSSProperties}>
         {backLink}
         {postCard}
       </main>
