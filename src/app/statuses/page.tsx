@@ -7,6 +7,7 @@ import type { FriendStatusData } from "@/app/feed/status-actions";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { StyledName } from "@/components/styled-name";
 import { StatusComposer } from "@/components/status-composer";
+import { StatusLikeButton } from "@/components/status-like-button";
 import { timeAgo } from "@/lib/time";
 import { ThemedPage } from "@/components/themed-page";
 import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
@@ -85,15 +86,22 @@ export default async function StatusesPage() {
                       {timeAgo(status.createdAt)}
                     </span>
                   </div>
-                  <p
-                    className={`text-sm ${
-                      status.user.id === session.user.id
-                        ? "font-bold text-zinc-900 dark:text-zinc-100"
-                        : "text-zinc-600 dark:text-zinc-400"
-                    }`}
-                  >
-                    {status.content}
-                  </p>
+                  <div className="flex items-start justify-between gap-2">
+                    <p
+                      className={`text-sm ${
+                        status.user.id === session.user.id
+                          ? "font-bold text-zinc-900 dark:text-zinc-100"
+                          : "text-zinc-600 dark:text-zinc-400"
+                      }`}
+                    >
+                      {status.content}
+                    </p>
+                    <StatusLikeButton
+                      statusId={status.id}
+                      likeCount={status.likeCount}
+                      isLiked={status.isLiked}
+                    />
+                  </div>
                 </div>
               </div>
             ))}

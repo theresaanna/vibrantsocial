@@ -26,6 +26,13 @@ vi.mock("@/components/status-composer", () => ({
 
 vi.mock("@/app/feed/status-actions", () => ({
   pollStatuses: vi.fn().mockResolvedValue({ ownStatus: null, friendStatuses: [] }),
+  toggleStatusLike: vi.fn().mockResolvedValue({ success: true, message: "Liked" }),
+}));
+
+vi.mock("@/components/status-like-button", () => ({
+  StatusLikeButton: ({ likeCount }: { likeCount: number }) => (
+    <span data-testid="status-like-btn">{likeCount}</span>
+  ),
 }));
 
 function makeStatus(id: string, username: string, content: string, userId?: string) {
@@ -33,6 +40,8 @@ function makeStatus(id: string, username: string, content: string, userId?: stri
     id,
     content,
     createdAt: new Date().toISOString(),
+    likeCount: 0,
+    isLiked: false,
     user: {
       id: userId ?? `uid-${username}`,
       username,

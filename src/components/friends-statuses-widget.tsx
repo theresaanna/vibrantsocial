@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { StyledName } from "@/components/styled-name";
 import { StatusComposer } from "@/components/status-composer";
+import { StatusLikeButton } from "@/components/status-like-button";
 import { pollStatuses } from "@/app/feed/status-actions";
 import { timeAgo } from "@/lib/time";
 import type { FriendStatusData } from "@/app/feed/status-actions";
@@ -49,15 +50,22 @@ function StatusItem({
             {timeAgo(status.createdAt)}
           </span>
         </div>
-        <p
-          className={`text-sm ${
-            isOwn
-              ? "font-bold text-zinc-900 dark:text-zinc-100"
-              : "text-zinc-600 dark:text-zinc-400"
-          }`}
-        >
-          {status.content}
-        </p>
+        <div className="flex items-start justify-between gap-2">
+          <p
+            className={`text-sm ${
+              isOwn
+                ? "font-bold text-zinc-900 dark:text-zinc-100"
+                : "text-zinc-600 dark:text-zinc-400"
+            }`}
+          >
+            {status.content}
+          </p>
+          <StatusLikeButton
+            statusId={status.id}
+            likeCount={status.likeCount}
+            isLiked={status.isLiked}
+          />
+        </div>
       </div>
     </div>
   );
