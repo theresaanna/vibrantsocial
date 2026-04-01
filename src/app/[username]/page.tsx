@@ -266,6 +266,15 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
         },
       },
     },
+    marketplacePost: {
+      select: {
+        id: true,
+        price: true,
+        purchaseUrl: true,
+        shippingOption: true,
+        shippingPrice: true,
+      },
+    },
     comments: {
       where: { parentId: null },
       orderBy: { createdAt: "asc" as const },
@@ -765,7 +774,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
               )}
               {feedItems.map((item) =>
                 item.type === "post" ? (
-                  <PostCard key={`post-${item.data.id}`} post={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} hideSensitiveOverlay={hideSensitiveOverlay} showNsfwContent={showNsfwContent} showPinnedIndicator {...(item.data.wallPost && item.data.wallPost.wallOwner.username && { wallOwner: { username: item.data.wallPost.wallOwner.username, displayName: item.data.wallPost.wallOwner.displayName }, wallPostId: item.data.wallPost.id, wallPostStatus: item.data.wallPost.status })} />
+                  <PostCard key={`post-${item.data.id}`} post={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} hideSensitiveOverlay={hideSensitiveOverlay} showNsfwContent={showNsfwContent} showPinnedIndicator {...(item.data.wallPost && item.data.wallPost.wallOwner.username && { wallOwner: { username: item.data.wallPost.wallOwner.username, displayName: item.data.wallPost.wallOwner.displayName }, wallPostId: item.data.wallPost.id, wallPostStatus: item.data.wallPost.status })} {...(item.data.marketplacePost && { marketplacePostId: item.data.marketplacePost.id, marketplaceData: { price: item.data.marketplacePost.price, purchaseUrl: item.data.marketplacePost.purchaseUrl, shippingOption: item.data.marketplacePost.shippingOption, shippingPrice: item.data.marketplacePost.shippingPrice } })} />
                 ) : item.type === "repost" ? (
                   <RepostCard key={`repost-${item.data.id}`} repost={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} hideSensitiveOverlay={hideSensitiveOverlay} showNsfwContent={showNsfwContent} showPinnedIndicator />
                 ) : (
