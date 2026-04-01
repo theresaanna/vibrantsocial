@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import dynamic from "next/dynamic";
 import { useChannel, ChannelProvider } from "ably/react";
 import { useAblyReady } from "@/app/providers";
 import { AddToHomeBanner } from "@/components/add-to-home-banner";
@@ -14,10 +13,6 @@ import { FeedViewToggleWrapper } from "@/components/feed-view-toggle-wrapper";
 import { MediaFeedClientContent } from "@/components/media-feed-client-content";
 import type { FeedView } from "@/components/feed-view-toggle";
 
-const PostComposer = dynamic(
-  () => import("@/components/post-composer").then((m) => ({ default: m.PostComposer })),
-  { ssr: false }
-);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FeedItem = { type: "post" | "repost"; data: any; date: string };
@@ -147,13 +142,18 @@ export function FeedClient({
         <FeedSummaryBanner lastSeenFeedAt={lastSeenFeedAt} />
       )}
       {!listId && activeView === "posts" && (
-        <PostComposer
-          phoneVerified={phoneVerified}
-          isOldEnough={isOldEnough}
-          isPremium={isPremium}
-          isAgeVerified={ageVerified}
-          onPostCreated={handlePostCreated}
-        />
+        <div className="mb-4 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 dark:border-indigo-800 dark:bg-indigo-950/50">
+          <p className="text-sm text-indigo-800 dark:text-indigo-200">
+            The post composer has moved!{" "}
+            <a
+              href="/compose"
+              className="font-medium underline hover:text-indigo-600 dark:hover:text-indigo-300"
+            >
+              Go to Compose
+            </a>{" "}
+            to create a new post.
+          </p>
+        </div>
       )}
       {!listId && (
         <FeedViewToggleWrapper activeView={activeView} />

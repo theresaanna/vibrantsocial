@@ -303,8 +303,8 @@ export function RepostCard({
           </span>
         )}
 
-        {/* Author menu for quote posts */}
-        {isAuthor && isQuote && (
+        {/* Author menu */}
+        {isAuthor && (
           <div className="relative ml-auto" ref={menuRef}>
             <button
               type="button"
@@ -314,22 +314,40 @@ export function RepostCard({
             >
               <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-              </svg>
+            </svg>
             </button>
             {showMenu && (
               <div className="absolute right-0 top-full z-50 mt-1 w-44 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditTags(currentTags.map((rt) => rt.tag.name));
-                    setIsEditing(true);
-                    setShowMenu(false);
-                  }}
-                  className="w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                  data-testid="repost-edit-button"
+                <Link
+                  href={`/post/${repost.post.id}/likes`}
+                  onClick={() => setShowMenu(false)}
+                  className="block w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  data-testid="repost-likes-list-button"
                 >
-                  Edit
-                </button>
+                  Likes
+                </Link>
+                <Link
+                  href={`/post/${repost.post.id}/reposts`}
+                  onClick={() => setShowMenu(false)}
+                  className="block w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  data-testid="repost-reposts-list-button"
+                >
+                  Reposts &amp; quotes
+                </Link>
+                {isQuote && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditTags(currentTags.map((rt) => rt.tag.name));
+                      setIsEditing(true);
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                    data-testid="repost-edit-button"
+                  >
+                    Edit
+                  </button>
+                )}
                 <form action={pinAction}>
                   <input type="hidden" name="repostId" value={repost.id} />
                   <button
