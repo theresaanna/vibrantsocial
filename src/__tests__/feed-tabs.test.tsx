@@ -49,6 +49,7 @@ describe("FeedTabs", () => {
   it("renders correct hrefs", () => {
     render(<FeedTabs lists={lists} />);
     expect(screen.getByText("Feed").closest("a")).toHaveAttribute("href", "/feed");
+    expect(screen.getByText("For You").closest("a")).toHaveAttribute("href", "/feed?list=for-you");
     expect(screen.getByText("Tech").closest("a")).toHaveAttribute("href", "/feed?list=l1");
     expect(screen.getByText("alice: Friends").closest("a")).toHaveAttribute("href", "/feed?list=l2");
   });

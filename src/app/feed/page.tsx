@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { FeedContent } from "./feed-content";
 import { ListFeedContent } from "./list-feed-content";
 import { CloseFriendsFeedContent } from "./close-friends-feed-content";
+import { ForYouFeedContent } from "./for-you-feed-content";
 import { FeedSkeleton } from "@/components/feed-skeleton";
 import { FeedTabs } from "@/components/feed-tabs";
 import { getUserLists, getSubscribedLists, getListInfo } from "@/app/lists/actions";
@@ -69,7 +70,9 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
         } : null}
       />
       <Suspense key={`${activeListId ?? "main-feed"}-${activeView}`} fallback={<FeedSkeleton />}>
-        {activeListId === "close-friends" ? (
+        {activeListId === "for-you" ? (
+          <ForYouFeedContent userId={session.user.id} />
+        ) : activeListId === "close-friends" ? (
           <CloseFriendsFeedContent userId={session.user.id} />
         ) : activeListId ? (
           <ListFeedContent userId={session.user.id} listId={activeListId} />

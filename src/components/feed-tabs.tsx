@@ -37,6 +37,13 @@ export function FeedTabs({ lists, activeListId, activeListInfo }: {
         Feed
       </Link>
       <Link
+        href="/feed?list=for-you"
+        prefetch={false}
+        className={`${baseClass} ${activeListId === "for-you" ? activeClass : inactiveClass} shrink-0`}
+      >
+        For You
+      </Link>
+      <Link
         href="/feed?list=close-friends"
         prefetch={false}
         className={`${baseClass} ${activeListId === "close-friends" ? activeClass : inactiveClass} shrink-0`}
