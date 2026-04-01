@@ -48,7 +48,7 @@ export function AddToHomeBanner() {
   if (!visible) return null;
 
   return (
-    <div className="mb-4 flex items-start gap-3 rounded-2xl bg-gradient-to-r from-fuchsia-50/60 to-blue-50/60 p-4 shadow-sm md:hidden dark:from-fuchsia-950/20 dark:to-blue-950/20">
+    <div className="mb-4 flex items-start gap-3 rounded-2xl bg-zinc-50 p-4 shadow-sm md:hidden dark:bg-zinc-800">
       <div className="flex-1 text-sm text-zinc-700 dark:text-zinc-300">
         <p className="font-medium text-zinc-900 dark:text-zinc-100">
           Add VibrantSocial to your home screen
