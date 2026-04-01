@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useActionState } from "react";
+import { useRouter } from "next/navigation";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -51,6 +52,7 @@ interface WallPostComposerProps {
 }
 
 export function WallPostComposer({ wallOwnerId, wallOwnerName }: WallPostComposerProps) {
+  const router = useRouter();
   const [content, setContent] = useState("");
   const [shouldClear, setShouldClear] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -64,8 +66,9 @@ export function WallPostComposer({ wallOwnerId, wallOwnerName }: WallPostCompose
     if (state.success) {
       setShouldClear(true);
       setContent("");
+      router.refresh();
     }
-  }, [state]);
+  }, [state, router]);
 
   function handleChange(editorState: EditorState) {
     editorState.read(() => {

@@ -4,9 +4,10 @@ import { cached, invalidate, cacheKeys } from "@/lib/cache";
 export interface UserPrefs {
   showNsfwContent: boolean;
   ageVerified: boolean;
+  hideWallFromFeed: boolean;
 }
 
-const DEFAULT_PREFS: UserPrefs = { showNsfwContent: false, ageVerified: false };
+const DEFAULT_PREFS: UserPrefs = { showNsfwContent: false, ageVerified: false, hideWallFromFeed: false };
 
 /**
  * Get user content preferences (NSFW opt-in, age verification).
@@ -18,12 +19,13 @@ export async function getUserPrefs(userId: string): Promise<UserPrefs> {
     async () => {
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { showNsfwContent: true, ageVerified: true },
+        select: { showNsfwContent: true, ageVerified: true, hideWallFromFeed: true },
       });
       if (!user) return DEFAULT_PREFS;
       return {
         showNsfwContent: user.showNsfwContent ?? false,
         ageVerified: !!user.ageVerified,
+        hideWallFromFeed: user.hideWallFromFeed ?? false,
       };
     },
     300 // 5 minutes
