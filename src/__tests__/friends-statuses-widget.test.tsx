@@ -57,12 +57,7 @@ function makeStatus(id: string, username: string, content: string, userId?: stri
 
 describe("FriendsStatusesWidget", () => {
   beforeEach(() => {
-    vi.useFakeTimers();
     capturedOnStatusCreated = undefined;
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   it("renders composer and empty message when no statuses", () => {
@@ -95,7 +90,7 @@ describe("FriendsStatusesWidget", () => {
     expect(link.getAttribute("href")).toBe("/statuses");
   });
 
-  it("cycles through friend statuses after interval", () => {
+  it("renders all statuses in scrollable container", () => {
     const statuses = [
       makeStatus("s1", "alice", "Status 1"),
       makeStatus("s2", "bob", "Status 2"),
@@ -103,51 +98,21 @@ describe("FriendsStatusesWidget", () => {
       makeStatus("s4", "dave", "Status 4"),
     ];
 
-    Object.defineProperty(document, "hidden", { value: false, configurable: true });
-
     render(<FriendsStatusesWidget statuses={statuses} />);
 
-    // Initially shows first 2
+    // All statuses rendered (horizontally scrollable, all in DOM)
     expect(screen.getByText("Status 1")).toBeDefined();
     expect(screen.getByText("Status 2")).toBeDefined();
-
-    act(() => {
-      vi.advanceTimersByTime(6_000);
-    });
-
-    // Now shows next 2
     expect(screen.getByText("Status 3")).toBeDefined();
     expect(screen.getByText("Status 4")).toBeDefined();
   });
 
-  it("does not cycle when document is hidden", () => {
-    const statuses = [
-      makeStatus("s1", "alice", "Status 1"),
-      makeStatus("s2", "bob", "Status 2"),
-      makeStatus("s3", "carol", "Status 3"),
-    ];
-
-    Object.defineProperty(document, "hidden", { value: true, configurable: true });
-
-    render(<FriendsStatusesWidget statuses={statuses} />);
-
-    act(() => {
-      vi.advanceTimersByTime(6_000);
-    });
-
-    expect(screen.getByText("Status 1")).toBeDefined();
-    expect(screen.getByText("Status 2")).toBeDefined();
-  });
-
-  it("pins own status at the top and shows one rotating friend status", () => {
+  it("pins own status first in the scroll container", () => {
     const friendStatuses = [
       makeStatus("s1", "alice", "Friend 1"),
       makeStatus("s2", "bob", "Friend 2"),
-      makeStatus("s3", "carol", "Friend 3"),
     ];
     const ownStatus = makeStatus("own1", "me", "My status", "current-user");
-
-    Object.defineProperty(document, "hidden", { value: false, configurable: true });
 
     render(
       <FriendsStatusesWidget
@@ -157,18 +122,13 @@ describe("FriendsStatusesWidget", () => {
       />
     );
 
-    // Own status always visible
-    expect(screen.getByText("My status")).toBeDefined();
-    // First friend status visible
-    expect(screen.getByText("Friend 1")).toBeDefined();
+    const container = screen.getByTestId("status-scroll-container");
+    const cards = container.children;
 
-    // After rotation, own status still pinned, friend rotated
-    act(() => {
-      vi.advanceTimersByTime(6_000);
-    });
-
-    expect(screen.getByText("My status")).toBeDefined();
-    expect(screen.getByText("Friend 2")).toBeDefined();
+    // Own status is the first card
+    expect(cards[0].textContent).toContain("My status");
+    expect(cards[1].textContent).toContain("Friend 1");
+    expect(cards[2].textContent).toContain("Friend 2");
   });
 
   it("shows own status immediately after posting via composer", () => {
@@ -184,7 +144,6 @@ describe("FriendsStatusesWidget", () => {
       capturedOnStatusCreated?.(makeStatus("own1", "me", "Just posted!", "me"));
     });
 
-    // Own status appears immediately and is bold
     const ownEl = screen.getByText("Just posted!");
     expect(ownEl).toBeDefined();
     expect(ownEl.className).toContain("font-bold");
