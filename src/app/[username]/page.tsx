@@ -593,7 +593,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
 
             <div className="min-w-0 w-full sm:flex-1">
               <div className="min-w-0">
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <h1
                       className={`text-xl font-bold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}
