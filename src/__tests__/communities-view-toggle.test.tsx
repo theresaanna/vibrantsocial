@@ -13,15 +13,17 @@ describe("CommunitiesViewToggle", () => {
     vi.clearAllMocks();
   });
 
-  it("renders Tags, Media, and Discussions tabs", () => {
+  it("renders Tags, Media, Discussions, and Newcomers tabs", () => {
     render(<CommunitiesViewToggle activeView="tags" />);
 
     expect(screen.getByTestId("communities-view-tags")).toBeInTheDocument();
     expect(screen.getByTestId("communities-view-media")).toBeInTheDocument();
     expect(screen.getByTestId("communities-view-discussions")).toBeInTheDocument();
+    expect(screen.getByTestId("communities-view-newcomers")).toBeInTheDocument();
     expect(screen.getByText("Tags")).toBeInTheDocument();
     expect(screen.getByText("Media")).toBeInTheDocument();
     expect(screen.getByText("Discussions")).toBeInTheDocument();
+    expect(screen.getByText("Newcomers")).toBeInTheDocument();
   });
 
   it("marks Tags tab as selected by default", () => {
@@ -75,10 +77,26 @@ describe("CommunitiesViewToggle", () => {
     expect(screen.getByRole("tablist")).toHaveAttribute("aria-label", "Communities view");
   });
 
+  it("marks Newcomers tab as selected when activeView is newcomers", () => {
+    render(<CommunitiesViewToggle activeView="newcomers" />);
+
+    expect(screen.getByTestId("communities-view-tags")).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByTestId("communities-view-media")).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByTestId("communities-view-discussions")).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByTestId("communities-view-newcomers")).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("navigates to /communities?view=newcomers when Newcomers is clicked", () => {
+    render(<CommunitiesViewToggle activeView="tags" />);
+
+    fireEvent.click(screen.getByTestId("communities-view-newcomers"));
+    expect(mockPush).toHaveBeenCalledWith("/communities?view=newcomers");
+  });
+
   it("renders tab buttons with role tab", () => {
     render(<CommunitiesViewToggle activeView="tags" />);
 
     const tabs = screen.getAllByRole("tab");
-    expect(tabs).toHaveLength(3);
+    expect(tabs).toHaveLength(4);
   });
 });
