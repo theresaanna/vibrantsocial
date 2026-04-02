@@ -23,7 +23,7 @@ export function ThemedPage({
       style={{ ...themeStyle, ...bgImageStyle }}
     >
       {sparklefallProps && <ProfileSparklefall {...sparklefallProps} />}
-      {bare ? children : <main className={className}>{children}</main>}
+      {bare ? children : <div className={className}>{children}</div>}
     </div>
   );
 }
