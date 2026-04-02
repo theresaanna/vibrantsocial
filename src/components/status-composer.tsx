@@ -37,7 +37,7 @@ export function StatusComposer({ onStatusCreated }: StatusComposerProps) {
       <input
         name="content"
         type="text"
-        maxLength={280}
+        maxLength={75}
         placeholder="What's on your mind?"
         className="flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500"
         data-testid="status-input"
