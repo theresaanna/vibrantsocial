@@ -38,6 +38,7 @@ export async function createCheckoutSession(params: {
         quantity: 1,
       },
     ],
+    allow_promotion_codes: true,
     success_url: params.successUrl,
     cancel_url: params.cancelUrl,
     customer_email: params.userEmail ?? undefined,
