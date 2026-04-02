@@ -6,6 +6,7 @@ import { FramedAvatar } from "@/components/framed-avatar";
 import { StyledName } from "@/components/styled-name";
 import { StatusComposer } from "@/components/status-composer";
 import { StatusLikeButton } from "@/components/status-like-button";
+import { StatusReplyButton } from "@/components/status-reply-button";
 import { pollStatuses } from "@/app/feed/status-actions";
 import { timeAgo } from "@/lib/time";
 import type { FriendStatusData } from "@/app/feed/status-actions";
@@ -54,11 +55,20 @@ function StatusCard({
         >
           {status.content}
         </p>
-        <StatusLikeButton
-          statusId={status.id}
-          likeCount={status.likeCount}
-          isLiked={status.isLiked}
-        />
+        <div className="flex shrink-0 items-center gap-2">
+          {!isOwn && (
+            <StatusReplyButton
+              userId={status.user.id}
+              statusContent={status.content}
+              authorName={status.user.displayName || status.user.name || status.user.username || "User"}
+            />
+          )}
+          <StatusLikeButton
+            statusId={status.id}
+            likeCount={status.likeCount}
+            isLiked={status.isLiked}
+          />
+        </div>
       </div>
     </div>
   );
