@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { upload as blobUpload } from "@vercel/blob/client";
 import { VoiceRecorder } from "./voice-recorder";
@@ -42,7 +43,12 @@ export function MessageInput({
   onCancelReply,
   hasCustomTheme,
 }: MessageInputProps) {
-  const [value, setValue] = useState("");
+  const searchParams = useSearchParams();
+  const statusReplyConsumed = useRef(false);
+  const [value, setValue] = useState(() => {
+    // Cannot read searchParams during SSR initial render, handled in effect below
+    return "";
+  });
   const [isSending, setIsSending] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [voiceBlob, setVoiceBlob] = useState<Blob | null>(null);
@@ -77,6 +83,31 @@ export function MessageInput({
       textareaRef.current?.focus();
     }
   }, [isSending]);
+
+  // Prefill textarea from statusReply query param (one-time)
+  useEffect(() => {
+    if (statusReplyConsumed.current) return;
+    const reply = searchParams.get("statusReply");
+    if (reply) {
+      statusReplyConsumed.current = true;
+      setValue(reply);
+      // Clean up the URL so refreshing doesn't re-prefill
+      const url = new URL(window.location.href);
+      url.searchParams.delete("statusReply");
+      window.history.replaceState({}, "", url.toString());
+      // Focus and move cursor to end
+      requestAnimationFrame(() => {
+        const ta = textareaRef.current;
+        if (ta) {
+          ta.focus();
+          ta.selectionStart = ta.selectionEnd = reply.length;
+          // Trigger auto-resize
+          ta.style.height = "auto";
+          ta.style.height = `${Math.min(ta.scrollHeight, 120)}px`;
+        }
+      });
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();

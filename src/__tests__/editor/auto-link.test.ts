@@ -3,12 +3,13 @@ import {
   MATCHERS,
   URL_REGEX,
   WWW_REGEX,
+  BARE_DOMAIN_REGEX,
   EMAIL_REGEX,
 } from "@/components/editor/plugins/AutoLinkPlugin";
 
 describe("AutoLinkPlugin matchers", () => {
-  it("exports 3 matchers", () => {
-    expect(MATCHERS).toHaveLength(3);
+  it("exports 4 matchers", () => {
+    expect(MATCHERS).toHaveLength(4);
   });
 
   describe("URL_REGEX", () => {
@@ -94,6 +95,64 @@ describe("AutoLinkPlugin matchers", () => {
 
     it("does not match URL", () => {
       expect(EMAIL_REGEX.exec("https://example.com")).toBeNull();
+    });
+  });
+
+  describe("BARE_DOMAIN_REGEX", () => {
+    it("matches simple domains", () => {
+      const match = BARE_DOMAIN_REGEX.exec("example.com");
+      expect(match).not.toBeNull();
+      expect(match![0]).toBe("example.com");
+    });
+
+    it("matches domains with paths", () => {
+      const match = BARE_DOMAIN_REGEX.exec("example.com/about");
+      expect(match).not.toBeNull();
+      expect(match![0]).toBe("example.com/about");
+    });
+
+    it("matches domains with query strings", () => {
+      const match = BARE_DOMAIN_REGEX.exec("example.com/search?q=test");
+      expect(match).not.toBeNull();
+      expect(match![0]).toBe("example.com/search?q=test");
+    });
+
+    it("matches subdomains", () => {
+      const match = BARE_DOMAIN_REGEX.exec("docs.google.com");
+      expect(match).not.toBeNull();
+      expect(match![0]).toBe("docs.google.com");
+    });
+
+    it("matches .io domains", () => {
+      const match = BARE_DOMAIN_REGEX.exec("github.io");
+      expect(match).not.toBeNull();
+      expect(match![0]).toBe("github.io");
+    });
+
+    it("matches .co.uk domains", () => {
+      const match = BARE_DOMAIN_REGEX.exec("example.co.uk");
+      expect(match).not.toBeNull();
+      expect(match![0]).toBe("example.co.uk");
+    });
+
+    it("matches .dev domains", () => {
+      const match = BARE_DOMAIN_REGEX.exec("mysite.dev");
+      expect(match).not.toBeNull();
+      expect(match![0]).toBe("mysite.dev");
+    });
+
+    it("matches .ai domains", () => {
+      const match = BARE_DOMAIN_REGEX.exec("claude.ai");
+      expect(match).not.toBeNull();
+      expect(match![0]).toBe("claude.ai");
+    });
+
+    it("does not match plain text", () => {
+      expect(BARE_DOMAIN_REGEX.exec("hello world")).toBeNull();
+    });
+
+    it("does not match words with dots but no valid TLD", () => {
+      expect(BARE_DOMAIN_REGEX.exec("hello.there")).toBeNull();
     });
   });
 });

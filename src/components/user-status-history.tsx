@@ -7,6 +7,7 @@ import { StyledName } from "@/components/styled-name";
 import { timeAgo } from "@/lib/time";
 import { deleteStatus } from "@/app/feed/status-actions";
 import { StatusLikeButton } from "@/components/status-like-button";
+import { StatusReplyButton } from "@/components/status-reply-button";
 import type { FriendStatusData } from "@/app/feed/status-actions";
 
 function DeleteStatusButton({ statusId }: { statusId: string }) {
@@ -93,6 +94,13 @@ export function UserStatusHistory({
                 likeCount={status.likeCount}
                 isLiked={status.isLiked}
               />
+              {!isOwner && (
+                <StatusReplyButton
+                  userId={status.user.id}
+                  statusContent={status.content}
+                  authorName={status.user.displayName || status.user.name || status.user.username || "User"}
+                />
+              )}
             </div>
           </div>
           {isOwner && <DeleteStatusButton statusId={status.id} />}
