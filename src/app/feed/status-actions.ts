@@ -221,6 +221,7 @@ export async function getFriendStatuses(
   const statuses = await prisma.userStatus.findMany({
     where: { userId: { in: friendIds } },
     orderBy: { createdAt: "desc" },
+    distinct: ["userId"],
     take: limit,
     include: statusInclude(userId),
   });
