@@ -170,7 +170,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
         currentUserId="user1"
         {...defaultProps}
         ageVerified={true}
-        hideSensitiveOverlay={true}
+        hideSensitiveOverlay={true} hideNsfwOverlay={false}
       />
     );
     expect(screen.getByTestId("post-content")).toBeInTheDocument();
@@ -184,7 +184,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
         currentUserId="viewer1"
         {...defaultProps}
         ageVerified={false}
-        hideSensitiveOverlay={true}
+        hideSensitiveOverlay={true} hideNsfwOverlay={false}
       />
     );
     expect(screen.getByText("Verify your age to view this content.")).toBeInTheDocument();
@@ -198,7 +198,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
         currentUserId="user1"
         {...defaultProps}
         ageVerified={true}
-        hideSensitiveOverlay={true}
+        hideSensitiveOverlay={true} hideNsfwOverlay={false}
       />
     );
     expect(screen.getByText("Sensitive")).toBeInTheDocument();
@@ -382,7 +382,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
         currentUserId="user1"
         {...defaultProps}
         ageVerified={true}
-        hideSensitiveOverlay={true}
+        hideSensitiveOverlay={true} hideNsfwOverlay={false}
         showGraphicByDefault={true}
       />
     );
@@ -400,7 +400,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
         currentUserId="user1"
         {...defaultProps}
         ageVerified={true}
-        hideSensitiveOverlay={true}
+        hideSensitiveOverlay={true} hideNsfwOverlay={false}
       />
     );
     expect(screen.getByText("Click to view graphic content")).toBeInTheDocument();
@@ -428,7 +428,7 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
         currentUserId="user1"
         {...defaultProps}
         showNsfwContent={true}
-        hideSensitiveOverlay={true}
+        hideSensitiveOverlay={true} hideNsfwOverlay={false}
         showGraphicByDefault={true}
       />
     );

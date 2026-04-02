@@ -72,6 +72,7 @@ model User {
   showGraphicByDefault  Boolean   @default(false)
   showNsfwContent       Boolean   @default(false)
   hideSensitiveOverlay  Boolean   @default(false)
+  hideNsfwOverlay       Boolean   @default(false)
 
   // Beta access
   isBeta                Boolean   @default(false)

@@ -53,8 +53,8 @@ export async function fetchTopDiscussedPosts() {
         isProfilePublic: true,
         ...(blockedIds.length > 0 ? { id: { notIn: blockedIds } } : {}),
       },
-      isSensitive: false,
-      isGraphicNudity: false,
+      ...(!showNsfwContent || !ageVerified || !hideSensitiveOverlay ? { isSensitive: false } : {}),
+      ...(!showNsfwContent || !ageVerified || !showGraphicByDefault ? { isGraphicNudity: false } : {}),
       ...(!showNsfwContent
         ? {
             isNsfw: false,

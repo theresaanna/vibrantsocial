@@ -61,7 +61,8 @@ export async function fetchUserMediaPosts(
         }
       : { hasCustomAudience: false };
 
-  // Content flag filters
+  // Content flag filters — hide sensitive/graphic from media tab unless
+  // the user has explicitly opted to remove the overlay for that category
   let nsfwFilter = {};
   if (!currentUserId) {
     nsfwFilter = { isSensitive: false, isNsfw: false, isGraphicNudity: false, isLoggedInOnly: false };
@@ -69,7 +70,8 @@ export async function fetchUserMediaPosts(
     const prefs = await getUserPrefs(currentUserId);
     nsfwFilter = {
       ...(!prefs.showNsfwContent ? { isNsfw: false } : {}),
-      ...(!prefs.ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
+      ...(!prefs.showNsfwContent || !prefs.ageVerified || !prefs.hideSensitiveOverlay ? { isSensitive: false } : {}),
+      ...(!prefs.showNsfwContent || !prefs.ageVerified || !prefs.showGraphicByDefault ? { isGraphicNudity: false } : {}),
     };
   }
 

@@ -19,6 +19,7 @@ export function FeedList({
   showGraphicByDefault,
   showNsfwContent,
   hideSensitiveOverlay,
+  hideNsfwOverlay,
   newItems = [],
   fetchPage,
   viewSource = "feed",
@@ -31,6 +32,7 @@ export function FeedList({
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
   hideSensitiveOverlay: boolean;
+  hideNsfwOverlay: boolean;
   newItems?: FeedItem[];
   fetchPage?: (cursor: string) => Promise<{ items: FeedItem[]; hasMore: boolean }>;
   viewSource?: ViewSource;
@@ -147,6 +149,7 @@ export function FeedList({
             showGraphicByDefault={showGraphicByDefault}
             showNsfwContent={showNsfwContent}
             hideSensitiveOverlay={hideSensitiveOverlay}
+            hideNsfwOverlay={hideNsfwOverlay}
             onDelete={() => handleDelete("post", item.data.id)}
             {...(item.data.wallPost && {
               wallOwner: {
@@ -177,6 +180,7 @@ export function FeedList({
             showGraphicByDefault={showGraphicByDefault}
             showNsfwContent={showNsfwContent}
             hideSensitiveOverlay={hideSensitiveOverlay}
+            hideNsfwOverlay={hideNsfwOverlay}
             onDelete={() => handleDelete("repost", item.data.id)}
           />
         );

@@ -67,6 +67,7 @@ export default async function MarketplaceIdPage({ params, searchParams }: Props)
   let showGraphicByDefault = false;
   let showNsfwContent = false;
   let hideSensitiveOverlay = false;
+  let hideNsfwOverlay = false;
   let theme = NO_THEME;
 
   if (userId) {
@@ -81,6 +82,7 @@ export default async function MarketplaceIdPage({ params, searchParams }: Props)
         showGraphicByDefault: true,
         showNsfwContent: true,
         hideSensitiveOverlay: true,
+        hideNsfwOverlay: true,
         ...userThemeSelect,
       },
     });
@@ -92,6 +94,7 @@ export default async function MarketplaceIdPage({ params, searchParams }: Props)
     showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
     showNsfwContent = currentUser?.showNsfwContent ?? false;
     hideSensitiveOverlay = currentUser?.hideSensitiveOverlay ?? false;
+    hideNsfwOverlay = currentUser?.hideNsfwOverlay ?? false;
     theme = buildUserTheme(currentUser);
   }
 
@@ -211,6 +214,7 @@ export default async function MarketplaceIdPage({ params, searchParams }: Props)
         ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
         hideSensitiveOverlay={hideSensitiveOverlay}
+        hideNsfwOverlay={hideNsfwOverlay}
         showNsfwContent={showNsfwContent}
         highlightCommentId={commentId ?? null}
         wallPost={post.wallPost}

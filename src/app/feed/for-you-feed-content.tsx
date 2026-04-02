@@ -20,6 +20,7 @@ export async function ForYouFeedContent({ userId }: { userId: string }) {
         ageVerified: true,
         showGraphicByDefault: true,
         hideSensitiveOverlay: true,
+        hideNsfwOverlay: true,
         showNsfwContent: true,
         tier: true,
       },
@@ -44,6 +45,7 @@ export async function ForYouFeedContent({ userId }: { userId: string }) {
   const ageVerified = !!currentUser.ageVerified;
   const showGraphicByDefault = currentUser.showGraphicByDefault ?? false;
   const hideSensitiveOverlay = currentUser.hideSensitiveOverlay ?? false;
+  const hideNsfwOverlay = currentUser.hideNsfwOverlay ?? false;
   const showNsfwContent = currentUser.showNsfwContent ?? false;
   const isOldEnough = currentUser.dateOfBirth
     ? calculateAge(currentUser.dateOfBirth) >= 18
@@ -66,7 +68,8 @@ export async function ForYouFeedContent({ userId }: { userId: string }) {
       hasCustomAudience: false,
       isLoggedInOnly: false,
       ...(!showNsfwContent ? { isNsfw: false } : {}),
-      ...(!ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
+      ...(!showNsfwContent || !ageVerified || !hideSensitiveOverlay ? { isSensitive: false } : {}),
+      ...(!showNsfwContent || !ageVerified || !showGraphicByDefault ? { isGraphicNudity: false } : {}),
       OR: [
         { marketplacePost: null },
         { marketplacePost: { promotedToFeed: true } },
@@ -103,6 +106,7 @@ export async function ForYouFeedContent({ userId }: { userId: string }) {
       ageVerified={ageVerified}
       showGraphicByDefault={showGraphicByDefault}
       hideSensitiveOverlay={hideSensitiveOverlay}
+      hideNsfwOverlay={hideNsfwOverlay}
       showNsfwContent={showNsfwContent}
       hasEmail={!!currentUser.email}
       isPremium={currentUser.tier === "premium"}

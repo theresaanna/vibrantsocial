@@ -115,7 +115,7 @@ describe("Content overlay opt-in feature", () => {
           post={{ ...basePost, isNsfw: true }}
           {...defaultProps}
           showNsfwContent={true}
-          hideSensitiveOverlay={true}
+          hideSensitiveOverlay={true} hideNsfwOverlay={false}
           showGraphicByDefault={true}
         />
       );
@@ -142,7 +142,7 @@ describe("Content overlay opt-in feature", () => {
         <PostCard
           post={{ ...basePost, isSensitive: true }}
           {...defaultProps}
-          hideSensitiveOverlay={false}
+          hideSensitiveOverlay={false} hideNsfwOverlay={false}
         />
       );
       expect(screen.getByText("Click to view sensitive content")).toBeInTheDocument();
@@ -154,7 +154,7 @@ describe("Content overlay opt-in feature", () => {
         <PostCard
           post={{ ...basePost, isSensitive: true }}
           {...defaultProps}
-          hideSensitiveOverlay={true}
+          hideSensitiveOverlay={true} hideNsfwOverlay={false}
         />
       );
       expect(screen.getByTestId("post-content")).toBeInTheDocument();
@@ -167,7 +167,7 @@ describe("Content overlay opt-in feature", () => {
           post={{ ...basePost, isSensitive: true }}
           {...defaultProps}
           ageVerified={false}
-          hideSensitiveOverlay={true}
+          hideSensitiveOverlay={true} hideNsfwOverlay={false}
         />
       );
       expect(screen.getByText("Verify your age to view this content.")).toBeInTheDocument();
@@ -179,7 +179,7 @@ describe("Content overlay opt-in feature", () => {
         <PostCard
           post={{ ...basePost, isNsfw: true }}
           {...defaultProps}
-          hideSensitiveOverlay={true}
+          hideSensitiveOverlay={true} hideNsfwOverlay={false}
         />
       );
       expect(screen.getByText("Click to view NSFW content")).toBeInTheDocument();
@@ -190,7 +190,7 @@ describe("Content overlay opt-in feature", () => {
         <PostCard
           post={{ ...basePost, isGraphicNudity: true }}
           {...defaultProps}
-          hideSensitiveOverlay={true}
+          hideSensitiveOverlay={true} hideNsfwOverlay={false}
           showGraphicByDefault={false}
         />
       );
@@ -253,7 +253,7 @@ describe("Content overlay opt-in feature", () => {
           post={{ ...basePost, isSensitive: true }}
           {...defaultProps}
           showGraphicByDefault={true}
-          hideSensitiveOverlay={false}
+          hideSensitiveOverlay={false} hideNsfwOverlay={false}
         />
       );
       expect(screen.getByText("Click to view sensitive content")).toBeInTheDocument();
@@ -266,7 +266,7 @@ describe("Content overlay opt-in feature", () => {
         <PostCard
           post={{ ...basePost, isSensitive: true, isGraphicNudity: true }}
           {...defaultProps}
-          hideSensitiveOverlay={true}
+          hideSensitiveOverlay={true} hideNsfwOverlay={false}
           showGraphicByDefault={true}
         />
       );
@@ -279,7 +279,7 @@ describe("Content overlay opt-in feature", () => {
         <PostCard
           post={{ ...basePost, isSensitive: true, isGraphicNudity: true }}
           {...defaultProps}
-          hideSensitiveOverlay={true}
+          hideSensitiveOverlay={true} hideNsfwOverlay={false}
           showGraphicByDefault={false}
         />
       );
@@ -292,7 +292,7 @@ describe("Content overlay opt-in feature", () => {
         <PostCard
           post={{ ...basePost, isSensitive: true, isNsfw: true }}
           {...defaultProps}
-          hideSensitiveOverlay={true}
+          hideSensitiveOverlay={true} hideNsfwOverlay={false}
         />
       );
       // NSFW always shows overlay
@@ -316,7 +316,7 @@ describe("Content overlay opt-in feature", () => {
         <PostCard
           post={{ ...basePost, isSensitive: true, isNsfw: true, isGraphicNudity: true }}
           {...defaultProps}
-          hideSensitiveOverlay={true}
+          hideSensitiveOverlay={true} hideNsfwOverlay={false}
           showGraphicByDefault={true}
         />
       );
@@ -329,7 +329,7 @@ describe("Content overlay opt-in feature", () => {
         <PostCard
           post={{ ...basePost, isSensitive: true, isNsfw: true, isGraphicNudity: true }}
           {...defaultProps}
-          hideSensitiveOverlay={true}
+          hideSensitiveOverlay={true} hideNsfwOverlay={false}
           showGraphicByDefault={true}
         />
       );
@@ -345,7 +345,7 @@ describe("Content overlay opt-in feature", () => {
         <PostCard
           post={{ ...basePost, isSensitive: true }}
           {...defaultProps}
-          hideSensitiveOverlay={false}
+          hideSensitiveOverlay={false} hideNsfwOverlay={false}
         />
       );
       expect(screen.getByText("Click to view sensitive content")).toBeInTheDocument();

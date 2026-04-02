@@ -78,6 +78,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
   let ageVerified = false;
   let showGraphicByDefault = false;
   let hideSensitiveOverlay = false;
+  let hideNsfwOverlay = false;
   let showNsfwContent = false;
 
   if (userId) {
@@ -91,6 +92,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
         ageVerified: true,
         showGraphicByDefault: true,
         hideSensitiveOverlay: true,
+        hideNsfwOverlay: true,
         showNsfwContent: true,
       },
     });
@@ -102,6 +104,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
     ageVerified = !!currentUser?.ageVerified;
     showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
     hideSensitiveOverlay = currentUser?.hideSensitiveOverlay ?? false;
+    hideNsfwOverlay = currentUser?.hideNsfwOverlay ?? false;
     showNsfwContent = currentUser?.showNsfwContent ?? false;
   }
 
@@ -224,6 +227,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
         ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
         hideSensitiveOverlay={hideSensitiveOverlay}
+        hideNsfwOverlay={hideNsfwOverlay}
         showNsfwContent={showNsfwContent}
         highlightCommentId={commentId ?? null}
         wallPost={post.wallPost}

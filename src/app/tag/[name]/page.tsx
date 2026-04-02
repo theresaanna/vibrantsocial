@@ -50,6 +50,7 @@ export default async function TagPage({ params }: TagPageProps) {
   let ageVerified = false;
   let showGraphicByDefault = false;
   let hideSensitiveOverlay = false;
+  let hideNsfwOverlay = false;
   let showNsfwContent = false;
 
   if (currentUserId) {
@@ -60,6 +61,7 @@ export default async function TagPage({ params }: TagPageProps) {
         ageVerified: true,
         showGraphicByDefault: true,
         hideSensitiveOverlay: true,
+        hideNsfwOverlay: true,
         showNsfwContent: true,
       },
     });
@@ -67,6 +69,7 @@ export default async function TagPage({ params }: TagPageProps) {
     ageVerified = !!currentUser?.ageVerified;
     showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
     hideSensitiveOverlay = currentUser?.hideSensitiveOverlay ?? false;
+    hideNsfwOverlay = currentUser?.hideNsfwOverlay ?? false;
     showNsfwContent = currentUser?.showNsfwContent ?? false;
   }
 
@@ -134,6 +137,7 @@ export default async function TagPage({ params }: TagPageProps) {
         ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
         hideSensitiveOverlay={hideSensitiveOverlay}
+        hideNsfwOverlay={hideNsfwOverlay}
         showNsfwContent={showNsfwContent}
       />
     </ThemedPage>

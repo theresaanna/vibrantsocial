@@ -126,7 +126,7 @@ describe("PostCard - checklist toggle", () => {
         currentUserId="user1"
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} hideNsfwOverlay={false}
       />
     );
     const postContent = screen.getByTestId("post-content");
@@ -140,7 +140,7 @@ describe("PostCard - checklist toggle", () => {
         currentUserId="other-user"
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} hideNsfwOverlay={false}
       />
     );
     const postContent = screen.getByTestId("post-content");
@@ -153,7 +153,7 @@ describe("PostCard - checklist toggle", () => {
         post={basePost}
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} hideNsfwOverlay={false}
       />
     );
     const postContent = screen.getByTestId("post-content");
@@ -167,7 +167,7 @@ describe("PostCard - checklist toggle", () => {
         currentUserId="user1"
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} hideNsfwOverlay={false}
       />
     );
     const postContent = screen.getByTestId("post-content");
@@ -182,7 +182,7 @@ describe("PostCard - checklist toggle", () => {
         currentUserId="user1"
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} hideNsfwOverlay={false}
       />
     );
     const toggleBtn = screen.getByTestId("simulate-toggle");

@@ -28,6 +28,7 @@ export async function ListFeedContent({ userId, listId }: { userId: string; list
         ageVerified: true,
         showGraphicByDefault: true,
         hideSensitiveOverlay: true,
+        hideNsfwOverlay: true,
         showNsfwContent: true,
         tier: true,
       },
@@ -56,6 +57,7 @@ export async function ListFeedContent({ userId, listId }: { userId: string; list
   const ageVerified = !!currentUser.ageVerified;
   const showGraphicByDefault = currentUser.showGraphicByDefault ?? false;
   const hideSensitiveOverlay = currentUser.hideSensitiveOverlay ?? false;
+  const hideNsfwOverlay = currentUser.hideNsfwOverlay ?? false;
   const showNsfwContent = currentUser.showNsfwContent ?? false;
   const isOldEnough = currentUser.dateOfBirth
     ? calculateAge(currentUser.dateOfBirth) >= 18
@@ -77,6 +79,7 @@ export async function ListFeedContent({ userId, listId }: { userId: string; list
         ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
         hideSensitiveOverlay={hideSensitiveOverlay}
+        hideNsfwOverlay={hideNsfwOverlay}
         showNsfwContent={showNsfwContent}
         hasEmail={!!currentUser.email}
         isPremium={currentUser.tier === "premium"}
@@ -91,7 +94,8 @@ export async function ListFeedContent({ userId, listId }: { userId: string; list
       where: {
         authorId: { in: memberIds },
         ...(!showNsfwContent ? { isNsfw: false } : {}),
-        ...(!ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
+        ...(!showNsfwContent || !ageVerified || !hideSensitiveOverlay ? { isSensitive: false } : {}),
+        ...(!showNsfwContent || !ageVerified || !showGraphicByDefault ? { isGraphicNudity: false } : {}),
         OR: [
           { isCloseFriendsOnly: false, hasCustomAudience: false },
           { isCloseFriendsOnly: true, authorId: { in: closeFriendAuthors } },
@@ -148,6 +152,7 @@ export async function ListFeedContent({ userId, listId }: { userId: string; list
       ageVerified={ageVerified}
       showGraphicByDefault={showGraphicByDefault}
       hideSensitiveOverlay={hideSensitiveOverlay}
+      hideNsfwOverlay={hideNsfwOverlay}
       showNsfwContent={showNsfwContent}
       hasEmail={!!currentUser.email}
       isPremium={currentUser.tier === "premium"}

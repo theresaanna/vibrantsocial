@@ -77,6 +77,7 @@ export default async function MarketplaceSlugPage({ params, searchParams }: Prop
   let showGraphicByDefault = false;
   let showNsfwContent = false;
   let hideSensitiveOverlay = false;
+  let hideNsfwOverlay = false;
 
   if (userId) {
     const currentUser = await prisma.user.findUnique({
@@ -90,6 +91,7 @@ export default async function MarketplaceSlugPage({ params, searchParams }: Prop
         showGraphicByDefault: true,
         showNsfwContent: true,
         hideSensitiveOverlay: true,
+        hideNsfwOverlay: true,
       },
     });
 
@@ -101,6 +103,7 @@ export default async function MarketplaceSlugPage({ params, searchParams }: Prop
     showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
     showNsfwContent = currentUser?.showNsfwContent ?? false;
     hideSensitiveOverlay = currentUser?.hideSensitiveOverlay ?? false;
+    hideNsfwOverlay = currentUser?.hideNsfwOverlay ?? false;
   }
 
   const post = await prisma.post.findFirst({
@@ -218,6 +221,7 @@ export default async function MarketplaceSlugPage({ params, searchParams }: Prop
         ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
         hideSensitiveOverlay={hideSensitiveOverlay}
+        hideNsfwOverlay={hideNsfwOverlay}
         showNsfwContent={showNsfwContent}
         highlightCommentId={commentId ?? null}
         wallPost={post.wallPost}
