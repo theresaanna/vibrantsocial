@@ -8,15 +8,17 @@ export async function proxy(request: Request) {
 
   // Detect links subdomain (links.vibrantsocial.app or links.localhost:3000)
   if (host.startsWith("links.")) {
+    // Skip Next.js internals, API routes, and static assets (files with extensions)
     if (
-      !pathname.startsWith("/_next") &&
-      !pathname.startsWith("/api") &&
-      pathname !== "/favicon.ico"
+      pathname.startsWith("/_next") ||
+      pathname.startsWith("/api") ||
+      pathname === "/favicon.ico" ||
+      /\.\w+$/.test(pathname)
     ) {
-      const rewriteUrl = new URL(`/links${pathname}`, url);
-      return NextResponse.rewrite(rewriteUrl);
+      return NextResponse.next();
     }
-    return NextResponse.next();
+    const rewriteUrl = new URL(`/links${pathname}`, url);
+    return NextResponse.rewrite(rewriteUrl);
   }
 
   // After an OAuth account-linking flow, NextAuth may lose the callbackUrl
