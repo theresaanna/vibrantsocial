@@ -66,7 +66,7 @@ export async function fetchMediaFeedPage(
     getCachedCloseFriendOfIds(userId),
   ]);
 
-  const { showNsfwContent, ageVerified } = prefs;
+  const { showNsfwContent, ageVerified, hideSensitiveOverlay, showGraphicByDefault } = prefs;
   const closeFriendAuthors = [...closeFriendOfIds, userId];
 
   const dateFilter = cursor ? { lt: new Date(cursor) } : undefined;
@@ -76,7 +76,8 @@ export async function fetchMediaFeedPage(
       authorId: { in: [...followingIds, userId] },
       ...(dateFilter ? { createdAt: dateFilter } : {}),
       ...(!showNsfwContent ? { isNsfw: false } : {}),
-      ...(!ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
+      ...(!ageVerified || !hideSensitiveOverlay ? { isSensitive: false } : {}),
+      ...(!ageVerified || !showGraphicByDefault ? { isGraphicNudity: false } : {}),
       // Only fetch posts that contain media nodes in their Lexical JSON content
       OR: [
         { content: { contains: '"type":"image"' } },
