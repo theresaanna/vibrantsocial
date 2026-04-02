@@ -14,9 +14,10 @@ interface LinksFormProps {
   bio: string;
   links: LinkEntry[];
   username: string | null;
+  sensitiveLinks: boolean;
 }
 
-export function LinksForm({ enabled, bio, links: initialLinks, username }: LinksFormProps) {
+export function LinksForm({ enabled, bio, links: initialLinks, username, sensitiveLinks }: LinksFormProps) {
   const [links, setLinks] = useState<LinkEntry[]>(
     initialLinks.length > 0
       ? initialLinks
@@ -62,6 +63,27 @@ export function LinksForm({ enabled, bio, links: initialLinks, username }: Links
           defaultChecked={enabled}
           disabled={!username}
           className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600"
+        />
+      </div>
+
+      {/* Sensitive link safety */}
+      <div className="flex items-center justify-between rounded-xl border border-zinc-200 px-4 py-3 dark:border-zinc-700">
+        <div>
+          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+            Sensitive link safety
+          </p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Hide links when viewed in social media app browsers (Instagram,
+            TikTok, etc.). Use this if your links may violate app content
+            policies.
+          </p>
+        </div>
+        <input
+          type="checkbox"
+          name="linksPageSensitiveLinks"
+          defaultChecked={sensitiveLinks}
+          className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600"
+          data-testid="sensitive-links-toggle"
         />
       </div>
 

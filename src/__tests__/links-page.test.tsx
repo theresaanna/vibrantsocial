@@ -52,6 +52,29 @@ vi.mock("@/components/styled-name", () => ({
   ),
 }));
 
+// Mock InAppBrowserBreakout — renders children or linkData directly in tests
+vi.mock("@/app/links/[username]/in-app-browser-breakout", () => ({
+  InAppBrowserBreakout: ({
+    sensitiveLinks,
+    linkData,
+    children,
+  }: {
+    sensitiveLinks: boolean;
+    linkData?: Array<{ id: string; title: string; url: string }>;
+    children?: React.ReactNode;
+  }) => (
+    <div data-testid="breakout-wrapper" data-sensitive={sensitiveLinks}>
+      {sensitiveLinks
+        ? linkData?.map((l) => (
+            <a key={l.id} href={l.url} data-testid="links-page-link">
+              {l.title}
+            </a>
+          ))
+        : children}
+    </div>
+  ),
+}));
+
 // Mock next/link
 vi.mock("next/link", () => ({
   default: ({
@@ -87,6 +110,7 @@ describe("LinksPage", () => {
       profileFrameId: null,
       usernameFont: null,
       linksPageEnabled: true,
+      linksPageSensitiveLinks: false,
       linksPageBio: "Hello world",
       linksPageLinks: [
         { id: "l1", title: "My Website", url: "https://example.com" },
@@ -154,6 +178,7 @@ describe("LinksPage", () => {
       profileFrameId: null,
       usernameFont: null,
       linksPageEnabled: true,
+      linksPageSensitiveLinks: false,
       linksPageBio: null,
       linksPageLinks: [],
     });
@@ -177,6 +202,7 @@ describe("LinksPage", () => {
       profileFrameId: null,
       usernameFont: null,
       linksPageEnabled: true,
+      linksPageSensitiveLinks: false,
       linksPageBio: null,
       linksPageLinks: [
         { id: "l1", title: "Link 1", url: "https://one.com" },

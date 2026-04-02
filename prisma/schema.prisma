@@ -114,9 +114,10 @@ model User {
   hideWallFromFeed   Boolean @default(false)
 
   // Links page
-  linksPageEnabled Boolean @default(false)
-  linksPageBio     String?
-  linksPageLinks   LinksPageLink[]
+  linksPageEnabled        Boolean @default(false)
+  linksPageBio            String?
+  linksPageSensitiveLinks Boolean @default(false)
+  linksPageLinks          LinksPageLink[]
 
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt

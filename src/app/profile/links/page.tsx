@@ -23,6 +23,7 @@ export default async function LinksSettingsPage() {
       username: true,
       linksPageEnabled: true,
       linksPageBio: true,
+      linksPageSensitiveLinks: true,
       linksPageLinks: {
         orderBy: { order: "asc" },
         select: { id: true, title: true, url: true },
@@ -58,6 +59,7 @@ export default async function LinksSettingsPage() {
             bio={user.linksPageBio || ""}
             links={user.linksPageLinks}
             username={user.username}
+            sensitiveLinks={user.linksPageSensitiveLinks}
           />
         </div>
       </div>
