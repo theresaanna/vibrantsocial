@@ -43,6 +43,18 @@ describe("proxy – links subdomain routing", () => {
     expect(res.headers.get("x-middleware-rewrite")).toBeNull();
   });
 
+  it("does not rewrite static asset paths on links subdomain", async () => {
+    const req = makeRequest("/frames/spring-1.svg", "links.vibrantsocial.app");
+    const res = await proxy(req);
+    expect(res.headers.get("x-middleware-rewrite")).toBeNull();
+  });
+
+  it("does not rewrite png assets on links subdomain", async () => {
+    const req = makeRequest("/frames/floral-1.png", "links.vibrantsocial.app");
+    const res = await proxy(req);
+    expect(res.headers.get("x-middleware-rewrite")).toBeNull();
+  });
+
   it("rewrites root path on links subdomain", async () => {
     const req = makeRequest("/", "links.vibrantsocial.app");
     const res = await proxy(req);
