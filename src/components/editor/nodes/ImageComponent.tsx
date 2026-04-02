@@ -19,6 +19,7 @@ import { ImageSidebar } from "./ImageSidebar";
 import { ImageResizeModal } from "./ImageResizeModal";
 import { ImageAltTextModal } from "./ImageAltTextModal";
 import { useIsPostAuthor } from "../PostAuthorContext";
+import { DRAG_NODE_KEY_ATTR } from "../plugins/DragDropPlugin";
 
 type ResizeDirection = "se" | "sw" | "ne" | "nw";
 
@@ -202,7 +203,10 @@ export default function ImageComponent({
   };
 
   return (
-    <span className={`relative inline-block ${isSelected && isImageEditable ? "ring-2 ring-blue-500" : ""}`}>
+    <span
+      className={`relative inline-block ${isSelected && isImageEditable ? "ring-2 ring-blue-500" : ""}`}
+      {...(isImageEditable ? { [DRAG_NODE_KEY_ATTR]: nodeKey } : {})}
+    >
       <img
         ref={imgRef}
         src={src}

@@ -1,18 +1,14 @@
 "use client";
 
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import {
-  $getNodeByKey,
-  $getRoot,
-  COMMAND_PRIORITY_HIGH,
-  DRAGOVER_COMMAND,
-  DRAGSTART_COMMAND,
-  DROP_COMMAND,
-  type LexicalEditor,
-} from "lexical";
+import { $getNodeByKey, $getRoot, type LexicalEditor } from "lexical";
 import { useEffect, useRef } from "react";
 
-const DRAG_DATA_FORMAT = "application/x-lexical-drag-node";
+/**
+ * Data attribute set on draggable media wrappers (ImageComponent, VideoComponent)
+ * so this plugin can identify the Lexical node key from the DOM.
+ */
+export const DRAG_NODE_KEY_ATTR = "data-drag-node-key";
 
 function getBlockElementAtY(
   editor: LexicalEditor,
@@ -22,7 +18,11 @@ function getBlockElementAtY(
   if (!root) return null;
 
   const children = Array.from(root.children) as HTMLElement[];
-  let closest: { element: HTMLElement; distance: number; position: "before" | "after" } | null = null;
+  let closest: {
+    element: HTMLElement;
+    distance: number;
+    position: "before" | "after";
+  } | null = null;
 
   for (const child of children) {
     const rect = child.getBoundingClientRect();
@@ -30,73 +30,44 @@ function getBlockElementAtY(
     const distance = Math.abs(y - midY);
 
     if (!closest || distance < closest.distance) {
-      closest = {
-        element: child,
-        distance,
-        position: y < midY ? "before" : "after",
-      };
+      closest = { element: child, distance, position: y < midY ? "before" : "after" };
     }
   }
 
   if (!closest) return null;
 
-  // Walk up from the DOM element to find the lexical node key
-  let el: HTMLElement | null = closest.element;
-  let lexicalKey: string | null = null;
-  while (el && el !== root) {
-    // Lexical stores node keys in a __lexicalKey_* data attribute or
-    // in the internal __lexicalKey property on the DOM element
-    const key = getKeyFromElement(el);
-    if (key != null) {
-      lexicalKey = key;
-      break;
-    }
-    el = el.parentElement;
-  }
+  // Find the Lexical node key on the closest block element.
+  // Lexical sets __lexicalKey_<namespace> as an own property on DOM nodes it creates.
+  const key = getLexicalKeyFromDom(closest.element, root);
+  if (!key) return null;
 
-  if (!lexicalKey) return null;
-
-  return {
-    element: closest.element,
-    lexicalKey,
-    position: closest.position,
-  };
+  return { element: closest.element, lexicalKey: key, position: closest.position };
 }
 
-function getKeyFromElement(el: HTMLElement): string | null {
-  // Lexical decorators use data-lexical-decorator="true" and the key is
-  // on the parent span created by createDOM. The internal key is stored
-  // as a property like `__lexicalKey_<editorKey>`.
-  for (const prop of Object.keys(el)) {
-    if (prop.startsWith("__lexicalKey_")) {
-      return (el as unknown as Record<string, string>)[prop];
+function getLexicalKeyFromDom(el: HTMLElement, root: HTMLElement): string | null {
+  let current: HTMLElement | null = el;
+  while (current && current !== root) {
+    for (const prop of Object.keys(current)) {
+      if (prop.startsWith("__lexicalKey_")) {
+        return (current as unknown as Record<string, string>)[prop];
+      }
     }
+    current = current.parentElement;
   }
   return null;
 }
 
 let dropLineEl: HTMLElement | null = null;
 
-function showDropLine(editor: LexicalEditor, target: HTMLElement, position: "before" | "after") {
-  const root = editor.getRootElement();
-  if (!root) return;
-
+function showDropLine(root: HTMLElement, target: HTMLElement, position: "before" | "after") {
   if (!dropLineEl) {
     dropLineEl = document.createElement("div");
-    dropLineEl.style.position = "absolute";
-    dropLineEl.style.left = "0";
-    dropLineEl.style.right = "0";
-    dropLineEl.style.height = "2px";
-    dropLineEl.style.background = "#3b82f6";
-    dropLineEl.style.borderRadius = "1px";
-    dropLineEl.style.pointerEvents = "none";
-    dropLineEl.style.zIndex = "10";
+    dropLineEl.style.cssText =
+      "position:absolute;left:0;right:0;height:2px;background:#3b82f6;border-radius:1px;pointer-events:none;z-index:10";
     dropLineEl.dataset.testid = "drag-drop-indicator";
   }
 
-  // Ensure the root is positioned so absolute children work
-  const rootStyle = getComputedStyle(root);
-  if (rootStyle.position === "static") {
+  if (getComputedStyle(root).position === "static") {
     root.style.position = "relative";
   }
 
@@ -107,171 +78,123 @@ function showDropLine(editor: LexicalEditor, target: HTMLElement, position: "bef
   const rootRect = root.getBoundingClientRect();
   const targetRect = target.getBoundingClientRect();
 
-  if (position === "before") {
-    dropLineEl.style.top = `${targetRect.top - rootRect.top - 1}px`;
-  } else {
-    dropLineEl.style.top = `${targetRect.bottom - rootRect.top - 1}px`;
-  }
+  dropLineEl.style.top =
+    position === "before"
+      ? `${targetRect.top - rootRect.top - 1}px`
+      : `${targetRect.bottom - rootRect.top - 1}px`;
 
   dropLineEl.style.display = "block";
 }
 
 function hideDropLine() {
-  if (dropLineEl) {
-    dropLineEl.style.display = "none";
-  }
+  if (dropLineEl) dropLineEl.style.display = "none";
 }
 
 export function DragDropPlugin(): null {
   const [editor] = useLexicalComposerContext();
-  const draggedNodeKeyRef = useRef<string | null>(null);
+  const draggedKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     const root = editor.getRootElement();
     if (!root) return;
 
-    function onDragEnd() {
-      hideDropLine();
-      draggedNodeKeyRef.current = null;
+    function onDragStart(e: DragEvent) {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      // Walk up to find our data attribute that marks draggable media
+      const wrapper = target.closest(`[${DRAG_NODE_KEY_ATTR}]`) as HTMLElement | null;
+      if (!wrapper) return;
+
+      const nodeKey = wrapper.getAttribute(DRAG_NODE_KEY_ATTR);
+      if (!nodeKey) return;
+
+      draggedKeyRef.current = nodeKey;
+
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = "move";
+        // Set a transparent drag image from the media element
+        const mediaEl = wrapper.querySelector("img, video") as HTMLElement | null;
+        if (mediaEl) {
+          e.dataTransfer.setDragImage(mediaEl, 0, 0);
+        }
+      }
     }
 
+    function onDragOver(e: DragEvent) {
+      if (!draggedKeyRef.current) return;
+
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+
+      const target = getBlockElementAtY(editor, e.clientY);
+      if (!target || target.lexicalKey === draggedKeyRef.current) {
+        hideDropLine();
+        return;
+      }
+
+      showDropLine(root!, target.element, target.position);
+    }
+
+    function onDrop(e: DragEvent) {
+      hideDropLine();
+
+      const draggedKey = draggedKeyRef.current;
+      if (!draggedKey) return;
+
+      e.preventDefault();
+      draggedKeyRef.current = null;
+
+      const dropTarget = getBlockElementAtY(editor, e.clientY);
+      if (!dropTarget || dropTarget.lexicalKey === draggedKey) return;
+
+      editor.update(() => {
+        const draggedNode = $getNodeByKey(draggedKey);
+        if (!draggedNode) return;
+
+        const targetNode = $getNodeByKey(dropTarget.lexicalKey);
+        if (!targetNode) return;
+
+        // Resolve to top-level (direct child of root)
+        const root = $getRoot();
+
+        let topDragged = draggedNode;
+        while (topDragged.getParent() !== root && topDragged.getParent() != null) {
+          topDragged = topDragged.getParent()!;
+        }
+
+        let topTarget = targetNode;
+        while (topTarget.getParent() !== root && topTarget.getParent() != null) {
+          topTarget = topTarget.getParent()!;
+        }
+
+        if (topTarget.getKey() === topDragged.getKey()) return;
+
+        topDragged.remove();
+
+        if (dropTarget.position === "before") {
+          topTarget.insertBefore(topDragged);
+        } else {
+          topTarget.insertAfter(topDragged);
+        }
+      });
+    }
+
+    function onDragEnd() {
+      hideDropLine();
+      draggedKeyRef.current = null;
+    }
+
+    root.addEventListener("dragstart", onDragStart);
+    root.addEventListener("dragover", onDragOver);
+    root.addEventListener("drop", onDrop);
     root.addEventListener("dragend", onDragEnd);
 
-    const unregister = [
-      editor.registerCommand(
-        DRAGSTART_COMMAND,
-        (event: DragEvent) => {
-          // Check if the drag target is inside a decorator node (image/video)
-          const target = event.target as HTMLElement;
-          if (!target) return false;
-
-          // Find the decorator wrapper
-          const decoratorEl = target.closest("[data-lexical-decorator]");
-          if (!decoratorEl) return false;
-
-          // Find the node key from the decorator's parent DOM
-          let el: HTMLElement | null = decoratorEl as HTMLElement;
-          const rootEl = editor.getRootElement();
-          let nodeKey: string | null = null;
-
-          while (el && el !== rootEl) {
-            const key = getKeyFromElement(el);
-            if (key != null) {
-              nodeKey = key;
-              break;
-            }
-            el = el.parentElement;
-          }
-
-          if (!nodeKey) return false;
-
-          draggedNodeKeyRef.current = nodeKey;
-
-          if (event.dataTransfer) {
-            event.dataTransfer.setData(DRAG_DATA_FORMAT, nodeKey);
-            event.dataTransfer.effectAllowed = "move";
-
-            // Use the image/video element as the drag ghost
-            const mediaEl = decoratorEl.querySelector("img, video");
-            if (mediaEl) {
-              event.dataTransfer.setDragImage(mediaEl, 0, 0);
-            }
-          }
-
-          return true;
-        },
-        COMMAND_PRIORITY_HIGH
-      ),
-
-      editor.registerCommand(
-        DRAGOVER_COMMAND,
-        (event: DragEvent) => {
-          if (!draggedNodeKeyRef.current) return false;
-
-          event.preventDefault();
-          if (event.dataTransfer) {
-            event.dataTransfer.dropEffect = "move";
-          }
-
-          const target = getBlockElementAtY(editor, event.clientY);
-          if (target) {
-            // Don't show drop line on the dragged element itself
-            const draggedKey = draggedNodeKeyRef.current;
-            if (target.lexicalKey === draggedKey) {
-              hideDropLine();
-              return true;
-            }
-            showDropLine(editor, target.element, target.position);
-          }
-
-          return true;
-        },
-        COMMAND_PRIORITY_HIGH
-      ),
-
-      editor.registerCommand(
-        DROP_COMMAND,
-        (event: DragEvent) => {
-          hideDropLine();
-
-          const draggedKey =
-            event.dataTransfer?.getData(DRAG_DATA_FORMAT) ??
-            draggedNodeKeyRef.current;
-
-          if (!draggedKey) return false;
-
-          event.preventDefault();
-          draggedNodeKeyRef.current = null;
-
-          const dropTarget = getBlockElementAtY(editor, event.clientY);
-          if (!dropTarget) return false;
-
-          // Don't drop on self
-          if (dropTarget.lexicalKey === draggedKey) return true;
-
-          editor.update(() => {
-            const draggedNode = $getNodeByKey(draggedKey);
-            if (!draggedNode) return;
-
-            const targetNode = $getNodeByKey(dropTarget.lexicalKey);
-            if (!targetNode) return;
-
-            // Get the top-level parent of the target node (direct child of root)
-            const root = $getRoot();
-            let topLevelTarget = targetNode;
-            while (topLevelTarget.getParent() !== root && topLevelTarget.getParent() != null) {
-              topLevelTarget = topLevelTarget.getParent()!;
-            }
-
-            // Get the top-level parent of the dragged node
-            let topLevelDragged = draggedNode;
-            while (topLevelDragged.getParent() !== root && topLevelDragged.getParent() != null) {
-              topLevelDragged = topLevelDragged.getParent()!;
-            }
-
-            // Don't drop on self after resolving parents
-            if (topLevelTarget.getKey() === topLevelDragged.getKey()) return;
-
-            // Remove from current position
-            topLevelDragged.remove();
-
-            // Insert at the target position
-            if (dropTarget.position === "before") {
-              topLevelTarget.insertBefore(topLevelDragged);
-            } else {
-              topLevelTarget.insertAfter(topLevelDragged);
-            }
-          });
-
-          return true;
-        },
-        COMMAND_PRIORITY_HIGH
-      ),
-    ];
-
     return () => {
+      root.removeEventListener("dragstart", onDragStart);
+      root.removeEventListener("dragover", onDragOver);
+      root.removeEventListener("drop", onDrop);
       root.removeEventListener("dragend", onDragEnd);
-      unregister.forEach((fn) => fn());
       hideDropLine();
     };
   }, [editor]);

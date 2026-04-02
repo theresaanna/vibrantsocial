@@ -759,22 +759,22 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
 
         {/* Tab content */}
         {activeTab === "posts" ? (
-          feedItems.length === 0 ? (
-            <div className="mt-8 text-center">
-              <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
-                No posts yet.
-              </p>
-            </div>
-          ) : (
-            <div className="mt-6 space-y-4">
-              {/* Wall post composer — always shown to friends on posts tab */}
-              {currentUserId && isFriend && !isOwnProfile && (
-                <WallPostComposer
-                  wallOwnerId={user.id}
-                  wallOwnerName={displayName || "this user"}
-                />
-              )}
-              {feedItems.map((item) =>
+          <div className="mt-6 space-y-4">
+            {/* Wall post composer — always shown to friends on posts tab */}
+            {currentUserId && isFriend && !isOwnProfile && (
+              <WallPostComposer
+                wallOwnerId={user.id}
+                wallOwnerName={displayName || "this user"}
+              />
+            )}
+            {feedItems.length === 0 ? (
+              <div className="mt-2 text-center">
+                <p className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                  No posts yet.
+                </p>
+              </div>
+            ) : (
+              feedItems.map((item) =>
                 item.type === "post" ? (
                   <PostCard key={`post-${item.data.id}`} post={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} hideSensitiveOverlay={hideSensitiveOverlay} hideNsfwOverlay={hideNsfwOverlay} showNsfwContent={showNsfwContent} showPinnedIndicator {...(item.data.wallPost && item.data.wallPost.wallOwner.username && { wallOwner: { username: item.data.wallPost.wallOwner.username, displayName: item.data.wallPost.wallOwner.displayName }, wallPostId: item.data.wallPost.id, wallPostStatus: item.data.wallPost.status })} {...(item.data.marketplacePost && { marketplacePostId: item.data.marketplacePost.id, marketplaceData: { price: item.data.marketplacePost.price, purchaseUrl: item.data.marketplacePost.purchaseUrl, shippingOption: item.data.marketplacePost.shippingOption, shippingPrice: item.data.marketplacePost.shippingPrice } })} />
                 ) : item.type === "repost" ? (
@@ -782,9 +782,9 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                 ) : (
                   <PostCard key={`wall-${item.data.id}`} post={item.data.post} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} hideSensitiveOverlay={hideSensitiveOverlay} hideNsfwOverlay={hideNsfwOverlay} showNsfwContent={showNsfwContent} wallOwner={{ username: item.data.wallOwner.username!, displayName: item.data.wallOwner.displayName, usernameFont: item.data.wallOwner.usernameFont }} wallPostId={item.data.id} wallPostStatus={item.data.status} isWallOwner={isOwnProfile} />
                 )
-              )}
-            </div>
-          )
+              )
+            )}
+          </div>
         ) : activeTab === "wall" ? (
           <div className="mt-6 space-y-4">
             {currentUserId && isFriend && !isOwnProfile && (

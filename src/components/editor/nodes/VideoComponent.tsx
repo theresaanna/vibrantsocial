@@ -18,6 +18,7 @@ import { $isVideoNode } from "./VideoNode";
 import { VideoSidebar } from "./VideoSidebar";
 import { ImageResizeModal } from "./ImageResizeModal";
 import { useIsPostAuthor } from "../PostAuthorContext";
+import { DRAG_NODE_KEY_ATTR } from "../plugins/DragDropPlugin";
 
 type ResizeDirection = "se" | "sw" | "ne" | "nw";
 
@@ -189,7 +190,10 @@ export default function VideoComponent({
   };
 
   return (
-    <span className={`relative inline-block ${isSelected && isVideoEditable ? "ring-2 ring-blue-500" : ""}`}>
+    <span
+      className={`relative inline-block ${isSelected && isVideoEditable ? "ring-2 ring-blue-500" : ""}`}
+      {...(isVideoEditable ? { [DRAG_NODE_KEY_ATTR]: nodeKey } : {})}
+    >
       <video
         ref={videoRef}
         src={src}
