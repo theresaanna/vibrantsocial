@@ -2,7 +2,22 @@ import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 
 export async function proxy(request: Request) {
-  const { pathname } = new URL(request.url);
+  const url = new URL(request.url);
+  const { pathname } = url;
+  const host = request.headers.get("host") || "";
+
+  // Detect links subdomain (links.vibrantsocial.app or links.localhost:3000)
+  if (host.startsWith("links.")) {
+    if (
+      !pathname.startsWith("/_next") &&
+      !pathname.startsWith("/api") &&
+      pathname !== "/favicon.ico"
+    ) {
+      const rewriteUrl = new URL(`/links${pathname}`, url);
+      return NextResponse.rewrite(rewriteUrl);
+    }
+    return NextResponse.next();
+  }
 
   // After an OAuth account-linking flow, NextAuth may lose the callbackUrl
   // and redirect to "/" (→ /feed).  The linkRedirect cookie, set alongside

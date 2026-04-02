@@ -296,8 +296,12 @@ h6 {
 }
 
 .profile-themed .profile-link,
-.profile-themed a:not(.tag-pill) {
+.profile-themed a:not(.tag-pill):not(.links-page-btn) {
   color: var(--profile-link);
+}
+
+.profile-themed .links-page-btn {
+  color: var(--profile-text);
 }
 
 /* Tag cloud pills: always white text on colored backgrounds */
