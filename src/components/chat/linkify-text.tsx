@@ -7,11 +7,18 @@ const WWW_REGEX =
 const EMAIL_REGEX =
   /((?:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}))/;
 
+const COMMON_TLDS =
+  "com|org|net|io|co|dev|app|me|info|biz|us|uk|ca|au|de|fr|es|it|nl|ru|br|in|jp|edu|gov|mil|tv|cc|gg|xyz|ai|so|to|fm|ly|sh|gl|vc|la|ws|sx|lol";
+const BARE_DOMAIN_REGEX = new RegExp(
+  `((?:[-\\w]+\\.)+(?:${COMMON_TLDS})(?:\\.\\w{2,3})?(?:[-\\w()@:%+.~#?&/=]*))`
+);
+
 const HASHTAG_REGEX = /(?<![a-zA-Z0-9])#([a-zA-Z0-9][a-zA-Z0-9-]{0,49})/;
 const MENTION_REGEX = /(?<![a-zA-Z0-9])@([a-zA-Z0-9_]{3,30})/;
 
+// Group indices: 1=URL, 2=WWW, 3=EMAIL, 4=BARE_DOMAIN, 5=HASHTAG, 6=MENTION
 const COMBINED_REGEX = new RegExp(
-  `${URL_REGEX.source}|${WWW_REGEX.source}|${EMAIL_REGEX.source}|${HASHTAG_REGEX.source}|${MENTION_REGEX.source}`,
+  `${URL_REGEX.source}|${WWW_REGEX.source}|${EMAIL_REGEX.source}|${BARE_DOMAIN_REGEX.source}|${HASHTAG_REGEX.source}|${MENTION_REGEX.source}`,
   "g"
 );
 
@@ -51,26 +58,26 @@ export function LinkifyText({
 
     const matched = match[0];
 
-    if (match[5]) {
-      // Mention match (group 5) - @username
+    if (match[6]) {
+      // Mention match (group 6) - @username
       const Tag = asSpans ? "span" : "a";
       parts.push(
         <Tag
           key={match.index}
-          {...(!asSpans ? { href: `/${match[5]}` } : {})}
+          {...(!asSpans ? { href: `/${match[6]}` } : {})}
           className={linkClass}
           style={linkStyle}
         >
           {matched}
         </Tag>
       );
-    } else if (match[4]) {
-      // Hashtag match (group 4) - #tag
+    } else if (match[5]) {
+      // Hashtag match (group 5) - #tag
       const Tag = asSpans ? "span" : "a";
       parts.push(
         <Tag
           key={match.index}
-          {...(!asSpans ? { href: `/tag/${normalizeTag(match[4])}` } : {})}
+          {...(!asSpans ? { href: `/tag/${normalizeTag(match[5])}` } : {})}
           className={linkClass}
           style={linkStyle}
         >
@@ -78,11 +85,12 @@ export function LinkifyText({
         </Tag>
       );
     } else {
-      // URL, www, or email match
+      // URL, www, email, or bare domain match
       let href: string;
       if (match[3]) {
         href = `mailto:${matched}`;
-      } else if (match[2]) {
+      } else if (match[2] || match[4]) {
+        // www. prefix or bare domain — prepend https://
         href = `https://${matched}`;
       } else {
         href = matched;

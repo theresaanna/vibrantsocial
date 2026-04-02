@@ -24,6 +24,44 @@ describe("LinkifyText", () => {
     expect(link).toHaveAttribute("href", "mailto:test@example.com");
   });
 
+  // --- Bare domain linking ---
+
+  it("linkifies bare domains like example.com", () => {
+    render(<LinkifyText text="visit example.com today" />);
+    const link = screen.getByRole("link", { name: "example.com" });
+    expect(link).toHaveAttribute("href", "https://example.com");
+    expect(link).toHaveAttribute("target", "_blank");
+  });
+
+  it("linkifies bare domains with paths", () => {
+    render(<LinkifyText text="go to example.com/about" />);
+    const link = screen.getByRole("link", { name: "example.com/about" });
+    expect(link).toHaveAttribute("href", "https://example.com/about");
+  });
+
+  it("linkifies subdomains like docs.google.com", () => {
+    render(<LinkifyText text="see docs.google.com" />);
+    const link = screen.getByRole("link", { name: "docs.google.com" });
+    expect(link).toHaveAttribute("href", "https://docs.google.com");
+  });
+
+  it("linkifies .io domains", () => {
+    render(<LinkifyText text="check github.io" />);
+    const link = screen.getByRole("link", { name: "github.io" });
+    expect(link).toHaveAttribute("href", "https://github.io");
+  });
+
+  it("does not linkify words with dots but invalid TLD", () => {
+    render(<LinkifyText text="hello.there friend" />);
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
+
+  it("prefers email match over bare domain for user@example.com", () => {
+    render(<LinkifyText text="email user@example.com" />);
+    const link = screen.getByRole("link", { name: "user@example.com" });
+    expect(link).toHaveAttribute("href", "mailto:user@example.com");
+  });
+
   // --- Hashtag linking ---
 
   it("links #tag to /tag/tag", () => {

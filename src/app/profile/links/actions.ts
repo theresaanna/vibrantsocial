@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuthWithRateLimit, isActionError } from "@/lib/action-utils";
 import type { ActionState } from "@/lib/action-utils";
 import { revalidatePath } from "next/cache";
+import { invalidate, cacheKeys } from "@/lib/cache";
 
 const MAX_LINKS = 50;
 const MAX_BIO_LENGTH = 300;
@@ -74,6 +75,8 @@ export async function updateLinksPage(
 
   if (user?.username) {
     revalidatePath(`/links/${user.username}`);
+    revalidatePath(`/${user.username}`);
+    await invalidate(cacheKeys.userProfile(user.username));
   }
   revalidatePath("/profile/links");
 
