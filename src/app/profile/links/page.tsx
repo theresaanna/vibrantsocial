@@ -52,12 +52,14 @@ export default async function LinksSettingsPage() {
           </h1>
         </div>
 
-        <LinksForm
-          enabled={user.linksPageEnabled}
-          bio={user.linksPageBio || ""}
-          links={user.linksPageLinks}
-          username={user.username}
-        />
+        <div className="rounded-xl border border-zinc-100 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
+          <LinksForm
+            enabled={user.linksPageEnabled}
+            bio={user.linksPageBio || ""}
+            links={user.linksPageLinks}
+            username={user.username}
+          />
+        </div>
       </div>
     </ThemedPage>
   );
