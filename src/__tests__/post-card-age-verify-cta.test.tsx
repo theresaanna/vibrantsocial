@@ -102,7 +102,7 @@ describe("PostCard - age verify CTA", () => {
         ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={false}
-        hideSensitiveOverlay={false}
+        hideSensitiveOverlay={false} hideNsfwOverlay={false}
       />
     );
 
@@ -120,7 +120,7 @@ describe("PostCard - age verify CTA", () => {
         ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={false}
-        hideSensitiveOverlay={false}
+        hideSensitiveOverlay={false} hideNsfwOverlay={false}
       />
     );
 
@@ -138,7 +138,7 @@ describe("PostCard - age verify CTA", () => {
         ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={false}
-        hideSensitiveOverlay={false}
+        hideSensitiveOverlay={false} hideNsfwOverlay={false}
       />
     );
 
@@ -158,7 +158,7 @@ describe("PostCard - age verify CTA", () => {
         ageVerified={true}
         showGraphicByDefault={false}
         showNsfwContent={false}
-        hideSensitiveOverlay={false}
+        hideSensitiveOverlay={false} hideNsfwOverlay={false}
       />
     );
 
@@ -178,7 +178,7 @@ describe("PostCard - age verify CTA", () => {
         ageVerified={true}
         showGraphicByDefault={false}
         showNsfwContent={false}
-        hideSensitiveOverlay={false}
+        hideSensitiveOverlay={false} hideNsfwOverlay={false}
       />
     );
 
@@ -197,7 +197,7 @@ describe("PostCard - age verify CTA", () => {
         ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={false}
-        hideSensitiveOverlay={false}
+        hideSensitiveOverlay={false} hideNsfwOverlay={false}
       />
     );
 
@@ -217,7 +217,7 @@ describe("PostCard - age verify CTA", () => {
         ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={false}
-        hideSensitiveOverlay={false}
+        hideSensitiveOverlay={false} hideNsfwOverlay={false}
       />
     );
 
@@ -235,7 +235,7 @@ describe("PostCard - age verify CTA", () => {
         ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={false}
-        hideSensitiveOverlay={false}
+        hideSensitiveOverlay={false} hideNsfwOverlay={false}
       />
     );
 
@@ -253,7 +253,7 @@ describe("PostCard - age verify CTA", () => {
         ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={false}
-        hideSensitiveOverlay={false}
+        hideSensitiveOverlay={false} hideNsfwOverlay={false}
       />
     );
 
@@ -271,7 +271,7 @@ describe("PostCard - age verify CTA", () => {
         ageVerified={true}
         showGraphicByDefault={false}
         showNsfwContent={false}
-        hideSensitiveOverlay={false}
+        hideSensitiveOverlay={false} hideNsfwOverlay={false}
       />
     );
 
@@ -289,7 +289,7 @@ describe("PostCard - age verify CTA", () => {
         ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={false}
-        hideSensitiveOverlay={false}
+        hideSensitiveOverlay={false} hideNsfwOverlay={false}
       />
     );
 
@@ -309,7 +309,7 @@ describe("PostCard - age verify CTA", () => {
         ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={false}
-        hideSensitiveOverlay={false}
+        hideSensitiveOverlay={false} hideNsfwOverlay={false}
       />
     );
 
@@ -326,7 +326,7 @@ describe("PostCard - age verify CTA", () => {
         ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={false}
-        hideSensitiveOverlay={false}
+        hideSensitiveOverlay={false} hideNsfwOverlay={false}
       />
     );
 
@@ -343,7 +343,7 @@ describe("PostCard - age verify CTA", () => {
         ageVerified={false}
         showGraphicByDefault={false}
         showNsfwContent={false}
-        hideSensitiveOverlay={false}
+        hideSensitiveOverlay={false} hideNsfwOverlay={false}
       />
     );
 

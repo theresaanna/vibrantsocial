@@ -71,6 +71,7 @@ interface QuotePageClientProps {
   ageVerified: boolean;
   showGraphicByDefault: boolean;
   hideSensitiveOverlay: boolean;
+  hideNsfwOverlay: boolean;
   showNsfwContent: boolean;
 }
 
@@ -82,6 +83,7 @@ export function QuotePageClient({
   ageVerified,
   showGraphicByDefault,
   hideSensitiveOverlay,
+  hideNsfwOverlay,
   showNsfwContent,
 }: QuotePageClientProps) {
   return (
@@ -93,6 +95,7 @@ export function QuotePageClient({
         ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
         hideSensitiveOverlay={hideSensitiveOverlay}
+        hideNsfwOverlay={hideNsfwOverlay}
         showNsfwContent={showNsfwContent}
       />
     </div>

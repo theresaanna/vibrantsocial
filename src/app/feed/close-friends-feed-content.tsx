@@ -22,6 +22,7 @@ export async function CloseFriendsFeedContent({ userId }: { userId: string }) {
         ageVerified: true,
         showGraphicByDefault: true,
         hideSensitiveOverlay: true,
+        hideNsfwOverlay: true,
         showNsfwContent: true,
         tier: true,
       },
@@ -37,6 +38,7 @@ export async function CloseFriendsFeedContent({ userId }: { userId: string }) {
   const ageVerified = !!currentUser.ageVerified;
   const showGraphicByDefault = currentUser.showGraphicByDefault ?? false;
   const hideSensitiveOverlay = currentUser.hideSensitiveOverlay ?? false;
+  const hideNsfwOverlay = currentUser.hideNsfwOverlay ?? false;
   const showNsfwContent = currentUser.showNsfwContent ?? false;
   const isOldEnough = currentUser.dateOfBirth
     ? calculateAge(currentUser.dateOfBirth) >= 18
@@ -56,6 +58,7 @@ export async function CloseFriendsFeedContent({ userId }: { userId: string }) {
         ageVerified={ageVerified}
         showGraphicByDefault={showGraphicByDefault}
         hideSensitiveOverlay={hideSensitiveOverlay}
+        hideNsfwOverlay={hideNsfwOverlay}
         showNsfwContent={showNsfwContent}
         hasEmail={!!currentUser.email}
         isPremium={currentUser.tier === "premium"}
@@ -129,6 +132,7 @@ export async function CloseFriendsFeedContent({ userId }: { userId: string }) {
       ageVerified={ageVerified}
       showGraphicByDefault={showGraphicByDefault}
       hideSensitiveOverlay={hideSensitiveOverlay}
+      hideNsfwOverlay={hideNsfwOverlay}
       showNsfwContent={showNsfwContent}
       hasEmail={!!currentUser.email}
       isPremium={currentUser.tier === "premium"}

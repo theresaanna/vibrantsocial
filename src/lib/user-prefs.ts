@@ -7,9 +7,10 @@ export interface UserPrefs {
   hideWallFromFeed: boolean;
   hideSensitiveOverlay: boolean;
   showGraphicByDefault: boolean;
+  hideNsfwOverlay: boolean;
 }
 
-const DEFAULT_PREFS: UserPrefs = { showNsfwContent: false, ageVerified: false, hideWallFromFeed: false, hideSensitiveOverlay: false, showGraphicByDefault: false };
+const DEFAULT_PREFS: UserPrefs = { showNsfwContent: false, ageVerified: false, hideWallFromFeed: false, hideSensitiveOverlay: false, showGraphicByDefault: false, hideNsfwOverlay: false };
 
 /**
  * Get user content preferences (NSFW opt-in, age verification).
@@ -21,7 +22,7 @@ export async function getUserPrefs(userId: string): Promise<UserPrefs> {
     async () => {
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { showNsfwContent: true, ageVerified: true, hideWallFromFeed: true, hideSensitiveOverlay: true, showGraphicByDefault: true },
+        select: { showNsfwContent: true, ageVerified: true, hideWallFromFeed: true, hideSensitiveOverlay: true, showGraphicByDefault: true, hideNsfwOverlay: true },
       });
       if (!user) return DEFAULT_PREFS;
       return {
@@ -30,6 +31,7 @@ export async function getUserPrefs(userId: string): Promise<UserPrefs> {
         hideWallFromFeed: user.hideWallFromFeed ?? false,
         hideSensitiveOverlay: user.hideSensitiveOverlay ?? false,
         showGraphicByDefault: user.showGraphicByDefault ?? false,
+        hideNsfwOverlay: user.hideNsfwOverlay ?? false,
       };
     },
     300 // 5 minutes

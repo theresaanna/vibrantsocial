@@ -75,6 +75,7 @@ interface PostCardProps {
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
   hideSensitiveOverlay: boolean;
+  hideNsfwOverlay: boolean;
   defaultShowComments?: boolean;
   defaultExpanded?: boolean;
   highlightCommentId?: string | null;
@@ -105,6 +106,7 @@ export function PostCard({
   showGraphicByDefault,
   showNsfwContent,
   hideSensitiveOverlay,
+  hideNsfwOverlay,
   defaultShowComments = false,
   defaultExpanded = false,
   highlightCommentId,
@@ -248,8 +250,8 @@ export function PostCard({
       }
     }
 
-    // NSFW: always show overlay (no opt-out)
-    if (post.isNsfw && !showOverlay) {
+    // NSFW: show overlay unless user has opted to hide it
+    if (post.isNsfw && !showOverlay && !hideNsfwOverlay) {
       showOverlay = true;
       overlayMessage = "Click to view NSFW content";
       canReveal = true;

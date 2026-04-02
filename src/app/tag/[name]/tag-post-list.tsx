@@ -14,6 +14,7 @@ interface TagPostListProps {
   ageVerified: boolean;
   showGraphicByDefault: boolean;
   hideSensitiveOverlay: boolean;
+  hideNsfwOverlay: boolean;
   showNsfwContent: boolean;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -27,6 +28,7 @@ export function TagPostList({
   ageVerified,
   showGraphicByDefault,
   hideSensitiveOverlay,
+  hideNsfwOverlay,
   showNsfwContent,
 }: TagPostListProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -102,6 +104,7 @@ export function TagPostList({
           showGraphicByDefault={showGraphicByDefault}
           showNsfwContent={showNsfwContent}
           hideSensitiveOverlay={hideSensitiveOverlay}
+          hideNsfwOverlay={hideNsfwOverlay}
           {...(post.wallPost && {
             wallOwner: {
               username: post.wallPost.wallOwner.username,

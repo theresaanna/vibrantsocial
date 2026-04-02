@@ -106,7 +106,7 @@ describe("PostCard - comment display", () => {
         post={basePost}
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} hideNsfwOverlay={false}
       />
     );
     expect(screen.queryByTestId("comment-section")).not.toBeInTheDocument();
@@ -118,7 +118,7 @@ describe("PostCard - comment display", () => {
         post={basePost}
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} hideNsfwOverlay={false}
         defaultShowComments
       />
     );
@@ -131,7 +131,7 @@ describe("PostCard - comment display", () => {
         post={basePost}
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} hideNsfwOverlay={false}
         defaultShowComments
         highlightCommentId="comment123"
       />
@@ -146,7 +146,7 @@ describe("PostCard - comment display", () => {
         post={basePost}
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} hideNsfwOverlay={false}
       />
     );
     expect(screen.queryByTestId("comment-section")).not.toBeInTheDocument();
@@ -164,7 +164,7 @@ describe("PostCard - comment display", () => {
         post={basePost}
         phoneVerified={true}
         ageVerified={false}
-        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} hideNsfwOverlay={false}
         defaultShowComments
       />
     );

@@ -35,6 +35,7 @@ interface ProfileFormProps {
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
   hideSensitiveOverlay: boolean;
+  hideNsfwOverlay: boolean;
   emailOnComment: boolean;
   emailOnNewChat: boolean;
   emailOnMention: boolean;
@@ -63,7 +64,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, email, emailVerified, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, hideSensitiveOverlay, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, birthdayMonth: initialBirthdayMonth, birthdayDay: initialBirthdayDay, isPremium, stars, starsSpent, referralCode, userEmail }: ProfileFormProps) {
+export function ProfileForm({ user, email, emailVerified, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, hideSensitiveOverlay, hideNsfwOverlay, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, birthdayMonth: initialBirthdayMonth, birthdayDay: initialBirthdayDay, isPremium, stars, starsSpent, referralCode, userEmail }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [displayNameValue, setDisplayNameValue] = useState(user.displayName ?? "");
@@ -951,6 +952,21 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
+                    name="hideNsfwOverlay"
+                    value="true"
+                    defaultChecked={hideNsfwOverlay}
+                    className="rounded"
+                  />
+                  <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    Hide overlay on NSFW content
+                  </span>
+                </label>
+                <p className="ml-6 text-xs text-zinc-500 dark:text-zinc-400">
+                  When enabled, NSFW posts will be visible without clicking to reveal.
+                </p>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
                     name="hideSensitiveOverlay"
                     value="true"
                     defaultChecked={hideSensitiveOverlay}
@@ -961,7 +977,7 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
                   </span>
                 </label>
                 <p className="ml-6 text-xs text-zinc-500 dark:text-zinc-400">
-                  When enabled, Sensitive posts will be visible without clicking to reveal.
+                  When enabled, Sensitive posts will be visible without clicking to reveal and will appear in media feeds.
                 </p>
                 <label className="flex items-center gap-2">
                   <input
@@ -976,7 +992,7 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
                   </span>
                 </label>
                 <p className="ml-6 text-xs text-zinc-500 dark:text-zinc-400">
-                  When enabled, Graphic/Explicit posts will be visible without clicking to reveal.
+                  When enabled, Graphic/Explicit posts will be visible without clicking to reveal and will appear in media feeds.
                 </p>
               </>
             )}

@@ -31,6 +31,7 @@ interface FeedClientProps {
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
   hideSensitiveOverlay: boolean;
+  hideNsfwOverlay: boolean;
   hasEmail: boolean;
   isPremium: boolean;
   listId?: string;
@@ -65,6 +66,7 @@ export function FeedClient({
   showGraphicByDefault,
   showNsfwContent,
   hideSensitiveOverlay,
+  hideNsfwOverlay,
   hasEmail,
   isPremium,
   listId,
@@ -183,6 +185,7 @@ export function FeedClient({
           showGraphicByDefault={showGraphicByDefault}
           showNsfwContent={showNsfwContent}
           hideSensitiveOverlay={hideSensitiveOverlay}
+          hideNsfwOverlay={hideNsfwOverlay}
           newItems={newItems}
           fetchPage={fetchPage}
         />

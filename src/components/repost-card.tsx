@@ -150,6 +150,7 @@ interface RepostCardProps {
   showGraphicByDefault: boolean;
   showNsfwContent: boolean;
   hideSensitiveOverlay: boolean;
+  hideNsfwOverlay: boolean;
   showPinnedIndicator?: boolean;
   onDelete?: () => void;
 }
@@ -162,6 +163,7 @@ export function RepostCard({
   showGraphicByDefault,
   showNsfwContent,
   hideSensitiveOverlay,
+  hideNsfwOverlay,
   showPinnedIndicator = false,
   onDelete,
 }: RepostCardProps) {
@@ -597,6 +599,7 @@ export function RepostCard({
                 showGraphicByDefault={showGraphicByDefault}
                 showNsfwContent={showNsfwContent}
                 hideSensitiveOverlay={hideSensitiveOverlay}
+                hideNsfwOverlay={hideNsfwOverlay}
                 {...marketplaceProps(repost.quotedRepost.post)}
               />
             </div>
@@ -609,6 +612,7 @@ export function RepostCard({
               showGraphicByDefault={showGraphicByDefault}
               showNsfwContent={showNsfwContent}
               hideSensitiveOverlay={hideSensitiveOverlay}
+              hideNsfwOverlay={hideNsfwOverlay}
               {...(repost.post.wallPost && repost.post.wallPost.wallOwner.username && {
                 wallOwner: {
                   username: repost.post.wallPost.wallOwner.username,
@@ -630,6 +634,7 @@ export function RepostCard({
           ageVerified={ageVerified}
           showGraphicByDefault={showGraphicByDefault}
           hideSensitiveOverlay={hideSensitiveOverlay}
+          hideNsfwOverlay={hideNsfwOverlay}
           showNsfwContent={showNsfwContent}
           {...marketplaceProps(repost.post)}
         />

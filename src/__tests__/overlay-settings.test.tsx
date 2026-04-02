@@ -145,13 +145,13 @@ describe("Profile form - overlay opt-in settings", () => {
   });
 
   it("sensitive overlay checkbox reflects hideSensitiveOverlay prop", () => {
-    render(<ProfileForm {...baseFormProps} ageVerified={true} hideSensitiveOverlay={true} />);
+    render(<ProfileForm {...baseFormProps} ageVerified={true} hideSensitiveOverlay={true} hideNsfwOverlay={false} />);
     const checkbox = screen.getByRole("checkbox", { name: /Hide overlay on Sensitive content/i });
     expect(checkbox).toBeChecked();
   });
 
   it("sensitive overlay checkbox is unchecked by default", () => {
-    render(<ProfileForm {...baseFormProps} ageVerified={true} hideSensitiveOverlay={false} />);
+    render(<ProfileForm {...baseFormProps} ageVerified={true} hideSensitiveOverlay={false} hideNsfwOverlay={false} />);
     const checkbox = screen.getByRole("checkbox", { name: /Hide overlay on Sensitive content/i });
     expect(checkbox).not.toBeChecked();
   });
