@@ -26,6 +26,7 @@ import { HashtagLinkPlugin } from "./plugins/HashtagLinkPlugin";
 
 import { DraftPlugin, ClearDraftButton } from "./plugins/DraftPlugin";
 import { ContextMenuPlugin } from "./plugins/ContextMenuPlugin";
+import { DragDropPlugin } from "./plugins/DragDropPlugin";
 
 interface EditorProps {
   /** Initial content as Lexical JSON string */
@@ -138,6 +139,7 @@ export function Editor({
           <HashtagLinkPlugin />
           {draftKey && <DraftPlugin draftKey={draftKey} />}
           <ContextMenuPlugin />
+          <DragDropPlugin />
         </div>
         {draftKey && (
           <div className="flex justify-end border-t border-zinc-200 px-3 py-1.5 dark:border-zinc-700">
