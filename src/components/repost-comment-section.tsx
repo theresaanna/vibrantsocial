@@ -7,6 +7,7 @@ import { timeAgo } from "@/lib/time";
 import Link from "next/link";
 import { LinkifyText } from "@/components/chat/linkify-text";
 import { FramedAvatar } from "@/components/framed-avatar";
+import { StyledName } from "@/components/styled-name";
 
 const LazyEmojiPicker = lazy(() => import("emoji-picker-react"));
 
@@ -18,6 +19,7 @@ interface CommentAuthor {
   image: string | null;
   avatar: string | null;
   profileFrameId: string | null;
+  usernameFont?: string | null;
 }
 
 interface ReactionGroup {
@@ -413,10 +415,10 @@ function RepostCommentItem({
           <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
             {comment.author.username ? (
               <Link href={`/${comment.author.username}`} className="hover:underline">
-                {authorName}
+                <StyledName fontId={comment.author.usernameFont}>{authorName}</StyledName>
               </Link>
             ) : (
-              authorName
+              <StyledName fontId={comment.author.usernameFont}>{authorName}</StyledName>
             )}
           </span>
           <span className="text-xs text-zinc-400">

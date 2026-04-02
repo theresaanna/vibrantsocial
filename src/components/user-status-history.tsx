@@ -54,7 +54,7 @@ export function UserStatusHistory({
   return (
     <div className="space-y-3">
       {/* User header */}
-      <div className="flex items-center gap-3 pb-2">
+      <div className="flex items-center gap-3 rounded-xl border border-zinc-100 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800">
         <Link href={`/${username}`}>
           <FramedAvatar
             src={user.avatar || user.image}
@@ -77,7 +77,7 @@ export function UserStatusHistory({
       {statuses.map((status) => (
         <div
           key={status.id}
-          className="flex items-start justify-between gap-3 rounded-lg border border-zinc-100 px-3 py-2.5 dark:border-zinc-700"
+          className="flex items-start justify-between gap-3 rounded-xl border border-zinc-100 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800"
           data-testid="status-history-item"
         >
           <div className="min-w-0 flex-1">
