@@ -76,6 +76,7 @@ const profileSelect = {
   phoneVerified: true,
   isProfilePublic: true,
   hideWallFromFeed: true,
+  linksPageEnabled: true,
   tier: true,
   _count: {
     select: {
@@ -621,9 +622,31 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                         )}
                       </span>
                     </h1>
-                    <p className={`text-sm ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
-                      @{user.username}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className={`text-sm ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
+                        @{user.username}
+                      </p>
+                      {user.linksPageEnabled && (
+                        <Link
+                          href={`/links/${user.username}`}
+                          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors ${
+                            hasCustomTheme
+                              ? "profile-text-secondary"
+                              : "border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:text-zinc-700 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-zinc-300"
+                          }`}
+                          style={
+                            hasCustomTheme
+                              ? ({ borderColor: "var(--profile-secondary)" } as React.CSSProperties)
+                              : undefined
+                          }
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3">
+                            <path fillRule="evenodd" d="M8.914 6.025a.75.75 0 0 1 1.06 0 3.5 3.5 0 0 1 0 4.95l-2 2a3.5 3.5 0 0 1-5.396-4.402.75.75 0 0 1 1.251.827 2 2 0 0 0 2.632 2.989l.07-.036.039-.02 2-2a2 2 0 0 0 0-2.828.75.75 0 0 1-.656-1.48Zm-1.828 3.95a.75.75 0 0 1-1.06 0 3.5 3.5 0 0 1 0-4.95l2-2a3.5 3.5 0 0 1 5.396 4.402.75.75 0 0 1-1.251-.827 2 2 0 0 0-2.632-2.989l-.07.036-.039.02-2 2a2 2 0 0 0 0 2.828.75.75 0 0 1 .656 1.48Z" clipRule="evenodd" />
+                          </svg>
+                          Links
+                        </Link>
+                      )}
+                    </div>
                   </div>
                   {isOwnProfile && (
                     <div className="flex shrink-0 items-center gap-2">
