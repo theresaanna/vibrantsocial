@@ -195,9 +195,9 @@ export default function VideoComponent({
         src={src}
         controls
         style={style}
-        className="max-h-[50vh] max-w-full rounded-lg"
+        className={`max-h-[50vh] max-w-full rounded-lg${isVideoEditable ? " cursor-grab active:cursor-grabbing" : ""}`}
         preload="metadata"
-        draggable={false}
+        draggable={isVideoEditable}
       >
         Your browser does not support video playback.
       </video>

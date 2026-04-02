@@ -208,8 +208,8 @@ export default function ImageComponent({
         src={src}
         alt={imgAltText}
         style={style}
-        className="max-w-full rounded"
-        draggable={false}
+        className={`max-w-full rounded${isImageEditable ? " cursor-grab active:cursor-grabbing" : ""}`}
+        draggable={isImageEditable}
       />
       {isSelected && isImageEditable && (
         <>

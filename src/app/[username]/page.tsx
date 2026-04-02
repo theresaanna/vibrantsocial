@@ -767,8 +767,8 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             </div>
           ) : (
             <div className="mt-6 space-y-4">
-              {/* Wall post composer — shown to friends on posts tab (when wall is inline) */}
-              {currentUserId && isFriend && !isOwnProfile && showWallOnPostsTab && (
+              {/* Wall post composer — always shown to friends on posts tab */}
+              {currentUserId && isFriend && !isOwnProfile && (
                 <WallPostComposer
                   wallOwnerId={user.id}
                   wallOwnerName={displayName || "this user"}
