@@ -84,25 +84,32 @@ export default async function LinksPage({ params }: Props) {
             </p>
           )}
 
-          {/* Links (wrapped for in-app browser breakout) */}
-          <InAppBrowserBreakout sensitiveLinks={user.linksPageSensitiveLinks}>
-            {user.linksPageLinks.length > 0 && (
-              <div className="space-y-3">
-                {user.linksPageLinks.map((link) => (
-                  <a
-                    key={link.id}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="links-page-btn block w-full rounded-xl profile-container px-4 py-3 text-center font-medium transition-opacity hover:opacity-80"
-                    data-testid="links-page-link"
-                  >
-                    {link.title}
-                  </a>
-                ))}
-              </div>
-            )}
-          </InAppBrowserBreakout>
+          {/* Links — when sensitive, link data stays out of SSR HTML */}
+          {user.linksPageSensitiveLinks ? (
+            <InAppBrowserBreakout
+              sensitiveLinks
+              linkData={user.linksPageLinks}
+            />
+          ) : (
+            <InAppBrowserBreakout sensitiveLinks={false}>
+              {user.linksPageLinks.length > 0 && (
+                <div className="space-y-3">
+                  {user.linksPageLinks.map((link) => (
+                    <a
+                      key={link.id}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="links-page-btn block w-full rounded-xl profile-container px-4 py-3 text-center font-medium transition-opacity hover:opacity-80"
+                      data-testid="links-page-link"
+                    >
+                      {link.title}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </InAppBrowserBreakout>
+          )}
 
           {/* Footer */}
           <div className="pt-2 text-center">

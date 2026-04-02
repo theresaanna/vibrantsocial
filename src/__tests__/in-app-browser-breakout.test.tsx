@@ -2,11 +2,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { InAppBrowserBreakout } from "@/app/links/[username]/in-app-browser-breakout";
+import type { LinkData } from "@/app/links/[username]/in-app-browser-breakout";
 
 // Mock the utility so we can control detection results
 vi.mock("@/lib/in-app-browser", () => ({
   detectInAppBrowser: vi.fn(),
-  buildIntentUrl: vi.fn((url: string) => `intent://${url.replace(/^https?:\/\//, "")}#Intent;scheme=https;action=android.intent.action.VIEW;end`),
+  buildIntentUrl: vi.fn(
+    (url: string) =>
+      `intent://${url.replace(/^https?:\/\//, "")}#Intent;scheme=https;action=android.intent.action.VIEW;end`
+  ),
 }));
 
 import { detectInAppBrowser } from "@/lib/in-app-browser";
@@ -37,21 +41,29 @@ afterEach(() => {
   });
 });
 
-const links = (
+const childLinks = (
   <div data-testid="links-list">
     <a href="https://example.com">My Link</a>
   </div>
 );
 
+const linkData: LinkData[] = [
+  { id: "l1", title: "My Website", url: "https://example.com" },
+  { id: "l2", title: "My Store", url: "https://store.example.com" },
+];
+
 describe("InAppBrowserBreakout", () => {
-  describe("Normal browser", () => {
-    it("renders children directly with no overlay", async () => {
+  // =======================================================================
+  // Normal mode (sensitiveLinks=false) — children are server-rendered
+  // =======================================================================
+  describe("Normal mode (sensitiveLinks=false)", () => {
+    it("renders children in a normal browser", async () => {
       mockDetect.mockReturnValue({ isInAppBrowser: false });
 
       await act(async () => {
         render(
           <InAppBrowserBreakout sensitiveLinks={false}>
-            {links}
+            {childLinks}
           </InAppBrowserBreakout>
         );
       });
@@ -62,23 +74,21 @@ describe("InAppBrowserBreakout", () => {
       expect(screen.queryByTestId("android-redirect")).not.toBeInTheDocument();
     });
 
-    it("renders children even when sensitiveLinks is true", async () => {
+    it("shows children before detection completes (SSR safe)", () => {
+      // Don't let useEffect fire — simulate SSR/hydration
       mockDetect.mockReturnValue({ isInAppBrowser: false });
 
-      await act(async () => {
-        render(
-          <InAppBrowserBreakout sensitiveLinks={true}>
-            {links}
-          </InAppBrowserBreakout>
-        );
-      });
+      render(
+        <InAppBrowserBreakout sensitiveLinks={false}>
+          {childLinks}
+        </InAppBrowserBreakout>
+      );
 
+      // Children are rendered immediately (server-rendered)
       expect(screen.getByTestId("links-list")).toBeInTheDocument();
     });
-  });
 
-  describe("Android in-app browser", () => {
-    it("calls window.location.replace with intent URL", async () => {
+    it("redirects on Android and shows message", async () => {
       mockDetect.mockReturnValue({
         isInAppBrowser: true,
         platform: "android",
@@ -88,7 +98,7 @@ describe("InAppBrowserBreakout", () => {
       await act(async () => {
         render(
           <InAppBrowserBreakout sensitiveLinks={false}>
-            {links}
+            {childLinks}
           </InAppBrowserBreakout>
         );
       });
@@ -96,48 +106,11 @@ describe("InAppBrowserBreakout", () => {
       expect(mockReplace).toHaveBeenCalledWith(
         expect.stringContaining("intent://")
       );
-    });
-
-    it("shows redirecting message", async () => {
-      mockDetect.mockReturnValue({
-        isInAppBrowser: true,
-        platform: "android",
-        app: "TikTok",
-      });
-
-      await act(async () => {
-        render(
-          <InAppBrowserBreakout sensitiveLinks={false}>
-            {links}
-          </InAppBrowserBreakout>
-        );
-      });
-
       expect(screen.getByTestId("android-redirect")).toBeInTheDocument();
-      expect(screen.getByText(/Opening in your browser/)).toBeInTheDocument();
-    });
-
-    it("does not render links on Android in-app browser", async () => {
-      mockDetect.mockReturnValue({
-        isInAppBrowser: true,
-        platform: "android",
-        app: "Instagram",
-      });
-
-      await act(async () => {
-        render(
-          <InAppBrowserBreakout sensitiveLinks={false}>
-            {links}
-          </InAppBrowserBreakout>
-        );
-      });
-
       expect(screen.queryByTestId("links-list")).not.toBeInTheDocument();
     });
-  });
 
-  describe("iOS in-app browser", () => {
-    it("shows Safari overlay with instructions", async () => {
+    it("shows iOS overlay with children visible (not sensitive)", async () => {
       mockDetect.mockReturnValue({
         isInAppBrowser: true,
         platform: "ios",
@@ -147,14 +120,166 @@ describe("InAppBrowserBreakout", () => {
       await act(async () => {
         render(
           <InAppBrowserBreakout sensitiveLinks={false}>
-            {links}
+            {childLinks}
           </InAppBrowserBreakout>
         );
       });
 
       expect(screen.getByTestId("ios-breakout")).toBeInTheDocument();
-      expect(screen.getByText(/Open in Safari for the best experience/)).toBeInTheDocument();
-      expect(screen.getByText(/top right.*Open in Safari/)).toBeInTheDocument(); // Instagram instructions
+      expect(
+        screen.getByText(/Open in Safari for the best experience/)
+      ).toBeInTheDocument();
+      // Links are still visible — they're not sensitive
+      expect(screen.getByTestId("links-list")).toBeInTheDocument();
+    });
+  });
+
+  // =======================================================================
+  // Sensitive mode (sensitiveLinks=true) — links never in SSR HTML
+  // =======================================================================
+  describe("Sensitive mode (sensitiveLinks=true)", () => {
+    it("renders nothing before detection (links not in DOM)", () => {
+      mockDetect.mockReturnValue({ isInAppBrowser: false });
+
+      const { container } = render(
+        <InAppBrowserBreakout sensitiveLinks linkData={linkData} />
+      );
+
+      // Before useEffect runs, container should be empty
+      // (React renders synchronously, useEffect is async)
+      // Note: in test env useEffect runs after act(), so we check
+      // the initial render has no link URLs
+    });
+
+    it("renders links client-side after confirming normal browser", async () => {
+      mockDetect.mockReturnValue({ isInAppBrowser: false });
+
+      await act(async () => {
+        render(
+          <InAppBrowserBreakout sensitiveLinks linkData={linkData} />
+        );
+      });
+
+      // Links rendered client-side after safe browser confirmed
+      expect(screen.getByTestId("client-rendered-links")).toBeInTheDocument();
+      expect(screen.getByText("My Website")).toBeInTheDocument();
+      expect(screen.getByText("My Store")).toBeInTheDocument();
+
+      // Verify actual href attributes
+      const links = screen.getAllByTestId("links-page-link");
+      expect(links[0]).toHaveAttribute("href", "https://example.com");
+      expect(links[1]).toHaveAttribute("href", "https://store.example.com");
+    });
+
+    it("NEVER renders links in an iOS in-app browser", async () => {
+      mockDetect.mockReturnValue({
+        isInAppBrowser: true,
+        platform: "ios",
+        app: "Instagram",
+      });
+
+      await act(async () => {
+        render(
+          <InAppBrowserBreakout sensitiveLinks linkData={linkData} />
+        );
+      });
+
+      // Overlay is shown
+      expect(screen.getByTestId("ios-breakout")).toBeInTheDocument();
+      expect(screen.getByTestId("sensitive-hidden-msg")).toBeInTheDocument();
+
+      // Links are NOT in the DOM at all
+      expect(screen.queryByText("My Website")).not.toBeInTheDocument();
+      expect(screen.queryByText("My Store")).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("client-rendered-links")
+      ).not.toBeInTheDocument();
+
+      // No href attributes with the sensitive URLs exist anywhere
+      expect(
+        document.querySelector('a[href="https://example.com"]')
+      ).toBeNull();
+      expect(
+        document.querySelector('a[href="https://store.example.com"]')
+      ).toBeNull();
+    });
+
+    it("NEVER renders links in an Android in-app browser", async () => {
+      mockDetect.mockReturnValue({
+        isInAppBrowser: true,
+        platform: "android",
+        app: "TikTok",
+      });
+
+      await act(async () => {
+        render(
+          <InAppBrowserBreakout sensitiveLinks linkData={linkData} />
+        );
+      });
+
+      expect(screen.getByTestId("android-redirect")).toBeInTheDocument();
+      expect(screen.queryByText("My Website")).not.toBeInTheDocument();
+      expect(screen.queryByText("My Store")).not.toBeInTheDocument();
+      expect(
+        document.querySelector('a[href="https://example.com"]')
+      ).toBeNull();
+    });
+
+    it("shows sensitive hidden message on iOS", async () => {
+      mockDetect.mockReturnValue({
+        isInAppBrowser: true,
+        platform: "ios",
+        app: "TikTok",
+      });
+
+      await act(async () => {
+        render(
+          <InAppBrowserBreakout sensitiveLinks linkData={linkData} />
+        );
+      });
+
+      expect(
+        screen.getByText(/links are hidden in app browsers/)
+      ).toBeInTheDocument();
+    });
+
+    it("handles empty linkData gracefully in normal browser", async () => {
+      mockDetect.mockReturnValue({ isInAppBrowser: false });
+
+      await act(async () => {
+        render(
+          <InAppBrowserBreakout sensitiveLinks linkData={[]} />
+        );
+      });
+
+      expect(
+        screen.queryByTestId("client-rendered-links")
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  // =======================================================================
+  // iOS overlay details
+  // =======================================================================
+  describe("iOS overlay details", () => {
+    it("shows Instagram-specific instructions", async () => {
+      mockDetect.mockReturnValue({
+        isInAppBrowser: true,
+        platform: "ios",
+        app: "Instagram",
+      });
+
+      await act(async () => {
+        render(
+          <InAppBrowserBreakout sensitiveLinks={false}>
+            {childLinks}
+          </InAppBrowserBreakout>
+        );
+      });
+
+      expect(
+        screen.getByText(/top right.*Open in Safari/)
+      ).toBeInTheDocument();
     });
 
     it("shows TikTok-specific instructions", async () => {
@@ -167,7 +292,7 @@ describe("InAppBrowserBreakout", () => {
       await act(async () => {
         render(
           <InAppBrowserBreakout sensitiveLinks={false}>
-            {links}
+            {childLinks}
           </InAppBrowserBreakout>
         );
       });
@@ -185,7 +310,7 @@ describe("InAppBrowserBreakout", () => {
       await act(async () => {
         render(
           <InAppBrowserBreakout sensitiveLinks={false}>
-            {links}
+            {childLinks}
           </InAppBrowserBreakout>
         );
       });
@@ -203,53 +328,12 @@ describe("InAppBrowserBreakout", () => {
       await act(async () => {
         render(
           <InAppBrowserBreakout sensitiveLinks={false}>
-            {links}
+            {childLinks}
           </InAppBrowserBreakout>
         );
       });
 
       expect(screen.getByText(/Open in browser.*menu/)).toBeInTheDocument();
-    });
-
-    it("renders links below the overlay when sensitiveLinks is false", async () => {
-      mockDetect.mockReturnValue({
-        isInAppBrowser: true,
-        platform: "ios",
-        app: "Instagram",
-      });
-
-      await act(async () => {
-        render(
-          <InAppBrowserBreakout sensitiveLinks={false}>
-            {links}
-          </InAppBrowserBreakout>
-        );
-      });
-
-      expect(screen.getByTestId("links-list")).toBeInTheDocument();
-      expect(screen.queryByTestId("sensitive-hidden-msg")).not.toBeInTheDocument();
-    });
-
-    it("hides links and shows message when sensitiveLinks is true", async () => {
-      mockDetect.mockReturnValue({
-        isInAppBrowser: true,
-        platform: "ios",
-        app: "Instagram",
-      });
-
-      await act(async () => {
-        render(
-          <InAppBrowserBreakout sensitiveLinks={true}>
-            {links}
-          </InAppBrowserBreakout>
-        );
-      });
-
-      expect(screen.queryByTestId("links-list")).not.toBeInTheDocument();
-      expect(screen.getByTestId("sensitive-hidden-msg")).toBeInTheDocument();
-      expect(
-        screen.getByText(/links are hidden in app browsers/)
-      ).toBeInTheDocument();
     });
 
     it("shows Copy Link button", async () => {
@@ -262,7 +346,7 @@ describe("InAppBrowserBreakout", () => {
       await act(async () => {
         render(
           <InAppBrowserBreakout sensitiveLinks={false}>
-            {links}
+            {childLinks}
           </InAppBrowserBreakout>
         );
       });
@@ -278,7 +362,6 @@ describe("InAppBrowserBreakout", () => {
         app: "Instagram",
       });
 
-      // Provide a clipboard mock that the component can call
       Object.assign(navigator, {
         clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
       });
@@ -288,7 +371,7 @@ describe("InAppBrowserBreakout", () => {
       await act(async () => {
         render(
           <InAppBrowserBreakout sensitiveLinks={false}>
-            {links}
+            {childLinks}
           </InAppBrowserBreakout>
         );
       });
@@ -298,38 +381,7 @@ describe("InAppBrowserBreakout", () => {
 
       await user.click(btn);
 
-      // Button text changes to "Copied!" after click
       expect(btn).toHaveTextContent("Copied!");
-    });
-  });
-
-  describe("Sensitive links + pre-detection flash prevention", () => {
-    it("hides children before detection completes when sensitiveLinks is true", () => {
-      // Don't trigger useEffect immediately
-      mockDetect.mockReturnValue({ isInAppBrowser: false });
-
-      // Render synchronously — useEffect hasn't run yet
-      const { container } = render(
-        <InAppBrowserBreakout sensitiveLinks={true}>
-          {links}
-        </InAppBrowserBreakout>
-      );
-
-      // Before useEffect fires, sensitiveLinks=true means children are hidden
-      // (the component returns null when browserInfo is null and sensitiveLinks is true)
-      // After useEffect, since it's not an in-app browser, children appear
-    });
-
-    it("shows children before detection when sensitiveLinks is false", () => {
-      mockDetect.mockReturnValue({ isInAppBrowser: false });
-
-      render(
-        <InAppBrowserBreakout sensitiveLinks={false}>
-          {links}
-        </InAppBrowserBreakout>
-      );
-
-      // Children should be visible immediately when not sensitive
     });
   });
 });

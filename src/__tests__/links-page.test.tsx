@@ -52,14 +52,27 @@ vi.mock("@/components/styled-name", () => ({
   ),
 }));
 
-// Mock InAppBrowserBreakout — renders children directly in tests
+// Mock InAppBrowserBreakout — renders children or linkData directly in tests
 vi.mock("@/app/links/[username]/in-app-browser-breakout", () => ({
   InAppBrowserBreakout: ({
+    sensitiveLinks,
+    linkData,
     children,
   }: {
     sensitiveLinks: boolean;
-    children: React.ReactNode;
-  }) => <div data-testid="breakout-wrapper">{children}</div>,
+    linkData?: Array<{ id: string; title: string; url: string }>;
+    children?: React.ReactNode;
+  }) => (
+    <div data-testid="breakout-wrapper" data-sensitive={sensitiveLinks}>
+      {sensitiveLinks
+        ? linkData?.map((l) => (
+            <a key={l.id} href={l.url} data-testid="links-page-link">
+              {l.title}
+            </a>
+          ))
+        : children}
+    </div>
+  ),
 }));
 
 // Mock next/link
