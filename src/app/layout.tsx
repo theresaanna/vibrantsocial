@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Lexend, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { headers } from "next/headers";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Header } from "@/components/header";
@@ -35,11 +36,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const host = (await headers()).get("host") || "";
+  const isLinksSubdomain = host.startsWith("links.");
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -50,10 +54,10 @@ export default function RootLayout({
         className={`${lexend.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
-          <VersionCheck />
-          <Header />
+          {!isLinksSubdomain && <VersionCheck />}
+          {!isLinksSubdomain && <Header />}
           {children}
-          <Footer />
+          {!isLinksSubdomain && <Footer />}
         </Providers>
         <Analytics />
         <SpeedInsights />

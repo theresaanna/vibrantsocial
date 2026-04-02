@@ -112,6 +112,11 @@ model User {
   isProfilePublic    Boolean @default(true)
   hideWallFromFeed   Boolean @default(false)
 
+  // Links page
+  linksPageEnabled Boolean @default(false)
+  linksPageBio     String?
+  linksPageLinks   LinksPageLink[]
+
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   lastSeenFeedAt DateTime?
@@ -1085,4 +1090,16 @@ model MarketplaceQuestion {
 
   @@index([marketplacePostId, createdAt])
   @@index([askerId])
+}
+
+model LinksPageLink {
+  id     String @id @default(cuid())
+  userId String
+  title  String
+  url    String
+  order  Int    @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

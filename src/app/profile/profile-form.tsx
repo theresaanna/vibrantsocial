@@ -871,6 +871,16 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
           Customize your theme, font, and background
         </Link>
 
+        <Link
+          href="/profile/links"
+          className="flex items-center gap-2 rounded-lg border border-zinc-200 p-3 text-sm font-medium text-pink-600 transition-colors hover:bg-pink-50 dark:border-zinc-700 dark:text-pink-400 dark:hover:bg-pink-900/20"
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.86-2.07a4.5 4.5 0 00-1.242-7.244l-4.5-4.5a4.5 4.5 0 00-6.364 6.364L4.343 8.59" />
+          </svg>
+          Set up your links page
+        </Link>
+
         <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
           <p className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">
             Content Visibility
