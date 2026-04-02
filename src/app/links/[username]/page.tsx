@@ -61,7 +61,7 @@ export default async function LinksPage({ params }: Props) {
   return (
     <ThemedPage {...theme} bare>
       <div className="flex min-h-screen flex-col items-center px-4 py-12">
-        <div className="w-full max-w-md space-y-6">
+        <div className="w-full max-w-md rounded-2xl profile-container px-6 py-8 space-y-6">
           {/* Avatar + Name */}
           <div className="flex flex-col items-center gap-3">
             <FramedAvatar
@@ -101,7 +101,7 @@ export default async function LinksPage({ params }: Props) {
           )}
 
           {/* Footer */}
-          <div className="pt-6 text-center">
+          <div className="pt-2 text-center">
             <a
               href="https://vibrantsocial.app"
               className="text-xs profile-text-secondary transition-opacity hover:opacity-70"
