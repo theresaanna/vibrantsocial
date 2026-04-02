@@ -99,14 +99,14 @@ describe("setStatus", () => {
     expect(result.message).toContain("empty");
   });
 
-  it("returns error if content exceeds 280 characters", async () => {
+  it("returns error if content exceeds 75 characters", async () => {
     const result = await setStatus(
       defaultState,
-      makeFormData({ content: "a".repeat(281) }),
+      makeFormData({ content: "a".repeat(76) }),
     );
 
     expect(result.success).toBe(false);
-    expect(result.message).toContain("280");
+    expect(result.message).toContain("75");
   });
 });
 

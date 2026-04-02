@@ -306,7 +306,7 @@ model PostView {
 model UserStatus {
   id        String   @id @default(cuid())
   userId    String
-  content   String   @db.VarChar(280)
+  content   String   @db.VarChar(75)
   createdAt DateTime @default(now())
 
   user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)

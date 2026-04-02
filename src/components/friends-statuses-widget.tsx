@@ -46,7 +46,7 @@ function StatusCard({
       </div>
       <div className="flex items-end justify-between gap-2">
         <p
-          className={`line-clamp-2 text-sm leading-snug ${
+          className={`text-sm leading-snug ${
             isOwn
               ? "font-bold text-zinc-900 dark:text-zinc-100"
               : "text-zinc-600 dark:text-zinc-400"

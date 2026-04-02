@@ -12,7 +12,7 @@ import {
 } from "@/lib/action-utils";
 import type { ActionState } from "@/lib/action-utils";
 
-const MAX_STATUS_LENGTH = 280;
+const MAX_STATUS_LENGTH = 75;
 
 // ---------------------------------------------------------------------------
 // Types
