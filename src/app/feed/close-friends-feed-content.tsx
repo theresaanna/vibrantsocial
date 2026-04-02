@@ -75,7 +75,8 @@ export async function CloseFriendsFeedContent({ userId }: { userId: string }) {
       where: {
         authorId: { in: memberIds },
         ...(!showNsfwContent ? { isNsfw: false } : {}),
-        ...(!ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
+        ...(!showNsfwContent || !ageVerified || !hideSensitiveOverlay ? { isSensitive: false } : {}),
+        ...(!showNsfwContent || !ageVerified || !showGraphicByDefault ? { isGraphicNudity: false } : {}),
         OR: [
           { isCloseFriendsOnly: false, hasCustomAudience: false },
           { isCloseFriendsOnly: true, authorId: { in: closeFriendAuthors } },

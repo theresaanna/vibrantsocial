@@ -70,8 +70,8 @@ export async function fetchUserMediaPosts(
     const prefs = await getUserPrefs(currentUserId);
     nsfwFilter = {
       ...(!prefs.showNsfwContent ? { isNsfw: false } : {}),
-      ...(!prefs.ageVerified || !prefs.hideSensitiveOverlay ? { isSensitive: false } : {}),
-      ...(!prefs.ageVerified || !prefs.showGraphicByDefault ? { isGraphicNudity: false } : {}),
+      ...(!prefs.showNsfwContent || !prefs.ageVerified || !prefs.hideSensitiveOverlay ? { isSensitive: false } : {}),
+      ...(!prefs.showNsfwContent || !prefs.ageVerified || !prefs.showGraphicByDefault ? { isGraphicNudity: false } : {}),
     };
   }
 

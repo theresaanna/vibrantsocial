@@ -76,8 +76,8 @@ export async function fetchMediaFeedPage(
       authorId: { in: [...followingIds, userId] },
       ...(dateFilter ? { createdAt: dateFilter } : {}),
       ...(!showNsfwContent ? { isNsfw: false } : {}),
-      ...(!ageVerified || !hideSensitiveOverlay ? { isSensitive: false } : {}),
-      ...(!ageVerified || !showGraphicByDefault ? { isGraphicNudity: false } : {}),
+      ...(!showNsfwContent || !ageVerified || !hideSensitiveOverlay ? { isSensitive: false } : {}),
+      ...(!showNsfwContent || !ageVerified || !showGraphicByDefault ? { isGraphicNudity: false } : {}),
       // Only fetch posts that contain media nodes in their Lexical JSON content
       OR: [
         { content: { contains: '"type":"image"' } },

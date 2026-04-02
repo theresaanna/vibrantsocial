@@ -68,7 +68,8 @@ export async function ForYouFeedContent({ userId }: { userId: string }) {
       hasCustomAudience: false,
       isLoggedInOnly: false,
       ...(!showNsfwContent ? { isNsfw: false } : {}),
-      ...(!ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
+      ...(!showNsfwContent || !ageVerified || !hideSensitiveOverlay ? { isSensitive: false } : {}),
+      ...(!showNsfwContent || !ageVerified || !showGraphicByDefault ? { isGraphicNudity: false } : {}),
       OR: [
         { marketplacePost: null },
         { marketplacePost: { promotedToFeed: true } },

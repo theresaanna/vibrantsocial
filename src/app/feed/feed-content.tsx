@@ -74,7 +74,8 @@ export async function FeedContent({ userId, activeView = "posts" }: { userId: st
       where: {
         authorId: { in: [...followingIds, userId] },
         ...(!showNsfwContent ? { isNsfw: false } : {}),
-        ...(!ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
+        ...(!showNsfwContent || !ageVerified || !hideSensitiveOverlay ? { isSensitive: false } : {}),
+        ...(!showNsfwContent || !ageVerified || !showGraphicByDefault ? { isGraphicNudity: false } : {}),
         // Exclude marketplace posts unless promoted to feed
         OR: [
           { marketplacePost: null },
