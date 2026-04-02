@@ -21,11 +21,12 @@ describe("LinksForm", () => {
           { id: "l1", title: "Website", url: "https://example.com" },
         ]}
         username="alice"
+        sensitiveLinks={false}
       />
     );
 
-    const checkbox = screen.getByRole("checkbox");
-    expect(checkbox).toBeChecked();
+    const checkboxes = screen.getAllByRole("checkbox");
+    expect(checkboxes[0]).toBeChecked(); // Enable toggle
 
     const bioInput = screen.getByPlaceholderText(/short bio/i);
     expect(bioInput).toHaveValue("My bio");
@@ -36,7 +37,7 @@ describe("LinksForm", () => {
 
   it("shows subdomain URL with username", () => {
     render(
-      <LinksForm enabled={false} bio="" links={[]} username="alice" />
+      <LinksForm enabled={false} bio="" links={[]} username="alice" sensitiveLinks={false} />
     );
 
     expect(
@@ -46,18 +47,18 @@ describe("LinksForm", () => {
 
   it("disables checkbox when no username", () => {
     render(
-      <LinksForm enabled={false} bio="" links={[]} username={null} />
+      <LinksForm enabled={false} bio="" links={[]} username={null} sensitiveLinks={false} />
     );
 
-    const checkbox = screen.getByRole("checkbox");
-    expect(checkbox).toBeDisabled();
+    const checkboxes = screen.getAllByRole("checkbox");
+    expect(checkboxes[0]).toBeDisabled();
     expect(screen.getByText(/Set a username first/)).toBeInTheDocument();
   });
 
   it("adds a new link when Add Link is clicked", async () => {
     const user = userEvent.setup();
     render(
-      <LinksForm enabled={false} bio="" links={[]} username="alice" />
+      <LinksForm enabled={false} bio="" links={[]} username="alice" sensitiveLinks={false} />
     );
 
     // Starts with one empty entry
@@ -78,6 +79,7 @@ describe("LinksForm", () => {
           { id: "l2", title: "Link 2", url: "https://two.com" },
         ]}
         username="alice"
+        sensitiveLinks={false}
       />
     );
 
@@ -92,9 +94,47 @@ describe("LinksForm", () => {
 
   it("renders Save button", () => {
     render(
-      <LinksForm enabled={false} bio="" links={[]} username="alice" />
+      <LinksForm enabled={false} bio="" links={[]} username="alice" sensitiveLinks={false} />
     );
 
     expect(screen.getByRole("button", { name: /save/i })).toBeInTheDocument();
+  });
+
+  describe("Sensitive link safety toggle", () => {
+    it("renders the toggle with description", () => {
+      render(
+        <LinksForm enabled={false} bio="" links={[]} username="alice" sensitiveLinks={false} />
+      );
+
+      expect(screen.getByText("Sensitive link safety")).toBeInTheDocument();
+      expect(screen.getByText(/Hide links when viewed in social media app browsers/)).toBeInTheDocument();
+    });
+
+    it("is unchecked when sensitiveLinks is false", () => {
+      render(
+        <LinksForm enabled={false} bio="" links={[]} username="alice" sensitiveLinks={false} />
+      );
+
+      const toggle = screen.getByTestId("sensitive-links-toggle");
+      expect(toggle).not.toBeChecked();
+    });
+
+    it("is checked when sensitiveLinks is true", () => {
+      render(
+        <LinksForm enabled={false} bio="" links={[]} username="alice" sensitiveLinks={true} />
+      );
+
+      const toggle = screen.getByTestId("sensitive-links-toggle");
+      expect(toggle).toBeChecked();
+    });
+
+    it("has the correct form field name", () => {
+      render(
+        <LinksForm enabled={false} bio="" links={[]} username="alice" sensitiveLinks={false} />
+      );
+
+      const toggle = screen.getByTestId("sensitive-links-toggle");
+      expect(toggle).toHaveAttribute("name", "linksPageSensitiveLinks");
+    });
   });
 });

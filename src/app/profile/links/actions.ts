@@ -17,6 +17,7 @@ export async function updateLinksPage(
   const session = authResult;
 
   const enabled = formData.get("linksPageEnabled") === "on";
+  const sensitiveLinks = formData.get("linksPageSensitiveLinks") === "on";
   const bio = (formData.get("linksPageBio") as string || "").slice(0, MAX_BIO_LENGTH);
 
   // Parse links from form data
@@ -53,6 +54,7 @@ export async function updateLinksPage(
       data: {
         linksPageEnabled: enabled,
         linksPageBio: bio || null,
+        linksPageSensitiveLinks: sensitiveLinks,
       },
     }),
     prisma.linksPageLink.deleteMany({

@@ -6,6 +6,7 @@ import { userThemeSelect, buildUserTheme } from "@/lib/user-theme";
 import { ThemedPage } from "@/components/themed-page";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { StyledName } from "@/components/styled-name";
+import { InAppBrowserBreakout } from "./in-app-browser-breakout";
 
 interface Props {
   params: Promise<{ username: string }>;
@@ -46,6 +47,7 @@ export default async function LinksPage({ params }: Props) {
       usernameFont: true,
       linksPageEnabled: true,
       linksPageBio: true,
+      linksPageSensitiveLinks: true,
       linksPageLinks: {
         orderBy: { order: "asc" },
         select: { id: true, title: true, url: true },
@@ -82,23 +84,25 @@ export default async function LinksPage({ params }: Props) {
             </p>
           )}
 
-          {/* Links */}
-          {user.linksPageLinks.length > 0 && (
-            <div className="space-y-3">
-              {user.linksPageLinks.map((link) => (
-                <a
-                  key={link.id}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="links-page-btn block w-full rounded-xl profile-container px-4 py-3 text-center font-medium transition-opacity hover:opacity-80"
-                  data-testid="links-page-link"
-                >
-                  {link.title}
-                </a>
-              ))}
-            </div>
-          )}
+          {/* Links (wrapped for in-app browser breakout) */}
+          <InAppBrowserBreakout sensitiveLinks={user.linksPageSensitiveLinks}>
+            {user.linksPageLinks.length > 0 && (
+              <div className="space-y-3">
+                {user.linksPageLinks.map((link) => (
+                  <a
+                    key={link.id}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="links-page-btn block w-full rounded-xl profile-container px-4 py-3 text-center font-medium transition-opacity hover:opacity-80"
+                    data-testid="links-page-link"
+                  >
+                    {link.title}
+                  </a>
+                ))}
+              </div>
+            )}
+          </InAppBrowserBreakout>
 
           {/* Footer */}
           <div className="pt-2 text-center">
