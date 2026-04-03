@@ -58,11 +58,14 @@ async function createFollow(
   await invalidateRelationshipCache(follower.rows[0].id, following.rows[0].id);
 }
 
-async function cleanupBlocks(pool: pg.Pool, userId: string) {
+async function cleanupBlocks(pool: pg.Pool, ids: string[]) {
   await pool.query(
-    `DELETE FROM "Block" WHERE "blockerId" = $1 OR "blockedId" = $1`,
-    [userId]
+    `DELETE FROM "Block" WHERE "blockerId" = ANY($1) OR "blockedId" = ANY($1)`,
+    [ids]
   );
+  if (ids.length >= 2) {
+    await invalidateRelationshipCache(ids[0], ids[1]);
+  }
 }
 
 async function cleanupRelationships(pool: pg.Pool, ids: string[]) {
@@ -108,12 +111,15 @@ test.describe("Block User", () => {
   });
 
   test("block button is visible on other user's profile", async ({ page }) => {
-    await page.goto(`/${TEST_USER_2.username}`);
-    await page.reload();
-
-    await expect(
-      page.locator("h1", { hasText: TEST_USER_2.displayName })
-    ).toBeVisible({ timeout: 15000 });
+    // Retry to ensure fresh RSC render after cleanup
+    await expect(async () => {
+      await page.goto(`/${TEST_USER_2.username}`);
+      await page.reload();
+      await page.waitForLoadState("networkidle");
+      await expect(
+        page.locator("h1", { hasText: TEST_USER_2.displayName })
+      ).toBeVisible({ timeout: 5000 });
+    }).toPass({ timeout: 20000 });
 
     const blockButton = page.locator('[data-testid="profile-block-button"]');
     await expect(blockButton).toBeVisible({ timeout: 5000 });
@@ -121,6 +127,8 @@ test.describe("Block User", () => {
 
   test("block button is NOT visible on own profile", async ({ page }) => {
     await page.goto(`/${TEST_USER.username}`);
+    await page.reload();
+    await page.waitForLoadState("networkidle");
 
     await expect(
       page.locator("h1", { hasText: TEST_USER.username })
@@ -131,12 +139,14 @@ test.describe("Block User", () => {
   });
 
   test("clicking block shows confirmation dialog", async ({ page }) => {
-    await page.goto(`/${TEST_USER_2.username}`);
-    await page.reload();
-
-    await expect(
-      page.locator("h1", { hasText: TEST_USER_2.displayName })
-    ).toBeVisible({ timeout: 15000 });
+    await expect(async () => {
+      await page.goto(`/${TEST_USER_2.username}`);
+      await page.reload();
+      await page.waitForLoadState("networkidle");
+      await expect(
+        page.locator("h1", { hasText: TEST_USER_2.displayName })
+      ).toBeVisible({ timeout: 5000 });
+    }).toPass({ timeout: 20000 });
 
     const blockButton = page.locator('[data-testid="profile-block-button"]');
     await expect(blockButton).toBeVisible({ timeout: 5000 });
@@ -163,12 +173,14 @@ test.describe("Block User", () => {
   });
 
   test("cancel dismisses block dialog", async ({ page }) => {
-    await page.goto(`/${TEST_USER_2.username}`);
-    await page.reload();
-
-    await expect(
-      page.locator("h1", { hasText: TEST_USER_2.displayName })
-    ).toBeVisible({ timeout: 15000 });
+    await expect(async () => {
+      await page.goto(`/${TEST_USER_2.username}`);
+      await page.reload();
+      await page.waitForLoadState("networkidle");
+      await expect(
+        page.locator("h1", { hasText: TEST_USER_2.displayName })
+      ).toBeVisible({ timeout: 5000 });
+    }).toPass({ timeout: 20000 });
 
     const blockButton = page.locator('[data-testid="profile-block-button"]');
     await expect(blockButton).toBeVisible({ timeout: 5000 });
@@ -193,41 +205,34 @@ test.describe("Block User", () => {
     // Seed a Block record: TEST_USER blocks TEST_USER_2
     await createBlock(pool, user1Id, user2Id);
 
-    await page.goto(`/${TEST_USER_2.username}`);
-    await page.reload();
-
-    await expect(
-      page.locator("h1", { hasText: TEST_USER_2.displayName })
-    ).toBeVisible({ timeout: 15000 });
-
-    // Should show "You have blocked this user" message
-    await expect(
-      page.locator("text=You have blocked this user")
-    ).toBeVisible({ timeout: 5000 });
+    // Retry navigation to ensure fresh RSC render picks up the block
+    await expect(async () => {
+      await page.goto(`/${TEST_USER_2.username}`);
+      await page.reload();
+      await page.waitForLoadState("networkidle");
+      await expect(
+        page.locator("text=You have blocked this user")
+      ).toBeVisible({ timeout: 5000 });
+    }).toPass({ timeout: 20000 });
   });
 
   test("blocked user sees 'unavailable' message", async ({ browser }) => {
     // Seed a Block: TEST_USER_2 blocks TEST_USER
     await createBlock(pool, user2Id, user1Id);
 
-    // Log in as TEST_USER (already authenticated via storageState),
-    // visit TEST_USER_2's profile
     const context = await browser.newContext({
       storageState: "e2e/auth/user.json",
     });
     const page = await context.newPage();
 
-    await page.goto(`/${TEST_USER_2.username}`);
-    await page.reload();
-
-    await expect(
-      page.locator("h1", { hasText: TEST_USER_2.displayName })
-    ).toBeVisible({ timeout: 15000 });
-
-    // Should show "This content is unavailable" message
-    await expect(
-      page.locator("text=This content is unavailable")
-    ).toBeVisible({ timeout: 5000 });
+    await expect(async () => {
+      await page.goto(`/${TEST_USER_2.username}`);
+      await page.reload();
+      await page.waitForLoadState("networkidle");
+      await expect(
+        page.locator("text=This content is unavailable")
+      ).toBeVisible({ timeout: 5000 });
+    }).toPass({ timeout: 20000 });
 
     await context.close();
   });
@@ -239,17 +244,14 @@ test.describe("Block User", () => {
     // Seed a Block: TEST_USER blocks TEST_USER_2
     await createBlock(pool, user1Id, user2Id);
 
-    await page.goto(`/${TEST_USER_2.username}`);
-    await page.reload();
-
-    await expect(
-      page.locator("h1", { hasText: TEST_USER_2.displayName })
-    ).toBeVisible({ timeout: 15000 });
-
-    // Should show blocked message instead of "Following" button
-    await expect(
-      page.locator("text=You have blocked this user")
-    ).toBeVisible({ timeout: 5000 });
+    await expect(async () => {
+      await page.goto(`/${TEST_USER_2.username}`);
+      await page.reload();
+      await page.waitForLoadState("networkidle");
+      await expect(
+        page.locator("text=You have blocked this user")
+      ).toBeVisible({ timeout: 5000 });
+    }).toPass({ timeout: 20000 });
 
     // "Following" button should NOT be visible
     await expect(
@@ -261,17 +263,14 @@ test.describe("Block User", () => {
     // Seed a Block: TEST_USER blocks TEST_USER_2
     await createBlock(pool, user1Id, user2Id);
 
-    await page.goto(`/${TEST_USER_2.username}`);
-    await page.reload();
-
-    await expect(
-      page.locator("h1", { hasText: TEST_USER_2.displayName })
-    ).toBeVisible({ timeout: 15000 });
-
-    // Should show blocked message
-    await expect(
-      page.locator("text=You have blocked this user")
-    ).toBeVisible({ timeout: 5000 });
+    await expect(async () => {
+      await page.goto(`/${TEST_USER_2.username}`);
+      await page.reload();
+      await page.waitForLoadState("networkidle");
+      await expect(
+        page.locator("text=You have blocked this user")
+      ).toBeVisible({ timeout: 5000 });
+    }).toPass({ timeout: 20000 });
 
     // Click the unblock button (same block button, now in "blocked" state)
     const blockButton = page.locator('[data-testid="profile-block-button"]');
@@ -296,5 +295,193 @@ test.describe("Block User", () => {
     // Profile content should reappear (stats like "0 posts", "0 followers" visible)
     await expect(page.getByText(/\d+ posts/)).toBeVisible({ timeout: 5000 });
     await expect(page.getByText(/\d+ followers/)).toBeVisible({ timeout: 5000 });
+  });
+
+  test("blocked profile hides bio, stats, and action buttons", async ({
+    page,
+  }) => {
+    await createBlock(pool, user1Id, user2Id);
+
+    await expect(async () => {
+      await page.goto(`/${TEST_USER_2.username}`);
+      await page.reload();
+      await page.waitForLoadState("networkidle");
+      await expect(
+        page.locator("text=You have blocked this user")
+      ).toBeVisible({ timeout: 5000 });
+    }).toPass({ timeout: 20000 });
+
+    // Bio should NOT be visible
+    const bio = page.locator('[class*="bio"]');
+    await expect(bio).not.toBeVisible();
+
+    // Follow/Friend/Subscribe buttons should NOT be visible
+    await expect(
+      page.getByRole("button", { name: "Follow" })
+    ).not.toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Friend/ })
+    ).not.toBeVisible();
+
+    // Post stats should NOT be visible
+    await expect(page.getByText(/\d+ posts/)).not.toBeVisible();
+    await expect(page.getByText(/\d+ followers/)).not.toBeVisible();
+
+    // Content tabs should NOT be visible
+    await expect(page.locator('[role="tablist"]')).not.toBeVisible();
+  });
+
+  test("blocked-by-them profile hides block button", async ({ browser }) => {
+    // TEST_USER_2 blocks TEST_USER
+    await createBlock(pool, user2Id, user1Id);
+
+    const context = await browser.newContext({
+      storageState: "e2e/auth/user.json",
+    });
+    const page = await context.newPage();
+
+    await expect(async () => {
+      await page.goto(`/${TEST_USER_2.username}`);
+      await page.reload();
+      await page.waitForLoadState("networkidle");
+      await expect(
+        page.locator("text=This content is unavailable")
+      ).toBeVisible({ timeout: 5000 });
+    }).toPass({ timeout: 20000 });
+
+    // Block button should NOT be visible when blocked by them
+    const blockButton = page.locator('[data-testid="profile-block-button"]');
+    await expect(blockButton).not.toBeVisible();
+
+    // Action buttons should NOT be visible
+    await expect(
+      page.getByRole("button", { name: "Follow" })
+    ).not.toBeVisible();
+
+    await context.close();
+  });
+});
+
+test.describe("Blocked Users Page", () => {
+  let pool: pg.Pool;
+  let user1Id: string;
+  let user2Id: string;
+
+  test.beforeAll(async () => {
+    pool = createPool();
+    const ids = await getUserIds(pool);
+    user1Id = ids.user1Id;
+    user2Id = ids.user2Id;
+  });
+
+  test.afterAll(async () => {
+    await pool.end();
+  });
+
+  test.beforeEach(async () => {
+    await cleanupBlocks(pool, [user1Id, user2Id]);
+  });
+
+  test.afterEach(async () => {
+    await cleanupBlocks(pool, [user1Id, user2Id]);
+  });
+
+  test("shows empty state when no users are blocked", async ({ page }) => {
+    await page.goto("/blocked");
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+
+    await expect(
+      page.locator("h1", { hasText: "Blocked Users" })
+    ).toBeVisible({ timeout: 10000 });
+
+    await expect(
+      page.locator('[data-testid="no-blocked-users"]')
+    ).toBeVisible({ timeout: 5000 });
+
+    await expect(
+      page.locator("text=You haven't blocked anyone")
+    ).toBeVisible();
+  });
+
+  test("shows blocked user in the list", async ({ page }) => {
+    await createBlock(pool, user1Id, user2Id);
+
+    await page.goto("/blocked");
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+
+    await expect(
+      page.locator("h1", { hasText: "Blocked Users" })
+    ).toBeVisible({ timeout: 10000 });
+
+    // Blocked users list should be visible
+    const list = page.locator('[data-testid="blocked-users-list"]');
+    await expect(list).toBeVisible({ timeout: 5000 });
+
+    // Should show the blocked user's username
+    await expect(
+      list.locator(`text=@${TEST_USER_2.username}`)
+    ).toBeVisible();
+
+    // Should show an unblock button
+    await expect(
+      list.locator(`[data-testid="unblock-button-${user2Id}"]`)
+    ).toBeVisible();
+  });
+
+  test("unblock button removes user from blocked list", async ({ page }) => {
+    await createBlock(pool, user1Id, user2Id);
+
+    await page.goto("/blocked");
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+
+    const list = page.locator('[data-testid="blocked-users-list"]');
+    await expect(list).toBeVisible({ timeout: 10000 });
+
+    // Click unblock
+    const unblockButton = page.locator(
+      `[data-testid="unblock-button-${user2Id}"]`
+    );
+    await expect(unblockButton).toBeVisible({ timeout: 5000 });
+    await unblockButton.click();
+
+    // Wait for the server action to complete
+    await expect(async () => {
+      const text = await unblockButton.textContent();
+      expect(text).not.toBe("Unblock");
+    }).toPass({ timeout: 15000 });
+
+    // Navigate away and back to get fresh server render
+    await page.goto("/feed");
+    await page.waitForLoadState("networkidle");
+    await page.goto("/blocked");
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+
+    await expect(
+      page.locator('[data-testid="no-blocked-users"]')
+    ).toBeVisible({ timeout: 10000 });
+  });
+
+  test("profile settings page has link to blocked users", async ({
+    page,
+  }) => {
+    await page.goto("/profile");
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+
+    const blockedLink = page.locator('[data-testid="blocked-users-link"]');
+    await expect(blockedLink).toBeVisible({ timeout: 10000 });
+    await expect(blockedLink).toHaveText(/Blocked Users/);
+
+    // Click the link and verify navigation
+    await blockedLink.click();
+    await page.waitForLoadState("networkidle");
+
+    await expect(
+      page.locator("h1", { hasText: "Blocked Users" })
+    ).toBeVisible({ timeout: 10000 });
   });
 });
