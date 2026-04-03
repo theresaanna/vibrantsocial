@@ -10,11 +10,11 @@ import type { FollowUser } from "@/app/feed/follow-actions";
 import Link from "next/link";
 
 interface Props {
-  params: Promise<{ id: string }>;
+  params: Promise<{ username: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
+  const id = (await params).username;
   const status = await prisma.userStatus.findUnique({
     where: { id },
     select: { user: { select: { username: true } } },
@@ -37,7 +37,7 @@ const USER_SELECT = {
 };
 
 export default async function StatusLikesPage({ params }: Props) {
-  const { id } = await params;
+  const id = (await params).username;
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   const currentUserId = session.user.id;

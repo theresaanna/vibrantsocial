@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { TEST_USER, TEST_USER_2 } from "../helpers/db";
+import { TEST_USER, TEST_USER_2, invalidateRelationshipCache } from "../helpers/db";
 import pg from "pg";
 
 function createPool() {
@@ -31,6 +31,7 @@ async function createBlock(
      ON CONFLICT DO NOTHING`,
     [blockerId, blockedId]
   );
+  await invalidateRelationshipCache(blockerId, blockedId);
 }
 
 async function createFollow(
@@ -54,6 +55,7 @@ async function createFollow(
      ON CONFLICT DO NOTHING`,
     [follower.rows[0].id, following.rows[0].id]
   );
+  await invalidateRelationshipCache(follower.rows[0].id, following.rows[0].id);
 }
 
 async function cleanupBlocks(pool: pg.Pool, userId: string) {
@@ -76,6 +78,9 @@ async function cleanupRelationships(pool: pg.Pool, ids: string[]) {
     `DELETE FROM "FriendRequest" WHERE "senderId" = ANY($1) AND "receiverId" = ANY($1)`,
     [ids]
   );
+  if (ids.length >= 2) {
+    await invalidateRelationshipCache(ids[0], ids[1]);
+  }
 }
 
 test.describe("Block User", () => {
@@ -104,6 +109,7 @@ test.describe("Block User", () => {
 
   test("block button is visible on other user's profile", async ({ page }) => {
     await page.goto(`/${TEST_USER_2.username}`);
+    await page.reload();
 
     await expect(
       page.locator("h1", { hasText: TEST_USER_2.displayName })
@@ -125,8 +131,8 @@ test.describe("Block User", () => {
   });
 
   test("clicking block shows confirmation dialog", async ({ page }) => {
-    test.fixme();
     await page.goto(`/${TEST_USER_2.username}`);
+    await page.reload();
 
     await expect(
       page.locator("h1", { hasText: TEST_USER_2.displayName })
@@ -136,7 +142,7 @@ test.describe("Block User", () => {
     await expect(blockButton).toBeVisible({ timeout: 5000 });
     await blockButton.click();
 
-    const dialog = page.locator("dialog");
+    const dialog = page.locator("dialog[open]");
     await expect(dialog).toBeVisible({ timeout: 5000 });
 
     // Dialog should show "Block?" title
@@ -157,8 +163,8 @@ test.describe("Block User", () => {
   });
 
   test("cancel dismisses block dialog", async ({ page }) => {
-    test.fixme();
     await page.goto(`/${TEST_USER_2.username}`);
+    await page.reload();
 
     await expect(
       page.locator("h1", { hasText: TEST_USER_2.displayName })
@@ -168,7 +174,7 @@ test.describe("Block User", () => {
     await expect(blockButton).toBeVisible({ timeout: 5000 });
     await blockButton.click();
 
-    const dialog = page.locator("dialog");
+    const dialog = page.locator("dialog[open]");
     await expect(dialog).toBeVisible({ timeout: 5000 });
 
     // Click Cancel
@@ -188,6 +194,7 @@ test.describe("Block User", () => {
     await createBlock(pool, user1Id, user2Id);
 
     await page.goto(`/${TEST_USER_2.username}`);
+    await page.reload();
 
     await expect(
       page.locator("h1", { hasText: TEST_USER_2.displayName })
@@ -211,6 +218,7 @@ test.describe("Block User", () => {
     const page = await context.newPage();
 
     await page.goto(`/${TEST_USER_2.username}`);
+    await page.reload();
 
     await expect(
       page.locator("h1", { hasText: TEST_USER_2.displayName })
@@ -232,6 +240,7 @@ test.describe("Block User", () => {
     await createBlock(pool, user1Id, user2Id);
 
     await page.goto(`/${TEST_USER_2.username}`);
+    await page.reload();
 
     await expect(
       page.locator("h1", { hasText: TEST_USER_2.displayName })
@@ -249,11 +258,11 @@ test.describe("Block User", () => {
   });
 
   test("unblock restores profile access", async ({ page }) => {
-    test.fixme();
     // Seed a Block: TEST_USER blocks TEST_USER_2
     await createBlock(pool, user1Id, user2Id);
 
     await page.goto(`/${TEST_USER_2.username}`);
+    await page.reload();
 
     await expect(
       page.locator("h1", { hasText: TEST_USER_2.displayName })
@@ -270,7 +279,7 @@ test.describe("Block User", () => {
     await blockButton.click();
 
     // Confirmation dialog should appear with "Unblock?" title
-    const dialog = page.locator("dialog");
+    const dialog = page.locator("dialog[open]");
     await expect(dialog).toBeVisible({ timeout: 5000 });
     await expect(
       dialog.locator("h3", { hasText: "Unblock?" })
@@ -284,8 +293,8 @@ test.describe("Block User", () => {
       page.locator("text=You have blocked this user")
     ).not.toBeVisible({ timeout: 10000 });
 
-    // Profile content should reappear (stats like "posts", "followers" visible)
-    await expect(page.locator("text=posts")).toBeVisible({ timeout: 5000 });
-    await expect(page.locator("text=followers")).toBeVisible({ timeout: 5000 });
+    // Profile content should reappear (stats like "0 posts", "0 followers" visible)
+    await expect(page.getByText(/\d+ posts/)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/\d+ followers/)).toBeVisible({ timeout: 5000 });
   });
 });

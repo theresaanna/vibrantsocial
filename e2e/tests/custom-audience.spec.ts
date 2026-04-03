@@ -29,9 +29,9 @@ test.describe("Custom Audience", () => {
   });
 
   test("premium user can open audience picker modal", async ({ page }) => {
-    test.fixme();
     await setTestUserTier("premium");
     await page.goto("/compose");
+    await page.reload();
 
     const button = page.getByTestId("custom-audience-button");
     await expect(button).toBeVisible({ timeout: 10000 });
@@ -53,12 +53,12 @@ test.describe("Custom Audience", () => {
   });
 
   test("audience picker shows friends when they exist", async ({ page }) => {
-    test.fixme();
     await setTestUserTier("premium");
     // Create a friendship between test users
     await createFriendship(TEST_USER.email, TEST_USER_2.email);
 
     await page.goto("/compose");
+    await page.reload();
 
     const button = page.getByTestId("custom-audience-button");
     await expect(button).toBeVisible({ timeout: 10000 });
@@ -71,11 +71,11 @@ test.describe("Custom Audience", () => {
   });
 
   test("can select a friend and see count on button", async ({ page }) => {
-    test.fixme();
     await setTestUserTier("premium");
     await createFriendship(TEST_USER.email, TEST_USER_2.email);
 
     await page.goto("/compose");
+    await page.reload();
 
     const button = page.getByTestId("custom-audience-button");
     await expect(button).toBeVisible({ timeout: 10000 });
@@ -99,11 +99,11 @@ test.describe("Custom Audience", () => {
   });
 
   test("can search for friends in audience picker", async ({ page }) => {
-    test.fixme();
     await setTestUserTier("premium");
     await createFriendship(TEST_USER.email, TEST_USER_2.email);
 
     await page.goto("/compose");
+    await page.reload();
 
     const button = page.getByTestId("custom-audience-button");
     await expect(button).toBeVisible({ timeout: 10000 });
@@ -131,9 +131,9 @@ test.describe("Custom Audience", () => {
   });
 
   test("Custom Audience and Close Friends are mutually exclusive", async ({ page }) => {
-    test.fixme();
     await setTestUserTier("premium");
     await page.goto("/compose");
+    await page.reload();
 
     // Wait for UI
     const audienceBtn = page.getByTestId("custom-audience-button");

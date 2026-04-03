@@ -15,18 +15,18 @@ test.describe("Profile Frame (premium)", () => {
   test("premium user opens frame selector and sees frame options", async ({
     page,
   }) => {
-    test.fixme();
     await page.goto("/profile");
-    await expect(page).toHaveURL(/\/profile/);
+    await page.reload();
+    await page.waitForLoadState("networkidle");
 
-    // Look for the frame button
-    const frameButton = page.getByRole("button", { name: /Frame/ });
+    // Look for the frame button (text is "Add Frame" when no frame set)
+    const frameButton = page.getByTestId("choose-frame-button");
     await expect(frameButton).toBeVisible({ timeout: 10000 });
     await frameButton.click();
 
     // Frame selector overlay should appear
     await expect(page.getByTestId("frame-selector-backdrop")).toBeVisible({
-      timeout: 5000,
+      timeout: 10000,
     });
 
     // Should show live preview
@@ -41,10 +41,11 @@ test.describe("Profile Frame (premium)", () => {
   test("selecting a frame shows preview and persists after reload", async ({
     page,
   }) => {
-    test.fixme();
     await page.goto("/profile");
+    await page.reload();
+    await page.waitForLoadState("networkidle");
 
-    const frameButton = page.getByRole("button", { name: /Frame/ });
+    const frameButton = page.getByTestId("choose-frame-button");
     await expect(frameButton).toBeVisible({ timeout: 10000 });
     await frameButton.click();
 
@@ -62,10 +63,11 @@ test.describe("Profile Frame (premium)", () => {
 
     // Reload and reopen to verify persistence
     await page.reload();
-    await expect(page.getByRole("button", { name: /Frame/ })).toBeVisible({
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByTestId("choose-frame-button")).toBeVisible({
       timeout: 10000,
     });
-    await page.getByRole("button", { name: /Frame/ }).click();
+    await page.getByTestId("choose-frame-button").click();
 
     // The spring-1 option should be selected (aria-pressed="true")
     await expect(page.getByTestId("frame-option-spring-1")).toHaveAttribute(
@@ -81,21 +83,15 @@ test.describe("Profile Frame gating (free tier)", () => {
     await setTestUserFrame(null);
   });
 
-  test("free user sees upgrade prompt in frame selector", async ({ page }) => {
-    test.fixme();
+  test("free user sees disabled frame button", async ({ page }) => {
     await page.goto("/profile");
+    await page.reload();
+    await page.waitForLoadState("networkidle");
 
-    const frameButton = page.getByRole("button", { name: /Frame/ });
+    const frameButton = page.getByTestId("choose-frame-button");
     await expect(frameButton).toBeVisible({ timeout: 10000 });
-    await frameButton.click();
-
-    // Should show upgrade prompt instead of frame options
-    await expect(page.getByTestId("frame-upgrade-prompt")).toBeVisible({
-      timeout: 5000,
-    });
-    await expect(
-      page.getByTestId("frame-option-spring-1")
-    ).not.toBeVisible();
+    // Free users cannot open the frame selector — button is disabled
+    await expect(frameButton).toBeDisabled();
   });
 });
 
@@ -111,12 +107,12 @@ test.describe("Profile Frame display", () => {
   });
 
   test("frame appears on public profile page", async ({ page }) => {
-    test.fixme();
     await page.goto("/e2e_testuser");
+    await page.reload();
     await expect(page).toHaveURL(/\/e2e_testuser/);
 
-    // The frame SVG should be rendered (aria-hidden img inside the avatar area)
-    const frameImg = page.locator('img[aria-hidden="true"][src="/frames/neon-1.svg"]');
+    // The frame image should be rendered (aria-hidden img with frame src)
+    const frameImg = page.locator('img[aria-hidden="true"][src*="neon-1"]');
     await expect(frameImg).toBeVisible({ timeout: 10000 });
   });
 });

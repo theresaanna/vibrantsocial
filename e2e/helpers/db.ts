@@ -1,5 +1,39 @@
 import pg from "pg";
 import bcrypt from "bcryptjs";
+import { Redis } from "@upstash/redis";
+
+function getRedis(): Redis | null {
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    return new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    });
+  }
+  return null;
+}
+
+/**
+ * Invalidate friendship/follow/block-related cache keys between two users.
+ * Call this after directly modifying Follow/FriendRequest/Block tables in tests.
+ */
+export async function invalidateRelationshipCache(userId1: string, userId2: string) {
+  const redis = getRedis();
+  if (!redis) return;
+  const [a, b] = userId1 < userId2 ? [userId1, userId2] : [userId2, userId1];
+  await Promise.all([
+    redis.del(`friendship:${a}:${b}`),
+    redis.del(`user:${userId1}:profile`),
+    redis.del(`user:${userId2}:profile`),
+    redis.del(`user:${userId1}:blocked-ids`),
+    redis.del(`user:${userId2}:blocked-ids`),
+    redis.del(`user:${userId1}:blocked-by-ids`),
+    redis.del(`user:${userId2}:blocked-by-ids`),
+    redis.del(`user:${userId1}:all-blocks`),
+    redis.del(`user:${userId2}:all-blocks`),
+    redis.del(`user:${userId1}:following`),
+    redis.del(`user:${userId2}:following`),
+  ]);
+}
 
 export const TEST_USER = {
   email: "e2e-test@example.com",
@@ -86,10 +120,15 @@ export async function seedSecondTestUser() {
 export async function setTestUserTier(tier: "free" | "premium") {
   const pool = createPool();
   try {
-    await pool.query('UPDATE "User" SET tier = $1 WHERE email = $2', [
-      tier,
-      TEST_USER.email,
-    ]);
+    const result = await pool.query(
+      'UPDATE "User" SET tier = $1 WHERE email = $2 RETURNING id',
+      [tier, TEST_USER.email]
+    );
+    const userId = result.rows[0]?.id;
+    if (userId) {
+      const redis = getRedis();
+      if (redis) await redis.del(`user:${userId}:profile`);
+    }
   } finally {
     await pool.end();
   }
@@ -122,10 +161,15 @@ export async function resetTestUserStars() {
 export async function setTestUserFrame(frameId: string | null) {
   const pool = createPool();
   try {
-    await pool.query(
-      'UPDATE "User" SET "profileFrameId" = $1 WHERE email = $2',
+    const result = await pool.query(
+      'UPDATE "User" SET "profileFrameId" = $1 WHERE email = $2 RETURNING id',
       [frameId, TEST_USER.email]
     );
+    const userId = result.rows[0]?.id;
+    if (userId) {
+      const redis = getRedis();
+      if (redis) await redis.del(`user:${userId}:profile`);
+    }
   } finally {
     await pool.end();
   }
@@ -134,10 +178,15 @@ export async function setTestUserFrame(frameId: string | null) {
 export async function setTestUserFont(fontId: string | null) {
   const pool = createPool();
   try {
-    await pool.query(
-      'UPDATE "User" SET "usernameFont" = $1 WHERE email = $2',
+    const result = await pool.query(
+      'UPDATE "User" SET "usernameFont" = $1 WHERE email = $2 RETURNING id',
       [fontId, TEST_USER.email]
     );
+    const userId = result.rows[0]?.id;
+    if (userId) {
+      const redis = getRedis();
+      if (redis) await redis.del(`user:${userId}:profile`);
+    }
   } finally {
     await pool.end();
   }
@@ -270,6 +319,7 @@ export async function createFriendship(email1: string, email2: string) {
        VALUES (gen_random_uuid(), $1, $2, 'ACCEPTED', NOW(), NOW())`,
       [senderId, receiverId]
     );
+    await invalidateRelationshipCache(senderId, receiverId);
   } finally {
     await pool.end();
   }

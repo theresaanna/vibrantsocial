@@ -3,8 +3,6 @@ import { TEST_USER } from "../helpers/db";
 
 /**
  * Helper: dismiss the cookie consent toast if it appears.
- * In CI, localStorage is not preserved between tests, so the
- * Sonner toast (duration: Infinity) shows on every page load.
  */
 async function dismissCookieToast(page: import("@playwright/test").Page) {
   const closeToast = page.getByRole("button", { name: "Close toast" });
@@ -14,9 +12,20 @@ async function dismissCookieToast(page: import("@playwright/test").Page) {
 }
 
 /**
+ * Helper: navigate to /profile and wait for full hydration.
+ */
+async function gotoProfile(page: import("@playwright/test").Page) {
+  await page.goto("/profile");
+  await page.reload();
+  await page.waitForLoadState("networkidle");
+  await expect(page.locator('input[name="username"]')).toBeVisible({
+    timeout: 15000,
+  });
+  await dismissCookieToast(page);
+}
+
+/**
  * Helper: save profile settings and wait for the server action to complete.
- * Uses waitForResponse instead of relying on the transient "Saved" status text,
- * which only displays for 2 seconds and is prone to timing issues in CI.
  */
 async function saveProfileSettings(page: import("@playwright/test").Page) {
   const responsePromise = page.waitForResponse(
@@ -25,8 +34,23 @@ async function saveProfileSettings(page: import("@playwright/test").Page) {
   );
   await page.click('button:has-text("Save")');
   await responsePromise;
-  // Brief wait for React state to settle after the server action completes
   await page.waitForTimeout(500);
+}
+
+/**
+ * Helper: scroll to and interact with the NSFW checkbox.
+ */
+async function setNsfwCheckbox(page: import("@playwright/test").Page, checked: boolean) {
+  const nsfwCheckbox = page.locator('input[name="showNsfwContent"]');
+  await expect(nsfwCheckbox).toBeVisible({ timeout: 10000 });
+  await nsfwCheckbox.scrollIntoViewIfNeeded();
+
+  const isChecked = await nsfwCheckbox.isChecked();
+  if (checked && !isChecked) {
+    await nsfwCheckbox.check();
+  } else if (!checked && isChecked) {
+    await nsfwCheckbox.uncheck();
+  }
 }
 
 test.describe("NSFW Content Visibility", () => {
@@ -35,28 +59,16 @@ test.describe("NSFW Content Visibility", () => {
   let nsfwPostText: string;
 
   test("create an NSFW post and enable NSFW in settings", async ({ page }) => {
-    test.fixme();
+    test.fixme(); // Requires Inngest branch environment for post creation
+
     // Enable NSFW in profile settings first
-    await page.goto("/profile");
-    await expect(page.locator('input[name="username"]')).toBeVisible({
-      timeout: 15000,
-    });
-
-    await dismissCookieToast(page);
-
-    // Find and check the Show NSFW content checkbox
-    const nsfwCheckbox = page.locator('input[name="showNsfwContent"]');
-    await nsfwCheckbox.scrollIntoViewIfNeeded();
-
-    if (!(await nsfwCheckbox.isChecked())) {
-      await nsfwCheckbox.check();
-    }
-
-    // Save and wait for the server action to complete
+    await gotoProfile(page);
+    await setNsfwCheckbox(page, true);
     await saveProfileSettings(page);
 
     // Create an NSFW post via compose page
     await page.goto("/compose");
+    await page.reload();
     const editor = page.locator('[contenteditable="true"]').first();
     await expect(editor).toBeVisible({ timeout: 30000 });
     await editor.click();
@@ -89,7 +101,7 @@ test.describe("NSFW Content Visibility", () => {
   });
 
   test("NSFW post appears in feed when NSFW is enabled", async ({ page }) => {
-    test.fixme();
+    test.fixme(); // Requires Inngest branch environment for post creation
     await page.goto("/feed");
     await expect(page.locator(`text=${nsfwPostText}`)).toBeVisible({
       timeout: 30000,
@@ -109,19 +121,20 @@ test.describe("NSFW Content Visibility", () => {
   test("NSFW post appears on profile posts tab when NSFW is enabled", async ({
     page,
   }) => {
-    test.fixme();
+    test.fixme(); // Requires Inngest branch environment for post creation
     await page.goto(`/${TEST_USER.username}`);
+    await page.reload();
     await expect(page.getByRole("link", { name: "Posts", exact: true })).toBeVisible({ timeout: 15000 });
 
-    // The NSFW post should be visible on the default "Posts" tab
     await expect(page.locator(`text=${nsfwPostText}`)).toBeVisible({
       timeout: 15000,
     });
   });
 
   test("NSFW post also appears on dedicated NSFW tab", async ({ page }) => {
-    test.fixme();
+    test.fixme(); // Requires Inngest branch environment for post creation
     await page.goto(`/${TEST_USER.username}?tab=nsfw`);
+    await page.reload();
     await expect(page.locator(`text=${nsfwPostText}`)).toBeVisible({
       timeout: 15000,
     });
@@ -130,51 +143,27 @@ test.describe("NSFW Content Visibility", () => {
   test("NSFW post hidden from posts tab when NSFW is disabled", async ({
     page,
   }) => {
-    test.fixme();
+    test.fixme(); // Requires Inngest branch environment for post creation
+
     // Disable NSFW in settings
-    await page.goto("/profile");
-    await expect(page.locator('input[name="username"]')).toBeVisible({
-      timeout: 15000,
-    });
-
-    await dismissCookieToast(page);
-
-    const nsfwCheckbox = page.locator('input[name="showNsfwContent"]');
-    await nsfwCheckbox.scrollIntoViewIfNeeded();
-
-    if (await nsfwCheckbox.isChecked()) {
-      await nsfwCheckbox.uncheck();
-    }
-
-    // Save and wait for the server action to complete
+    await gotoProfile(page);
+    await setNsfwCheckbox(page, false);
     await saveProfileSettings(page);
 
-    // Go to profile posts tab - NSFW post should NOT appear
+    // Go to profile posts tab — NSFW post should NOT appear
     await page.goto(`/${TEST_USER.username}`);
+    await page.reload();
     await expect(page.getByRole("link", { name: "Posts", exact: true })).toBeVisible({ timeout: 15000 });
 
-    // Wait for posts to load, then confirm NSFW post is not visible
     await page.waitForTimeout(2000);
     await expect(page.locator(`text=${nsfwPostText}`)).not.toBeVisible();
   });
 
   test("cleanup: re-enable NSFW for other tests", async ({ page }) => {
-    test.fixme();
-    // Re-enable NSFW so we leave the test user in a clean state
-    await page.goto("/profile");
-    await expect(page.locator('input[name="username"]')).toBeVisible({
-      timeout: 15000,
-    });
+    test.fixme(); // Requires Inngest branch environment for post creation
 
-    await dismissCookieToast(page);
-
-    const nsfwCheckbox = page.locator('input[name="showNsfwContent"]');
-    await nsfwCheckbox.scrollIntoViewIfNeeded();
-
-    if (!(await nsfwCheckbox.isChecked())) {
-      await nsfwCheckbox.check();
-    }
-
+    await gotoProfile(page);
+    await setNsfwCheckbox(page, true);
     await saveProfileSettings(page);
   });
 });
