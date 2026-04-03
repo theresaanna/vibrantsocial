@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { cached, invalidate, invalidateMany, cacheKeys } from "@/lib/cache";
 import { requireAuthWithRateLimit, isActionError } from "@/lib/action-utils";
+import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 
 async function enrichWithPendingFriendRequests(
   notifications: Array<{ type: string; actorId: string }>,
@@ -54,8 +55,13 @@ export async function getNotifications() {
   if (!session?.user?.id) return [];
 
   return cached(cacheKeys.userNotifications(session.user.id), async () => {
+    const blockedIds = await getAllBlockRelatedIds(session.user.id);
+
     const notifications = await prisma.notification.findMany({
-      where: { targetUserId: session.user.id },
+      where: {
+        targetUserId: session.user.id,
+        ...(blockedIds.length > 0 ? { actorId: { notIn: blockedIds } } : {}),
+      },
       orderBy: { createdAt: "desc" },
       take: 50,
       include: {
@@ -173,8 +179,13 @@ export async function getRecentNotifications() {
   if (!session?.user?.id) return [];
 
   return cached(cacheKeys.userRecentNotifications(session.user.id), async () => {
+    const blockedIds = await getAllBlockRelatedIds(session.user.id);
+
     const notifications = await prisma.notification.findMany({
-      where: { targetUserId: session.user.id },
+      where: {
+        targetUserId: session.user.id,
+        ...(blockedIds.length > 0 ? { actorId: { notIn: blockedIds } } : {}),
+      },
       orderBy: { createdAt: "desc" },
       take: 8,
       include: {

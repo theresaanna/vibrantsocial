@@ -545,12 +545,16 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       }
     : undefined;
 
+  const isBlocked = blockStatus !== "none";
+
   return (
     <div
-      className={hasCustomTheme ? "profile-themed" : ""}
-      style={{ ...themeStyle, ...bgImageStyle }}
+      className={hasCustomTheme && !isBlocked ? "profile-themed" : ""}
+      style={isBlocked ? undefined : { ...themeStyle, ...bgImageStyle }}
     >
       {(() => {
+        if (isBlocked) return null;
+
         if (userHasBirthday) {
           const config = getBirthdaySparkleConfig();
           return (
@@ -584,7 +588,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
       })()}
       <main className="mx-auto max-w-3xl px-4 py-6">
         {/* Profile header */}
-        <div className={`relative rounded-2xl p-6 shadow-lg ${hasCustomTheme ? "profile-container" : "bg-white dark:bg-zinc-900"}`}>
+        <div className={`relative rounded-2xl p-6 shadow-lg ${hasCustomTheme && !isBlocked ? "profile-container" : "bg-white dark:bg-zinc-900"}`}>
           {/* Block & Report flags — top-right corner, icon only */}
           {currentUserId && !isOwnProfile && blockStatus !== "blocked_by_them" && (
             <div className="absolute top-3 right-3 flex items-center gap-1">
@@ -595,11 +599,11 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
 
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start sm:gap-4">
             <FramedAvatar
-              src={avatarSrc}
+              src={blockStatus === "none" ? avatarSrc : undefined}
               alt=""
-              initial={initial}
+              initial={blockStatus === "none" ? initial : "?"}
               size={80}
-              frameId={user.profileFrameId}
+              frameId={blockStatus === "none" ? user.profileFrameId : null}
               referrerPolicy="no-referrer"
             />
 
@@ -608,25 +612,29 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <h1
-                      className={`text-xl font-bold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}
+                      className={`text-xl font-bold ${hasCustomTheme && blockStatus === "none" ? "" : "text-zinc-900 dark:text-zinc-100"}`}
                       data-testid="profile-display-name"
                     >
-                      <span className="inline-flex items-center gap-1.5">
-                        <StyledName fontId={user.usernameFont}>{displayName}</StyledName>
-                        {user.tier === "premium" && (
-                          <Link href="/premium" title="Premium member" className="relative inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 shadow-sm">
-                            <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round">
-                              <path d="M12 5v14M5 12h14" />
-                            </svg>
-                          </Link>
-                        )}
-                      </span>
+                      {blockStatus === "none" ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <StyledName fontId={user.usernameFont}>{displayName}</StyledName>
+                          {user.tier === "premium" && (
+                            <Link href="/premium" title="Premium member" className="relative inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 shadow-sm">
+                              <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round">
+                                <path d="M12 5v14M5 12h14" />
+                              </svg>
+                            </Link>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-zinc-400 dark:text-zinc-500">@{user.username}</span>
+                      )}
                     </h1>
-                    <div className="flex items-center gap-2">
+                    {blockStatus === "none" && <div className="flex items-center gap-2">
                       <p className={`text-sm ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
                         @{user.username}
                       </p>
-                      {user.linksPageEnabled && (
+                      {user.linksPageEnabled && blockStatus === "none" && (
                         <Link
                           href={`/links/${user.username}`}
                           className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors ${
@@ -646,7 +654,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                           Links
                         </Link>
                       )}
-                    </div>
+                    </div>}
                   </div>
                   {isOwnProfile && (
                     <div className="flex shrink-0 items-center gap-2">

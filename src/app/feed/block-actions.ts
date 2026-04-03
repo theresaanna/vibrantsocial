@@ -117,6 +117,36 @@ export async function invalidateBlockCaches(userId: string) {
 }
 
 /**
+ * Get full user objects for all users the current user has blocked.
+ * Used by the /blocked page to display the list with unblock buttons.
+ */
+export async function getBlockedUsers() {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  const blockedIds = await getBlockedUserIds(session.user.id);
+  if (blockedIds.length === 0) return [];
+
+  const users = await prisma.user.findMany({
+    where: { id: { in: blockedIds } },
+    select: {
+      id: true,
+      username: true,
+      displayName: true,
+      name: true,
+      avatar: true,
+      image: true,
+      profileFrameId: true,
+      usernameFont: true,
+      phoneVerified: true,
+    },
+    orderBy: { username: "asc" },
+  });
+
+  return JSON.parse(JSON.stringify(users));
+}
+
+/**
  * Check the block relationship between the current user and a target.
  */
 export async function getBlockStatus(
