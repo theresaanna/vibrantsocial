@@ -250,6 +250,8 @@ export async function createPost(
 
   // Invalidate cached feed summaries so they regenerate with the new post
   await invalidatePattern("user:*:feed-summary");
+  // Invalidate profile tab flags (new post may change tab visibility)
+  await invalidate(cacheKeys.profileTabFlags(session.user.id));
 
   revalidatePath("/feed");
   return { success: true, message: "Post created", postId: post.id, slug: post.slug ?? undefined };
@@ -527,6 +529,7 @@ export async function deletePost(
   }
 
   revalidatePath("/feed");
+  await invalidate(cacheKeys.profileTabFlags(session.user.id));
   return { success: true, message: "Post deleted" };
 }
 

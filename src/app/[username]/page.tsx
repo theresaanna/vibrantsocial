@@ -21,7 +21,7 @@ import { BlockButton } from "@/components/block-button";
 import { MessageButton } from "@/components/message-button";
 import { ChatRequestButton } from "@/components/chat-request-button";
 import { getChatRequestStatus, type ChatRequestStatus } from "@/app/chat/actions";
-import { getBlockStatus } from "@/app/feed/block-actions";
+import { deriveBlockStatus } from "@/app/feed/block-actions";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
 import { buildProfilePostsContentFilter } from "./profile-queries";
@@ -36,6 +36,7 @@ import { PremiumCrown } from "@/components/premium-crown";
 import { ProfileSparklefall } from "@/components/profile-sparklefall";
 import { isBirthday, getBirthdaySparkleConfig } from "@/lib/birthday";
 import { StyledName } from "@/components/styled-name";
+import { getUserPrefs } from "@/lib/user-prefs";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
@@ -139,12 +140,34 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   if (!user) notFound();
 
   // Check if profile owner has content of each sensitivity type (for tab visibility)
-  const [hasSensitivePosts, hasNsfwPosts, hasGraphicPosts, hasMarketplacePosts] = await Promise.all([
-    prisma.post.count({ where: { authorId: user.id, isSensitive: true }, take: 1 }).then(c => c > 0),
-    prisma.post.count({ where: { authorId: user.id, isNsfw: true }, take: 1 }).then(c => c > 0),
-    prisma.post.count({ where: { authorId: user.id, isGraphicNudity: true }, take: 1 }).then(c => c > 0),
-    prisma.post.count({ where: { authorId: user.id, marketplacePost: { isNot: null } }, take: 1 }).then(c => c > 0),
-  ]);
+  // Single cached query replaces 4 separate count queries
+  const tabFlags = await cached(
+    cacheKeys.profileTabFlags(user.id),
+    async () => {
+      const result = await prisma.$queryRaw<[{
+        has_sensitive: boolean;
+        has_nsfw: boolean;
+        has_graphic: boolean;
+        has_marketplace: boolean;
+      }]>`
+        SELECT
+          bool_or("isSensitive") as has_sensitive,
+          bool_or("isNsfw") as has_nsfw,
+          bool_or("isGraphicNudity") as has_graphic,
+          bool_or("marketplacePostId" IS NOT NULL) as has_marketplace
+        FROM "Post" WHERE "authorId" = ${user.id}
+      `;
+      const row = result[0];
+      return {
+        hasSensitive: row?.has_sensitive ?? false,
+        hasNsfw: row?.has_nsfw ?? false,
+        hasGraphic: row?.has_graphic ?? false,
+        hasMarketplace: row?.has_marketplace ?? false,
+      };
+    },
+    120
+  );
+  const { hasSensitive: hasSensitivePosts, hasNsfw: hasNsfwPosts, hasGraphic: hasGraphicPosts, hasMarketplace: hasMarketplacePosts } = tabFlags;
 
   // Always show media tab — user has posts with images/videos
   const hasMediaPosts = user._count.posts > 0;
@@ -157,10 +180,10 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
 
   const isOwnProfile = currentUserId === user.id;
 
-  // Check block status
+  // Check block status — derived from cached block relationships, no extra DB query
   let blockStatus: "none" | "blocked_by_me" | "blocked_by_them" = "none";
   if (currentUserId && !isOwnProfile) {
-    blockStatus = await getBlockStatus(user.id);
+    blockStatus = await deriveBlockStatus(currentUserId, user.id);
   }
 
   // Fetch friends count for all profiles
@@ -204,16 +227,14 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   }
 
   if (currentUserId) {
-    const currentUser = await prisma.user.findUnique({
-      where: { id: currentUserId },
-      select: { phoneVerified: true, ageVerified: true, showGraphicByDefault: true, hideSensitiveOverlay: true, hideNsfwOverlay: true, showNsfwContent: true },
-    });
-    phoneVerified = !!currentUser?.phoneVerified;
-    ageVerified = !!currentUser?.ageVerified;
-    showGraphicByDefault = currentUser?.showGraphicByDefault ?? false;
-    hideSensitiveOverlay = currentUser?.hideSensitiveOverlay ?? false;
-    hideNsfwOverlay = currentUser?.hideNsfwOverlay ?? false;
-    showNsfwContent = currentUser?.showNsfwContent ?? false;
+    // Reuse cached user prefs (same cache as media/feed pages, 5 min TTL)
+    const prefs = await getUserPrefs(currentUserId);
+    phoneVerified = prefs.phoneVerified;
+    ageVerified = prefs.ageVerified;
+    showGraphicByDefault = prefs.showGraphicByDefault;
+    hideSensitiveOverlay = prefs.hideSensitiveOverlay;
+    hideNsfwOverlay = prefs.hideNsfwOverlay;
+    showNsfwContent = prefs.showNsfwContent;
   }
 
   const postInclude = {

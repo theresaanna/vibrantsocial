@@ -87,21 +87,98 @@ export async function getBlockedByUserIds(userId: string): Promise<string[]> {
 }
 
 /**
- * Get all user IDs involved in any block relationship with the given user
- * (either direction). Cached as a single key to avoid 2 sequential lookups.
+ * Get block relationships for a user in both directions, using a single
+ * raw query for direct blocks + one for phone blocks. Returns separated
+ * lists so callers can derive direction without extra queries.
  */
-export async function getAllBlockRelatedIds(userId: string): Promise<string[]> {
+export async function getBlockRelationships(userId: string): Promise<{
+  blockedIds: string[];
+  blockedByIds: string[];
+}> {
   return cached(
-    cacheKeys.userAllBlocks(userId),
+    cacheKeys.userBlockRelationships(userId),
     async () => {
-      const [blockedIds, blockedByIds] = await Promise.all([
-        getBlockedUserIds(userId),
-        getBlockedByUserIds(userId),
+      // Single query for all direct blocks in both directions
+      const directBlocks = await prisma.block.findMany({
+        where: { OR: [{ blockerId: userId }, { blockedId: userId }] },
+        select: { blockerId: true, blockedId: true },
+      });
+
+      const blockedIds = new Set<string>();
+      const blockedByIds = new Set<string>();
+      for (const b of directBlocks) {
+        if (b.blockerId === userId) blockedIds.add(b.blockedId);
+        else blockedByIds.add(b.blockerId);
+      }
+
+      // Phone blocks: fetch user's phone + any PhoneBlock records in one pass
+      const [currentUser, outgoingPhoneBlocks] = await Promise.all([
+        prisma.user.findUnique({
+          where: { id: userId },
+          select: { phoneNumber: true, phoneVerified: true },
+        }),
+        prisma.phoneBlock.findMany({
+          where: { blockerId: userId },
+          select: { phoneNumber: true },
+        }),
       ]);
-      return [...new Set([...blockedIds, ...blockedByIds])];
+
+      // Outgoing phone blocks → additional blockedIds
+      if (outgoingPhoneBlocks.length > 0) {
+        const phoneNumbers = outgoingPhoneBlocks.map((pb) => pb.phoneNumber);
+        const phoneUsers = await prisma.user.findMany({
+          where: {
+            phoneNumber: { in: phoneNumbers },
+            phoneVerified: { not: null },
+            id: { not: userId },
+          },
+          select: { id: true },
+        });
+        for (const u of phoneUsers) blockedIds.add(u.id);
+      }
+
+      // Incoming phone blocks → additional blockedByIds
+      if (currentUser?.phoneNumber && currentUser.phoneVerified) {
+        const phoneBlockers = await prisma.phoneBlock.findMany({
+          where: {
+            phoneNumber: currentUser.phoneNumber,
+            blockerId: { not: userId },
+          },
+          select: { blockerId: true },
+        });
+        for (const pb of phoneBlockers) blockedByIds.add(pb.blockerId);
+      }
+
+      return {
+        blockedIds: [...blockedIds],
+        blockedByIds: [...blockedByIds],
+      };
     },
     120
   );
+}
+
+/**
+ * Get all user IDs involved in any block relationship with the given user
+ * (either direction). Derived from getBlockRelationships.
+ */
+export async function getAllBlockRelatedIds(userId: string): Promise<string[]> {
+  const rels = await getBlockRelationships(userId);
+  return [...new Set([...rels.blockedIds, ...rels.blockedByIds])];
+}
+
+/**
+ * Derive block status between current user and target from cached relationships.
+ * Avoids a separate DB query by reusing getBlockRelationships.
+ */
+export async function deriveBlockStatus(
+  currentUserId: string,
+  targetUserId: string
+): Promise<"none" | "blocked_by_me" | "blocked_by_them"> {
+  const rels = await getBlockRelationships(currentUserId);
+  if (rels.blockedIds.includes(targetUserId)) return "blocked_by_me";
+  if (rels.blockedByIds.includes(targetUserId)) return "blocked_by_them";
+  return "none";
 }
 
 /**
@@ -113,6 +190,7 @@ export async function invalidateBlockCaches(userId: string) {
     cacheKeys.userBlockedIds(userId),
     cacheKeys.userBlockedByIds(userId),
     cacheKeys.userAllBlocks(userId),
+    cacheKeys.userBlockRelationships(userId),
   ]);
 }
 
