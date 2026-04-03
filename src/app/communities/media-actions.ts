@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { extractMediaFromLexicalJson } from "@/lib/lexical-text";
+import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 
 const MEDIA_PAGE_SIZE = 30;
 
@@ -47,10 +48,14 @@ export async function fetchCommunitiesMediaPage(
   const fetchCount = MEDIA_PAGE_SIZE * 3;
 
   const isLoggedIn = !!session?.user?.id;
+  const blockedIds = isLoggedIn
+    ? await getAllBlockRelatedIds(session.user.id)
+    : [];
 
   const posts = await prisma.post.findMany({
     where: {
       ...(isLoggedIn ? {} : { author: { isProfilePublic: true } }),
+      ...(blockedIds.length > 0 ? { authorId: { notIn: blockedIds } } : {}),
       marketplacePost: null,
       isSensitive: false,
       isGraphicNudity: false,
