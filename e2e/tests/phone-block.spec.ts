@@ -87,7 +87,7 @@ test.describe("Phone-based Blocking", () => {
     const checkbox = page.locator('[data-testid="block-by-phone-checkbox"]');
     await expect(checkbox).toBeVisible();
     await expect(
-      page.getByText("Also block all accounts using the same phone number")
+      page.getByText("Also block all current and future accounts using the same phone number")
     ).toBeVisible();
 
     // Cancel to clean up
