@@ -23,44 +23,50 @@ export function useAblyReady() {
   return useContext(AblyReadyContext);
 }
 
-// Renders Ably-dependent features (presence, toast) only when the client is ready.
-// Kept as a separate component to avoid conditional hook calls.
-function AblyFeatures({ client }: { client: ReturnType<typeof getAblyRealtimeClient> }) {
+// Presence + toast features that mount only when Ably is connected.
+// Separate component to avoid conditional hook calls in the parent.
+function AblyFeatures() {
   return (
-    <AblyProvider client={client}>
-      <ChannelProvider channelName={PRESENCE_CHANNEL}>
-        <PresenceEntry />
-        <ToastProvider />
-      </ChannelProvider>
-    </AblyProvider>
+    <ChannelProvider channelName={PRESENCE_CHANNEL}>
+      <PresenceEntry />
+      <ToastProvider />
+    </ChannelProvider>
   );
+}
+
+// Get-or-create the Ably client eagerly (without connecting).
+// AblyProvider needs a client instance at all times so the provider tree
+// stays stable. We only call .connect() once the user session is available.
+function getOrCreateClient() {
+  return getAblyRealtimeClient(); // autoConnect: false, so this is safe
 }
 
 function AblyProviderWrapper({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
-  const [ablyClient, setAblyClient] = useState<ReturnType<typeof getAblyRealtimeClient> | null>(null);
-  const clientRef = useRef<ReturnType<typeof getAblyRealtimeClient> | null>(null);
+  const [ablyClient] = useState(getOrCreateClient);
+  const connectedRef = useRef(false);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    if (session?.user?.id && !clientRef.current) {
-      const client = getAblyRealtimeClient();
-      client.connect();
-      clientRef.current = client;
-      setAblyClient(client);
+    if (session?.user?.id && !connectedRef.current) {
+      connectedRef.current = true;
+      ablyClient.connect();
+      setIsReady(true);
     }
-  }, [session?.user?.id]);
+  }, [session?.user?.id, ablyClient]);
 
-  const isReady = !!(session?.user?.id && ablyClient);
-
+  // AblyProvider always wraps children so ably/react hooks work throughout
+  // the tree. The provider tree is stable — only the features toggle.
   return (
-    <AblyReadyContext.Provider value={isReady}>
-      <CommentCountProvider>
-        {isReady && <AblyFeatures client={ablyClient} />}
-        {!isReady && <Toaster position="bottom-right" />}
-        <CookieToast />
-        {children}
-      </CommentCountProvider>
-    </AblyReadyContext.Provider>
+    <AblyProvider client={ablyClient}>
+      <AblyReadyContext.Provider value={isReady}>
+        <CommentCountProvider>
+          {isReady ? <AblyFeatures /> : <Toaster position="bottom-right" />}
+          <CookieToast />
+          {children}
+        </CommentCountProvider>
+      </AblyReadyContext.Provider>
+    </AblyProvider>
   );
 }
 
