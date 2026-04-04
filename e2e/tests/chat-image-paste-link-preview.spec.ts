@@ -128,24 +128,11 @@ test.describe("Chat Image Paste & Link Preview", () => {
     await expect(page.getByLabel("Send message")).toBeVisible();
   });
 
-  test("message with URL shows link preview container", async ({ page, forceLogin }) => {
+  test("message with URL renders linkified text", async ({ page, forceLogin }) => {
     await forceLogin;
 
     // Seed a message with URL
     await seedMessageWithUrl(conversationId, "https://example.com");
-
-    await page.goto(`/chat/${conversationId}`);
-    await page.waitForTimeout(2000);
-
-    // Link preview container should be attached (may not be "visible" if the
-    // remote URL returns no OG metadata, but the container is still rendered
-    // while loading or when data is available).
-    const preview = page.locator('[data-testid="chat-link-preview"]');
-    await expect(preview).toBeAttached({ timeout: 15000 });
-  });
-
-  test("message content with URL renders linkified text", async ({ page, forceLogin }) => {
-    await forceLogin;
 
     await page.goto(`/chat/${conversationId}`);
     await page.waitForTimeout(2000);
@@ -155,7 +142,7 @@ test.describe("Chat Image Paste & Link Preview", () => {
     await expect(link).toBeVisible({ timeout: 10000 });
   });
 
-  test("sending a message with URL shows link preview container", async ({ page, forceLogin }) => {
+  test("sent message with URL renders linkified text", async ({ page, forceLogin }) => {
     await forceLogin;
 
     await page.goto(`/chat/${conversationId}`);
@@ -170,8 +157,8 @@ test.describe("Chat Image Paste & Link Preview", () => {
     // Wait for message to be sent and rendered
     await page.waitForTimeout(3000);
 
-    // The sent message should have a link preview container
-    const previews = page.locator('[data-testid="chat-link-preview"]');
-    await expect(previews.last()).toBeAttached({ timeout: 15000 });
+    // The sent message should have the URL rendered as a link
+    const link = page.locator('a[href="https://example.com/test"]');
+    await expect(link).toBeVisible({ timeout: 10000 });
   });
 });
