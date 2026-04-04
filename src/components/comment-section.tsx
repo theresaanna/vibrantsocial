@@ -8,6 +8,7 @@ import { useComments, type CommentData, type ReactionGroup } from "@/hooks/use-c
 import Link from "next/link";
 import { LinkifyText } from "@/components/chat/linkify-text";
 import { LinkPreviewCard } from "@/components/link-preview-card";
+import { ImageOverlay } from "@/components/image-overlay";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { ReportModal } from "@/components/report-modal";
 import { StyledName } from "@/components/styled-name";
@@ -72,6 +73,9 @@ export function CommentSection({
   } | null>(null);
   const inputRef = useRef<MentionInputHandle>(null);
   const hasScrolled = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const [state, formAction, isPending] = useActionState(
     async (prevState: { success: boolean; message: string }, formData: FormData) => {
@@ -81,6 +85,7 @@ export function CommentSection({
         if (result.comment) {
           const newComment: CommentData = {
             ...result.comment,
+            imageUrl: result.comment.imageUrl,
             createdAt: new Date(result.comment.createdAt),
             replies: [],
           };
@@ -106,6 +111,7 @@ export function CommentSection({
           });
         }
         setReplyingTo(null);
+        setPendingImageUrl(null);
         inputRef.current?.clear();
       }
       return result;
@@ -225,26 +231,98 @@ export function CommentSection({
               </button>
             </div>
           )}
-          <form action={formAction} className="flex flex-col gap-2 sm:flex-row">
+          <form action={formAction} className="flex flex-col gap-2">
             <input type="hidden" name="postId" value={postId} />
             {replyingTo && (
               <input type="hidden" name="parentId" value={replyingTo.id} />
             )}
-            <MentionInput
-              ref={inputRef}
-              name="content"
-              placeholder={replyingTo ? `Reply to ${replyingTo.name}...` : "Write a comment..."}
-              required
-              maxLength={1000}
-              className="min-w-0 flex-1 rounded-lg border border-zinc-200 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-            />
-            <button
-              type="submit"
-              disabled={isPending}
-              className="shrink-0 self-end rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-            >
-              {isPending ? "..." : "Reply"}
-            </button>
+            {pendingImageUrl && (
+              <input type="hidden" name="imageUrl" value={pendingImageUrl} />
+            )}
+            {pendingImageUrl && (
+              <div className="relative inline-block" data-testid="comment-image-preview">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={pendingImageUrl}
+                  alt="Attachment"
+                  className="max-h-48 rounded-lg border border-zinc-200 dark:border-zinc-700"
+                />
+                <button
+                  type="button"
+                  onClick={() => setPendingImageUrl(null)}
+                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                  aria-label="Remove image"
+                  data-testid="comment-image-remove"
+                >
+                  <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
+            <div className="flex gap-2 sm:flex-row">
+              <MentionInput
+                ref={inputRef}
+                name="content"
+                placeholder={replyingTo ? `Reply to ${replyingTo.name}...` : "Write a comment..."}
+                maxLength={1000}
+                className="min-w-0 flex-1 rounded-lg border border-zinc-200 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+              />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif"
+                className="hidden"
+                data-testid="comment-image-input"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setUploading(true);
+                  try {
+                    const formData = new FormData();
+                    formData.append("file", file);
+                    const res = await fetch("/api/upload", { method: "POST", body: formData });
+                    if (!res.ok) {
+                      const data = await res.json();
+                      throw new Error(data.error || "Upload failed");
+                    }
+                    const { url } = await res.json();
+                    setPendingImageUrl(url);
+                  } catch {
+                    // Upload failed — user can retry
+                  } finally {
+                    setUploading(false);
+                    e.target.value = "";
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading || !!pendingImageUrl}
+                className="shrink-0 self-end rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-50 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+                aria-label="Attach image"
+                data-testid="comment-image-button"
+              >
+                {uploading ? (
+                  <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                ) : (
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
+                  </svg>
+                )}
+              </button>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="shrink-0 self-end rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              >
+                {isPending ? "..." : "Reply"}
+              </button>
+            </div>
           </form>
         </div>
       ) : (
@@ -384,6 +462,7 @@ function CommentItem({
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showImageOverlay, setShowImageOverlay] = useState(false);
   const editInputRef = useRef<HTMLInputElement>(null);
 
   const [showReportModal, setShowReportModal] = useState(false);
@@ -510,10 +589,32 @@ function CommentItem({
           </form>
         ) : (
           <>
-            <p className="text-sm text-zinc-700 dark:text-zinc-300">
-              <LinkifyText text={comment.content} />
-            </p>
-            <CommentLinkPreview text={comment.content} />
+            {comment.content && (
+              <p className="text-sm text-zinc-700 dark:text-zinc-300">
+                <LinkifyText text={comment.content} />
+              </p>
+            )}
+            {comment.imageUrl && (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={comment.imageUrl}
+                  alt="Comment image"
+                  className="mt-1 cursor-zoom-in rounded-lg"
+                  style={{ maxWidth: "1000px", maxHeight: "1000px" }}
+                  onClick={() => setShowImageOverlay(true)}
+                  data-testid="comment-image"
+                />
+                {showImageOverlay && (
+                  <ImageOverlay
+                    src={comment.imageUrl}
+                    alt="Comment image"
+                    onClose={() => setShowImageOverlay(false)}
+                  />
+                )}
+              </>
+            )}
+            {comment.content && <CommentLinkPreview text={comment.content} />}
           </>
         )}
 
@@ -575,7 +676,7 @@ function CommentItem({
             <button
               type="button"
               onClick={() => { setEditContent(comment.content); setIsEditing(true); }}
-              className="text-xs font-medium text-zinc-500 transition-opacity hover:text-zinc-700 sm:opacity-0 sm:group-hover/comment:opacity-100 dark:hover:text-zinc-300"
+              className="text-xs font-medium text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
               data-testid="comment-edit-button"
             >
               Edit
@@ -585,7 +686,7 @@ function CommentItem({
             <button
               type="button"
               onClick={() => setShowDeleteConfirm(true)}
-              className="text-xs font-medium text-zinc-500 transition-opacity hover:text-red-600 sm:opacity-0 sm:group-hover/comment:opacity-100 dark:hover:text-red-400"
+              className="text-xs font-medium text-zinc-500 hover:text-red-600 dark:hover:text-red-400"
               data-testid="comment-delete-button"
             >
               Delete
@@ -596,7 +697,7 @@ function CommentItem({
               <button
                 ref={emojiButtonRef}
                 onClick={openEmojiPicker}
-                className="rounded p-0.5 text-zinc-400 transition-opacity hover:bg-zinc-100 hover:text-zinc-600 sm:opacity-0 sm:group-hover/comment:opacity-100 dark:hover:bg-zinc-700 dark:hover:text-zinc-300"
+                className="rounded p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-700 dark:hover:text-zinc-300"
                 aria-label="Add reaction"
                 data-testid="comment-add-reaction"
               >
@@ -641,7 +742,7 @@ function CommentItem({
             <button
               type="button"
               onClick={() => setShowReportModal(true)}
-              className="text-xs font-medium text-zinc-500 transition-opacity hover:text-red-600 sm:opacity-0 sm:group-hover/comment:opacity-100 dark:hover:text-red-400"
+              className="text-xs font-medium text-zinc-500 hover:text-red-600 dark:hover:text-red-400"
               data-testid="comment-report-button"
             >
               Report

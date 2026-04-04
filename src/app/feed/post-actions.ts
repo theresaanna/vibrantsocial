@@ -32,6 +32,7 @@ interface CommentActionState extends ActionState {
   comment?: {
     id: string;
     content: string;
+    imageUrl: string | null;
     createdAt: Date;
     parentId: string | null;
     author: {
@@ -532,8 +533,9 @@ export async function createComment(
   const postId = formData.get("postId") as string;
   const content = (formData.get("content") as string)?.trim();
   const parentId = (formData.get("parentId") as string) || null;
+  const imageUrl = (formData.get("imageUrl") as string) || null;
 
-  if (!content) {
+  if (!content && !imageUrl) {
     return { success: false, message: "Comment cannot be empty" };
   }
 
@@ -553,7 +555,7 @@ export async function createComment(
   }
 
   const comment = await prisma.comment.create({
-    data: { content, postId, authorId: session.user.id, parentId },
+    data: { content: content ?? "", imageUrl, postId, authorId: session.user.id, parentId },
     include: {
       author: { select: USER_PROFILE_SELECT },
     },
@@ -630,6 +632,7 @@ export async function createComment(
     await channel.publish("new", {
       id: comment.id,
       content: comment.content,
+      imageUrl: comment.imageUrl,
       parentId: comment.parentId,
       author: JSON.stringify(comment.author),
       createdAt: comment.createdAt.toISOString(),
@@ -651,6 +654,7 @@ export async function createComment(
     comment: {
       id: comment.id,
       content: comment.content,
+      imageUrl: comment.imageUrl,
       createdAt: comment.createdAt,
       parentId: comment.parentId,
       author: comment.author,
