@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { LinkifyText } from "@/components/chat/linkify-text";
+import { LinkifyText, extractFirstUrlFromText } from "@/components/chat/linkify-text";
 
 describe("LinkifyText", () => {
   it("renders plain text without links", () => {
@@ -205,5 +205,69 @@ describe("LinkifyText", () => {
     for (const link of links) {
       expect(link).not.toHaveAttribute("target");
     }
+  });
+});
+
+describe("extractFirstUrlFromText", () => {
+  it("extracts https URL", () => {
+    expect(extractFirstUrlFromText("check https://example.com today")).toBe("https://example.com");
+  });
+
+  it("extracts http URL", () => {
+    expect(extractFirstUrlFromText("visit http://example.com/page")).toBe("http://example.com/page");
+  });
+
+  it("extracts URL with path and query", () => {
+    expect(extractFirstUrlFromText("see https://example.com/path?q=1&b=2")).toBe(
+      "https://example.com/path?q=1&b=2"
+    );
+  });
+
+  it("extracts www domain and normalizes to https", () => {
+    expect(extractFirstUrlFromText("go to www.example.com")).toBe("https://www.example.com");
+  });
+
+  it("extracts bare domain and normalizes to https", () => {
+    expect(extractFirstUrlFromText("visit example.com")).toBe("https://example.com");
+  });
+
+  it("extracts bare domain with path", () => {
+    expect(extractFirstUrlFromText("see example.com/about")).toBe("https://example.com/about");
+  });
+
+  it("returns first URL when multiple present", () => {
+    expect(
+      extractFirstUrlFromText("first https://a.com then https://b.com")
+    ).toBe("https://a.com");
+  });
+
+  it("returns null for text without URLs", () => {
+    expect(extractFirstUrlFromText("just plain text")).toBeNull();
+  });
+
+  it("returns null for empty string", () => {
+    expect(extractFirstUrlFromText("")).toBeNull();
+  });
+
+  it("does not match email addresses", () => {
+    expect(extractFirstUrlFromText("email me at user@example.com")).toBeNull();
+  });
+
+  it("extracts URL from text with mentions and hashtags", () => {
+    expect(
+      extractFirstUrlFromText("@alice check https://example.com #react")
+    ).toBe("https://example.com");
+  });
+
+  it("extracts .io domain", () => {
+    expect(extractFirstUrlFromText("check github.io")).toBe("https://github.io");
+  });
+
+  it("extracts subdomain", () => {
+    expect(extractFirstUrlFromText("see docs.google.com")).toBe("https://docs.google.com");
+  });
+
+  it("does not match words with invalid TLD", () => {
+    expect(extractFirstUrlFromText("hello.there friend")).toBeNull();
   });
 });

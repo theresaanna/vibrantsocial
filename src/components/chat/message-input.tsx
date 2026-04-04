@@ -229,6 +229,19 @@ export function MessageInput({
     textarea.style.height = Math.min(textarea.scrollHeight, 120) + "px";
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const files = e.clipboardData?.files;
+    if (!files || files.length === 0) return;
+
+    const imageFiles = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    if (imageFiles.length === 0) return;
+
+    e.preventDefault();
+    setSelectedFiles((prev) => [...prev, ...imageFiles]);
+    setVoiceBlob(null);
+    setUploadError(null);
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
@@ -424,6 +437,7 @@ export function MessageInput({
           ref={textareaRef}
           value={value}
           onChange={handleChange}
+          onPaste={handlePaste}
           onInput={typeahead.detectTrigger}
           onClick={typeahead.detectTrigger}
           onKeyDown={handleKeyDown}

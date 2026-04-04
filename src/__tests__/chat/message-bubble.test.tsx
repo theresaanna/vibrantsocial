@@ -14,6 +14,17 @@ vi.mock("@/components/chat/media-renderer", () => ({
   ),
 }));
 
+vi.mock("@/components/link-preview-card", () => ({
+  LinkPreviewCard: ({ url, onLoadChange }: { url: string; onLoadChange?: (status: "loading" | "loaded" | "empty") => void }) => {
+    // Simulate immediate "loaded" callback like the real component does after fetch
+    if (onLoadChange) {
+      // Use queueMicrotask to avoid calling setState during render
+      queueMicrotask(() => onLoadChange("loaded"));
+    }
+    return <div data-testid="link-preview-card">{url}</div>;
+  },
+}));
+
 vi.mock("emoji-picker-react", () => ({
   __esModule: true,
   default: ({ onEmojiClick }: { onEmojiClick: (data: { emoji: string }) => void }) => (
@@ -662,5 +673,171 @@ describe("MessageBubble", () => {
       />
     );
     expect(screen.queryByTestId("reply-quote")).not.toBeInTheDocument();
+  });
+
+  // Link preview tests
+  describe("link preview", () => {
+    it("shows link preview for message containing a URL", () => {
+      render(
+        <MessageBubble
+          message={{ ...baseMessage, content: "Check out https://example.com" }}
+          isOwn={false}
+          senderProfile={baseSender}
+          isGroup={false}
+          readStatus="sent"
+        />
+      );
+      expect(screen.getByTestId("chat-link-preview")).toBeInTheDocument();
+      expect(screen.getByTestId("link-preview-card")).toHaveTextContent("https://example.com");
+    });
+
+    it("shows link preview for bare domain URLs", () => {
+      render(
+        <MessageBubble
+          message={{ ...baseMessage, content: "Visit example.com for more info" }}
+          isOwn={false}
+          senderProfile={baseSender}
+          isGroup={false}
+          readStatus="sent"
+        />
+      );
+      expect(screen.getByTestId("chat-link-preview")).toBeInTheDocument();
+      expect(screen.getByTestId("link-preview-card")).toHaveTextContent("https://example.com");
+    });
+
+    it("does not show link preview for messages without URLs", () => {
+      render(
+        <MessageBubble
+          message={{ ...baseMessage, content: "Just a plain message" }}
+          isOwn={false}
+          senderProfile={baseSender}
+          isGroup={false}
+          readStatus="sent"
+        />
+      );
+      expect(screen.queryByTestId("chat-link-preview")).not.toBeInTheDocument();
+    });
+
+    it("does not show link preview for empty content", () => {
+      render(
+        <MessageBubble
+          message={{ ...baseMessage, content: "", mediaUrl: "https://example.com/img.jpg", mediaType: "image" }}
+          isOwn={false}
+          senderProfile={baseSender}
+          isGroup={false}
+          readStatus="sent"
+        />
+      );
+      expect(screen.queryByTestId("chat-link-preview")).not.toBeInTheDocument();
+    });
+
+    it("shows dismiss button for link preview after load", async () => {
+      render(
+        <MessageBubble
+          message={{ ...baseMessage, content: "See https://example.com" }}
+          isOwn={false}
+          senderProfile={baseSender}
+          isGroup={false}
+          readStatus="sent"
+        />
+      );
+      await vi.waitFor(() => {
+        expect(screen.getByTestId("dismiss-link-preview")).toBeInTheDocument();
+      });
+    });
+
+    it("hides link preview when dismiss button is clicked", async () => {
+      const user = userEvent.setup();
+      render(
+        <MessageBubble
+          message={{ ...baseMessage, content: "See https://example.com" }}
+          isOwn={false}
+          senderProfile={baseSender}
+          isGroup={false}
+          readStatus="sent"
+        />
+      );
+      await vi.waitFor(() => {
+        expect(screen.getByTestId("dismiss-link-preview")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByTestId("dismiss-link-preview"));
+
+      expect(screen.queryByTestId("chat-link-preview")).not.toBeInTheDocument();
+    });
+
+    it("shows link preview for own messages", () => {
+      render(
+        <MessageBubble
+          message={{ ...baseMessage, content: "Check https://example.com" }}
+          isOwn={true}
+          senderProfile={baseSender}
+          isGroup={false}
+          readStatus="sent"
+        />
+      );
+      expect(screen.getByTestId("chat-link-preview")).toBeInTheDocument();
+    });
+
+    it("does not show link preview for deleted messages", () => {
+      render(
+        <MessageBubble
+          message={{ ...baseMessage, content: "Check https://example.com", deletedAt: new Date() }}
+          isOwn={false}
+          senderProfile={baseSender}
+          isGroup={false}
+          readStatus="sent"
+        />
+      );
+      expect(screen.queryByTestId("chat-link-preview")).not.toBeInTheDocument();
+    });
+
+    it("does not show link preview for email-only content", () => {
+      render(
+        <MessageBubble
+          message={{ ...baseMessage, content: "Email me at test@example.com" }}
+          isOwn={false}
+          senderProfile={baseSender}
+          isGroup={false}
+          readStatus="sent"
+        />
+      );
+      // Email addresses should not trigger link preview
+      expect(screen.queryByTestId("chat-link-preview")).not.toBeInTheDocument();
+    });
+
+    it("shows link preview alongside media", () => {
+      render(
+        <MessageBubble
+          message={{
+            ...baseMessage,
+            content: "Photo from https://example.com",
+            mediaUrl: "https://example.com/photo.jpg",
+            mediaType: "image",
+          }}
+          isOwn={false}
+          senderProfile={baseSender}
+          isGroup={false}
+          readStatus="sent"
+        />
+      );
+      expect(screen.getByTestId("media-image")).toBeInTheDocument();
+      expect(screen.getByTestId("chat-link-preview")).toBeInTheDocument();
+    });
+
+    it("does not show link preview for emoji-only messages with URL-like text", () => {
+      // Emoji-only messages render differently (large text, no bubble)
+      // They shouldn't have link previews since there's no URL
+      render(
+        <MessageBubble
+          message={{ ...baseMessage, content: "\u{1F44D}\u{1F44D}" }}
+          isOwn={false}
+          senderProfile={baseSender}
+          isGroup={false}
+          readStatus="sent"
+        />
+      );
+      expect(screen.queryByTestId("chat-link-preview")).not.toBeInTheDocument();
+    });
   });
 });
