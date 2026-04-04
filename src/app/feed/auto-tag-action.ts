@@ -71,7 +71,8 @@ export async function suggestTags(editorJson: string): Promise<AutoTagResult> {
       return { success: false, tags: [], error: "No response from AI" };
     }
 
-    const rawTags: string[] = JSON.parse(textBlock.text);
+    const cleaned = textBlock.text.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+    const rawTags: string[] = JSON.parse(cleaned);
     if (!Array.isArray(rawTags)) {
       return { success: false, tags: [], error: "Invalid response format" };
     }
