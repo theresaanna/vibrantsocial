@@ -26,6 +26,27 @@ const DEFAULT_LINK_CLASS = "font-medium text-blue-600 dark:text-blue-400 hover:u
 const THEMED_LINK_STYLE: React.CSSProperties = { color: "var(--chat-link-color)" };
 
 /**
+ * Extract the first http/https URL from plain text.
+ * Skips email addresses (e.g., user@example.com).
+ */
+export function extractFirstUrlFromText(text: string): string | null {
+  const URL_ONLY_REGEX = new RegExp(
+    `${URL_REGEX.source}|${WWW_REGEX.source}|${BARE_DOMAIN_REGEX.source}`,
+    "g"
+  );
+  let match: RegExpExecArray | null;
+  while ((match = URL_ONLY_REGEX.exec(text)) !== null) {
+    if (!match[1] && !match[2] && match.index > 0 && text[match.index - 1] === "@") {
+      continue;
+    }
+    const matched = match[0];
+    if (match[1]) return matched;
+    return `https://${matched}`;
+  }
+  return null;
+}
+
+/**
  * @param text - The plain text to parse
  * @param asSpans - When true, renders mentions/hashtags/links as styled
  *   <span> elements instead of <a> tags.  Use this when LinkifyText is

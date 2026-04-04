@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MessageInput } from "@/components/chat/message-input";
 import type { MessageData, ChatUserProfile } from "@/types/chat";
@@ -7,6 +7,10 @@ import type { MessageData, ChatUserProfile } from "@/types/chat";
 // Mock URL.createObjectURL for image preview tests
 URL.createObjectURL = vi.fn(() => "blob:mock-url");
 URL.revokeObjectURL = vi.fn();
+
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 const mockUseSession = vi.fn().mockReturnValue({ data: null, status: "unauthenticated" });
 vi.mock("next-auth/react", () => ({
@@ -715,5 +719,260 @@ describe("MessageInput", () => {
     });
 
     vi.restoreAllMocks();
+  });
+
+  // Image paste tests
+  describe("image paste", () => {
+    beforeEach(() => {
+      mockUseSession.mockReturnValue({ data: null, status: "unauthenticated" });
+    });
+
+    function pasteFiles(element: HTMLElement, files: File[]) {
+      const clipboardData = {
+        files,
+        length: files.length,
+        items: files.map((f) => ({ kind: "file", type: f.type, getAsFile: () => f })),
+        types: files.length > 0 ? ["Files"] : [],
+      };
+      fireEvent.paste(element, { clipboardData });
+    }
+
+    it("adds pasted image files to selected files", async () => {
+      render(
+        <MessageInput
+          onSendMessage={vi.fn()}
+          onKeystroke={vi.fn()}
+          onStopTyping={vi.fn()}
+        />
+      );
+
+      const textarea = screen.getByPlaceholderText("Type a message...");
+      const file = new File(["img"], "screenshot.png", { type: "image/png" });
+      pasteFiles(textarea, [file]);
+
+      await vi.waitFor(() => {
+        expect(screen.getByTestId("file-preview")).toBeInTheDocument();
+        expect(screen.getByText("screenshot.png")).toBeInTheDocument();
+      });
+    });
+
+    it("shows image preview thumbnail for pasted image", async () => {
+      render(
+        <MessageInput
+          onSendMessage={vi.fn()}
+          onKeystroke={vi.fn()}
+          onStopTyping={vi.fn()}
+        />
+      );
+
+      const textarea = screen.getByPlaceholderText("Type a message...");
+      const file = new File(["img"], "photo.jpg", { type: "image/jpeg" });
+      pasteFiles(textarea, [file]);
+
+      await vi.waitFor(() => {
+        const img = screen.getByAltText("Preview");
+        expect(img).toBeInTheDocument();
+        expect(img).toHaveAttribute("src", "blob:mock-url");
+      });
+    });
+
+    it("ignores pasted non-image files", () => {
+      render(
+        <MessageInput
+          onSendMessage={vi.fn()}
+          onKeystroke={vi.fn()}
+          onStopTyping={vi.fn()}
+        />
+      );
+
+      const textarea = screen.getByPlaceholderText("Type a message...");
+      const file = new File(["text"], "notes.txt", { type: "text/plain" });
+      pasteFiles(textarea, [file]);
+
+      expect(screen.queryByTestId("file-preview")).not.toBeInTheDocument();
+    });
+
+    it("filters out non-image files from mixed paste", async () => {
+      render(
+        <MessageInput
+          onSendMessage={vi.fn()}
+          onKeystroke={vi.fn()}
+          onStopTyping={vi.fn()}
+        />
+      );
+
+      const textarea = screen.getByPlaceholderText("Type a message...");
+      const imageFile = new File(["img"], "photo.png", { type: "image/png" });
+      const textFile = new File(["text"], "doc.txt", { type: "text/plain" });
+      pasteFiles(textarea, [imageFile, textFile]);
+
+      await vi.waitFor(() => {
+        const previews = screen.getAllByTestId("file-preview");
+        expect(previews).toHaveLength(1);
+        expect(screen.getByText("photo.png")).toBeInTheDocument();
+        expect(screen.queryByText("doc.txt")).not.toBeInTheDocument();
+      });
+    });
+
+    it("adds pasted images to existing selected files", async () => {
+      const user = userEvent.setup();
+      render(
+        <MessageInput
+          onSendMessage={vi.fn()}
+          onKeystroke={vi.fn()}
+          onStopTyping={vi.fn()}
+        />
+      );
+
+      // First attach a file via file input
+      const fileInput = screen.getByTestId("file-input");
+      const existingFile = new File(["pdf"], "doc.pdf", { type: "application/pdf" });
+      await user.upload(fileInput, existingFile);
+      expect(screen.getAllByTestId("file-preview")).toHaveLength(1);
+
+      // Then paste an image
+      const textarea = screen.getByPlaceholderText("Type a message...");
+      const pastedFile = new File(["img"], "pasted.png", { type: "image/png" });
+      pasteFiles(textarea, [pastedFile]);
+
+      await vi.waitFor(() => {
+        expect(screen.getAllByTestId("file-preview")).toHaveLength(2);
+        expect(screen.getByText("doc.pdf")).toBeInTheDocument();
+        expect(screen.getByText("pasted.png")).toBeInTheDocument();
+      });
+    });
+
+    it("shows send button after pasting image", async () => {
+      render(
+        <MessageInput
+          onSendMessage={vi.fn()}
+          onKeystroke={vi.fn()}
+          onStopTyping={vi.fn()}
+        />
+      );
+
+      const textarea = screen.getByPlaceholderText("Type a message...");
+      const file = new File(["img"], "shot.png", { type: "image/png" });
+      pasteFiles(textarea, [file]);
+
+      await vi.waitFor(() => {
+        expect(screen.getByLabelText("Send message")).toBeInTheDocument();
+        expect(screen.queryByTestId("voice-record-button")).not.toBeInTheDocument();
+      });
+    });
+
+    it("supports pasting multiple images at once", async () => {
+      render(
+        <MessageInput
+          onSendMessage={vi.fn()}
+          onKeystroke={vi.fn()}
+          onStopTyping={vi.fn()}
+        />
+      );
+
+      const textarea = screen.getByPlaceholderText("Type a message...");
+      const file1 = new File(["img1"], "a.png", { type: "image/png" });
+      const file2 = new File(["img2"], "b.jpg", { type: "image/jpeg" });
+      pasteFiles(textarea, [file1, file2]);
+
+      await vi.waitFor(() => {
+        expect(screen.getAllByTestId("file-preview")).toHaveLength(2);
+        expect(screen.getByText("a.png")).toBeInTheDocument();
+        expect(screen.getByText("b.jpg")).toBeInTheDocument();
+      });
+    });
+
+    it("allows normal text paste when no files present", () => {
+      render(
+        <MessageInput
+          onSendMessage={vi.fn()}
+          onKeystroke={vi.fn()}
+          onStopTyping={vi.fn()}
+        />
+      );
+
+      const textarea = screen.getByPlaceholderText("Type a message...");
+      pasteFiles(textarea, []);
+
+      // No file previews should appear
+      expect(screen.queryByTestId("file-preview")).not.toBeInTheDocument();
+    });
+
+    it("supports pasting gif images", async () => {
+      render(
+        <MessageInput
+          onSendMessage={vi.fn()}
+          onKeystroke={vi.fn()}
+          onStopTyping={vi.fn()}
+        />
+      );
+
+      const textarea = screen.getByPlaceholderText("Type a message...");
+      const file = new File(["gif"], "animation.gif", { type: "image/gif" });
+      pasteFiles(textarea, [file]);
+
+      await vi.waitFor(() => {
+        expect(screen.getByTestId("file-preview")).toBeInTheDocument();
+        expect(screen.getByText("animation.gif")).toBeInTheDocument();
+      });
+    });
+
+    it("supports pasting webp images", async () => {
+      render(
+        <MessageInput
+          onSendMessage={vi.fn()}
+          onKeystroke={vi.fn()}
+          onStopTyping={vi.fn()}
+        />
+      );
+
+      const textarea = screen.getByPlaceholderText("Type a message...");
+      const file = new File(["webp"], "modern.webp", { type: "image/webp" });
+      pasteFiles(textarea, [file]);
+
+      await vi.waitFor(() => {
+        expect(screen.getByTestId("file-preview")).toBeInTheDocument();
+        expect(screen.getByText("modern.webp")).toBeInTheDocument();
+      });
+    });
+
+    it("clears upload error when pasting image", async () => {
+      const user = userEvent.setup();
+
+      // Mock a failed upload
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        json: () => Promise.resolve({ error: "Upload failed" }),
+      });
+
+      render(
+        <MessageInput
+          onSendMessage={vi.fn().mockResolvedValue(undefined)}
+          onKeystroke={vi.fn()}
+          onStopTyping={vi.fn()}
+        />
+      );
+
+      // Attach and try to send to trigger an error
+      const fileInput = screen.getByTestId("file-input");
+      const badFile = new File(["data"], "bad.png", { type: "image/png" });
+      await user.upload(fileInput, badFile);
+      await user.click(screen.getByLabelText("Send message"));
+
+      await vi.waitFor(() => {
+        expect(screen.getByTestId("upload-error")).toBeInTheDocument();
+      });
+
+      // Paste a new image — should clear the error
+      const textarea = screen.getByPlaceholderText("Type a message...");
+      const goodFile = new File(["img"], "good.png", { type: "image/png" });
+      pasteFiles(textarea, [goodFile]);
+
+      await vi.waitFor(() => {
+        expect(screen.queryByTestId("upload-error")).not.toBeInTheDocument();
+      });
+
+      vi.restoreAllMocks();
+    });
   });
 });
