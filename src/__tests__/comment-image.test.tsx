@@ -99,7 +99,7 @@ describe("Comment images", () => {
       />
     );
     const img = screen.getByTestId("comment-image");
-    expect(img.style.maxWidth).toBe("1000px");
+    expect(img.style.maxWidth).toBe("min(1000px, 100%)");
     expect(img.style.maxHeight).toBe("1000px");
   });
 

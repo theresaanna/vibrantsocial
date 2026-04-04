@@ -55,7 +55,7 @@ describe("ImageComponent display mode", () => {
   it("constrains image to max 1000px in display mode", () => {
     render(<ImageComponent {...defaultProps} />);
     const img = screen.getByTestId("editor-image");
-    expect(img.style.maxWidth).toBe("1000px");
+    expect(img.style.maxWidth).toBe("min(1000px, 100%)");
     expect(img.style.maxHeight).toBe("1000px");
   });
 
@@ -114,7 +114,7 @@ describe("ImageComponent display mode", () => {
       />
     );
     const img = screen.getByTestId("editor-image");
-    expect(img.style.maxWidth).toBe("1000px");
+    expect(img.style.maxWidth).toBe("min(1000px, 100%)");
     expect(img.style.maxHeight).toBe("1000px");
   });
 });
