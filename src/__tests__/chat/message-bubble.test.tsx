@@ -839,5 +839,49 @@ describe("MessageBubble", () => {
       );
       expect(screen.queryByTestId("chat-link-preview")).not.toBeInTheDocument();
     });
+
+    it("renders image URL inline as an image instead of link preview card", () => {
+      render(
+        <MessageBubble
+          message={{ ...baseMessage, content: "Look at https://example.com/photo.jpg" }}
+          isOwn={false}
+          senderProfile={baseSender}
+          isGroup={false}
+          readStatus="sent"
+        />
+      );
+      expect(screen.getByTestId("chat-link-preview")).toBeInTheDocument();
+      // Should render an inline img, not the LinkPreviewCard mock
+      const img = screen.getByTestId("chat-link-preview").querySelector("img");
+      expect(img).toHaveAttribute("src", "https://example.com/photo.jpg");
+      expect(screen.queryByTestId("link-preview-card")).not.toBeInTheDocument();
+    });
+
+    it("renders image URL with query params inline", () => {
+      render(
+        <MessageBubble
+          message={{ ...baseMessage, content: "https://cdn.example.com/img.png?w=400" }}
+          isOwn={false}
+          senderProfile={baseSender}
+          isGroup={false}
+          readStatus="sent"
+        />
+      );
+      const img = screen.getByTestId("chat-link-preview").querySelector("img");
+      expect(img).toHaveAttribute("src", "https://cdn.example.com/img.png?w=400");
+    });
+
+    it("uses LinkPreviewCard for non-image URLs", () => {
+      render(
+        <MessageBubble
+          message={{ ...baseMessage, content: "Check https://example.com" }}
+          isOwn={false}
+          senderProfile={baseSender}
+          isGroup={false}
+          readStatus="sent"
+        />
+      );
+      expect(screen.getByTestId("link-preview-card")).toBeInTheDocument();
+    });
   });
 });

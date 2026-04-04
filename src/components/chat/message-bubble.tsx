@@ -9,7 +9,7 @@ import { SeenByIndicator } from "./seen-by-indicator";
 import { MediaRenderer } from "./media-renderer";
 import { FramedAvatar } from "@/components/framed-avatar";
 import type { MessageData, ChatUserProfile, MediaType, ChatThemeColors } from "@/types/chat";
-import { LinkifyText, extractFirstUrlFromText } from "./linkify-text";
+import { LinkifyText, extractFirstUrlFromText, isImageUrl } from "./linkify-text";
 import { LinkPreviewCard } from "@/components/link-preview-card";
 import { StyledName } from "@/components/styled-name";
 
@@ -347,14 +347,25 @@ export function MessageBubble({
                 {message.content && (
                   <p className="whitespace-pre-wrap break-words"><LinkifyText text={message.content} themed={!!themeColors?.linkColor} /></p>
                 )}
-                {firstUrl && !linkPreviewDismissed && linkPreviewStatus !== "empty" && (
-                  <div className="relative" data-testid="chat-link-preview">
-                    <LinkPreviewCard url={firstUrl} onLoadChange={setLinkPreviewStatus} />
-                    {linkPreviewStatus === "loaded" && (
+                {firstUrl && !linkPreviewDismissed && (
+                  isImageUrl(firstUrl) ? (
+                    <div className="relative mt-1" data-testid="chat-link-preview">
+                      <a href={firstUrl} target="_blank" rel="noopener noreferrer">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={firstUrl}
+                          alt=""
+                          className="max-w-full rounded-lg"
+                          loading="lazy"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = "none";
+                          }}
+                        />
+                      </a>
                       <button
                         type="button"
                         onClick={() => setLinkPreviewDismissed(true)}
-                        className="absolute right-1 top-4 rounded-full bg-white/80 p-0.5 text-zinc-400 hover:bg-white hover:text-zinc-600 dark:bg-zinc-800/80 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+                        className="absolute right-1 top-1 rounded-full bg-white/80 p-0.5 text-zinc-400 hover:bg-white hover:text-zinc-600 dark:bg-zinc-800/80 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
                         aria-label="Dismiss link preview"
                         data-testid="dismiss-link-preview"
                       >
@@ -362,8 +373,25 @@ export function MessageBubble({
                           <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
                         </svg>
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  ) : linkPreviewStatus !== "empty" ? (
+                    <div className="relative" data-testid="chat-link-preview">
+                      <LinkPreviewCard url={firstUrl} onLoadChange={setLinkPreviewStatus} />
+                      {linkPreviewStatus === "loaded" && (
+                        <button
+                          type="button"
+                          onClick={() => setLinkPreviewDismissed(true)}
+                          className="absolute right-1 top-4 rounded-full bg-white/80 p-0.5 text-zinc-400 hover:bg-white hover:text-zinc-600 dark:bg-zinc-800/80 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+                          aria-label="Dismiss link preview"
+                          data-testid="dismiss-link-preview"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                            <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  ) : null
                 )}
               </div>
             )}

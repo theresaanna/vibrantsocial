@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { LinkifyText, extractFirstUrlFromText } from "@/components/chat/linkify-text";
+import { LinkifyText, extractFirstUrlFromText, isImageUrl } from "@/components/chat/linkify-text";
 
 describe("LinkifyText", () => {
   it("renders plain text without links", () => {
@@ -269,5 +269,55 @@ describe("extractFirstUrlFromText", () => {
 
   it("does not match words with invalid TLD", () => {
     expect(extractFirstUrlFromText("hello.there friend")).toBeNull();
+  });
+});
+
+describe("isImageUrl", () => {
+  it("returns true for .jpg", () => {
+    expect(isImageUrl("https://example.com/photo.jpg")).toBe(true);
+  });
+
+  it("returns true for .jpeg", () => {
+    expect(isImageUrl("https://example.com/photo.jpeg")).toBe(true);
+  });
+
+  it("returns true for .png", () => {
+    expect(isImageUrl("https://example.com/image.png")).toBe(true);
+  });
+
+  it("returns true for .gif", () => {
+    expect(isImageUrl("https://example.com/anim.gif")).toBe(true);
+  });
+
+  it("returns true for .webp", () => {
+    expect(isImageUrl("https://example.com/modern.webp")).toBe(true);
+  });
+
+  it("returns true for .svg", () => {
+    expect(isImageUrl("https://example.com/icon.svg")).toBe(true);
+  });
+
+  it("returns true for image URL with query params", () => {
+    expect(isImageUrl("https://cdn.example.com/photo.jpg?w=800&h=600")).toBe(true);
+  });
+
+  it("returns true case-insensitively", () => {
+    expect(isImageUrl("https://example.com/PHOTO.JPG")).toBe(true);
+  });
+
+  it("returns false for HTML page", () => {
+    expect(isImageUrl("https://example.com/page")).toBe(false);
+  });
+
+  it("returns false for HTML page with .html", () => {
+    expect(isImageUrl("https://example.com/page.html")).toBe(false);
+  });
+
+  it("returns false for PDF", () => {
+    expect(isImageUrl("https://example.com/doc.pdf")).toBe(false);
+  });
+
+  it("returns false for video", () => {
+    expect(isImageUrl("https://example.com/video.mp4")).toBe(false);
   });
 });
