@@ -1,9 +1,24 @@
 import { test, expect } from "@playwright/test";
-import { TEST_USER, TEST_USER_2 } from "../helpers/db";
+import { TEST_USER, TEST_USER_2, invalidateRelationshipCache } from "../helpers/db";
 import pg from "pg";
 
 function createPool() {
   return new pg.Pool({ connectionString: process.env.DATABASE_URL });
+}
+
+async function getUserIds() {
+  const pool = createPool();
+  try {
+    const users = await pool.query(
+      `SELECT id, email FROM "User" WHERE email IN ($1, $2)`,
+      [TEST_USER.email, TEST_USER_2.email]
+    );
+    const u1 = users.rows.find((r: { email: string }) => r.email === TEST_USER.email);
+    const u2 = users.rows.find((r: { email: string }) => r.email === TEST_USER_2.email);
+    return { user1Id: u1?.id as string, user2Id: u2?.id as string };
+  } finally {
+    await pool.end();
+  }
 }
 
 async function cleanupRelationships() {
@@ -24,6 +39,8 @@ async function cleanupRelationships() {
       `DELETE FROM "Follow" WHERE "followerId" = ANY($1) AND "followingId" = ANY($1)`,
       [ids]
     );
+    // Invalidate Redis cache so the app doesn't serve stale relationship data
+    await invalidateRelationshipCache(ids[0], ids[1]);
   } finally {
     await pool.end();
   }
@@ -48,6 +65,7 @@ async function createFollow(followerEmail: string, followingEmail: string) {
        ON CONFLICT DO NOTHING`,
       [follower.rows[0].id, following.rows[0].id]
     );
+    await invalidateRelationshipCache(follower.rows[0].id, following.rows[0].id);
   } finally {
     await pool.end();
   }
@@ -72,6 +90,7 @@ async function createFriendship(email1: string, email2: string) {
        ON CONFLICT DO NOTHING`,
       [user1.rows[0].id, user2.rows[0].id]
     );
+    await invalidateRelationshipCache(user1.rows[0].id, user2.rows[0].id);
   } finally {
     await pool.end();
   }
@@ -90,6 +109,7 @@ test.describe("Follow & Friend Button UI", () => {
     page,
   }) => {
     await page.goto(`/${TEST_USER_2.username}`);
+    await page.reload();
 
     await expect(
       page.locator("h1", { hasText: TEST_USER_2.displayName })
@@ -111,6 +131,7 @@ test.describe("Follow & Friend Button UI", () => {
     await createFollow(TEST_USER.email, TEST_USER_2.email);
 
     await page.goto(`/${TEST_USER_2.username}`);
+    await page.reload();
 
     await expect(
       page.locator("h1", { hasText: TEST_USER_2.displayName })
@@ -128,6 +149,7 @@ test.describe("Follow & Friend Button UI", () => {
     page,
   }) => {
     await page.goto(`/${TEST_USER_2.username}`);
+    await page.reload();
 
     await expect(
       page.locator("h1", { hasText: TEST_USER_2.displayName })
@@ -149,6 +171,7 @@ test.describe("Follow & Friend Button UI", () => {
     await createFriendship(TEST_USER.email, TEST_USER_2.email);
 
     await page.goto(`/${TEST_USER_2.username}`);
+    await page.reload();
 
     await expect(
       page.locator("h1", { hasText: TEST_USER_2.displayName })
@@ -165,10 +188,11 @@ test.describe("Follow & Friend Button UI", () => {
   test("clicking 'Following' shows confirmation dialog with 'Unfollow?' title", async ({
     page,
   }) => {
-    test.fixme();
     await createFollow(TEST_USER.email, TEST_USER_2.email);
 
+    // Navigate and wait for fresh server render
     await page.goto(`/${TEST_USER_2.username}`);
+    await page.reload();
 
     await expect(
       page.locator("h1", { hasText: TEST_USER_2.displayName })
@@ -179,7 +203,7 @@ test.describe("Follow & Friend Button UI", () => {
     await followingButton.click();
 
     // Confirmation dialog should appear
-    const dialog = page.locator("dialog");
+    const dialog = page.locator("dialog[open]");
     await expect(dialog).toBeVisible({ timeout: 5000 });
 
     // Dialog should show "Unfollow?" title
@@ -199,10 +223,10 @@ test.describe("Follow & Friend Button UI", () => {
   test("clicking 'Friends' shows confirmation dialog with 'Unfriend?' title", async ({
     page,
   }) => {
-    test.fixme();
     await createFriendship(TEST_USER.email, TEST_USER_2.email);
 
     await page.goto(`/${TEST_USER_2.username}`);
+    await page.reload();
 
     await expect(
       page.locator("h1", { hasText: TEST_USER_2.displayName })
@@ -213,7 +237,7 @@ test.describe("Follow & Friend Button UI", () => {
     await friendsButton.click();
 
     // Confirmation dialog should appear
-    const dialog = page.locator("dialog");
+    const dialog = page.locator("dialog[open]");
     await expect(dialog).toBeVisible({ timeout: 5000 });
 
     // Dialog should show "Unfriend?" title
@@ -233,10 +257,10 @@ test.describe("Follow & Friend Button UI", () => {
   test("cancel on unfollow confirmation dialog dismisses it without action", async ({
     page,
   }) => {
-    test.fixme();
     await createFollow(TEST_USER.email, TEST_USER_2.email);
 
     await page.goto(`/${TEST_USER_2.username}`);
+    await page.reload();
 
     await expect(
       page.locator("h1", { hasText: TEST_USER_2.displayName })
@@ -247,7 +271,7 @@ test.describe("Follow & Friend Button UI", () => {
     await followingButton.click();
 
     // Dialog should appear
-    const dialog = page.locator("dialog");
+    const dialog = page.locator("dialog[open]");
     await expect(dialog).toBeVisible({ timeout: 5000 });
 
     // Click Cancel
@@ -265,10 +289,10 @@ test.describe("Follow & Friend Button UI", () => {
   test("cancel on unfriend confirmation dialog dismisses it without action", async ({
     page,
   }) => {
-    test.fixme();
     await createFriendship(TEST_USER.email, TEST_USER_2.email);
 
     await page.goto(`/${TEST_USER_2.username}`);
+    await page.reload();
 
     await expect(
       page.locator("h1", { hasText: TEST_USER_2.displayName })
@@ -279,7 +303,7 @@ test.describe("Follow & Friend Button UI", () => {
     await friendsButton.click();
 
     // Dialog should appear
-    const dialog = page.locator("dialog");
+    const dialog = page.locator("dialog[open]");
     await expect(dialog).toBeVisible({ timeout: 5000 });
 
     // Click Cancel

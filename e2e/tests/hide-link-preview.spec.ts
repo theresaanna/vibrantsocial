@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Hide Link Preview", () => {
   test("composer has a hideLinkPreview hidden input", async ({ page }) => {
-    await page.goto("/feed");
+    await page.goto("/compose");
 
     // Wait for the composer to load
     const composer = page.locator("form").filter({ has: page.locator('input[name="content"]') });
@@ -15,7 +15,7 @@ test.describe("Hide Link Preview", () => {
   });
 
   test("dismiss button hides link preview in composer", async ({ page }) => {
-    await page.goto("/feed");
+    await page.goto("/compose");
 
     // Wait for composer
     await expect(page.locator('input[name="content"]')).toBeAttached({ timeout: 10000 });

@@ -14,11 +14,11 @@ test.describe("Search", () => {
   test("search nav link navigates to search page", async ({
     page,
   }) => {
-    test.fixme();
     await page.goto("/feed");
     await expect(page).toHaveURL(/\/feed/, { timeout: 15000 });
 
-    // Click the Search nav link
+    // Wait for nav to be interactive, then click Search
+    await page.waitForSelector('a[aria-label="Search"]', { state: "visible", timeout: 15000 });
     await page.click('a[aria-label="Search"]');
 
     await expect(page).toHaveURL(/\/search/, { timeout: 15000 });
@@ -42,10 +42,10 @@ test.describe("Search", () => {
 
     // Both tab buttons should be visible in the search results area
     await expect(
-      page.locator("main").getByRole("button", { name: "Users" })
+      page.getByRole("button", { name: "Users" })
     ).toBeVisible({ timeout: 10000 });
     await expect(
-      page.locator("main").getByRole("button", { name: "Posts" })
+      page.getByRole("button", { name: "Posts" })
     ).toBeVisible();
   });
 });

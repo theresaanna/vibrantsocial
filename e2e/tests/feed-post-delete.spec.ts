@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Post deletion from feed", () => {
   test("deleting a post removes it from the feed without page refresh", async ({ page }) => {
-    test.fixme();
+    test.fixme(); // Requires Inngest branch environment for post creation
     // Create a post via the compose page
     const uniqueText = `e2e-delete-test-${Date.now()}`;
     await page.goto("/compose");
@@ -35,7 +35,9 @@ test.describe("Post deletion from feed", () => {
     await deleteButton.click();
 
     // Confirm deletion in the dialog
-    const confirmButton = page.getByRole("button", { name: /delete/i }).last();
+    const dialog = page.locator("dialog[open]");
+    await expect(dialog).toBeVisible({ timeout: 5000 });
+    const confirmButton = dialog.getByRole("button", { name: /delete/i });
     await expect(confirmButton).toBeVisible({ timeout: 3000 });
     await confirmButton.click();
 
@@ -47,7 +49,7 @@ test.describe("Post deletion from feed", () => {
   });
 
   test("deleted post does not leave an empty gap in the feed", async ({ page }) => {
-    test.fixme();
+    test.fixme(); // Requires Inngest branch environment for post creation
     // First create a post so we have something to delete
     const uniqueText = `e2e-gap-test-${Date.now()}`;
     await page.goto("/compose");
@@ -77,7 +79,9 @@ test.describe("Post deletion from feed", () => {
     await expect(deleteButton).toBeVisible({ timeout: 3000 });
     await deleteButton.click();
 
-    const confirmButton = page.getByRole("button", { name: /delete/i }).last();
+    const dialog = page.locator("dialog[open]");
+    await expect(dialog).toBeVisible({ timeout: 5000 });
+    const confirmButton = dialog.getByRole("button", { name: /delete/i });
     await expect(confirmButton).toBeVisible({ timeout: 3000 });
     await confirmButton.click();
 
