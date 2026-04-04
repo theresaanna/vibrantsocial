@@ -72,6 +72,7 @@ export function MessageBubble({
     [message.content]
   );
   const [linkPreviewDismissed, setLinkPreviewDismissed] = useState(false);
+  const [linkPreviewStatus, setLinkPreviewStatus] = useState<"loading" | "loaded" | "empty">("loading");
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
   const [pickerPos, setPickerPos] = useState<{ top: number; left: number } | null>(null);
@@ -346,20 +347,22 @@ export function MessageBubble({
                 {message.content && (
                   <p className="whitespace-pre-wrap break-words"><LinkifyText text={message.content} themed={!!themeColors?.linkColor} /></p>
                 )}
-                {firstUrl && !linkPreviewDismissed && (
+                {firstUrl && !linkPreviewDismissed && linkPreviewStatus !== "empty" && (
                   <div className="relative" data-testid="chat-link-preview">
-                    <LinkPreviewCard url={firstUrl} />
-                    <button
-                      type="button"
-                      onClick={() => setLinkPreviewDismissed(true)}
-                      className="absolute right-1 top-4 rounded-full bg-white/80 p-0.5 text-zinc-400 hover:bg-white hover:text-zinc-600 dark:bg-zinc-800/80 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
-                      aria-label="Dismiss link preview"
-                      data-testid="dismiss-link-preview"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-                        <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-                      </svg>
-                    </button>
+                    <LinkPreviewCard url={firstUrl} onLoadChange={setLinkPreviewStatus} />
+                    {linkPreviewStatus === "loaded" && (
+                      <button
+                        type="button"
+                        onClick={() => setLinkPreviewDismissed(true)}
+                        className="absolute right-1 top-4 rounded-full bg-white/80 p-0.5 text-zinc-400 hover:bg-white hover:text-zinc-600 dark:bg-zinc-800/80 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+                        aria-label="Dismiss link preview"
+                        data-testid="dismiss-link-preview"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                          <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

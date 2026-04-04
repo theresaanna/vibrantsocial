@@ -15,9 +15,14 @@ vi.mock("@/components/chat/media-renderer", () => ({
 }));
 
 vi.mock("@/components/link-preview-card", () => ({
-  LinkPreviewCard: ({ url }: { url: string }) => (
-    <div data-testid="link-preview-card">{url}</div>
-  ),
+  LinkPreviewCard: ({ url, onLoadChange }: { url: string; onLoadChange?: (status: "loading" | "loaded" | "empty") => void }) => {
+    // Simulate immediate "loaded" callback like the real component does after fetch
+    if (onLoadChange) {
+      // Use queueMicrotask to avoid calling setState during render
+      queueMicrotask(() => onLoadChange("loaded"));
+    }
+    return <div data-testid="link-preview-card">{url}</div>;
+  },
 }));
 
 vi.mock("emoji-picker-react", () => ({
@@ -726,7 +731,7 @@ describe("MessageBubble", () => {
       expect(screen.queryByTestId("chat-link-preview")).not.toBeInTheDocument();
     });
 
-    it("shows dismiss button for link preview", () => {
+    it("shows dismiss button for link preview after load", async () => {
       render(
         <MessageBubble
           message={{ ...baseMessage, content: "See https://example.com" }}
@@ -736,7 +741,9 @@ describe("MessageBubble", () => {
           readStatus="sent"
         />
       );
-      expect(screen.getByTestId("dismiss-link-preview")).toBeInTheDocument();
+      await vi.waitFor(() => {
+        expect(screen.getByTestId("dismiss-link-preview")).toBeInTheDocument();
+      });
     });
 
     it("hides link preview when dismiss button is clicked", async () => {
@@ -750,7 +757,9 @@ describe("MessageBubble", () => {
           readStatus="sent"
         />
       );
-      expect(screen.getByTestId("chat-link-preview")).toBeInTheDocument();
+      await vi.waitFor(() => {
+        expect(screen.getByTestId("dismiss-link-preview")).toBeInTheDocument();
+      });
 
       await user.click(screen.getByTestId("dismiss-link-preview"));
 
