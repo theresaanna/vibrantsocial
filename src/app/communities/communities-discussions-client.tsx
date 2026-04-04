@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, useMemo } from "react";
 import { PostCard } from "@/components/post-card";
 import { fetchTopDiscussedPosts } from "./discussion-actions";
 
@@ -26,7 +26,21 @@ export function CommunitiesDiscussionsClient() {
     });
   }, []);
 
-  if (data === null || isPending) {
+  // Stable reference for user prefs — avoids re-creating objects per PostCard per render
+  const userPrefs = useMemo(() => {
+    if (!data) return null;
+    return {
+      currentUserId: data.currentUserId ?? undefined,
+      phoneVerified: data.phoneVerified,
+      ageVerified: data.ageVerified,
+      showGraphicByDefault: data.showGraphicByDefault,
+      hideSensitiveOverlay: data.hideSensitiveOverlay,
+      hideNsfwOverlay: data.hideNsfwOverlay,
+      showNsfwContent: data.showNsfwContent,
+    };
+  }, [data]);
+
+  if (data === null || isPending || !userPrefs) {
     return (
       <div className="mt-6 flex justify-center py-8">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-600 dark:border-t-zinc-100" />
@@ -51,13 +65,13 @@ export function CommunitiesDiscussionsClient() {
         <PostCard
           key={post.id}
           post={post}
-          currentUserId={data.currentUserId ?? undefined}
-          phoneVerified={data.phoneVerified}
-          ageVerified={data.ageVerified}
-          showGraphicByDefault={data.showGraphicByDefault}
-          hideSensitiveOverlay={data.hideSensitiveOverlay}
-          hideNsfwOverlay={data.hideNsfwOverlay}
-          showNsfwContent={data.showNsfwContent}
+          currentUserId={userPrefs.currentUserId}
+          phoneVerified={userPrefs.phoneVerified}
+          ageVerified={userPrefs.ageVerified}
+          showGraphicByDefault={userPrefs.showGraphicByDefault}
+          hideSensitiveOverlay={userPrefs.hideSensitiveOverlay}
+          hideNsfwOverlay={userPrefs.hideNsfwOverlay}
+          showNsfwContent={userPrefs.showNsfwContent}
           defaultShowComments
           defaultExpanded
         />
