@@ -633,6 +633,7 @@ export async function createComment(
       parentId: comment.parentId,
       author: JSON.stringify(comment.author),
       createdAt: comment.createdAt.toISOString(),
+      actorId: session.user.id,
     });
 
     // Also publish updated comment count so PostCard can update immediately
@@ -855,6 +856,7 @@ export async function createRepostComment(
       parentId: comment.parentId,
       author: JSON.stringify(comment.author),
       createdAt: comment.createdAt.toISOString(),
+      actorId: session.user.id,
     });
 
     const count = await prisma.repostComment.count({ where: { repostId } });
