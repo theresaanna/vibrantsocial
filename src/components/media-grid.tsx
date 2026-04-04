@@ -136,34 +136,39 @@ export function MediaGrid({ initialPosts, initialHasMore, fetchPage = fetchMedia
   const [isPending, startTransition] = useTransition();
   const loadingRef = useRef(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const cursorRef = useRef<string | undefined>(
+    initialPosts.length > 0 ? initialPosts[initialPosts.length - 1].createdAt : undefined
+  );
+  const hasMoreRef = useRef(initialHasMore);
 
   const items = extractMediaGridItems(posts);
 
   const loadMore = useCallback(() => {
-    if (loadingRef.current || !hasMore) return;
+    if (loadingRef.current || !hasMoreRef.current || !cursorRef.current) return;
     loadingRef.current = true;
-
-    const lastPost = posts[posts.length - 1];
-    if (!lastPost) return;
 
     startTransition(async () => {
       try {
-        const result = await fetchPage(lastPost.createdAt);
+        const result = await fetchPage(cursorRef.current);
         if (result.posts.length > 0) {
           setPosts((prev) => {
             const existingIds = new Set(prev.map((p) => p.id));
             const fresh = result.posts.filter(
               (p: MediaPost) => !existingIds.has(p.id)
             );
+            if (fresh.length > 0) {
+              cursorRef.current = fresh[fresh.length - 1].createdAt;
+            }
             return [...prev, ...fresh];
           });
         }
+        hasMoreRef.current = result.hasMore;
         setHasMore(result.hasMore);
       } finally {
         loadingRef.current = false;
       }
     });
-  }, [posts, hasMore]);
+  }, [fetchPage]);
 
   // Intersection observer for infinite scroll
   useEffect(() => {
@@ -172,7 +177,7 @@ export function MediaGrid({ initialPosts, initialHasMore, fetchPage = fetchMedia
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingRef.current) {
+        if (entries[0].isIntersecting && hasMoreRef.current && !loadingRef.current) {
           loadMore();
         }
       },
@@ -181,7 +186,7 @@ export function MediaGrid({ initialPosts, initialHasMore, fetchPage = fetchMedia
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasMore, loadMore]);
+  }, [loadMore]);
 
   if (items.length === 0) {
     return (

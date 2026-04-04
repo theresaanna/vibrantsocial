@@ -3,19 +3,16 @@
 import { useActionState, useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
-import { updateProfile, removeAvatar, requestEmailChange, cancelEmailChange, resendVerificationEmail, deleteAccount } from "./actions";
-import { unlinkAccount, getLinkedAccounts } from "./account-linking-actions";
+import { updateProfile } from "./actions";
 import { BioEditor } from "@/components/bio-editor";
 import { BioRevisionHistory } from "@/components/bio-revision-history";
-import { FrameSelector } from "@/components/frame-selector";
-import { PremiumCrown } from "@/components/premium-crown";
-import { FramedAvatar } from "@/components/framed-avatar";
 import { PushNotificationToggle } from "@/components/push-notification-toggle";
-import { LinkAccountModal } from "@/components/link-account-modal";
-import { AvatarCropperModal } from "@/components/avatar-cropper-modal";
-import type { LinkedAccount } from "@/types/next-auth";
 import { toast } from "sonner";
+import { AvatarSection } from "./avatar-section";
+import { EmailSection } from "./email-section";
+import { StarsSection } from "./stars-section";
+import { LinkedAccountsSection } from "./linked-accounts-section";
+import { DeleteAccountSection } from "./delete-account-section";
 
 interface ProfileFormProps {
   user: {
@@ -73,37 +70,16 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autosaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [copied, setCopied] = useState(false);
-  const [referralCopied, setReferralCopied] = useState(false);
-  const [showStarsPopup, setShowStarsPopup] = useState(false);
-  const [redeeming, setRedeeming] = useState(false);
   const hasMountedRef = useRef(false);
 
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(currentAvatar);
-  const [avatarUploading, setAvatarUploading] = useState(false);
-  const [avatarError, setAvatarError] = useState<string | null>(null);
-  const [cropFile, setCropFile] = useState<File | null>(null);
-  const [showRevisions, setShowRevisions] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [pushEnabled, setPushEnabled] = useState(initialPushEnabled);
-  const [isCancellingEmail, setIsCancellingEmail] = useState(false);
-  const [isResendingEmail, setIsResendingEmail] = useState(false);
-  const [resendMessage, setResendMessage] = useState<string | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteConfirmation, setDeleteConfirmation] = useState("");
-  const [showLinkModal, setShowLinkModal] = useState(false);
-  const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
+  const [showRevisions, setShowRevisions] = useState(false);
   const [frameId, setFrameId] = useState<string | null>(user.profileFrameId);
-  const [showFrameSelector, setShowFrameSelector] = useState(false);
 
   const [birthdayMonth, setBirthdayMonth] = useState<string>(initialBirthdayMonth ? String(initialBirthdayMonth) : "");
   const [birthdayDay, setBirthdayDay] = useState<string>(initialBirthdayDay ? String(initialBirthdayDay) : "");
-  const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
-
-  const displayedAvatar = avatarPreview || oauthImage;
-  const displayName = user.displayName ?? "?";
-  const initial = displayName[0]?.toUpperCase() ?? "?";
 
   const usernameStatusRef = useRef(usernameStatus);
   usernameStatusRef.current = usernameStatus;
@@ -122,22 +98,6 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
             bio: (formData.get("bio") as string) || null,
           },
         });
-      }
-      return result;
-    },
-    { success: false, message: "" }
-  );
-
-  const [emailState, emailFormAction, isEmailPending] = useActionState(
-    requestEmailChange,
-    { success: false, message: "" }
-  );
-
-  const [deleteState, deleteFormAction, isDeleting] = useActionState(
-    async (prevState: ProfileState, formData: FormData) => {
-      const result = await deleteAccount(prevState, formData);
-      if (result.success) {
-        await signOut({ redirectTo: "/" });
       }
       return result;
     },
@@ -183,11 +143,6 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
       if (status === "taken" || status === "invalid" || status === "checking") return;
       formRef.current?.requestSubmit();
     }, 1500);
-  }, []);
-
-  // Load linked accounts on mount
-  useEffect(() => {
-    getLinkedAccounts().then(setLinkedAccounts);
   }, []);
 
   // Mark as mounted after first render
@@ -241,125 +196,30 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
     };
   }, [usernameValue, savedUsername, scheduleAutosave]);
 
-  function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleFrameChange = useCallback((id: string | null) => {
+    setFrameId(id);
+    scheduleAutosave();
+  }, [scheduleAutosave]);
 
-    setAvatarError(null);
+  const handlePushToggle = useCallback((val: boolean) => {
+    setPushEnabled(val);
+    scheduleAutosave();
+  }, [scheduleAutosave]);
 
-    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-    if (!allowedTypes.includes(file.type)) {
-      setAvatarError("File must be JPEG, PNG, GIF, or WebP");
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      setAvatarError("File must be under 10MB");
-      return;
-    }
-
-    setCropFile(file);
-    // Reset file input so re-selecting the same file triggers onChange
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  }
-
-  async function handleCroppedAvatar(blob: Blob) {
-    setAvatarUploading(true);
-    setAvatarError(null);
-    try {
-      const formData = new FormData();
-      formData.append("file", blob, "avatar.jpg");
-      const res = await fetch("/api/avatar", { method: "POST", body: formData });
-      const data = await res.json();
-      if (!res.ok) {
-        setAvatarError(data.error || "Upload failed");
-        return;
-      }
-      setAvatarPreview(data.url);
-      await update({ user: { avatar: data.url } });
-    } catch {
-      setAvatarError("Upload failed. Please try again.");
-    } finally {
-      setAvatarUploading(false);
-      setCropFile(null);
-    }
-  }
-
-  async function handleRemoveAvatar() {
-    setAvatarUploading(true);
-    setAvatarError(null);
-
-    try {
-      await removeAvatar();
-      setAvatarPreview(null);
-      await update({ user: { avatar: null } });
-    } catch {
-      setAvatarError("Failed to remove avatar");
-    } finally {
-      setAvatarUploading(false);
-    }
-  }
+  const displayName = user.displayName ?? "?";
 
   return (
     <div className="space-y-6">
-      {/* Avatar upload */}
-      <div className="flex items-center gap-4">
-        <FramedAvatar
-          src={displayedAvatar}
-          initial={initial}
-          size={80}
-          frameId={frameId}
-          referrerPolicy="no-referrer"
-        />
-
-        <div className="flex flex-col gap-1.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <label
-              className={`cursor-pointer rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 ${
-                avatarUploading ? "pointer-events-none opacity-50" : ""
-              }`}
-            >
-              {avatarUploading ? "Uploading..." : "Upload Photo"}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/gif,image/webp"
-                onChange={handleAvatarUpload}
-                className="hidden"
-                disabled={avatarUploading}
-              />
-            </label>
-
-            {avatarPreview && (
-              <button
-                type="button"
-                onClick={handleRemoveAvatar}
-                disabled={avatarUploading}
-                className="rounded-lg px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20"
-              >
-                Remove
-              </button>
-            )}
-            <span className="relative">
-              <button
-                type="button"
-                onClick={() => setShowFrameSelector(true)}
-                disabled={!isPremium}
-                className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                data-testid="choose-frame-button"
-              >
-                {frameId ? "Change Frame" : "Add Frame"}
-              </button>
-              <PremiumCrown href="/premium" />
-            </span>
-          </div>
-
-          {avatarError && (
-            <p className="text-xs text-red-600">{avatarError}</p>
-          )}
-          <p className="text-xs text-zinc-400">JPEG, PNG, GIF, or WebP. Max 10MB.</p>
-        </div>
-      </div>
+      {/* Avatar upload + frame */}
+      <AvatarSection
+        currentAvatar={currentAvatar}
+        oauthImage={oauthImage}
+        initialFrameId={user.profileFrameId}
+        displayName={displayName}
+        isPremium={isPremium}
+        userEmail={userEmail}
+        onFrameChange={handleFrameChange}
+      />
 
       {/* Share profile button */}
       {savedUsername && (
@@ -403,135 +263,12 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
         </button>
       )}
 
-      {showFrameSelector && (
-        <FrameSelector
-          currentFrameId={frameId}
-          avatarSrc={displayedAvatar}
-          initial={initial}
-          isPremium={isPremium}
-          userEmail={userEmail}
-          onSelect={(id) => { setFrameId(id); scheduleAutosave(); }}
-          onClose={() => setShowFrameSelector(false)}
-        />
-      )}
-
       {/* Email address */}
-      <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-        <p className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-          Email Address
-        </p>
-        {email && !pendingEmail && emailVerified && (
-          <p className="mt-1 text-sm text-green-600 dark:text-green-400">
-            Verified: {email}
-          </p>
-        )}
-        {email && !pendingEmail && !emailVerified && (
-          <div className="mt-1">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-yellow-600 dark:text-yellow-400">
-                Not verified: {email}
-              </p>
-              <button
-                type="button"
-                disabled={isResendingEmail}
-                onClick={async () => {
-                  setIsResendingEmail(true);
-                  setResendMessage(null);
-                  try {
-                    const result = await resendVerificationEmail();
-                    setResendMessage(result.message);
-                  } finally {
-                    setIsResendingEmail(false);
-                  }
-                }}
-                className="ml-2 shrink-0 text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 disabled:opacity-50 dark:text-blue-400 dark:hover:text-blue-300"
-              >
-                {isResendingEmail ? "Sending..." : "Resend verification"}
-              </button>
-            </div>
-            {resendMessage && (
-              <p className="mt-1 text-xs text-green-600 dark:text-green-400">
-                {resendMessage}
-              </p>
-            )}
-          </div>
-        )}
-        {pendingEmail && (
-          <div className="mt-1">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-yellow-600 dark:text-yellow-400">
-                Verification sent to {pendingEmail}
-              </p>
-              <div className="ml-2 flex shrink-0 gap-2">
-                <button
-                  type="button"
-                  disabled={isResendingEmail}
-                  onClick={async () => {
-                    setIsResendingEmail(true);
-                    setResendMessage(null);
-                    try {
-                      const result = await resendVerificationEmail();
-                      setResendMessage(result.message);
-                    } finally {
-                      setIsResendingEmail(false);
-                    }
-                  }}
-                  className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 disabled:opacity-50 dark:text-blue-400 dark:hover:text-blue-300"
-                >
-                  {isResendingEmail ? "Sending..." : "Resend"}
-                </button>
-                <button
-                  type="button"
-                  disabled={isCancellingEmail}
-                  onClick={async () => {
-                    setIsCancellingEmail(true);
-                    try {
-                      await cancelEmailChange();
-                    } finally {
-                      setIsCancellingEmail(false);
-                    }
-                  }}
-                  className="text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-700 disabled:opacity-50 dark:hover:text-zinc-300"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-            {resendMessage && (
-              <p className="mt-1 text-xs text-green-600 dark:text-green-400">
-                {resendMessage}
-              </p>
-            )}
-          </div>
-        )}
-        <form action={emailFormAction} className="mt-3 flex gap-2">
-          <input
-            name="email"
-            type="email"
-            defaultValue={email ?? ""}
-            placeholder="you@example.com"
-            className="block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
-          />
-          <button
-            type="submit"
-            disabled={isEmailPending}
-            className="shrink-0 rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-          >
-            {isEmailPending ? "Sending..." : email ? "Update" : "Add"}
-          </button>
-        </form>
-        {emailState.message && (
-          <p
-            className={`mt-2 text-xs ${
-              emailState.success
-                ? "text-green-600 dark:text-green-400"
-                : "text-red-600 dark:text-red-400"
-            }`}
-          >
-            {emailState.message}
-          </p>
-        )}
-      </div>
+      <EmailSection
+        email={email}
+        emailVerified={emailVerified}
+        pendingEmail={pendingEmail}
+      />
 
       {/* Phone verification */}
       <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
@@ -559,172 +296,12 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
         )}
       </div>
 
-      {/* Stars container */}
-      <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setShowStarsPopup(true)}
-              className="flex items-center gap-2 focus:outline-none"
-              data-testid="stars-count"
-            >
-              <span
-                className="relative inline-flex items-center justify-center"
-                style={{
-                  width: 40,
-                  height: 40,
-                  backgroundImage: "url(/star.png)",
-                  backgroundSize: "contain",
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "center",
-                }}
-              >
-                <span className="relative text-xs font-bold text-white" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
-                  {stars}
-                </span>
-              </span>
-              <div className="text-left">
-                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                  {stars} {stars === 1 ? "star" : "stars"}
-                </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Tap to learn more
-                </p>
-              </div>
-            </button>
-            {stars >= 500 && (
-              <button
-                type="button"
-                disabled={redeeming}
-                onClick={async () => {
-                  setRedeeming(true);
-                  try {
-                    const res = await fetch("/api/redeem-stars", { method: "POST" });
-                    const data = await res.json();
-                    if (res.ok) {
-                      toast.success("Premium activated! Enjoy your free month.");
-                      window.location.reload();
-                    } else {
-                      toast.error(data.error || "Failed to redeem stars");
-                    }
-                  } catch {
-                    toast.error("Something went wrong");
-                  } finally {
-                    setRedeeming(false);
-                  }
-                }}
-                className="rounded-lg bg-gradient-to-r from-yellow-400 to-amber-500 px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-                data-testid="redeem-stars"
-              >
-                {redeeming ? "Redeeming..." : "Redeem for Premium"}
-              </button>
-            )}
-          </div>
-          <div className="mt-3 flex gap-4 border-t border-zinc-100 pt-3 dark:border-zinc-700">
-            <div className="text-center">
-              <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{stars + starsSpent}</p>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Lifetime</p>
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{starsSpent}</p>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Spent</p>
-            </div>
-          </div>
-          {referralCode && (
-            <div className="mt-3 border-t border-zinc-100 pt-3 dark:border-zinc-700">
-              <p className="mb-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">Your referral link</p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 truncate rounded bg-zinc-100 px-2 py-1 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300" data-testid="referral-link">
-                  {typeof window !== "undefined" ? `${window.location.origin}/signup?ref=${referralCode}` : `/signup?ref=${referralCode}`}
-                </code>
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(
-                      `${window.location.origin}/signup?ref=${referralCode}`
-                    );
-                    setReferralCopied(true);
-                    setTimeout(() => setReferralCopied(false), 2000);
-                  }}
-                  className="shrink-0 rounded-lg bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                >
-                  {referralCopied ? "Copied!" : "Copy"}
-                </button>
-              </div>
-            </div>
-          )}
-          {showStarsPopup && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowStarsPopup(false)}>
-              <div
-                className="mx-4 w-full max-w-sm rounded-xl bg-white p-6 shadow-xl dark:bg-zinc-800"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">How to Earn Stars</h3>
-                  <button
-                    type="button"
-                    onClick={() => setShowStarsPopup(false)}
-                    className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-                  >
-                    &times;
-                  </button>
-                </div>
-                <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-300">
-                  Stars are earned by being active on VibrantSocial. The more you engage, the more stars you collect!
-                </p>
-                <ul className="space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
-                  <li className="flex items-center gap-2">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-yellow-400" />
-                    Posting new content
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-yellow-400" />
-                    Commenting on posts
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-yellow-400" />
-                    Liking posts
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-yellow-400" />
-                    Reposting content
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-yellow-400" />
-                    Referring new users
-                  </li>
-                </ul>
-                <div className="mt-4 rounded-lg bg-zinc-100 p-3 dark:bg-zinc-700">
-                  <p className="mb-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">Redeem stars</p>
-                  <p className="text-sm text-zinc-700 dark:text-zinc-300">
-                    Collect 500 stars to exchange for a free month of premium!
-                  </p>
-                </div>
-                <div className="mt-3 flex items-center justify-center gap-2 rounded-lg bg-zinc-100 py-2 dark:bg-zinc-700">
-                  <span
-                    className="relative inline-flex items-center justify-center"
-                    style={{
-                      width: 28,
-                      height: 28,
-                      backgroundImage: "url(/star.png)",
-                      backgroundSize: "contain",
-                      backgroundRepeat: "no-repeat",
-                      backgroundPosition: "center",
-                    }}
-                  >
-                    <span className="relative text-[10px] font-bold text-white" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
-                      {stars}
-                    </span>
-                  </span>
-                  <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                    You have {stars} {stars === 1 ? "star" : "stars"}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
+      {/* Stars */}
+      <StarsSection
+        stars={stars}
+        starsSpent={starsSpent}
+        referralCode={referralCode}
+      />
 
       {/* Profile fields */}
       <form
@@ -1093,10 +670,7 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
           <input type="hidden" name="pushEnabled" value={pushEnabled ? "true" : "false"} />
           <PushNotificationToggle
             enabled={pushEnabled}
-            onToggle={(val) => {
-              setPushEnabled(val);
-              scheduleAutosave();
-            }}
+            onToggle={handlePushToggle}
           />
           <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
             Receive browser notifications even when the tab is closed.
@@ -1164,180 +738,10 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
       </form>
 
       {/* Linked Accounts */}
-      <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" data-testid="linked-accounts-section">
-        <p className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-          Linked Accounts
-        </p>
-        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-          Link multiple accounts to switch between them without logging out.
-        </p>
-
-        {linkedAccounts.length > 0 && (
-          <div className="mt-3 space-y-2">
-            {linkedAccounts.map((account) => (
-              <div
-                key={account.id}
-                className="flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-800"
-                data-testid={`linked-account-${account.username}`}
-              >
-                <div className="flex items-center gap-2">
-                  {account.avatar ? (
-                    <img
-                      src={account.avatar}
-                      alt=""
-                      className="h-8 w-8 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-blue-500 text-sm font-medium text-white">
-                      {(account.displayName || account.username || "?")[0].toUpperCase()}
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                      {account.displayName || account.username}
-                    </p>
-                    {account.username && (
-                      <p className="text-xs text-zinc-500">@{account.username}</p>
-                    )}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  disabled={unlinkingId !== null}
-                  onClick={async () => {
-                    setUnlinkingId(account.id);
-                    try {
-                      const result = await unlinkAccount(account.id);
-                      if (result.success) {
-                        setLinkedAccounts(result.linkedAccounts ?? []);
-                        update({ refreshLinkedAccounts: true });
-                      }
-                    } finally {
-                      setUnlinkingId(null);
-                    }
-                  }}
-                  className="text-sm font-medium text-red-600 transition-colors hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
-                  data-testid={`unlink-${account.username}`}
-                >
-                  {unlinkingId === account.id ? "Unlinking..." : "Unlink"}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <button
-          type="button"
-          onClick={() => setShowLinkModal(true)}
-          className="mt-3 flex items-center gap-2 rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-          data-testid="link-account-button"
-        >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-          Link another account
-        </button>
-      </div>
-
-      {showLinkModal && (
-        <LinkAccountModal
-          isOpen={showLinkModal}
-          onClose={() => setShowLinkModal(false)}
-          onLinked={() => {
-            getLinkedAccounts().then(setLinkedAccounts);
-          }}
-        />
-      )}
-
-      {cropFile && (
-        <AvatarCropperModal
-          file={cropFile}
-          onSave={handleCroppedAvatar}
-          onCancel={() => setCropFile(null)}
-          uploading={avatarUploading}
-        />
-      )}
+      <LinkedAccountsSection />
 
       {/* Delete Account */}
-      <div className="rounded-lg border border-red-200 p-4 dark:border-red-900/50">
-        <p className="text-base font-semibold text-red-600 dark:text-red-400">
-          Delete Account
-        </p>
-        {!showDeleteConfirm ? (
-          <>
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              Permanently delete your account and all associated data.
-            </p>
-            <button
-              type="button"
-              onClick={() => setShowDeleteConfirm(true)}
-              className="mt-3 rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
-              data-testid="delete-account-button"
-            >
-              Delete Account
-            </button>
-          </>
-        ) : (
-          <div className="mt-3 space-y-3">
-            <div className="rounded-lg bg-red-50 p-3 dark:bg-red-900/20">
-              <p className="text-sm font-medium text-red-800 dark:text-red-300">
-                This action is permanent and cannot be undone.
-              </p>
-              <p className="mt-1 text-xs text-red-700 dark:text-red-400">
-                Your posts, comments, messages, and all other data will be permanently deleted.
-                If someone quoted your post, the quote will remain but your original post will
-                be replaced with a &ldquo;user deleted&rdquo; notice.
-              </p>
-            </div>
-            <form action={deleteFormAction}>
-              <label
-                htmlFor="deleteConfirmation"
-                className="block text-sm font-semibold text-zinc-800 dark:text-zinc-200"
-              >
-                Type <span className="font-mono text-red-600 dark:text-red-400">delete {user.username}</span> to confirm
-              </label>
-              <input
-                id="deleteConfirmation"
-                name="confirmation"
-                type="text"
-                value={deleteConfirmation}
-                onChange={(e) => setDeleteConfirmation(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
-                placeholder={`delete ${user.username}`}
-                autoComplete="off"
-                data-testid="delete-confirmation-input"
-              />
-              {deleteState.message && !deleteState.success && (
-                <p className="mt-1 text-xs text-red-600">{deleteState.message}</p>
-              )}
-              <div className="mt-3 flex gap-2">
-                <button
-                  type="submit"
-                  disabled={
-                    isDeleting ||
-                    deleteConfirmation.trim().toLowerCase() !==
-                      `delete ${user.username}`.toLowerCase()
-                  }
-                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
-                  data-testid="delete-account-confirm"
-                >
-                  {isDeleting ? "Deleting..." : "Delete My Account"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowDeleteConfirm(false);
-                    setDeleteConfirmation("");
-                  }}
-                  className="rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-      </div>
+      <DeleteAccountSection username={user.username} />
     </div>
   );
 }

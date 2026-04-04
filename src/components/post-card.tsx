@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useActionState } from "react";
+import { useState, useRef, useEffect, useActionState, memo } from "react";
 import dynamic from "next/dynamic";
 import { PostContent } from "./post-content";
 import { PostActions } from "./post-actions";
@@ -98,7 +98,7 @@ interface PostCardProps {
   };
 }
 
-export function PostCard({
+export const PostCard = memo(function PostCard({
   post,
   currentUserId,
   phoneVerified,
@@ -844,4 +844,5 @@ export function PostCard({
       />
     </div>
   );
-}
+});
+PostCard.displayName = "PostCard";
