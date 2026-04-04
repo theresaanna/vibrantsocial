@@ -18,8 +18,11 @@ import { $isImageNode } from "./ImageNode";
 import { ImageSidebar } from "./ImageSidebar";
 import { ImageResizeModal } from "./ImageResizeModal";
 import { ImageAltTextModal } from "./ImageAltTextModal";
+import { ImageOverlay } from "@/components/image-overlay";
 import { useIsPostAuthor } from "../PostAuthorContext";
 import { DRAG_NODE_KEY_ATTR } from "../plugins/DragDropPlugin";
+
+const MAX_DISPLAY_PX = 1000;
 
 type ResizeDirection = "se" | "sw" | "ne" | "nw";
 
@@ -68,6 +71,7 @@ export default function ImageComponent({
   // Modal state
   const [showResizeModal, setShowResizeModal] = useState(false);
   const [showAltTextModal, setShowAltTextModal] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
 
   const onDelete = useCallback(
     (event: KeyboardEvent) => {
@@ -185,6 +189,11 @@ export default function ImageComponent({
   const style: React.CSSProperties = {};
   if (typeof imgSize.width === "number") style.width = `${imgSize.width}px`;
   if (typeof imgSize.height === "number") style.height = `${imgSize.height}px`;
+  if (!isImageEditable) {
+    style.maxWidth = `${MAX_DISPLAY_PX}px`;
+    style.maxHeight = `${MAX_DISPLAY_PX}px`;
+    style.cursor = "zoom-in";
+  }
 
   const getRenderedDimensions = () => {
     const img = imgRef.current;
@@ -214,6 +223,8 @@ export default function ImageComponent({
         style={style}
         className={`max-w-full rounded${isImageEditable ? " cursor-grab active:cursor-grabbing" : ""}`}
         draggable={isImageEditable}
+        onClick={!isImageEditable ? () => setShowOverlay(true) : undefined}
+        data-testid="editor-image"
       />
       {isSelected && isImageEditable && (
         <>
@@ -294,6 +305,15 @@ export default function ImageComponent({
           initialAltText={imgAltText}
           onApply={handleAltTextApply}
           onClose={() => setShowAltTextModal(false)}
+        />
+      )}
+
+      {/* Full-size overlay */}
+      {showOverlay && (
+        <ImageOverlay
+          src={src}
+          alt={imgAltText}
+          onClose={() => setShowOverlay(false)}
         />
       )}
     </span>

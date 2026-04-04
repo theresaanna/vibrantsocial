@@ -24,6 +24,7 @@ export interface ReactionGroup {
 export interface CommentData {
   id: string;
   content: string;
+  imageUrl?: string | null;
   createdAt: Date;
   editedAt?: Date | null;
   parentId?: string | null;
@@ -96,6 +97,7 @@ export function useComments(postId: string, initialComments: CommentData[], curr
       const comment: CommentData = {
         id: data.id as string,
         content: data.content as string,
+        imageUrl: data.imageUrl || null,
         createdAt: new Date(data.createdAt as string),
         parentId,
         author: JSON.parse(data.author as string),

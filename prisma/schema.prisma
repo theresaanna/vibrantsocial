@@ -359,6 +359,7 @@ model PostTag {
 model Comment {
   id        String   @id @default(cuid())
   content   String
+  imageUrl  String?
   postId    String
   authorId  String
   parentId  String?

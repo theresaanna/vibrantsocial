@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AccountSwitcher } from "./account-switcher";
+import { LogoutButton } from "./logout-button";
 import { LinkAccountModal } from "./link-account-modal";
 import type { LinkedAccount } from "@/types/next-auth";
 
@@ -16,11 +17,15 @@ export function AccountSwitcherWrapper({
 
   return (
     <>
-      <AccountSwitcher
-        onAddAccount={() => setShowLinkModal(true)}
-        initialLinkedAccounts={initialLinkedAccounts}
-        initialNotificationCounts={initialNotificationCounts}
-      />
+      {initialLinkedAccounts.length > 0 ? (
+        <AccountSwitcher
+          onAddAccount={() => setShowLinkModal(true)}
+          initialLinkedAccounts={initialLinkedAccounts}
+          initialNotificationCounts={initialNotificationCounts}
+        />
+      ) : (
+        <LogoutButton />
+      )}
       {showLinkModal && (
         <LinkAccountModal
           isOpen={showLinkModal}
