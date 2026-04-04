@@ -12,6 +12,7 @@ import { FeedTabs } from "@/components/feed-tabs";
 import { getUserLists, getSubscribedLists, getListInfo } from "@/app/lists/actions";
 import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
 import { ThemedPage } from "@/components/themed-page";
+import { checkProfileCompletion } from "@/lib/require-profile";
 
 export const metadata: Metadata = {
   title: "Feed",
@@ -25,6 +26,9 @@ interface FeedPageProps {
 export default async function FeedPage({ searchParams }: FeedPageProps) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
+
+  const profileRedirect = await checkProfileCompletion(session.user.id);
+  if (profileRedirect) redirect(profileRedirect);
 
   const { list: activeListId, view } = await searchParams;
   const activeView = view === "media" ? "media" : "posts";
@@ -54,9 +58,15 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
 
   // If viewing a list not in owned or subscribed, fetch its info for the tab
   const knownIds = new Set(allTabs.map((t) => t.id));
-  const activeListInfo = activeListId && !knownIds.has(activeListId)
+  const isCustomList = activeListId && activeListId !== "for-you" && activeListId !== "close-friends";
+  const activeListInfo = isCustomList && !knownIds.has(activeListId)
     ? await getListInfo(activeListId)
     : null;
+
+  // Verify list exists before entering Suspense to avoid delayed redirects
+  if (isCustomList && !knownIds.has(activeListId) && !activeListInfo) {
+    redirect("/feed");
+  }
 
   return (
     <ThemedPage {...(theme ?? NO_THEME)}>

@@ -1,11 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
 import { FeedClient } from "@/components/feed-client";
 import { calculateAge } from "@/lib/age-gate";
 import { getPostInclude, getRepostInclude, PAGE_SIZE } from "./feed-queries";
 import { cached, cacheKeys } from "@/lib/cache";
 import { getCloseFriendIds, getCachedCloseFriendOfIds } from "@/app/feed/close-friends-actions";
-import { isProfileIncomplete } from "@/lib/require-profile";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 import { getFriendStatuses, pollStatuses } from "@/app/feed/status-actions";
 
@@ -50,7 +48,10 @@ export async function FeedContent({ userId, activeView = "posts" }: { userId: st
   const blockedSet = new Set(blockedIds);
   const followingIds = allFollowingIds.filter((id: string) => !blockedSet.has(id));
 
-  if (!currentUser || isProfileIncomplete(currentUser)) redirect("/complete-profile");
+  // Profile completeness is checked in the page component before Suspense.
+  // If the user is somehow missing, return an empty feed rather than redirecting
+  // inside a Suspense boundary (which causes a delayed redirect after the shell loads).
+  if (!currentUser) return null;
 
   const phoneVerified = !!currentUser.phoneVerified;
   const ageVerified = !!currentUser.ageVerified;

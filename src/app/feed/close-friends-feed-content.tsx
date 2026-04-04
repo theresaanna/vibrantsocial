@@ -1,10 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
 import { FeedClient } from "@/components/feed-client";
 import { calculateAge } from "@/lib/age-gate";
 import { getPostInclude, getRepostInclude, PAGE_SIZE } from "./feed-queries";
 import { getCloseFriendIds, getCachedCloseFriendOfIds } from "@/app/feed/close-friends-actions";
-import { isProfileIncomplete } from "@/lib/require-profile";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 
 /**
@@ -32,7 +30,8 @@ export async function CloseFriendsFeedContent({ userId }: { userId: string }) {
     getAllBlockRelatedIds(userId),
   ]);
 
-  if (!currentUser || isProfileIncomplete(currentUser)) redirect("/complete-profile");
+  // Profile completeness is checked in the page component before Suspense.
+  if (!currentUser) return null;
 
   const phoneVerified = !!currentUser.phoneVerified;
   const ageVerified = !!currentUser.ageVerified;

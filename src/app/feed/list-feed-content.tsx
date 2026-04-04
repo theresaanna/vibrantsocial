@@ -1,20 +1,14 @@
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
 import { FeedClient } from "@/components/feed-client";
 import { calculateAge } from "@/lib/age-gate";
 import { getPostInclude, getRepostInclude, PAGE_SIZE } from "./feed-queries";
 import { cached, cacheKeys } from "@/lib/cache";
 import { getCloseFriendIds, getCachedCloseFriendOfIds } from "@/app/feed/close-friends-actions";
-import { isProfileIncomplete } from "@/lib/require-profile";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 
 export async function ListFeedContent({ userId, listId }: { userId: string; listId: string }) {
-  // Verify the list exists
-  const list = await prisma.userList.findUnique({
-    where: { id: listId },
-    select: { id: true, name: true },
-  });
-  if (!list) redirect("/feed");
+  // List existence is verified in the page component before Suspense.
+  // If somehow missing, return null rather than redirecting inside Suspense.
 
   // Phase 1: currentUser + list member IDs + closeFriendOf + blockedIds in parallel
   const [currentUser, memberRows, closeFriendOfIds, blockedIds] = await Promise.all([
@@ -51,7 +45,8 @@ export async function ListFeedContent({ userId, listId }: { userId: string; list
   const blockedSet = new Set(blockedIds);
   const memberIds = memberRows.filter((id: string) => !blockedSet.has(id));
 
-  if (!currentUser || isProfileIncomplete(currentUser)) redirect("/complete-profile");
+  // Profile completeness is checked in the page component before Suspense.
+  if (!currentUser) return null;
 
   const phoneVerified = !!currentUser.phoneVerified;
   const ageVerified = !!currentUser.ageVerified;

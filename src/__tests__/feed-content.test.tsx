@@ -3,7 +3,7 @@ import { render, screen, cleanup } from "@testing-library/react";
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    user: { findUnique: vi.fn() },
+    user: { findUnique: vi.fn(), update: vi.fn().mockReturnValue({ catch: vi.fn() }) },
     follow: { findMany: vi.fn() },
     post: { findMany: vi.fn() },
     repost: { findMany: vi.fn() },
@@ -22,10 +22,16 @@ vi.mock("@/lib/cache", () => ({
 
 vi.mock("@/app/feed/close-friends-actions", () => ({
   getCloseFriendIds: vi.fn().mockResolvedValue([]),
+  getCachedCloseFriendOfIds: vi.fn().mockResolvedValue([]),
 }));
 
-vi.mock("@/lib/require-profile", () => ({
-  isProfileIncomplete: vi.fn().mockReturnValue(false),
+vi.mock("@/app/feed/block-actions", () => ({
+  getAllBlockRelatedIds: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock("@/app/feed/status-actions", () => ({
+  getFriendStatuses: vi.fn().mockResolvedValue([]),
+  pollStatuses: vi.fn().mockResolvedValue({ friendStatuses: [], ownStatus: null }),
 }));
 
 vi.mock("@/lib/age-gate", () => ({
@@ -53,8 +59,6 @@ vi.mock("@/components/feed-client", () => ({
 }));
 
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
-import { isProfileIncomplete } from "@/lib/require-profile";
 import { FeedContent } from "@/app/feed/feed-content";
 
 // Helper to render async server component
@@ -77,6 +81,9 @@ describe("FeedContent", () => {
       showGraphicByDefault: false,
       showNsfwContent: false,
       hideSensitiveOverlay: false,
+      hideNsfwOverlay: false,
+      tier: "free",
+      lastSeenFeedAt: null,
     } as any);
 
     vi.mocked(prisma.follow.findMany).mockResolvedValue([]);
@@ -98,28 +105,11 @@ describe("FeedContent", () => {
     expect(screen.getByTestId("has-email")).toHaveTextContent("true");
   });
 
-  it("redirects when user not found", async () => {
+  it("returns null when user not found", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
 
-    try {
-      await renderAsync(FeedContent({ userId: "missing-user" }) as any);
-    } catch {
-      // redirect throws
-    }
-
-    expect(redirect).toHaveBeenCalledWith("/complete-profile");
-  });
-
-  it("redirects when profile is incomplete", async () => {
-    vi.mocked(isProfileIncomplete).mockReturnValue(true);
-
-    try {
-      await renderAsync(FeedContent({ userId: "user1" }) as any);
-    } catch {
-      // redirect throws
-    }
-
-    expect(redirect).toHaveBeenCalledWith("/complete-profile");
+    const result = await FeedContent({ userId: "missing-user" });
+    expect(result).toBeNull();
   });
 
   it("passes phoneVerified false when not verified", async () => {
