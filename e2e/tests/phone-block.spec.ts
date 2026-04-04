@@ -80,7 +80,7 @@ test.describe("Phone-based Blocking", () => {
     await blockButton.click();
 
     // Dialog should appear
-    const dialog = page.locator("dialog");
+    const dialog = page.locator("dialog[open]");
     await expect(dialog).toBeVisible({ timeout: 5000 });
 
     // Phone block checkbox should be visible
@@ -112,7 +112,7 @@ test.describe("Phone-based Blocking", () => {
     await blockButton.click();
 
     // Dialog should appear
-    const dialog = page.locator("dialog");
+    const dialog = page.locator("dialog[open]");
     await expect(dialog).toBeVisible({ timeout: 5000 });
 
     // Phone block checkbox should NOT be visible
@@ -142,7 +142,7 @@ test.describe("Phone-based Blocking", () => {
     await blockButton.click();
 
     // Check the phone block checkbox
-    const dialog = page.locator("dialog");
+    const dialog = page.locator("dialog[open]");
     await expect(dialog).toBeVisible({ timeout: 5000 });
     const checkbox = page.locator('[data-testid="block-by-phone-checkbox"]');
     await checkbox.check();

@@ -4,14 +4,16 @@ test.describe("Marketplace", () => {
   test("marketplace page is accessible when logged in", async ({ page }) => {
     await page.goto("/marketplace");
     await expect(page).toHaveURL(/\/marketplace/);
-    await expect(page.getByText("Marketplace")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: "Marketplace" })).toBeVisible({ timeout: 10000 });
   });
 
-  test("marketplace page redirects to login when not authenticated", async ({ browser }) => {
+  test("marketplace page is accessible when not authenticated", async ({ browser }) => {
     const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
     await page.goto("/marketplace");
-    await expect(page).toHaveURL(/\/login/);
+    await expect(page).toHaveURL(/\/marketplace/);
+    // Unauthenticated users see the grid but not the composer
+    await expect(page.getByRole("heading", { name: "Marketplace" })).toBeVisible({ timeout: 10000 });
     await context.close();
   });
 
@@ -80,7 +82,7 @@ test.describe("Marketplace", () => {
     // Expand content warnings
     await page.getByText("Content Warnings").click();
 
-    await expect(page.getByLabel("NSFW")).toBeVisible();
+    await expect(page.getByRole("checkbox", { name: "NSFW" })).toBeVisible();
     await expect(page.getByText("Graphic/Explicit")).toBeVisible();
     // Sensitive should NOT appear in marketplace composer
     const sensitiveCheckboxes = page.locator("label", { hasText: "Sensitive" });

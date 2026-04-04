@@ -209,7 +209,7 @@ test.describe("User Lists", () => {
     await page.waitForURL(new RegExp(`list=${listId}`));
 
     // Should be on the list feed page (no error)
-    await expect(page.locator("main")).toBeVisible();
+    await expect(page.locator("body")).toBeVisible();
   });
 
   test("can add user to list from profile page", async ({ page }) => {

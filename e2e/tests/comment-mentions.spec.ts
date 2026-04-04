@@ -42,7 +42,7 @@ test.describe("Comment @ mention typeahead", () => {
     await mentionInput.pressSequentially(`@${TEST_USER_2.username.slice(0, 4)}`, { delay: 50 });
 
     // The mention dropdown should appear
-    await expect(page.getByTestId("mention-dropdown")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("typeahead-dropdown")).toBeVisible({ timeout: 5000 });
   });
 
   test("selecting a mention from dropdown inserts @username", async ({ page }) => {
@@ -62,7 +62,7 @@ test.describe("Comment @ mention typeahead", () => {
     await mentionInput.pressSequentially(`@${TEST_USER_2.username.slice(0, 4)}`, { delay: 50 });
 
     // Wait for dropdown
-    await expect(page.getByTestId("mention-dropdown")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("typeahead-dropdown")).toBeVisible({ timeout: 5000 });
 
     // Click the mention option
     const mentionOption = page.getByTestId(`mention-option-${TEST_USER_2.username}`);
@@ -73,7 +73,7 @@ test.describe("Comment @ mention typeahead", () => {
     await expect(mentionInput).toHaveValue(new RegExp(`@${TEST_USER_2.username}\\s`));
 
     // Dropdown should be closed
-    await expect(page.getByTestId("mention-dropdown")).not.toBeVisible();
+    await expect(page.getByTestId("typeahead-dropdown")).not.toBeVisible();
   });
 
   test("pressing Escape closes the mention dropdown", async ({ page }) => {
@@ -90,13 +90,13 @@ test.describe("Comment @ mention typeahead", () => {
 
     await mentionInput.click();
     await mentionInput.pressSequentially(`@${TEST_USER_2.username.slice(0, 4)}`, { delay: 50 });
-    await expect(page.getByTestId("mention-dropdown")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("typeahead-dropdown")).toBeVisible({ timeout: 5000 });
 
     // Press Escape
     await mentionInput.press("Escape");
 
     // Dropdown should close
-    await expect(page.getByTestId("mention-dropdown")).not.toBeVisible();
+    await expect(page.getByTestId("typeahead-dropdown")).not.toBeVisible();
   });
 
   test("no dropdown for text without @", async ({ page }) => {
@@ -116,6 +116,6 @@ test.describe("Comment @ mention typeahead", () => {
     await mentionInput.pressSequentially("hello world", { delay: 50 });
 
     // No dropdown should appear
-    await expect(page.getByTestId("mention-dropdown")).not.toBeVisible();
+    await expect(page.getByTestId("typeahead-dropdown")).not.toBeVisible();
   });
 });

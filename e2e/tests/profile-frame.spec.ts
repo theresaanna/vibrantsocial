@@ -111,8 +111,8 @@ test.describe("Profile Frame display", () => {
     await page.reload();
     await expect(page).toHaveURL(/\/e2e_testuser/);
 
-    // The frame image should be rendered (aria-hidden img with frame src)
-    const frameImg = page.locator('img[aria-hidden="true"][src*="neon-1"]');
+    // The frame image should be rendered on the main profile avatar (largest one)
+    const frameImg = page.locator('img[aria-hidden="true"][src*="neon-1"]').first();
     await expect(frameImg).toBeVisible({ timeout: 10000 });
   });
 });

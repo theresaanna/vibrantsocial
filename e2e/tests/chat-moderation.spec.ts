@@ -141,7 +141,7 @@ test.describe("Chat Moderation", () => {
 
     // Should see the abuse notification text
     await expect(
-      page.getByText("may be sending you abusive messages")
+      page.getByText("may be sending you abusive messages").first()
     ).toBeVisible({ timeout: 10000 });
 
     // Should see Report, Block, and Dismiss buttons
