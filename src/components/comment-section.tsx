@@ -52,7 +52,7 @@ export function CommentSection({
     return () => { cancelled = true; };
   }, [postId, initialComments]);
 
-  const { comments, setComments } = useComments(postId, loadedComments ?? []);
+  const { comments, setComments } = useComments(postId, loadedComments ?? [], currentUserId);
 
   // Report comment count changes to parent (PostCard)
   useEffect(() => {

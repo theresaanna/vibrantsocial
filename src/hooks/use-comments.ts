@@ -32,7 +32,7 @@ export interface CommentData {
   replies?: CommentData[];
 }
 
-export function useComments(postId: string, initialComments: CommentData[]) {
+export function useComments(postId: string, initialComments: CommentData[], currentUserId?: string) {
   const [comments, setComments] = useState<CommentData[]>(initialComments);
   const ablyReady = useAblyReady();
 
@@ -44,6 +44,11 @@ export function useComments(postId: string, initialComments: CommentData[]) {
   }, [initialComments]);
 
   const handleMessage = useCallback((event: InboundMessage) => {
+    // Skip "new" events from ourselves — optimistic update already handled it
+    if (event.name === "new" && currentUserId && event.data?.actorId === currentUserId) {
+      return;
+    }
+
     // Recursive helpers for deep comment trees
     function findComment(list: CommentData[], id: string): boolean {
       return list.some(
@@ -124,7 +129,7 @@ export function useComments(postId: string, initialComments: CommentData[]) {
       const data = event.data as { commentId: string; parentId: string | null };
       setComments((prev) => removeComment(prev, data.commentId));
     }
-  }, []);
+  }, [currentUserId]);
 
   useEffect(() => {
     if (!ablyReady) return;
