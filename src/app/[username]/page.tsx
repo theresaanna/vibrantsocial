@@ -154,8 +154,8 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           bool_or("isSensitive") as has_sensitive,
           bool_or("isNsfw") as has_nsfw,
           bool_or("isGraphicNudity") as has_graphic,
-          bool_or("marketplacePostId" IS NOT NULL) as has_marketplace
-        FROM "Post" WHERE "authorId" = ${user.id}
+          bool_or(EXISTS(SELECT 1 FROM "MarketplacePost" mp WHERE mp."postId" = p.id)) as has_marketplace
+        FROM "Post" p WHERE p."authorId" = ${user.id}
       `;
       const row = result[0];
       return {
