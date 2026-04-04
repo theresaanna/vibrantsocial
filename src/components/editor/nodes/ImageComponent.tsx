@@ -187,11 +187,13 @@ export default function ImageComponent({
   );
 
   const style: React.CSSProperties = {};
-  if (typeof imgSize.width === "number") style.width = `${imgSize.width}px`;
-  if (typeof imgSize.height === "number") style.height = `${imgSize.height}px`;
-  if (!isImageEditable) {
-    style.maxWidth = `${MAX_DISPLAY_PX}px`;
+  if (isImageEditable) {
+    if (typeof imgSize.width === "number") style.width = `${imgSize.width}px`;
+    if (typeof imgSize.height === "number") style.height = `${imgSize.height}px`;
+  } else {
+    style.maxWidth = `min(${MAX_DISPLAY_PX}px, 100%)`;
     style.maxHeight = `${MAX_DISPLAY_PX}px`;
+    style.height = "auto";
     style.cursor = "zoom-in";
   }
 
