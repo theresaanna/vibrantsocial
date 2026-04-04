@@ -142,6 +142,34 @@ export function extractMediaFromLexicalJson(jsonString: string): MediaItem[] {
   }
 }
 
+/**
+ * Walk the Lexical JSON tree and return all unique hashtag tag names.
+ */
+export function extractHashtagsFromLexicalJson(jsonString: string): string[] {
+  try {
+    const parsed = JSON.parse(jsonString);
+    const tags = new Set<string>();
+
+    function walk(nodes: LexicalJsonNode[]) {
+      for (const node of nodes) {
+        if (node.type === "hashtag" && typeof node.tagName === "string") {
+          tags.add(node.tagName);
+        }
+        if (node.children) {
+          walk(node.children);
+        }
+      }
+    }
+
+    if (parsed?.root?.children) {
+      walk(parsed.root.children);
+    }
+    return Array.from(tags);
+  } catch {
+    return [];
+  }
+}
+
 const YOUTUBE_RE = /^https?:\/\/(?:www\.)?(?:youtube\.com\/watch|youtu\.be\/)/i;
 
 /**

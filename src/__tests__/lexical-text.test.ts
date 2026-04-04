@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractTextFromLexicalJson } from "@/lib/lexical-text";
+import { extractTextFromLexicalJson, extractHashtagsFromLexicalJson } from "@/lib/lexical-text";
 
 function makeLexical(children: unknown[]) {
   return JSON.stringify({
@@ -211,5 +211,54 @@ describe("extractTextFromLexicalJson", () => {
       },
     ]);
     expect(extractTextFromLexicalJson(json)).toBe("linked text");
+  });
+});
+
+function makeHashtagNode(tagName: string) {
+  return { type: "hashtag", tagName, version: 1 };
+}
+
+describe("extractHashtagsFromLexicalJson", () => {
+  it("extracts hashtags from a paragraph", () => {
+    const json = makeLexical([
+      makeParagraph([
+        makeTextNode("hello "),
+        makeHashtagNode("gaming"),
+        makeTextNode(" world"),
+      ]),
+    ]);
+    expect(extractHashtagsFromLexicalJson(json)).toEqual(["gaming"]);
+  });
+
+  it("extracts multiple unique hashtags", () => {
+    const json = makeLexical([
+      makeParagraph([
+        makeHashtagNode("music"),
+        makeTextNode(" and "),
+        makeHashtagNode("art"),
+      ]),
+    ]);
+    expect(extractHashtagsFromLexicalJson(json)).toEqual(["music", "art"]);
+  });
+
+  it("deduplicates hashtags", () => {
+    const json = makeLexical([
+      makeParagraph([makeHashtagNode("gaming")]),
+      makeParagraph([makeHashtagNode("gaming")]),
+    ]);
+    expect(extractHashtagsFromLexicalJson(json)).toEqual(["gaming"]);
+  });
+
+  it("returns empty array for content without hashtags", () => {
+    const json = makeLexical([makeParagraph([makeTextNode("no tags here")])]);
+    expect(extractHashtagsFromLexicalJson(json)).toEqual([]);
+  });
+
+  it("returns empty array for invalid JSON", () => {
+    expect(extractHashtagsFromLexicalJson("not json")).toEqual([]);
+  });
+
+  it("returns empty array for empty string", () => {
+    expect(extractHashtagsFromLexicalJson("")).toEqual([]);
   });
 });

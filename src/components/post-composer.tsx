@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useActionState } from "react";
+import { useState, useEffect, useRef, useCallback, useActionState } from "react";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -30,7 +30,8 @@ import { ContentFlagsInfoModal } from "@/components/content-flags-info-modal";
 import { AudiencePicker } from "@/components/audience-picker";
 import { PremiumCrown } from "@/components/premium-crown";
 import { DraftPlugin, ClearDraftButton, clearDraft, type DraftSaveStatus } from "@/components/editor/plugins/DraftPlugin";
-import { extractFirstUrl } from "@/lib/lexical-text";
+import { extractFirstUrl, extractHashtagsFromLexicalJson } from "@/lib/lexical-text";
+import { normalizeTag } from "@/lib/tags";
 import { LinkPreviewCard } from "@/components/link-preview-card";
 
 function ClearOnSuccess({
@@ -82,6 +83,38 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, isAgeVerif
   const [previewDismissed, setPreviewDismissed] = useState(false);
   const [previewStatus, setPreviewStatus] = useState<"loading" | "loaded" | "empty">("loading");
   const previewDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevEditorHashtags = useRef<Set<string>>(new Set());
+
+  // Sync hashtags from editor into the tags field
+  useEffect(() => {
+    if (!editorJson) {
+      prevEditorHashtags.current = new Set();
+      return;
+    }
+    const currentHashtags = new Set(
+      extractHashtagsFromLexicalJson(editorJson).map(normalizeTag).filter(Boolean)
+    );
+    const prev = prevEditorHashtags.current;
+
+    // Tags newly added in the editor
+    const added = [...currentHashtags].filter((t) => !prev.has(t));
+    // Tags removed from the editor
+    const removed = [...prev].filter((t) => !currentHashtags.has(t));
+
+    if (added.length > 0 || removed.length > 0) {
+      setTags((prevTags) => {
+        let next = prevTags.filter((t) => !removed.includes(t));
+        for (const tag of added) {
+          if (!next.includes(tag)) {
+            next = [...next, tag];
+          }
+        }
+        return next;
+      });
+    }
+
+    prevEditorHashtags.current = currentHashtags;
+  }, [editorJson]);
 
   // Debounced URL extraction for live link preview
   useEffect(() => {
