@@ -41,8 +41,11 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const host = (await headers()).get("host") || "";
+  const hdrs = await headers();
+  const host = hdrs.get("host") || "";
   const isLinksSubdomain = host.startsWith("links.");
+  const pathname = hdrs.get("x-invoke-path") || hdrs.get("x-next-url") || "";
+  const isLinksPage = pathname.startsWith("/links/");
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -54,10 +57,10 @@ export default async function RootLayout({
         className={`${lexend.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
-          {!isLinksSubdomain && <VersionCheck />}
-          {!isLinksSubdomain && <Header />}
+          {!isLinksSubdomain && !isLinksPage && <VersionCheck />}
+          {!isLinksSubdomain && !isLinksPage && <Header />}
           {children}
-          {!isLinksSubdomain && <Footer />}
+          {!isLinksSubdomain && !isLinksPage && <Footer />}
         </Providers>
         <Analytics />
         <SpeedInsights />
