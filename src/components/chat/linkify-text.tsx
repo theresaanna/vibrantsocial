@@ -25,6 +25,17 @@ const COMBINED_REGEX = new RegExp(
 const DEFAULT_LINK_CLASS = "font-medium text-blue-600 dark:text-blue-400 hover:underline";
 const THEMED_LINK_STYLE: React.CSSProperties = { color: "var(--chat-link-color)" };
 
+const IMAGE_URL_RE = /\.(?:jpe?g|png|gif|webp|svg|heic|heif|avif|bmp|ico)(?:\?[^\s]*)?$/i;
+
+/** True when the URL path ends with a common image extension. */
+export function isImageUrl(url: string): boolean {
+  try {
+    return IMAGE_URL_RE.test(new URL(url).pathname);
+  } catch {
+    return IMAGE_URL_RE.test(url);
+  }
+}
+
 /**
  * Extract the first http/https URL from plain text.
  * Skips email addresses (e.g., user@example.com).
