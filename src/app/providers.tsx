@@ -25,12 +25,13 @@ export function useAblyReady() {
 
 // Presence + toast features that mount only when Ably is connected.
 // Separate component to avoid conditional hook calls in the parent.
+// ChannelProvider for PRESENCE_CHANNEL is in the parent tree.
 function AblyFeatures() {
   return (
-    <ChannelProvider channelName={PRESENCE_CHANNEL}>
+    <>
       <PresenceEntry />
       <ToastProvider />
-    </ChannelProvider>
+    </>
   );
 }
 
@@ -55,15 +56,18 @@ function AblyProviderWrapper({ children }: { children: React.ReactNode }) {
     }
   }, [session?.user?.id, ablyClient]);
 
-  // AblyProvider always wraps children so ably/react hooks work throughout
-  // the tree. The provider tree is stable — only the features toggle.
+  // AblyProvider + ChannelProvider always wrap children so ably/react hooks
+  // (useChannel, usePresenceListener, etc.) work throughout the tree.
+  // The tree structure is stable — only AblyFeatures toggles on/off.
   return (
     <AblyProvider client={ablyClient}>
       <AblyReadyContext.Provider value={isReady}>
         <CommentCountProvider>
-          {isReady ? <AblyFeatures /> : <Toaster position="bottom-right" />}
-          <CookieToast />
-          {children}
+          <ChannelProvider channelName={PRESENCE_CHANNEL}>
+            {isReady ? <AblyFeatures /> : <Toaster position="bottom-right" />}
+            <CookieToast />
+            {children}
+          </ChannelProvider>
         </CommentCountProvider>
       </AblyReadyContext.Provider>
     </AblyProvider>
