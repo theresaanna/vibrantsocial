@@ -7,11 +7,13 @@ import { TurnstileWidget } from "@/components/turnstile-widget";
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function SignupForm({ referralCode }: { referralCode?: string }) {
+export function SignupForm({ referralCode, serverError }: { referralCode?: string; serverError?: string }) {
   const [state, formAction, isPending] = useActionState(signup, {
     success: false,
     message: "",
   });
+
+  const errorMessage = state.message || serverError;
 
   const [usernameValue, setUsernameValue] = useState("");
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>("idle");
@@ -215,13 +217,9 @@ export function SignupForm({ referralCode }: { referralCode?: string }) {
         {isPending ? "Creating account..." : "Create Account"}
       </button>
 
-      {state.message && (
-        <p
-          className={`text-sm ${
-            state.success ? "text-green-600" : "text-red-600"
-          }`}
-        >
-          {state.message}
+      {errorMessage && (
+        <p className="text-sm text-red-600">
+          {errorMessage}
         </p>
       )}
     </form>
