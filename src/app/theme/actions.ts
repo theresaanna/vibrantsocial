@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { apiLimiter, isRateLimited } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { isValidHexColor, THEME_COLOR_FIELDS, isPresetTheme } from "@/lib/profile-themes";
+import { isValidHexColor, THEME_COLOR_FIELDS } from "@/lib/profile-themes";
 import { isValidPreset, parseJsonArray, clamp } from "@/lib/sparklefall-presets";
 import { isValidFontId, getFontById } from "@/lib/profile-fonts";
 import { checkAndExpirePremium } from "@/lib/premium";
@@ -49,8 +49,8 @@ export async function updateTheme(
     }
   }
 
-  // Non-premium users can only use preset themes, not custom colors
-  if (!isPremium && !isPresetTheme(themeColors)) {
+  // Non-premium users cannot save custom colors
+  if (!isPremium) {
     for (const field of THEME_COLOR_FIELDS) {
       themeColors[field] = null;
     }

@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import type { BackgroundDefinition, BgCategory } from "./profile-backgrounds";
+import type { BackgroundDefinition, BgCategory, BgDefaults } from "./profile-backgrounds";
 
 const SUPPORTED_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".svg", ".webp", ".gif"]);
 
@@ -36,6 +36,21 @@ const PATTERN_IDS = new Set([
   "tropical-leaves",
   "vintage-background",
 ]);
+
+/**
+ * Per-background display defaults. Add entries here for any background that
+ * needs settings different from its category default. Only the overridden
+ * fields are needed — the rest fall back to the category default.
+ *
+ * Category defaults:
+ *   pattern: { repeat: "repeat", size: "auto", position: "top left", attachment: "scroll" }
+ *   photo:   { repeat: "no-repeat", size: "contain", position: "center", attachment: "scroll" }
+ */
+const BACKGROUND_DEFAULTS: Record<string, BgDefaults> = {
+  // Example:
+  // "skulls-pattern": { size: "cover", position: "center" },
+  // "palm-leaves-background-10-b-SH_generated": { size: "cover", attachment: "fixed" },
+};
 
 /**
  * Premium backgrounds that are static/panoramic photos rather than tiling patterns.
@@ -77,12 +92,14 @@ function scanBackgroundDir(
           : PATTERN_IDS.has(id)
             ? "pattern"
             : "photo";
+        const defaults = BACKGROUND_DEFAULTS[id];
         return {
           id,
           name: fileNameToDisplayName(f),
           src: `${urlPrefix}/${f}`,
           thumbSrc: hasThumb ? `${urlPrefix}/thumbs/${id}.webp` : `${urlPrefix}/${f}`,
           category,
+          ...(defaults ? { defaults } : {}),
           ...(options?.premiumOnly ? { premiumOnly: true } : {}),
         };
       });

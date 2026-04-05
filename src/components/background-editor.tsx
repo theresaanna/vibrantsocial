@@ -44,6 +44,16 @@ interface BackgroundEditorProps {
     size: string;
     position: string;
   }) => void;
+  /** Fires when a new background image is selected (not on setting changes). */
+  onBackgroundSelected?: (imageUrl: string | null) => void;
+  /** Background settings pushed from parent (e.g. theme import). */
+  externalBackground?: {
+    image: string | null;
+    repeat: string;
+    attachment: string;
+    size: string;
+    position: string;
+  } | null;
 }
 
 function BackgroundGrid({
@@ -130,6 +140,8 @@ export function BackgroundEditor({
   onContainerOpacityChange,
   onChange,
   onBackgroundChange,
+  onBackgroundSelected,
+  externalBackground = null,
 }: BackgroundEditorProps) {
   const [bgImage, setBgImage] = useState(initialBackground.profileBgImage);
   const [bgRepeat, setBgRepeat] = useState(initialBackground.profileBgRepeat ?? "no-repeat");
@@ -141,6 +153,17 @@ export function BackgroundEditor({
   const [isOpen, setIsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const contentId = useId();
+
+  // Sync background settings pushed from parent (e.g. theme import)
+  useEffect(() => {
+    if (externalBackground) {
+      setBgImage(externalBackground.image);
+      setBgRepeat(externalBackground.repeat);
+      setBgAttachment(externalBackground.attachment);
+      setBgSize(externalBackground.size);
+      setBgPosition(externalBackground.position);
+    }
+  }, [externalBackground]);
 
   // Notify parent of live background changes for real-time preview
   useEffect(() => {
@@ -173,8 +196,9 @@ export function BackgroundEditor({
       }
       setError(null);
       onChange?.();
+      onBackgroundSelected?.(bg?.src ?? null);
     },
-    [onChange]
+    [onChange, onBackgroundSelected]
   );
 
   const handleUpload = useCallback(
@@ -202,6 +226,7 @@ export function BackgroundEditor({
         const { url } = await res.json();
         setBgImage(url);
         onChange?.();
+        onBackgroundSelected?.(url);
       } catch {
         setError("Upload failed");
       } finally {
