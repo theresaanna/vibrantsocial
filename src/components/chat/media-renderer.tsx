@@ -60,11 +60,11 @@ export function MediaRenderer({
 
   if (mediaType === "image") {
     return (
-      <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="block">
+      <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="block max-w-[300px]">
         <img
           src={mediaUrl}
           alt={mediaFileName ?? "Image"}
-          className="max-w-full rounded-xl"
+          className="h-auto max-h-[400px] w-full rounded-xl object-cover"
           loading="lazy"
         />
       </a>
@@ -73,14 +73,16 @@ export function MediaRenderer({
 
   if (mediaType === "video") {
     return (
-      <video
-        src={mediaUrl}
-        controls
-        preload="metadata"
-        className="max-w-full rounded-xl"
-      >
-        Your browser does not support video playback.
-      </video>
+      <div className="max-w-[300px]" style={{ aspectRatio: "16/9" }}>
+        <video
+          src={mediaUrl}
+          controls
+          preload="metadata"
+          className="h-full w-full rounded-xl object-contain"
+        >
+          Your browser does not support video playback.
+        </video>
+      </div>
     );
   }
 

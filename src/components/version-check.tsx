@@ -8,5 +8,6 @@ export function VersionCheck() {
 
   if (!hasUpdate) return null;
 
+  // UpdateBanner handles its own show/hide animation internally
   return <UpdateBanner />;
 }

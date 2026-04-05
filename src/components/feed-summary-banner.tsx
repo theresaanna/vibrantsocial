@@ -4,23 +4,25 @@ import { useState, useEffect, useRef } from "react";
 import {
   fetchFeedSummary,
   generateFeedSummaryOnDemand,
+  type FeedSummaryResult,
 } from "@/app/feed/summary-actions";
 
 interface FeedSummaryBannerProps {
   lastSeenFeedAt: string;
+  initialData?: FeedSummaryResult;
 }
 
-export function FeedSummaryBanner({ lastSeenFeedAt }: FeedSummaryBannerProps) {
+export function FeedSummaryBanner({ lastSeenFeedAt, initialData }: FeedSummaryBannerProps) {
   const [dismissed, setDismissed] = useState(false);
-  const [summary, setSummary] = useState<string | null>(null);
-  const [checked, setChecked] = useState(false);
+  const [summary, setSummary] = useState<string | null>(initialData?.summary ?? null);
+  const [checked, setChecked] = useState(!!initialData);
   const [generating, setGenerating] = useState(false);
-  const [tooMany, setTooMany] = useState(false);
-  const [missedCount, setMissedCount] = useState(0);
-  const fetchedRef = useRef(false);
+  const [tooMany, setTooMany] = useState(initialData?.tooMany ?? false);
+  const [missedCount, setMissedCount] = useState(initialData?.missedCount ?? 0);
+  const fetchedRef = useRef(!!initialData);
 
   useEffect(() => {
-    // Guard against double-fetch from StrictMode or component remounts
+    // Skip client-side fetch if server already provided the data
     if (fetchedRef.current) return;
     fetchedRef.current = true;
 
@@ -47,12 +49,17 @@ export function FeedSummaryBanner({ lastSeenFeedAt }: FeedSummaryBannerProps) {
     }
   }
 
-  // Don't render anything until the initial check completes
-  if (!checked) return null;
-  if (dismissed) return null;
-  if (!summary && missedCount === 0) return null;
+  const showBanner = checked && !dismissed && (!!summary || missedCount > 0);
 
   return (
+    <div
+      className={`grid transition-all duration-300 ease-out ${
+        showBanner
+          ? "grid-rows-[1fr] opacity-100"
+          : "grid-rows-[0fr] opacity-0"
+      }`}
+    >
+    <div className="overflow-hidden">
     <div className="mb-4 flex items-start gap-3 rounded-2xl bg-zinc-50 p-4 shadow-sm dark:bg-zinc-800">
       <div className="flex-1 text-sm text-zinc-700 dark:text-zinc-300">
         <p className="font-medium text-zinc-900 dark:text-zinc-100">
@@ -110,6 +117,8 @@ export function FeedSummaryBanner({ lastSeenFeedAt }: FeedSummaryBannerProps) {
           />
         </svg>
       </button>
+    </div>
+    </div>
     </div>
   );
 }

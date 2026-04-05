@@ -9,6 +9,7 @@ import { FeedList } from "@/components/feed-list";
 import { fetchSinglePost, fetchNewFeedItems } from "@/app/feed/feed-actions";
 import { fetchNewListFeedItems } from "@/app/lists/actions";
 import { FeedSummaryBanner } from "@/components/feed-summary-banner";
+import type { FeedSummaryResult } from "@/app/feed/summary-actions";
 import { FriendsStatusesWidget } from "@/components/friends-statuses-widget";
 import { FeedViewToggleWrapper } from "@/components/feed-view-toggle-wrapper";
 import { MediaFeedClientContent } from "@/components/media-feed-client-content";
@@ -36,6 +37,7 @@ interface FeedClientProps {
   isPremium: boolean;
   listId?: string;
   lastSeenFeedAt?: string | null;
+  initialSummaryData?: FeedSummaryResult | null;
   activeView?: FeedView;
   fetchPage?: (cursor: string) => Promise<{ items: FeedItem[]; hasMore: boolean }>;
   friendStatuses?: FriendStatusData[];
@@ -71,6 +73,7 @@ export function FeedClient({
   isPremium,
   listId,
   lastSeenFeedAt,
+  initialSummaryData,
   activeView = "posts",
   fetchPage,
   friendStatuses = [],
@@ -147,7 +150,7 @@ export function FeedClient({
       <AddToHomeBanner />
       <AddEmailBanner hasEmail={hasEmail} />
       {!listId && lastSeenFeedAt && (
-        <FeedSummaryBanner lastSeenFeedAt={lastSeenFeedAt} />
+        <FeedSummaryBanner lastSeenFeedAt={lastSeenFeedAt} initialData={initialSummaryData ?? undefined} />
       )}
       {!listId && (
         <FriendsStatusesWidget
@@ -156,20 +159,28 @@ export function FeedClient({
           initialOwnStatus={initialOwnStatus}
         />
       )}
-      {!listId && activeView === "posts" && (
-        <div className="mb-4 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 dark:border-indigo-800 dark:bg-indigo-950/50">
-          <p className="text-sm text-indigo-800 dark:text-indigo-200">
-            The post composer has moved!{" "}
-            <a
-              href="/compose"
-              className="font-medium underline hover:text-indigo-600 dark:hover:text-indigo-300"
-            >
-              Go to Compose
-            </a>{" "}
-            to create a new post.
-          </p>
+      <div
+        className={`grid transition-all duration-300 ease-out ${
+          !listId && activeView === "posts"
+            ? "grid-rows-[1fr] opacity-100"
+            : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className="mb-4 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 dark:border-indigo-800 dark:bg-indigo-950/50">
+            <p className="text-sm text-indigo-800 dark:text-indigo-200">
+              The post composer has moved!{" "}
+              <a
+                href="/compose"
+                className="font-medium underline hover:text-indigo-600 dark:hover:text-indigo-300"
+              >
+                Go to Compose
+              </a>{" "}
+              to create a new post.
+            </p>
+          </div>
         </div>
-      )}
+      </div>
       {!listId && (
         <FeedViewToggleWrapper activeView={activeView} />
       )}

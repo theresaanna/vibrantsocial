@@ -202,11 +202,16 @@ export function NotificationBell({
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
-        {unreadCount > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 z-10 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-500 px-1 text-[10px] font-medium text-white">
-            {unreadCount > 99 ? "99+" : unreadCount}
-          </span>
-        )}
+        <span
+          className={`absolute -right-1.5 -top-1.5 z-10 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium transition-opacity ${
+            unreadCount > 0
+              ? "bg-blue-500 text-white opacity-100"
+              : "pointer-events-none opacity-0"
+          }`}
+          aria-hidden={unreadCount === 0}
+        >
+          {unreadCount > 0 ? (unreadCount > 99 ? "99+" : unreadCount) : "0"}
+        </span>
       </button>
       </Tooltip>
 

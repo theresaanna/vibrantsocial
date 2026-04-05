@@ -35,12 +35,14 @@ export function LinkPreviewCard({ url, onLoadChange }: LinkPreviewCardProps) {
   if (loading) {
     return (
       <div className="mt-3 animate-pulse rounded-lg border border-zinc-200 dark:border-zinc-700">
-        <div className="flex gap-3 p-3">
-          <div className="h-16 w-16 flex-shrink-0 rounded bg-zinc-200 dark:bg-zinc-700" />
-          <div className="flex-1 space-y-2 py-1">
-            <div className="h-3 w-3/4 rounded bg-zinc-200 dark:bg-zinc-700" />
-            <div className="h-3 w-1/2 rounded bg-zinc-200 dark:bg-zinc-700" />
+        <div className="h-40 w-full rounded-t-lg bg-zinc-200 sm:h-48 dark:bg-zinc-700" />
+        <div className="p-3">
+          <div className="flex items-center gap-1.5">
+            <div className="h-4 w-4 rounded-sm bg-zinc-200 dark:bg-zinc-700" />
+            <div className="h-3 w-24 rounded bg-zinc-200 dark:bg-zinc-700" />
           </div>
+          <div className="mt-2 h-4 w-3/4 rounded bg-zinc-200 dark:bg-zinc-700" />
+          <div className="mt-1.5 h-3 w-full rounded bg-zinc-200 dark:bg-zinc-700" />
         </div>
       </div>
     );
@@ -84,6 +86,8 @@ export function LinkPreviewCard({ url, onLoadChange }: LinkPreviewCardProps) {
             <img
               src={data.favicon}
               alt=""
+              width={16}
+              height={16}
               className="h-4 w-4 rounded-sm"
               loading="lazy"
               onError={(e) => {
