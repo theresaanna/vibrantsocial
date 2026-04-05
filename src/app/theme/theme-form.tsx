@@ -15,6 +15,16 @@ import { ProfileSparklefall } from "@/components/profile-sparklefall";
 import { toast } from "sonner";
 import { type ThemeExport, validateThemeExport } from "@/lib/theme-export";
 
+/** Check if a URL is hosted on Vercel Blob storage by parsing its hostname. */
+function isVercelBlobUrl(url: string): boolean {
+  try {
+    const { hostname } = new URL(url);
+    return hostname === "blob.vercel-storage.com" || hostname.endsWith(".public.blob.vercel-storage.com");
+  } catch {
+    return false;
+  }
+}
+
 interface ThemeFormProps {
   user: {
     username: string | null;
@@ -182,7 +192,7 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
     let imageData: string | undefined;
 
     // For custom uploaded backgrounds, embed the image as base64
-    if (bgImageUrl && bgImageUrl.includes("blob.vercel-storage.com")) {
+    if (bgImageUrl && isVercelBlobUrl(bgImageUrl)) {
       try {
         const res = await fetch(bgImageUrl);
         const blob = await res.blob();
@@ -268,7 +278,7 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
             toast("Could not upload background image. Colors applied.", { duration: 5000 });
             resolvedBgUrl = null;
           }
-        } else if (resolvedBgUrl && resolvedBgUrl.includes("blob.vercel-storage.com")) {
+        } else if (resolvedBgUrl && isVercelBlobUrl(resolvedBgUrl)) {
           // Bare blob URL with no embedded data — can't use it
           toast("Background image can't be imported without embedded data. Colors applied.", { duration: 5000 });
           resolvedBgUrl = null;
