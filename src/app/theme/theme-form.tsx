@@ -92,6 +92,11 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
     }
   }, [isPending, state]);
 
+  const handleFormSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    formAction(new FormData(e.currentTarget));
+  }, [formAction]);
+
   const handleSave = useCallback(() => {
     formRef.current?.requestSubmit();
   }, []);
@@ -177,7 +182,7 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
 
           <form
             ref={formRef}
-            action={formAction}
+            onSubmit={handleFormSubmit}
             className="space-y-4"
           >
             <input type="hidden" name="usernameFont" value={usernameFont ?? ""} />
