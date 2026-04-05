@@ -656,8 +656,8 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                         @{user.username}
                       </p>
                       {user.linksPageEnabled && blockStatus === "none" && (
-                        <Link
-                          href={`/links/${user.username}`}
+                        <a
+                          href={`https://links.vibrantsocial.app/${user.username}`}
                           className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors ${
                             hasCustomTheme
                               ? "profile-text-secondary"
@@ -673,7 +673,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                             <path fillRule="evenodd" d="M8.914 6.025a.75.75 0 0 1 1.06 0 3.5 3.5 0 0 1 0 4.95l-2 2a3.5 3.5 0 0 1-5.396-4.402.75.75 0 0 1 1.251.827 2 2 0 0 0 2.632 2.989l.07-.036.039-.02 2-2a2 2 0 0 0 0-2.828.75.75 0 0 1-.656-1.48Zm-1.828 3.95a.75.75 0 0 1-1.06 0 3.5 3.5 0 0 1 0-4.95l2-2a3.5 3.5 0 0 1 5.396 4.402.75.75 0 0 1-1.251-.827 2 2 0 0 0-2.632-2.989l-.07.036-.039.02-2 2a2 2 0 0 0 0 2.828.75.75 0 0 1 .656 1.48Z" clipRule="evenodd" />
                           </svg>
                           Links
-                        </Link>
+                        </a>
                       )}
                     </div>}
                   </div>
