@@ -2,60 +2,71 @@
 
 import { SessionProvider, useSession } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
-import { useEffect, useRef, useState, lazy, Suspense } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AblyProvider, ChannelProvider, usePresence } from "ably/react";
+import { getAblyRealtimeClient } from "@/lib/ably";
 import { Toaster } from "sonner";
 import { CookieToast } from "@/components/cookie-toast";
 import { CommentCountProvider } from "@/hooks/use-comment-counts";
+import { ToastProvider } from "@/components/toast-provider";
 import { AblyReadyContext } from "@/lib/ably-ready-context";
 
 // Re-export so existing imports from "@/app/providers" keep working.
 export { useAblyReady } from "@/lib/ably-ready-context";
 
-// Lazily import the Ably wrapper so the Ably SDK (~50KB gzipped)
-// is code-split. It only loads once the user has a session.
-const LazyAblyInner = lazy(() => import("@/app/ably-provider-wrapper"));
+const PRESENCE_CHANNEL = "presence:global";
+
+function PresenceEntry() {
+  usePresence(PRESENCE_CHANNEL, { status: "online" });
+  return null;
+}
+
+function AblyFeatures() {
+  return (
+    <>
+      <PresenceEntry />
+      <ToastProvider />
+    </>
+  );
+}
 
 /**
- * Wrapper that renders the full Ably provider tree only for authenticated
- * users, deferring the Ably SDK bundle load. For logged-out visitors,
- * children render immediately without any Ably overhead.
+ * Manages the Ably realtime connection for authenticated users.
+ *
+ * The child tree is always rendered inside a **stable** wrapper
+ * (`AblyProvider → AblyReadyContext → Toaster → CookieToast →
+ * CommentCountProvider`) so that no remounts occur when the connection
+ * status changes.  For logged-out visitors Ably stays disconnected and
+ * `useAblyReady()` returns false.
  */
 function AblyProviderWrapper({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
-  const [shouldLoadAbly, setShouldLoadAbly] = useState(false);
-  const checkedRef = useRef(false);
+  const [ablyClient] = useState(() => getAblyRealtimeClient());
+  const [isReady, setIsReady] = useState(false);
+  const connectedRef = useRef(false);
 
   useEffect(() => {
-    // Only load Ably once we know the user is authenticated
-    if (!checkedRef.current && status !== "loading" && session?.user?.id) {
-      checkedRef.current = true;
-      setShouldLoadAbly(true);
+    if (
+      !connectedRef.current &&
+      status !== "loading" &&
+      session?.user?.id
+    ) {
+      connectedRef.current = true;
+      ablyClient.connect();
+      setIsReady(true);
     }
-  }, [session?.user?.id, status]);
+  }, [ablyClient, session?.user?.id, status]);
 
-  if (shouldLoadAbly) {
-    return (
-      <Suspense
-        fallback={
-          <>
-            <Toaster position="bottom-right" />
-            <CookieToast />
-            <CommentCountProvider>{children}</CommentCountProvider>
-          </>
-        }
-      >
-        <LazyAblyInner>{children}</LazyAblyInner>
-      </Suspense>
-    );
-  }
-
-  // Logged-out or still loading session — render children without Ably
   return (
-    <AblyReadyContext.Provider value={false}>
-      <Toaster position="bottom-right" />
-      <CookieToast />
-      <CommentCountProvider>{children}</CommentCountProvider>
-    </AblyReadyContext.Provider>
+    <AblyProvider client={ablyClient}>
+      <AblyReadyContext.Provider value={isReady}>
+        <ChannelProvider channelName={PRESENCE_CHANNEL}>
+          {isReady ? <AblyFeatures /> : <Toaster position="bottom-right" />}
+          <CookieToast />
+          <CommentCountProvider>{children}</CommentCountProvider>
+        </ChannelProvider>
+      </AblyReadyContext.Provider>
+    </AblyProvider>
   );
 }
 

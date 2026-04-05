@@ -16,6 +16,18 @@ vi.mock("next-themes", () => ({
   ),
 }));
 
+// Mock ably/react — AblyProvider, ChannelProvider, and usePresence
+vi.mock("ably/react", () => ({
+  AblyProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  ChannelProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  usePresence: () => [null, vi.fn()],
+}));
+
+// Mock ably client
+vi.mock("@/lib/ably", () => ({
+  getAblyRealtimeClient: () => ({ connect: vi.fn() }),
+}));
+
 // Mock sonner
 vi.mock("sonner", () => ({
   Toaster: () => <div data-testid="toaster" />,
@@ -32,6 +44,11 @@ vi.mock("@/hooks/use-comment-counts", () => ({
   CommentCountProvider: ({ children }: { children: React.ReactNode }) => (
     <>{children}</>
   ),
+}));
+
+// Mock toast provider
+vi.mock("@/components/toast-provider", () => ({
+  ToastProvider: () => null,
 }));
 
 import { Providers, useAblyReady } from "@/app/providers";
