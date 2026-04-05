@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NsfwToggle } from "@/components/nsfw-toggle";
 import { HeaderAuth } from "@/components/header-auth";
 
 /**
@@ -45,6 +46,7 @@ export function Header() {
             />
           </Link>
           <ThemeToggle />
+          <NsfwToggle />
         </div>
 
         {/* Auth-dependent parts stream in via Suspense */}

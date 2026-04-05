@@ -6,11 +6,9 @@ import {
   getRecentNotifications,
   getLinkedAccountNotificationCounts,
 } from "@/app/notifications/actions";
-import { getNsfwContentSetting } from "@/app/profile/nsfw-actions";
 import { ChatNav } from "@/components/chat-nav";
 import { DynamicFavicon } from "@/components/dynamic-favicon";
 import { NotificationBell } from "@/components/notification-bell";
-import { NsfwToggle } from "@/components/nsfw-toggle";
 import { NavLinks } from "@/components/nav-links";
 import { AccountSwitcherWrapper } from "@/components/account-switcher-wrapper";
 import { loadLinkedAccounts } from "@/lib/account-linking-db";
@@ -40,7 +38,6 @@ export async function HeaderAuth() {
     recentNotifications,
     linkedAccounts,
     linkedAccountNotifCounts,
-    showNsfwContent,
   ] = await Promise.all([
     getConversations(),
     getUnreadNotificationCount(),
@@ -49,7 +46,6 @@ export async function HeaderAuth() {
       ? loadLinkedAccounts(session.user.id)
       : Promise.resolve([]),
     getLinkedAccountNotificationCounts(),
-    getNsfwContentSetting(),
   ]);
 
   return (
@@ -59,9 +55,8 @@ export async function HeaderAuth() {
         <NavLinks username={session.user.username} />
       </div>
 
-      {/* Action icons — NSFW toggle, chat, account switch, notifications */}
+      {/* Action icons — chat, account switch, notifications */}
       <div className="order-2 ml-auto flex shrink-0 items-center gap-1 md:order-3 md:ml-0">
-        <NsfwToggle initialEnabled={showNsfwContent} />
         <DynamicFavicon
           initialNotifCount={unreadNotifications}
           initialChatCount={conversations.reduce(

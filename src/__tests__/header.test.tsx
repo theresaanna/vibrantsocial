@@ -28,6 +28,10 @@ vi.mock("@/components/theme-toggle", () => ({
   ThemeToggle: () => <div data-testid="theme-toggle">Toggle</div>,
 }));
 
+vi.mock("@/components/nsfw-toggle", () => ({
+  NsfwToggle: () => <div data-testid="nsfw-toggle">NSFW</div>,
+}));
+
 // HeaderAuth is async and wrapped in Suspense — mock it for Header tests
 vi.mock("@/components/header-auth", () => ({
   HeaderAuth: () => <div data-testid="header-auth">Auth Content</div>,

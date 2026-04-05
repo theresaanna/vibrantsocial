@@ -20,9 +20,6 @@ vi.mock("@/lib/account-linking-db", () => ({
   loadLinkedAccounts: vi.fn().mockResolvedValue([]),
 }));
 
-vi.mock("@/app/profile/nsfw-actions", () => ({
-  getNsfwContentSetting: vi.fn().mockResolvedValue(false),
-}));
 
 vi.mock("next/link", () => ({
   default: ({
@@ -49,10 +46,6 @@ vi.mock("@/components/notification-bell", () => ({
 
 vi.mock("@/components/dynamic-favicon", () => ({
   DynamicFavicon: () => null,
-}));
-
-vi.mock("@/components/nsfw-toggle", () => ({
-  NsfwToggle: () => <div data-testid="nsfw-toggle">NSFW</div>,
 }));
 
 vi.mock("@/components/account-switcher-wrapper", () => ({

@@ -5,8 +5,16 @@ import { NsfwToggle } from "@/components/nsfw-toggle";
 const mockToggleNsfwContent = vi.fn();
 const mockRefresh = vi.fn();
 
+vi.mock("next-auth/react", () => ({
+  useSession: () => ({
+    data: { user: { id: "u1" } },
+    status: "authenticated",
+  }),
+}));
+
 vi.mock("@/app/profile/nsfw-actions", () => ({
   toggleNsfwContent: () => mockToggleNsfwContent(),
+  getNsfwContentSetting: vi.fn().mockResolvedValue(false),
 }));
 
 vi.mock("next/navigation", () => ({
