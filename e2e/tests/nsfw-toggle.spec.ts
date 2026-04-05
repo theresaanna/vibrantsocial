@@ -56,13 +56,15 @@ test.describe("NSFW Toggle in Navigation", () => {
       timeout: 10000,
     });
 
-    // Navigate to communities
+    // Navigate to communities — the toggle re-mounts and re-fetches its state
     await page.goto("/communities");
     const toggleAfterNav = page.getByTestId("nsfw-toggle");
-    await expect(toggleAfterNav).toBeVisible({ timeout: 10000 });
+    await expect(toggleAfterNav).toBeVisible({ timeout: 15000 });
 
-    // State should persist
-    await expect(toggleAfterNav).toHaveAttribute("aria-pressed", newState);
+    // State should persist (fetched from server after re-mount)
+    await expect(toggleAfterNav).toHaveAttribute("aria-pressed", newState, {
+      timeout: 10000,
+    });
 
     // Toggle back to original state to clean up
     await toggleAfterNav.click();
@@ -90,11 +92,12 @@ test.describe("NSFW Toggle in Navigation", () => {
 
     await page.goto("/");
 
-    // The toggle should not be present
+    // Wait for the page to settle — the header should be visible
+    await expect(page.locator("header")).toBeVisible({ timeout: 10000 });
+
+    // The toggle should not be present for logged-out users
     const toggle = page.getByTestId("nsfw-toggle");
-    await expect(toggle).not.toBeVisible({ timeout: 5000 }).catch(() => {
-      // Element may not exist at all, which is expected
-    });
+    await expect(toggle).toHaveCount(0, { timeout: 5000 });
 
     await context.close();
   });
