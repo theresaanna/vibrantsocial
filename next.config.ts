@@ -18,6 +18,15 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
     ],
   },
+  rewrites: async () => ({
+    beforeFiles: [
+      {
+        source: "/:username",
+        has: [{ type: "host", value: "links.(?<domain>.*)" }],
+        destination: "/links/:username",
+      },
+    ],
+  }),
   headers: async () => [
     {
       // Security headers for all routes
