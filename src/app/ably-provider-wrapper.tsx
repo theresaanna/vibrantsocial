@@ -3,7 +3,6 @@
 import { AblyProvider, ChannelProvider, usePresence } from "ably/react";
 import { getAblyRealtimeClient } from "@/lib/ably";
 import { AblyReadyContext } from "@/lib/ably-ready-context";
-import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import { ToastProvider } from "@/components/toast-provider";
 import { Toaster } from "sonner";
@@ -28,26 +27,26 @@ function AblyFeatures() {
 }
 
 /**
- * Ably provider wrapper — dynamically imported so the Ably SDK
+ * Ably provider wrapper — lazily imported so the Ably SDK
  * is not in the initial JS bundle for logged-out visitors.
+ * Only mounted when the parent has confirmed an authenticated session.
  */
 export default function AblyProviderWrapper({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { data: session } = useSession();
   const [ablyClient] = useState(() => getAblyRealtimeClient());
   const connectedRef = useRef(false);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    if (session?.user?.id && !connectedRef.current) {
+    if (!connectedRef.current) {
       connectedRef.current = true;
       ablyClient.connect();
       setIsReady(true);
     }
-  }, [session?.user?.id, ablyClient]);
+  }, [ablyClient]);
 
   return (
     <AblyProvider client={ablyClient}>
