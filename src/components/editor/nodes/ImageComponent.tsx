@@ -196,16 +196,18 @@ export default function ImageComponent({
   }, []);
 
   const style: React.CSSProperties = {};
-  if (typeof imgSize.width === "number") style.width = `${imgSize.width}px`;
-  if (typeof imgSize.height === "number") style.height = `${imgSize.height}px`;
+  if (isImageEditable) {
+    if (typeof imgSize.width === "number") style.width = `${imgSize.width}px`;
+    if (typeof imgSize.height === "number") style.height = `${imgSize.height}px`;
+  } else {
+    style.maxWidth = `min(${MAX_DISPLAY_PX}px, 100%)`;
+    style.maxHeight = `${MAX_DISPLAY_PX}px`;
+    style.height = "auto";
+    style.cursor = "zoom-in";
+  }
   // When dimensions are "inherit", use the natural aspect ratio to prevent CLS
   if (imgSize.width === "inherit" && imgSize.height === "inherit" && naturalRatio) {
     style.aspectRatio = `${naturalRatio}`;
-  }
-  if (!isImageEditable) {
-    style.maxWidth = `${MAX_DISPLAY_PX}px`;
-    style.maxHeight = `${MAX_DISPLAY_PX}px`;
-    style.cursor = "zoom-in";
   }
 
   const getRenderedDimensions = () => {

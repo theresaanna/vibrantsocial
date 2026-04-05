@@ -601,7 +601,7 @@ function CommentItem({
                   src={comment.imageUrl}
                   alt="Comment image"
                   className="mt-1 cursor-zoom-in rounded-lg"
-                  style={{ maxWidth: "1000px", maxHeight: "1000px" }}
+                  style={{ maxWidth: "min(1000px, 100%)", maxHeight: "1000px", height: "auto" }}
                   onClick={() => setShowImageOverlay(true)}
                   data-testid="comment-image"
                 />
