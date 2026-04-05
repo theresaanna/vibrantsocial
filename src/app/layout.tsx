@@ -12,7 +12,7 @@ import { VersionCheck } from "@/components/version-check";
 const lexend = Lexend({
   variable: "--font-lexend",
   subsets: ["latin"],
-  weight: ["100", "200", "300", "400"],
+  weight: ["300", "400"],
 });
 
 const geistMono = Geist_Mono({
@@ -49,6 +49,11 @@ export default async function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* DNS prefetch for external services used after initial paint */}
+        <link rel="dns-prefetch" href="https://realtime.ably.io" />
+        <link rel="dns-prefetch" href="https://rest.ably.io" />
+        <link rel="dns-prefetch" href="https://va.vercel-scripts.com" />
+        <link rel="dns-prefetch" href="https://lh3.googleusercontent.com" />
       </head>
       <body
         className={`${lexend.variable} ${geistMono.variable} antialiased`}

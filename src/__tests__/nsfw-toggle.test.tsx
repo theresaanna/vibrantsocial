@@ -4,9 +4,18 @@ import { NsfwToggle } from "@/components/nsfw-toggle";
 
 const mockToggleNsfwContent = vi.fn();
 const mockRefresh = vi.fn();
+const mockUseSession = vi.fn().mockReturnValue({
+  data: { user: { id: "u1" } },
+  status: "authenticated",
+});
+
+vi.mock("next-auth/react", () => ({
+  useSession: (...args: unknown[]) => mockUseSession(...args),
+}));
 
 vi.mock("@/app/profile/nsfw-actions", () => ({
-  toggleNsfwContent: () => mockToggleNsfwContent(),
+  toggleNsfwContent: (...args: unknown[]) => mockToggleNsfwContent(...args),
+  getNsfwContentSetting: vi.fn().mockResolvedValue(false),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -108,5 +117,19 @@ describe("NsfwToggle", () => {
 
     const line = svg?.querySelector("line");
     expect(line).toBeTruthy();
+  });
+
+  it("returns null while session is loading", () => {
+    mockUseSession.mockReturnValue({ data: null, status: "loading" });
+
+    const { container } = render(<NsfwToggle initialEnabled={false} />);
+    expect(container.innerHTML).toBe("");
+  });
+
+  it("returns null for unauthenticated users", () => {
+    mockUseSession.mockReturnValue({ data: null, status: "unauthenticated" });
+
+    const { container } = render(<NsfwToggle initialEnabled={false} />);
+    expect(container.innerHTML).toBe("");
   });
 });

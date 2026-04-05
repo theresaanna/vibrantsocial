@@ -1,18 +1,45 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { toggleNsfwContent } from "@/app/profile/nsfw-actions";
+import {
+  toggleNsfwContent,
+  getNsfwContentSetting,
+} from "@/app/profile/nsfw-actions";
 import { Tooltip } from "@/components/tooltip";
 
 interface NsfwToggleProps {
-  initialEnabled: boolean;
+  /** When provided, skips the client-side fetch. */
+  initialEnabled?: boolean;
 }
 
-export function NsfwToggle({ initialEnabled }: NsfwToggleProps) {
-  const [enabled, setEnabled] = useState(initialEnabled);
+/**
+ * Self-initialising NSFW toggle. Lives in the synchronous Header shell so
+ * there is always exactly one instance in the DOM (no Suspense duplication).
+ * If `initialEnabled` is omitted the component fetches its own state on mount.
+ */
+export function NsfwToggle({ initialEnabled }: NsfwToggleProps = {}) {
+  const { data: session, status } = useSession();
+  const [enabled, setEnabled] = useState(initialEnabled ?? false);
+  const [loaded, setLoaded] = useState(initialEnabled !== undefined);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+
+  // Fetch initial NSFW setting when no server-provided value
+  useEffect(() => {
+    if (initialEnabled === undefined && status === "authenticated") {
+      getNsfwContentSetting().then((value) => {
+        setEnabled(value);
+        setLoaded(true);
+      });
+    }
+  }, [initialEnabled, status]);
+
+  // Don't render for logged-out users or while still loading state
+  if (status === "loading" || !session?.user || !loaded) {
+    return null;
+  }
 
   const handleToggle = () => {
     startTransition(async () => {
