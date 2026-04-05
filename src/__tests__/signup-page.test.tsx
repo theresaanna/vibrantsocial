@@ -37,7 +37,7 @@ import SignupPage from "@/app/signup/page";
 
 describe("SignupPage OAuth buttons", () => {
   it("renders the Google sign-in button", async () => {
-    const page = await SignupPage();
+    const page = await SignupPage({ searchParams: Promise.resolve({}) });
     render(page);
     expect(
       screen.getByRole("button", { name: /continue with google/i })
@@ -45,7 +45,7 @@ describe("SignupPage OAuth buttons", () => {
   });
 
   it("renders the Discord sign-in button", async () => {
-    const page = await SignupPage();
+    const page = await SignupPage({ searchParams: Promise.resolve({}) });
     render(page);
     expect(
       screen.getByRole("button", { name: /continue with discord/i })
@@ -53,13 +53,13 @@ describe("SignupPage OAuth buttons", () => {
   });
 
   it("renders the 'or continue with' divider", async () => {
-    const page = await SignupPage();
+    const page = await SignupPage({ searchParams: Promise.resolve({}) });
     render(page);
     expect(screen.getByText("or continue with")).toBeInTheDocument();
   });
 
   it("renders the sign-in link for existing users", async () => {
-    const page = await SignupPage();
+    const page = await SignupPage({ searchParams: Promise.resolve({}) });
     render(page);
     const signInLink = screen.getByRole("link", { name: /sign in/i });
     expect(signInLink).toHaveAttribute("href", "/login");

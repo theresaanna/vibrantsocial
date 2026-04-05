@@ -12,12 +12,12 @@ export const metadata: Metadata = {
 export default async function SignupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ref?: string }>;
+  searchParams: Promise<{ ref?: string; error?: string }>;
 }) {
   const session = await auth();
   if (session) redirect("/feed");
 
-  const { ref: referralCode } = await searchParams;
+  const { ref: referralCode, error } = await searchParams;
 
   return (
     <div className="flex min-h-[calc(100vh-57px)] items-center justify-center">
@@ -45,7 +45,7 @@ export default async function SignupPage({
           jurisdiction.
         </div>
 
-        <SignupForm referralCode={referralCode} />
+        <SignupForm referralCode={referralCode} serverError={error} />
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">

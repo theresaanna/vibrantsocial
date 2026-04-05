@@ -10,6 +10,7 @@ import { inngest } from "@/lib/inngest";
 import { sendEmailVerificationEmail } from "@/lib/email";
 import { awardReferralSignupStars } from "@/lib/referral";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { authLimiter, isRateLimited } from "@/lib/rate-limit";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import { signupSchema, parseFormData } from "@/lib/validations";
@@ -19,14 +20,27 @@ interface SignupState {
   message: string;
 }
 
+/**
+ * Build a /signup URL that preserves the referral code and includes an error.
+ * The full-page redirect resets the Turnstile captcha widget.
+ */
+function signupErrorRedirect(message: string, referralCode?: string): never {
+  const params = new URLSearchParams({ error: message });
+  if (referralCode) params.set("ref", referralCode);
+  redirect(`/signup?${params}`);
+}
+
 export async function signup(
   _prevState: SignupState,
   formData: FormData
 ): Promise<SignupState> {
   const headersList = await headers();
   const ip = headersList.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
+
+  const referralCode = formData.get("referralCode") as string | undefined;
+
   if (await isRateLimited(authLimiter, `signup:${ip}`)) {
-    return { success: false, message: "Too many attempts. Please try again later." };
+    signupErrorRedirect("Too many attempts. Please try again later.", referralCode);
   }
 
   // Validate input with Zod
@@ -35,7 +49,7 @@ export async function signup(
     "agreeToTos", "referralCode", "cf-turnstile-response",
   ]);
   if (!parsed.success) {
-    return { success: false, message: parsed.error };
+    signupErrorRedirect(parsed.error, referralCode);
   }
 
   const { email, username, password, "cf-turnstile-response": turnstileToken } = parsed.data;
@@ -43,7 +57,7 @@ export async function signup(
 
   // Verify Turnstile CAPTCHA
   if (!(await verifyTurnstileToken(turnstileToken))) {
-    return { success: false, message: "CAPTCHA verification failed. Please try again." };
+    signupErrorRedirect("CAPTCHA verification failed. Please try again.", referralCode);
   }
 
   const existingUser = await prisma.user.findUnique({
@@ -51,10 +65,7 @@ export async function signup(
   });
 
   if (existingUser) {
-    return {
-      success: false,
-      message: "An account with this email already exists",
-    };
+    signupErrorRedirect("An account with this email already exists", referralCode);
   }
 
   const existingUsername = await prisma.user.findUnique({
@@ -62,16 +73,12 @@ export async function signup(
   });
 
   if (existingUsername) {
-    return {
-      success: false,
-      message: "This username is already taken",
-    };
+    signupErrorRedirect("This username is already taken", referralCode);
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
 
   // Look up referrer if a referral code was provided
-  const referralCode = parsed.data.referralCode;
   let referrerId: string | undefined;
   if (referralCode) {
     const referrer = await prisma.user.findUnique({
@@ -130,7 +137,7 @@ export async function signup(
     });
   } catch (error) {
     if (error instanceof AuthError) {
-      return { success: false, message: "Account created but sign-in failed" };
+      signupErrorRedirect("Account created but sign-in failed", referralCode);
     }
     throw error; // Re-throw NEXT_REDIRECT
   }
