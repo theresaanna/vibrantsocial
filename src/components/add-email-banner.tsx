@@ -29,9 +29,15 @@ export function AddEmailBanner({ hasEmail }: { hasEmail: boolean }) {
     setVisible(false);
   }
 
-  if (!visible) return null;
-
   return (
+    <div
+      className={`grid transition-all duration-300 ease-out ${
+        visible
+          ? "grid-rows-[1fr] opacity-100"
+          : "grid-rows-[0fr] opacity-0"
+      }`}
+    >
+    <div className="overflow-hidden">
     <div className="mb-4 flex items-start gap-3 rounded-2xl bg-zinc-50 p-4 shadow-sm dark:bg-zinc-800">
       <div className="flex-1 text-sm text-zinc-700 dark:text-zinc-300">
         <p className="font-medium text-zinc-900 dark:text-zinc-100">
@@ -53,6 +59,8 @@ export function AddEmailBanner({ hasEmail }: { hasEmail: boolean }) {
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
+    </div>
+    </div>
     </div>
   );
 }

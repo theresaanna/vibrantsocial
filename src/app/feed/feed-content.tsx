@@ -6,6 +6,7 @@ import { cached, cacheKeys } from "@/lib/cache";
 import { getCloseFriendIds, getCachedCloseFriendOfIds } from "@/app/feed/close-friends-actions";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 import { getFriendStatuses, pollStatuses } from "@/app/feed/status-actions";
+import { fetchFeedSummary } from "@/app/feed/summary-actions";
 
 /**
  * Async server component that fetches all feed data.
@@ -69,8 +70,10 @@ export async function FeedContent({ userId, activeView = "posts" }: { userId: st
   // Authors whose close-friends-only posts the current user can see
   const closeFriendAuthors = [...closeFriendOfIds, userId];
 
-  // Phase 2: posts + reposts + statuses in parallel
-  const [posts, reposts, statusData] = await Promise.all([
+  const lastSeenFeedAt = currentUser.lastSeenFeedAt?.toISOString() ?? null;
+
+  // Phase 2: posts + reposts + statuses + feed summary in parallel
+  const [posts, reposts, statusData, feedSummaryData] = await Promise.all([
     prisma.post.findMany({
       where: {
         authorId: { in: [...followingIds, userId] },
@@ -109,6 +112,9 @@ export async function FeedContent({ userId, activeView = "posts" }: { userId: st
       include: getRepostInclude(userId),
     }),
     pollStatuses(10),
+    lastSeenFeedAt
+      ? fetchFeedSummary(lastSeenFeedAt)
+      : Promise.resolve(null),
   ]);
 
   // Deduplicate: if a post appears both directly and via simple repost, keep the direct post.
@@ -136,8 +142,6 @@ export async function FeedContent({ userId, activeView = "posts" }: { userId: st
   const hasMore = allItems.length > PAGE_SIZE;
   const initialItems = allItems.slice(0, PAGE_SIZE);
 
-  const lastSeenFeedAt = currentUser.lastSeenFeedAt?.toISOString() ?? null;
-
   // Fire-and-forget: update lastSeenFeedAt for next visit
   prisma.user
     .update({
@@ -161,6 +165,7 @@ export async function FeedContent({ userId, activeView = "posts" }: { userId: st
       hasEmail={!!currentUser.email}
       isPremium={currentUser.tier === "premium"}
       lastSeenFeedAt={lastSeenFeedAt}
+      initialSummaryData={feedSummaryData}
       activeView={activeView}
       friendStatuses={statusData.friendStatuses}
       initialOwnStatus={statusData.ownStatus}

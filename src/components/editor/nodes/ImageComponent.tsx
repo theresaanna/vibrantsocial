@@ -186,9 +186,22 @@ export default function ImageComponent({
     [editor, nodeKey]
   );
 
+  const [naturalRatio, setNaturalRatio] = useState<number | null>(null);
+
+  const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    if (img.naturalWidth && img.naturalHeight) {
+      setNaturalRatio(img.naturalWidth / img.naturalHeight);
+    }
+  }, []);
+
   const style: React.CSSProperties = {};
   if (typeof imgSize.width === "number") style.width = `${imgSize.width}px`;
   if (typeof imgSize.height === "number") style.height = `${imgSize.height}px`;
+  // When dimensions are "inherit", use the natural aspect ratio to prevent CLS
+  if (imgSize.width === "inherit" && imgSize.height === "inherit" && naturalRatio) {
+    style.aspectRatio = `${naturalRatio}`;
+  }
   if (!isImageEditable) {
     style.maxWidth = `${MAX_DISPLAY_PX}px`;
     style.maxHeight = `${MAX_DISPLAY_PX}px`;
@@ -224,6 +237,7 @@ export default function ImageComponent({
         className={`max-w-full rounded${isImageEditable ? " cursor-grab active:cursor-grabbing" : ""}`}
         draggable={isImageEditable}
         onClick={!isImageEditable ? () => setShowOverlay(true) : undefined}
+        onLoad={handleImageLoad}
         data-testid="editor-image"
       />
       {isSelected && isImageEditable && (
