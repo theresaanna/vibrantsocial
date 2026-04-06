@@ -72,11 +72,18 @@ export function ChatNav({ initialConversations }: ChatNavProps) {
     }
   }, [isOpen]);
 
-  // Refresh conversations on window focus and periodically
+  // Refresh conversations on window focus and periodically.
+  // Uses fetch() to a route handler instead of calling the server action
+  // directly — server action responses include RSC flight data that can
+  // cause the router to flash a stale page when the call resolves
+  // mid-navigation.
   useEffect(() => {
     const refresh = () => {
       if (document.hidden) return;
-      getConversations().then(setConversations);
+      fetch("/api/conversations")
+        .then((res) => (res.ok ? res.json() : Promise.reject()))
+        .then(setConversations)
+        .catch(() => {});
     };
     const handleFocus = () => refresh();
     window.addEventListener("focus", handleFocus);
