@@ -9,6 +9,7 @@ import { BackgroundEditor } from "@/components/background-editor";
 import { SparkleEditor } from "@/components/sparkle-editor";
 import { FontSelector } from "@/components/font-selector";
 import type { BackgroundDefinition } from "@/lib/profile-backgrounds";
+import { isFreePresetBackground } from "@/lib/profile-backgrounds";
 import type { CustomPresetData, ProfileThemeColors } from "@/lib/profile-themes";
 import type { UserThemeResult } from "@/lib/user-theme";
 import { ProfileSparklefall } from "@/components/profile-sparklefall";
@@ -302,7 +303,9 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
   }, [handleContainerOpacityChange]);
 
   const handleBackgroundSelected = useCallback((imageUrl: string | null) => {
-    if (!imageUrl || !isPremium) return;
+    if (!imageUrl) return;
+    // Allow generation for premium users or free users with a free preset background
+    if (!isPremium && !isFreePresetBackground(imageUrl)) return;
     // Debounce rapid background browsing
     if (autoGenDebounce.current) clearTimeout(autoGenDebounce.current);
     autoGenDebounce.current = setTimeout(() => {

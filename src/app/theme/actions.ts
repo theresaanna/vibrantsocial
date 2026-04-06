@@ -9,7 +9,7 @@ import { isValidPreset, parseJsonArray, clamp } from "@/lib/sparklefall-presets"
 import { isValidFontId, getFontById } from "@/lib/profile-fonts";
 import { checkAndExpirePremium } from "@/lib/premium";
 import { isValidBgRepeat, isValidBgAttachment, isValidBgSize, isValidBgPosition } from "@/lib/profile-backgrounds";
-import { isPresetBackgroundSrc } from "@/lib/profile-backgrounds.server";
+import { isPresetBackgroundSrc, isPremiumBackgroundSrc } from "@/lib/profile-backgrounds.server";
 import { invalidate, cacheKeys } from "@/lib/cache";
 
 interface ThemeState {
@@ -49,8 +49,12 @@ export async function updateTheme(
     }
   }
 
-  // Non-premium users cannot save custom colors
-  if (!isPremium) {
+  // Non-premium users can save custom colors only when using a free preset background
+  const rawBgImageForColorCheck = (formData.get("profileBgImage") as string)?.trim() || null;
+  const hasFreePresetBg = rawBgImageForColorCheck
+    ? isPresetBackgroundSrc(rawBgImageForColorCheck) && !isPremiumBackgroundSrc(rawBgImageForColorCheck)
+    : false;
+  if (!isPremium && !hasFreePresetBg) {
     for (const field of THEME_COLOR_FIELDS) {
       themeColors[field] = null;
     }
