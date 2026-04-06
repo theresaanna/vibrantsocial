@@ -34,6 +34,8 @@ interface ThemeEditorProps {
   currentBgImage?: string | null;
   /** Colors pushed from parent (e.g. auto-generated from background). */
   externalColors?: ProfileThemeColors | null;
+  /** When true, skip the collapsible wrapper — content is managed by a parent. */
+  embedded?: boolean;
 }
 
 export function ThemeEditor({
@@ -53,6 +55,7 @@ export function ThemeEditor({
   customPresets: initialCustomPresets = [],
   currentBgImage = null,
   externalColors = null,
+  embedded = false,
 }: ThemeEditorProps) {
   const defaultPreset = PROFILE_THEME_PRESETS.default;
   const savedColors = useRef<ProfileThemeColors>({
@@ -230,35 +233,8 @@ export function ThemeEditor({
     </button>
   ) : null;
 
-  return (
-    <div className="rounded-lg border border-zinc-200 dark:border-zinc-700">
-      <button
-        type="button"
-        onClick={() => setIsOpen((o) => !o)}
-        aria-expanded={isOpen}
-        aria-controls={contentId}
-        className="flex w-full items-center justify-between p-4 text-left"
-      >
-        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-          Theme
-        </h2>
-        <svg
-          className={`h-5 w-5 text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </button>
-
-      {isOpen && (
-        <div id={contentId} className="space-y-4 px-4 pb-4">
+  const content = (
+        <div className={embedded ? "space-y-4" : "space-y-4 px-4 pb-4"} id={contentId}>
           {/* Save button — top */}
           {saveButton}
 
@@ -311,7 +287,7 @@ export function ThemeEditor({
 
                 {bio ? (
                   <div
-                    className="profile-themed mt-2"
+                    className="profile-themed mt-2 line-clamp-3 overflow-hidden"
                     style={themeVars}
                   >
                     <BioContent content={bio} />
@@ -611,13 +587,56 @@ export function ThemeEditor({
           {/* Save button — bottom */}
           {saveButton}
         </div>
-      )}
+  );
 
-      {/* Hidden form inputs — always rendered for form submission */}
+  const hiddenInputs = (
+    <>
       {THEME_COLOR_FIELDS.map((field) => (
         <input key={field} type="hidden" name={field} value={colors[field]} />
       ))}
       <input type="hidden" name="profileContainerOpacity" value={containerOpacity} />
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <>
+        {content}
+        {hiddenInputs}
+      </>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-zinc-200 dark:border-zinc-700">
+      <button
+        type="button"
+        onClick={() => setIsOpen((o) => !o)}
+        aria-expanded={isOpen}
+        aria-controls={contentId}
+        className="flex w-full items-center justify-between p-4 text-left"
+      >
+        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+          Theme
+        </h2>
+        <svg
+          className={`h-5 w-5 text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
+
+      {isOpen && content}
+
+      {hiddenInputs}
     </div>
   );
 }
