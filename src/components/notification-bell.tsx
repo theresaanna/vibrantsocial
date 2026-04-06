@@ -9,7 +9,6 @@ import type { InboundMessage } from "ably";
 import { useAblyReady } from "@/app/providers";
 import { getAblyRealtimeClient } from "@/lib/ably";
 import {
-  getUnreadNotificationCount,
   getRecentNotifications,
   markNotificationRead,
   markAllNotificationsRead,
@@ -108,14 +107,19 @@ export function NotificationBell({
     setUnreadCount((prev) => prev + 1);
   }, []);
 
-  // Clear badge on notifications page, re-fetch actual count when leaving
+  // Clear badge on notifications page, re-fetch actual count when leaving.
+  // Uses fetch() instead of the server action so the response doesn't carry
+  // RSC flight data that could flash a stale page during navigation.
   useEffect(() => {
     if (pathname === "/notifications") {
       setUnreadCount(0);
       wasOnNotificationsRef.current = true;
     } else if (wasOnNotificationsRef.current) {
       wasOnNotificationsRef.current = false;
-      getUnreadNotificationCount().then(setUnreadCount);
+      fetch("/api/notifications/unread-count")
+        .then((res) => (res.ok ? res.json() : Promise.reject()))
+        .then((data: { count: number }) => setUnreadCount(data.count))
+        .catch(() => {});
     }
   }, [pathname]);
 
