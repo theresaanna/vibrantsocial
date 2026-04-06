@@ -11,6 +11,8 @@ interface NotifyTagSubscribersParams {
   isNsfw?: boolean;
   isGraphicNudity?: boolean;
   isCloseFriendsOnly?: boolean;
+  hasCustomAudience?: boolean;
+  customAudienceIds?: string[];
 }
 
 /**
@@ -32,10 +34,12 @@ export async function notifyTagSubscribers(params: NotifyTagSubscribersParams) {
     isNsfw = false,
     isGraphicNudity = false,
     isCloseFriendsOnly = false,
+    hasCustomAudience = false,
   } = params;
 
-  // Don't notify for sensitive/graphic or close-friends-only content
-  if (isSensitive || isGraphicNudity || isCloseFriendsOnly) return;
+  // Don't notify for sensitive/graphic, close-friends-only, or custom-audience content
+  // (tag subscribers are random users who can't see restricted posts)
+  if (isSensitive || isGraphicNudity || isCloseFriendsOnly || hasCustomAudience) return;
   if (tagIds.length === 0) return;
 
   // Find all subscriptions for these tags

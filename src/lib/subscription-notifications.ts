@@ -9,6 +9,8 @@ interface NotifyPostSubscribersParams {
   isNsfw?: boolean;
   isGraphicNudity?: boolean;
   isCloseFriendsOnly?: boolean;
+  hasCustomAudience?: boolean;
+  customAudienceIds?: string[];
 }
 
 /**
@@ -16,6 +18,7 @@ interface NotifyPostSubscribersParams {
  * Skips notifications for sensitive/graphic content.
  * NSFW posts only notify subscribers who have opted into NSFW content.
  * For close-friends-only posts, only notifies subscribers who are on the author's close friends list.
+ * For custom-audience posts, only notifies subscribers who are in the audience.
  */
 export async function notifyPostSubscribers(params: NotifyPostSubscribersParams) {
   const {
@@ -25,6 +28,8 @@ export async function notifyPostSubscribers(params: NotifyPostSubscribersParams)
     isNsfw = false,
     isGraphicNudity = false,
     isCloseFriendsOnly = false,
+    hasCustomAudience = false,
+    customAudienceIds = [],
   } = params;
 
   // Don't notify for sensitive/graphic content
@@ -60,6 +65,12 @@ export async function notifyPostSubscribers(params: NotifyPostSubscribersParams)
     });
     const closeFriendIds = new Set(closeFriends.map((cf) => cf.friendId));
     subscriberIds = subscriberIds.filter((id) => closeFriendIds.has(id));
+  }
+
+  // For custom-audience posts, filter to only subscribers in the audience
+  if (hasCustomAudience && customAudienceIds.length > 0) {
+    const audienceSet = new Set(customAudienceIds);
+    subscriberIds = subscriberIds.filter((id) => audienceSet.has(id));
   }
 
   if (subscriberIds.length === 0) return;
