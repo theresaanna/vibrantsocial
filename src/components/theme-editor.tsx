@@ -12,7 +12,6 @@ import {
   saveCustomPreset,
   deleteCustomPreset,
 } from "@/app/theme/generate-theme-action";
-import { BioContent } from "@/components/bio-content";
 import { isFreePresetBackground } from "@/lib/profile-backgrounds";
 import { PremiumCrown } from "./premium-crown";
 
@@ -21,11 +20,10 @@ interface ThemeEditorProps {
   containerOpacity?: number;
   username: string | null;
   displayName: string | null;
-  bio: string | null;
+  /** @deprecated No longer displayed in preview. Kept for API compat. */
+  bio?: string | null;
   avatarSrc: string | null;
   onChange?: () => void;
-  onSave?: () => void;
-  isSavingForm?: boolean;
   onColorsChange?: (colors: ProfileThemeColors) => void;
   onContainerOpacityChange?: (opacity: number) => void;
   isPremium?: boolean;
@@ -43,11 +41,9 @@ export function ThemeEditor({
   containerOpacity = 90,
   username,
   displayName,
-  bio,
+
   avatarSrc,
   onChange,
-  onSave,
-  isSavingForm = false,
   onColorsChange,
   onContainerOpacityChange,
   isPremium = true,
@@ -211,33 +207,11 @@ export function ThemeEditor({
 
   const canGenerateFromBg = isPremium || isFreePresetBackground(currentBgImage);
 
-  const themeVars = {
-    "--profile-bg": colors.profileBgColor,
-    "--profile-text": colors.profileTextColor,
-    "--profile-link": colors.profileLinkColor,
-    "--profile-secondary": colors.profileSecondaryColor,
-    "--profile-container": colors.profileContainerColor,
-  } as React.CSSProperties;
-
   const name = displayName || username || "Your Name";
   const initial = name[0]?.toUpperCase() ?? "?";
 
-  const saveButton = onSave ? (
-    <button
-      type="button"
-      onClick={onSave}
-      disabled={isSavingForm}
-      className="w-full rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-    >
-      {isSavingForm ? "Saving..." : "Save Theme"}
-    </button>
-  ) : null;
-
   const content = (
         <div className={embedded ? "space-y-4" : "space-y-4 px-4 pb-4"} id={contentId}>
-          {/* Save button — top */}
-          {saveButton}
-
           {/* Inline real-time preview */}
           <div
             className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700"
@@ -285,21 +259,12 @@ export function ThemeEditor({
                   </div>
                 </div>
 
-                {bio ? (
-                  <div
-                    className="profile-themed mt-2 line-clamp-3 overflow-hidden"
-                    style={themeVars}
-                  >
-                    <BioContent content={bio} />
-                  </div>
-                ) : (
-                  <p
-                    className="mt-2 text-xs"
-                    style={{ color: colors.profileSecondaryColor }}
-                  >
-                    This is what your bio will look like with these colors.
-                  </p>
-                )}
+                <p
+                  className="mt-2 text-xs"
+                  style={{ color: colors.profileSecondaryColor }}
+                >
+                  This is what your bio will look like with these colors.
+                </p>
 
                 <div className="mt-2 flex gap-3 text-xs">
                   <span style={{ color: colors.profileSecondaryColor }}>
@@ -584,8 +549,6 @@ export function ThemeEditor({
             </span>
           </div>
 
-          {/* Save button — bottom */}
-          {saveButton}
         </div>
   );
 
