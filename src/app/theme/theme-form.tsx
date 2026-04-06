@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useState, useEffect, useRef, useCallback } from "react";
+import { useActionState, useState, useEffect, useRef, useCallback, useTransition } from "react";
 import type React from "react";
 import { updateTheme } from "./actions";
+import { generateTheme } from "./generate-theme-action";
 import { ThemeEditor } from "@/components/theme-editor";
 import { BackgroundEditor } from "@/components/background-editor";
 import { SparkleEditor } from "@/components/sparkle-editor";
@@ -12,6 +13,17 @@ import type { CustomPresetData, ProfileThemeColors } from "@/lib/profile-themes"
 import type { UserThemeResult } from "@/lib/user-theme";
 import { ProfileSparklefall } from "@/components/profile-sparklefall";
 import { toast } from "sonner";
+import { type ThemeExport, validateThemeExport } from "@/lib/theme-export";
+
+/** Check if a URL is hosted on Vercel Blob storage by parsing its hostname. */
+function isVercelBlobUrl(url: string): boolean {
+  try {
+    const { hostname } = new URL(url);
+    return hostname === "blob.vercel-storage.com" || hostname.endsWith(".public.blob.vercel-storage.com");
+  } catch {
+    return false;
+  }
+}
 
 interface ThemeFormProps {
   user: {
@@ -156,6 +168,154 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
     );
   }, []);
 
+  // Auto AI theme generation when a background is selected
+  const [autoGenColors, setAutoGenColors] = useState<ProfileThemeColors | null>(null);
+  const [isAutoGenerating, startAutoGenTransition] = useTransition();
+  const autoGenDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Theme export/import
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const [importedBackground, setImportedBackground] = useState<{
+    image: string | null;
+    repeat: string;
+    attachment: string;
+    size: string;
+    position: string;
+  } | null>(null);
+
+  const handleExportTheme = useCallback(async () => {
+    const form = formRef.current;
+    if (!form) return;
+    const formData = new FormData(form);
+
+    const bgImageUrl = (formData.get("profileBgImage") as string) || null;
+    let imageData: string | undefined;
+
+    // For custom uploaded backgrounds, embed the image as base64
+    if (bgImageUrl && isVercelBlobUrl(bgImageUrl)) {
+      try {
+        const res = await fetch(bgImageUrl);
+        const blob = await res.blob();
+        imageData = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      } catch {
+        toast.error("Could not embed background image");
+      }
+    }
+
+    const themeExport: ThemeExport = {
+      version: 1,
+      colors: {
+        profileBgColor: (formData.get("profileBgColor") as string) || "#ffffff",
+        profileTextColor: (formData.get("profileTextColor") as string) || "#18181b",
+        profileLinkColor: (formData.get("profileLinkColor") as string) || "#2563eb",
+        profileSecondaryColor: (formData.get("profileSecondaryColor") as string) || "#71717a",
+        profileContainerColor: (formData.get("profileContainerColor") as string) || "#f4f4f5",
+      },
+      containerOpacity,
+      background: {
+        imageUrl: bgImageUrl,
+        ...(imageData ? { imageData } : {}),
+        repeat: (formData.get("profileBgRepeat") as string) || "no-repeat",
+        attachment: (formData.get("profileBgAttachment") as string) || "scroll",
+        size: (formData.get("profileBgSize") as string) || "contain",
+        position: (formData.get("profileBgPosition") as string) || "center",
+      },
+    };
+
+    const blob = new Blob([JSON.stringify(themeExport, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "vibrantsocial-theme.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [containerOpacity]);
+
+  const handleImportTheme = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const parsed = JSON.parse(reader.result as string);
+        const validated = validateThemeExport(parsed);
+        if (!validated) {
+          toast.error("Invalid theme file");
+          return;
+        }
+
+        // Apply colors
+        setAutoGenColors(validated.colors);
+        handleContainerOpacityChange(validated.containerOpacity);
+
+        // Determine background image URL
+        let resolvedBgUrl = validated.background.imageUrl;
+
+        // If the export includes embedded image data, re-upload it
+        if (validated.background.imageData) {
+          try {
+            const res = await fetch(validated.background.imageData);
+            const blob = await res.blob();
+            const uploadForm = new FormData();
+            uploadForm.append("file", blob, "imported-background.png");
+            const uploadRes = await fetch("/api/profile-background", {
+              method: "POST",
+              body: uploadForm,
+            });
+            if (uploadRes.ok) {
+              const { url } = await uploadRes.json();
+              resolvedBgUrl = url;
+            } else {
+              toast("Could not upload background image. Colors applied.", { duration: 5000 });
+              resolvedBgUrl = null;
+            }
+          } catch {
+            toast("Could not upload background image. Colors applied.", { duration: 5000 });
+            resolvedBgUrl = null;
+          }
+        } else if (resolvedBgUrl && isVercelBlobUrl(resolvedBgUrl)) {
+          // Bare blob URL with no embedded data — can't use it
+          toast("Background image can't be imported without embedded data. Colors applied.", { duration: 5000 });
+          resolvedBgUrl = null;
+        }
+
+        setImportedBackground({
+          image: resolvedBgUrl,
+          repeat: validated.background.repeat,
+          attachment: validated.background.attachment,
+          size: validated.background.size,
+          position: validated.background.position,
+        });
+
+        toast.success("Theme imported — click Save to apply");
+      } catch {
+        toast.error("Could not read theme file");
+      }
+    };
+    reader.readAsText(file);
+    if (importInputRef.current) importInputRef.current.value = "";
+  }, [handleContainerOpacityChange]);
+
+  const handleBackgroundSelected = useCallback((imageUrl: string | null) => {
+    if (!imageUrl || !isPremium) return;
+    // Debounce rapid background browsing
+    if (autoGenDebounce.current) clearTimeout(autoGenDebounce.current);
+    autoGenDebounce.current = setTimeout(() => {
+      startAutoGenTransition(async () => {
+        const result = await generateTheme(imageUrl);
+        if (result.success && result.light) {
+          setAutoGenColors(result.light);
+          toast.success("Colors generated from background");
+        }
+      });
+    }, 600);
+  }, [isPremium]);
+
   return (
     <div
       className={liveHasCustomTheme ? "profile-themed" : ""}
@@ -225,7 +385,17 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
               userEmail={userEmail}
               customPresets={customPresets}
               currentBgImage={currentBgImage}
+              externalColors={autoGenColors}
             />
+
+            {isAutoGenerating && (
+              <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 dark:border-blue-800 dark:bg-blue-950">
+                <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-blue-500" />
+                <span className="text-sm text-blue-700 dark:text-blue-300">
+                  Generating colors from background...
+                </span>
+              </div>
+            )}
 
             <BackgroundEditor
               backgrounds={backgrounds}
@@ -242,6 +412,8 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
               containerOpacity={containerOpacity}
               onContainerOpacityChange={handleContainerOpacityChange}
               onBackgroundChange={handleBackgroundChange}
+              onBackgroundSelected={handleBackgroundSelected}
+              externalBackground={importedBackground}
             />
 
             <SparkleEditor
@@ -260,6 +432,37 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
               userEmail={userEmail}
 
             />
+
+            {/* Theme export/import */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleExportTheme}
+                className="flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+                </svg>
+                Download Theme
+              </button>
+              <button
+                type="button"
+                onClick={() => importInputRef.current?.click()}
+                className="flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M17 8l-5-5-5 5M12 3v12" />
+                </svg>
+                Upload Theme
+              </button>
+              <input
+                ref={importInputRef}
+                type="file"
+                accept=".json"
+                onChange={handleImportTheme}
+                className="hidden"
+              />
+            </div>
 
             {/* Save button */}
             <div className="flex items-center justify-between">

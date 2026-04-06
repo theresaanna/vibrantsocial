@@ -67,48 +67,30 @@ describe("ThemeEditor", () => {
     expect(toggle).toHaveAttribute("aria-expanded", "true");
   });
 
-  it("renders all preset buttons", async () => {
+  it("does not render built-in preset buttons", async () => {
     render(<ThemeEditor {...defaultProps} />);
     await expandSection();
-    for (const name of Object.keys(PROFILE_THEME_PRESETS)) {
-      expect(
-        screen.getByRole("button", { name: new RegExp(name, "i") })
-      ).toBeInTheDocument();
-    }
+    // Built-in presets like "ocean" should not appear
+    expect(
+      screen.queryByRole("button", { name: /^ocean$/i })
+    ).not.toBeInTheDocument();
   });
 
-  it("selecting a preset updates hidden form inputs", async () => {
-    const { container } = render(<ThemeEditor {...defaultProps} />);
-    await expandSection();
-    const oceanButton = screen.getByRole("button", { name: /ocean/i });
-    await userEvent.click(oceanButton);
-
-    const oceanPreset = PROFILE_THEME_PRESETS.ocean;
-    const hiddenInput = container.querySelector(
+  it("applies external colors when provided", () => {
+    const externalColors = {
+      profileBgColor: "#111111",
+      profileTextColor: "#222222",
+      profileLinkColor: "#333333",
+      profileSecondaryColor: "#444444",
+      profileContainerColor: "#555555",
+    };
+    const { container } = render(
+      <ThemeEditor {...defaultProps} externalColors={externalColors} />
+    );
+    const bgInput = container.querySelector(
       'input[name="profileBgColor"]'
     ) as HTMLInputElement;
-    expect(hiddenInput.value).toBe(oceanPreset.profileBgColor);
-  });
-
-  it("marks selected preset as pressed", async () => {
-    render(<ThemeEditor {...defaultProps} />);
-    await expandSection();
-    const oceanButton = screen.getByRole("button", { name: /ocean/i });
-
-    expect(oceanButton).toHaveAttribute("aria-pressed", "false");
-    await userEvent.click(oceanButton);
-    expect(oceanButton).toHaveAttribute("aria-pressed", "true");
-  });
-
-  it("clears active preset when no preset is initially selected", async () => {
-    render(<ThemeEditor {...defaultProps} />);
-    await expandSection();
-    for (const name of Object.keys(PROFILE_THEME_PRESETS)) {
-      const button = screen.getByRole("button", {
-        name: new RegExp(name, "i"),
-      });
-      expect(button).toHaveAttribute("aria-pressed", "false");
-    }
+    expect(bgInput.value).toBe("#111111");
   });
 
   it("renders hidden inputs for all 5 color fields", () => {

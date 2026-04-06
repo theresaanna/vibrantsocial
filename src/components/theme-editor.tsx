@@ -31,6 +31,8 @@ interface ThemeEditorProps {
   userEmail?: string | null;
   customPresets?: CustomPresetData[];
   currentBgImage?: string | null;
+  /** Colors pushed from parent (e.g. auto-generated from background). */
+  externalColors?: ProfileThemeColors | null;
 }
 
 export function ThemeEditor({
@@ -49,6 +51,7 @@ export function ThemeEditor({
   userEmail,
   customPresets: initialCustomPresets = [],
   currentBgImage = null,
+  externalColors = null,
 }: ThemeEditorProps) {
   const defaultPreset = PROFILE_THEME_PRESETS.default;
   const savedColors = useRef<ProfileThemeColors>({
@@ -91,20 +94,20 @@ export function ThemeEditor({
   } | null>(null);
   const [presetName, setPresetName] = useState("");
 
+  // Sync colors pushed from parent (e.g. auto-generated from background)
+  useEffect(() => {
+    if (externalColors) {
+      setColors(externalColors);
+      setActivePreset(null);
+    }
+  }, [externalColors]);
+
   // Notify parent of live color changes for real-time preview
   useEffect(() => {
     onColorsChange?.(colors);
   }, [colors, onColorsChange]);
 
   // --- Theme handlers ---
-
-  const handlePresetSelect = useCallback(
-    (presetName: string) => {
-      setColors(PROFILE_THEME_PRESETS[presetName]);
-      setActivePreset(presetName);
-    },
-    []
-  );
 
   const handleCustomPresetSelect = useCallback(
     (preset: CustomPresetData) => {
@@ -391,68 +394,49 @@ export function ThemeEditor({
             </div>
           )}
 
-          {/* Theme preset buttons */}
-          <div>
-            <label className="mb-2 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-              Color Theme
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(PROFILE_THEME_PRESETS).map(([name, preset]) => (
-                <button
-                  key={name}
-                  type="button"
-                  onClick={() => handlePresetSelect(name)}
-                  className={`rounded-lg border px-3 py-1.5 text-sm font-medium capitalize transition-all ${
-                    activePreset === name
-                      ? "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-900"
-                      : "border-transparent"
-                  }`}
-                  style={{
-                    backgroundColor: preset.profileContainerColor,
-                    color: preset.profileTextColor,
-                  }}
-                  aria-pressed={activePreset === name}
-                >
-                  {name}
-                </button>
-              ))}
-
-              {/* Custom preset pills */}
-              {customPresets.map((preset) => (
-                <div key={preset.id} className="group relative">
-                  <button
-                    type="button"
-                    onClick={() => handleCustomPresetSelect(preset)}
-                    className={`rounded-lg border px-3 py-1.5 pr-7 text-sm font-medium transition-all ${
-                      activePreset === `custom:${preset.id}`
-                        ? "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-900"
-                        : "border-transparent"
-                    }`}
-                    style={{
-                      backgroundColor: preset.light.profileContainerColor,
-                      color: preset.light.profileTextColor,
-                    }}
-                    aria-pressed={activePreset === `custom:${preset.id}`}
-                    data-testid={`custom-preset-${preset.name}`}
-                  >
-                    {preset.name}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeletePreset(preset.id);
-                    }}
-                    className="absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] leading-none text-white group-hover:flex"
-                    aria-label={`Delete ${preset.name} preset`}
-                    data-testid={`delete-preset-${preset.name}`}
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
+          {/* Custom preset pills */}
+          {customPresets.length > 0 && (
+            <div>
+              <label className="mb-2 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                Saved Presets
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {customPresets.map((preset) => (
+                  <div key={preset.id} className="group relative">
+                    <button
+                      type="button"
+                      onClick={() => handleCustomPresetSelect(preset)}
+                      className={`rounded-lg border px-3 py-1.5 pr-7 text-sm font-medium transition-all ${
+                        activePreset === `custom:${preset.id}`
+                          ? "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-900"
+                          : "border-transparent"
+                      }`}
+                      style={{
+                        backgroundColor: preset.light.profileContainerColor,
+                        color: preset.light.profileTextColor,
+                      }}
+                      aria-pressed={activePreset === `custom:${preset.id}`}
+                      data-testid={`custom-preset-${preset.name}`}
+                    >
+                      {preset.name}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeletePreset(preset.id);
+                      }}
+                      className="absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] leading-none text-white group-hover:flex"
+                      aria-label={`Delete ${preset.name} preset`}
+                      data-testid={`delete-preset-${preset.name}`}
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* AI theme from background — premium only */}
           <div

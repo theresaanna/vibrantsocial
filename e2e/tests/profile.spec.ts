@@ -18,8 +18,9 @@ async function expandThemeSection(page: import("@playwright/test").Page) {
     if (expanded === "false") {
       await themeToggle.click();
     }
+    // Wait for the theme preview (inline preview is always rendered when expanded)
     await expect(
-      page.locator("button[aria-pressed]", { hasText: "default" })
+      page.locator('[data-testid="ai-theme-generator"], [data-testid="ai-theme-upgrade-prompt"]')
     ).toBeVisible({ timeout: 2000 });
   }).toPass({ timeout: 15000 });
 }
@@ -51,26 +52,26 @@ test.describe("Theme editor (premium)", () => {
     await setTestUserTier("free");
   });
 
-  test("theme editor shows preset buttons", async ({ page }) => {
+  test("theme editor expands and shows color preview", async ({ page }) => {
     await gotoTheme(page);
     await expandThemeSection(page);
 
+    // The inline preview section should be visible
     await expect(
-      page.locator("button[aria-pressed]", { hasText: "ocean" })
-    ).toBeVisible();
+      page.locator('input[name="profileBgColor"]')
+    ).toBeAttached();
   });
 
-  test("clicking a theme preset updates selection", async ({ page }) => {
+  test("theme editor renders hidden color inputs", async ({ page }) => {
     await gotoTheme(page);
     await expandThemeSection(page);
 
-    // Click the "ocean" preset
-    const oceanButton = page.locator("button[aria-pressed]", { hasText: "ocean" });
-    await expect(oceanButton).toBeVisible({ timeout: 10000 });
-    await oceanButton.click();
-
-    // The ocean preset should now be active (aria-pressed="true")
-    await expect(oceanButton).toHaveAttribute("aria-pressed", "true");
+    // All 5 color hidden inputs should be present
+    await expect(page.locator('input[name="profileBgColor"]')).toBeAttached();
+    await expect(page.locator('input[name="profileTextColor"]')).toBeAttached();
+    await expect(page.locator('input[name="profileLinkColor"]')).toBeAttached();
+    await expect(page.locator('input[name="profileSecondaryColor"]')).toBeAttached();
+    await expect(page.locator('input[name="profileContainerColor"]')).toBeAttached();
   });
 });
 
@@ -105,13 +106,14 @@ test.describe("Theme editor gating (free tier)", () => {
     await setTestUserTier("free");
   });
 
-  test("free user sees preset theme buttons", async ({ page }) => {
+  test("free user sees theme editor with color inputs", async ({ page }) => {
     await gotoTheme(page);
     await expandThemeSection(page);
 
+    // Free users should still see the theme editor with color inputs
     await expect(
-      page.locator("button[aria-pressed]", { hasText: "ocean" })
-    ).toBeVisible();
+      page.locator('input[name="profileBgColor"]')
+    ).toBeAttached();
   });
 
   test("free user sees AI theme upgrade prompt", async ({ page }) => {
