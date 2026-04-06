@@ -287,7 +287,7 @@ export function ThemeEditor({
 
                 {bio ? (
                   <div
-                    className="profile-themed mt-2"
+                    className="profile-themed mt-2 line-clamp-3 overflow-hidden"
                     style={themeVars}
                   >
                     <BioContent content={bio} />
