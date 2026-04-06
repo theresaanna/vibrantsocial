@@ -12,7 +12,6 @@ import {
   saveCustomPreset,
   deleteCustomPreset,
 } from "@/app/theme/generate-theme-action";
-import { BioContent } from "@/components/bio-content";
 import { isFreePresetBackground } from "@/lib/profile-backgrounds";
 import { PremiumCrown } from "./premium-crown";
 
@@ -21,7 +20,8 @@ interface ThemeEditorProps {
   containerOpacity?: number;
   username: string | null;
   displayName: string | null;
-  bio: string | null;
+  /** @deprecated No longer displayed in preview. Kept for API compat. */
+  bio?: string | null;
   avatarSrc: string | null;
   onChange?: () => void;
   onSave?: () => void;
@@ -43,7 +43,7 @@ export function ThemeEditor({
   containerOpacity = 90,
   username,
   displayName,
-  bio,
+
   avatarSrc,
   onChange,
   onSave,
@@ -211,14 +211,6 @@ export function ThemeEditor({
 
   const canGenerateFromBg = isPremium || isFreePresetBackground(currentBgImage);
 
-  const themeVars = {
-    "--profile-bg": colors.profileBgColor,
-    "--profile-text": colors.profileTextColor,
-    "--profile-link": colors.profileLinkColor,
-    "--profile-secondary": colors.profileSecondaryColor,
-    "--profile-container": colors.profileContainerColor,
-  } as React.CSSProperties;
-
   const name = displayName || username || "Your Name";
   const initial = name[0]?.toUpperCase() ?? "?";
 
@@ -285,21 +277,12 @@ export function ThemeEditor({
                   </div>
                 </div>
 
-                {bio ? (
-                  <div
-                    className="profile-themed mt-2 line-clamp-3 overflow-hidden"
-                    style={themeVars}
-                  >
-                    <BioContent content={bio} />
-                  </div>
-                ) : (
-                  <p
-                    className="mt-2 text-xs"
-                    style={{ color: colors.profileSecondaryColor }}
-                  >
-                    This is what your bio will look like with these colors.
-                  </p>
-                )}
+                <p
+                  className="mt-2 text-xs"
+                  style={{ color: colors.profileSecondaryColor }}
+                >
+                  This is what your bio will look like with these colors.
+                </p>
 
                 <div className="mt-2 flex gap-3 text-xs">
                   <span style={{ color: colors.profileSecondaryColor }}>
