@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { SearchUserCard } from "@/components/search-user-card";
-import { fetchNewcomers } from "./newcomer-actions";
+import { rpc } from "@/lib/rpc";
 
 type NewcomerUser = {
   id: string;
@@ -23,7 +23,7 @@ export function CommunitiesNewcomersClient() {
 
   useEffect(() => {
     startTransition(async () => {
-      const result = await fetchNewcomers();
+      const result = await rpc<NewcomerUser[]>("fetchNewcomers");
       setUsers(result);
     });
   }, []);

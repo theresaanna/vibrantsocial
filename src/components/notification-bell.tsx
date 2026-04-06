@@ -13,6 +13,7 @@ import {
   markNotificationRead,
   markAllNotificationsRead,
 } from "@/app/notifications/actions";
+import { rpc } from "@/lib/rpc";
 import { timeAgo } from "@/lib/time";
 import { Tooltip } from "@/components/tooltip";
 import type { NotificationType } from "@/generated/prisma/client";
@@ -116,9 +117,8 @@ export function NotificationBell({
       wasOnNotificationsRef.current = true;
     } else if (wasOnNotificationsRef.current) {
       wasOnNotificationsRef.current = false;
-      fetch("/api/notifications/unread-count")
-        .then((res) => (res.ok ? res.json() : Promise.reject()))
-        .then((data: { count: number }) => setUnreadCount(data.count))
+      rpc<number>("getUnreadNotificationCount")
+        .then(setUnreadCount)
         .catch(() => {});
     }
   }, [pathname]);

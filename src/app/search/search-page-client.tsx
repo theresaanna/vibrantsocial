@@ -9,7 +9,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { searchUsers, searchPosts, searchTagsForSearch, searchMarketplacePosts } from "./actions";
+import { rpc } from "@/lib/rpc";
 import { SearchPostCard } from "@/components/search-post-card";
 import { SearchUserCard } from "@/components/search-user-card";
 
@@ -107,22 +107,22 @@ export function SearchPageClient({
       const id = ++searchIdRef.current;
       startTransition(async () => {
         if (activeTab === "users") {
-          const result = await searchUsers(trimmed);
+          const result = await rpc<{ users: any[]; hasMore: boolean }>("searchUsers", trimmed);
           if (searchIdRef.current !== id) return;
           setUsers(result.users);
           setUsersHasMore(result.hasMore);
         } else if (activeTab === "posts") {
-          const result = await searchPosts(trimmed);
+          const result = await rpc<{ posts: any[]; hasMore: boolean }>("searchPosts", trimmed);
           if (searchIdRef.current !== id) return;
           setPosts(result.posts);
           setPostsHasMore(result.hasMore);
         } else if (activeTab === "marketplace") {
-          const result = await searchMarketplacePosts(trimmed);
+          const result = await rpc<{ posts: any[]; hasMore: boolean }>("searchMarketplacePosts", trimmed);
           if (searchIdRef.current !== id) return;
           setMarketplacePosts(result.posts);
           setMarketplaceHasMore(result.hasMore);
         } else {
-          const result = await searchTagsForSearch(trimmed);
+          const result = await rpc<{ tags: SearchTag[]; hasMore: boolean }>("searchTagsForSearch", trimmed);
           if (searchIdRef.current !== id) return;
           setTags(result.tags);
           setTagsHasMore(result.hasMore);
@@ -144,22 +144,22 @@ export function SearchPageClient({
       const id = ++searchIdRef.current;
       startTransition(async () => {
         if (tab === "users") {
-          const result = await searchUsers(trimmed);
+          const result = await rpc<{ users: any[]; hasMore: boolean }>("searchUsers", trimmed);
           if (searchIdRef.current !== id) return;
           setUsers(result.users);
           setUsersHasMore(result.hasMore);
         } else if (tab === "posts") {
-          const result = await searchPosts(trimmed);
+          const result = await rpc<{ posts: any[]; hasMore: boolean }>("searchPosts", trimmed);
           if (searchIdRef.current !== id) return;
           setPosts(result.posts);
           setPostsHasMore(result.hasMore);
         } else if (tab === "marketplace") {
-          const result = await searchMarketplacePosts(trimmed);
+          const result = await rpc<{ posts: any[]; hasMore: boolean }>("searchMarketplacePosts", trimmed);
           if (searchIdRef.current !== id) return;
           setMarketplacePosts(result.posts);
           setMarketplaceHasMore(result.hasMore);
         } else {
-          const result = await searchTagsForSearch(trimmed);
+          const result = await rpc<{ tags: SearchTag[]; hasMore: boolean }>("searchTagsForSearch", trimmed);
           if (searchIdRef.current !== id) return;
           setTags(result.tags);
           setTagsHasMore(result.hasMore);
@@ -204,7 +204,7 @@ export function SearchPageClient({
 
       startTransition(async () => {
         try {
-          const result = await searchUsers(trimmed, lastUser.id);
+          const result = await rpc<{ users: any[]; hasMore: boolean }>("searchUsers", trimmed, lastUser.id);
           setUsers((prev) => [...prev, ...result.users]);
           setUsersHasMore(result.hasMore);
         } finally {
@@ -219,7 +219,8 @@ export function SearchPageClient({
 
       startTransition(async () => {
         try {
-          const result = await searchPosts(
+          const result = await rpc<{ posts: any[]; hasMore: boolean }>(
+            "searchPosts",
             trimmed,
             lastPost.createdAt
           );
@@ -237,7 +238,8 @@ export function SearchPageClient({
 
       startTransition(async () => {
         try {
-          const result = await searchMarketplacePosts(
+          const result = await rpc<{ posts: any[]; hasMore: boolean }>(
+            "searchMarketplacePosts",
             trimmed,
             lastPost.createdAt
           );
@@ -255,7 +257,7 @@ export function SearchPageClient({
 
       startTransition(async () => {
         try {
-          const result = await searchTagsForSearch(trimmed, lastTag.id);
+          const result = await rpc<{ tags: SearchTag[]; hasMore: boolean }>("searchTagsForSearch", trimmed, lastTag.id);
           setTags((prev) => [...prev, ...result.tags]);
           setTagsHasMore(result.hasMore);
         } finally {

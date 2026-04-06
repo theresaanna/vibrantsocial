@@ -8,7 +8,7 @@ import { ChatFriendsList } from "@/components/chat/chat-friends-list";
 import { MessageThread } from "@/components/chat/message-thread";
 import { useAblyReady } from "@/app/providers";
 import { getAblyRealtimeClient } from "@/lib/ably";
-import { getConversations } from "@/app/chat/actions";
+import { rpc } from "@/lib/rpc";
 import type {
   ConversationListItem,
   MessageRequestData,
@@ -149,7 +149,7 @@ export function ConversationPageClient({
 
   // Refresh sidebar on focus, periodically, and on real-time chat notifications
   useEffect(() => {
-    const refresh = () => getConversations().then(setLiveConversations);
+    const refresh = () => rpc<ConversationListItem[]>("getConversations").then(setLiveConversations);
     const handleFocus = () => refresh();
     window.addEventListener("focus", handleFocus);
     const interval = setInterval(refresh, 15000);
@@ -165,7 +165,7 @@ export function ConversationPageClient({
     const client = getAblyRealtimeClient();
     const channel = client.channels.get(`chat-notify:${currentUserId}`);
     const handler = () => {
-      getConversations().then(setLiveConversations);
+      rpc<ConversationListItem[]>("getConversations").then(setLiveConversations);
     };
     channel.subscribe("new", handler);
     return () => {

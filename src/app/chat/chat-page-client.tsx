@@ -8,7 +8,7 @@ import { MessageRequestList } from "@/components/chat/message-request-list";
 import { ChatFriendsList } from "@/components/chat/chat-friends-list";
 import { useAblyReady } from "@/app/providers";
 import { getAblyRealtimeClient } from "@/lib/ably";
-import { getConversations } from "@/app/chat/actions";
+import { rpc } from "@/lib/rpc";
 import type { ConversationListItem, MessageRequestData, ChatThemeColors, ChatUserProfile } from "@/types/chat";
 
 const PRESENCE_CHANNEL = "presence:global";
@@ -90,7 +90,7 @@ export function ChatPageClient({
     const client = getAblyRealtimeClient();
     const channel = client.channels.get(`chat-notify:${session.user.id}`);
     const handler = () => {
-      getConversations().then(setLiveConversations);
+      rpc<ConversationListItem[]>("getConversations").then(setLiveConversations);
     };
     channel.subscribe("new", handler);
     return () => {

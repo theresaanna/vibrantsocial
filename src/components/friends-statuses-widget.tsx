@@ -7,7 +7,8 @@ import { StyledName } from "@/components/styled-name";
 import { StatusComposer } from "@/components/status-composer";
 import { StatusLikeButton } from "@/components/status-like-button";
 import { StatusReplyButton } from "@/components/status-reply-button";
-import { pollStatuses } from "@/app/feed/status-actions";
+import { rpc } from "@/lib/rpc";
+import type { FriendStatusData } from "@/app/feed/status-actions";
 import { timeAgo } from "@/lib/time";
 import type { FriendStatusData } from "@/app/feed/status-actions";
 
@@ -132,7 +133,7 @@ export function FriendsStatusesWidget({
     const interval = setInterval(async () => {
       if (document.hidden) return;
       try {
-        const data = await pollStatuses(10);
+        const data = await rpc<{ ownStatus: FriendStatusData | null; friendStatuses: FriendStatusData[] }>("pollStatuses", 10);
         setFriendStatuses(data.friendStatuses);
         if (data.ownStatus) {
           setOwnStatus((prev) =>

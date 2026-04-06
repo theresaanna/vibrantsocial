@@ -4,7 +4,7 @@ import type { InboundMessage } from "ably";
 import { useState, useEffect, useCallback } from "react";
 import { getAblyRealtimeClient } from "@/lib/ably";
 import { useAblyReady } from "@/app/providers";
-import { getMessages } from "@/app/chat/actions";
+import { rpc } from "@/lib/rpc";
 import type { MessageData, MessageReplyTo, MediaType, ReactionGroup } from "@/types/chat";
 
 export function useChatMessages(
@@ -145,7 +145,7 @@ export function useChatMessages(
     const handler = (msg: InboundMessage) => {
       const data = msg.data as { conversationId?: string };
       if (data.conversationId === conversationId) {
-        getMessages(conversationId).then((result) => mergeMessages(result.messages));
+        rpc<{ messages: MessageData[]; nextCursor: string | null }>("getMessages", conversationId).then((result) => mergeMessages(result.messages));
       }
     };
 
@@ -158,7 +158,7 @@ export function useChatMessages(
   // Fallback: refresh messages on window focus
   useEffect(() => {
     const handleFocus = () => {
-      getMessages(conversationId).then((result) => mergeMessages(result.messages));
+      rpc<{ messages: MessageData[]; nextCursor: string | null }>("getMessages", conversationId).then((result) => mergeMessages(result.messages));
     };
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);

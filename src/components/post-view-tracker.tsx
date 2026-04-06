@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { recordPostView } from "@/app/feed/view-actions";
+import { rpc } from "@/lib/rpc";
 import type { ViewSource } from "@/app/feed/view-actions";
 
 interface PostViewTrackerProps {
@@ -23,7 +23,7 @@ export function PostViewTracker({ postId, source, children }: PostViewTrackerPro
       if (trackedRef.current) return;
       if (entries[0]?.isIntersecting) {
         trackedRef.current = true;
-        recordPostView({
+        rpc("recordPostView", {
           postId,
           source,
           referrer: document.referrer || null,

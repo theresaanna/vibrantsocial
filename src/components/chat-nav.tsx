@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { usePresenceListener } from "ably/react";
 import Link from "next/link";
 import { getConversations } from "@/app/chat/actions";
+import { rpc } from "@/lib/rpc";
 import { useAblyReady } from "@/app/providers";
 import { PresenceIndicator } from "@/components/chat/presence-indicator";
 import { timeAgo } from "@/lib/time";
@@ -80,8 +81,7 @@ export function ChatNav({ initialConversations }: ChatNavProps) {
   useEffect(() => {
     const refresh = () => {
       if (document.hidden) return;
-      fetch("/api/conversations")
-        .then((res) => (res.ok ? res.json() : Promise.reject()))
+      rpc<ConversationListItem[]>("getConversations")
         .then(setConversations)
         .catch(() => {});
     };

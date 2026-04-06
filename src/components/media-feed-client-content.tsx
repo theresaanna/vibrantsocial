@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { MediaGrid } from "@/components/media-grid";
-import { fetchMediaFeedPage } from "@/app/feed/media-actions";
+import { rpc } from "@/lib/rpc";
 
 interface MediaPost {
   id: string;
@@ -28,7 +28,7 @@ export function MediaFeedClientContent() {
 
   useEffect(() => {
     startTransition(async () => {
-      const result = await fetchMediaFeedPage();
+      const result = await rpc<{ posts: MediaPost[]; hasMore: boolean }>("fetchMediaFeedPage");
       setPosts(result.posts);
       setHasMore(result.hasMore);
     });

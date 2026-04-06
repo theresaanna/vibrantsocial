@@ -6,8 +6,7 @@ import { useAblyReady } from "@/app/providers";
 import { AddToHomeBanner } from "@/components/add-to-home-banner";
 import { AddEmailBanner } from "@/components/add-email-banner";
 import { FeedList } from "@/components/feed-list";
-import { fetchSinglePost, fetchNewFeedItems } from "@/app/feed/feed-actions";
-import { fetchNewListFeedItems } from "@/app/lists/actions";
+import { rpc } from "@/lib/rpc";
 import { FeedSummaryBanner } from "@/components/feed-summary-banner";
 import type { FeedSummaryResult } from "@/app/feed/summary-actions";
 import { FriendsStatusesWidget } from "@/components/friends-statuses-widget";
@@ -93,7 +92,7 @@ export function FeedClient({
   }, [newItems]);
 
   const handlePostCreated = useCallback(async (postId: string) => {
-    const item = await fetchSinglePost(postId);
+    const item = await rpc<FeedItem | null>("fetchSinglePost", postId);
     if (item) {
       setNewItems((prev) => [item, ...prev]);
     }
@@ -108,9 +107,9 @@ export function FeedClient({
       if (document.hidden) return;
 
       try {
-        const items = listId
-          ? await fetchNewListFeedItems(listId, newestDateRef.current)
-          : await fetchNewFeedItems(newestDateRef.current);
+        const items: FeedItem[] = listId
+          ? await rpc("fetchNewListFeedItems", listId, newestDateRef.current)
+          : await rpc("fetchNewFeedItems", newestDateRef.current);
         if (items.length > 0) {
           setNewItems((prev) => {
             const existingIds = new Set(

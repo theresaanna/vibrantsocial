@@ -7,7 +7,7 @@ import { extractMediaFromLexicalJson, type MediaItem } from "@/lib/lexical-text"
 import { FramedAvatar } from "@/components/framed-avatar";
 import { StyledName } from "@/components/styled-name";
 import { timeAgo } from "@/lib/time";
-import { fetchMediaFeedPage } from "@/app/feed/media-actions";
+import { rpc } from "@/lib/rpc";
 
 export interface MediaPost {
   id: string;
@@ -130,7 +130,10 @@ interface MediaGridProps {
   fetchPage?: MediaFetchFn;
 }
 
-export function MediaGrid({ initialPosts, initialHasMore, fetchPage = fetchMediaFeedPage }: MediaGridProps) {
+const defaultFetchPage: MediaFetchFn = (cursor) =>
+  rpc<{ posts: MediaPost[]; hasMore: boolean }>("fetchMediaFeedPage", cursor);
+
+export function MediaGrid({ initialPosts, initialHasMore, fetchPage = defaultFetchPage }: MediaGridProps) {
   const [posts, setPosts] = useState(initialPosts);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [isPending, startTransition] = useTransition();

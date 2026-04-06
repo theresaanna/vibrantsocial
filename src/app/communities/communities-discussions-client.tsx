@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition, useMemo } from "react";
 import { PostCard } from "@/components/post-card";
-import { fetchTopDiscussedPosts } from "./discussion-actions";
+import { rpc } from "@/lib/rpc";
 
 interface DiscussionsData {
   posts: Array<Record<string, unknown>>;
@@ -21,7 +21,7 @@ export function CommunitiesDiscussionsClient() {
 
   useEffect(() => {
     startTransition(async () => {
-      const result = await fetchTopDiscussedPosts();
+      const result = await rpc<DiscussionsData>("fetchTopDiscussedPosts");
       setData(result);
     });
   }, []);

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useTransition } from "react";
 import { PostCard } from "@/components/post-card";
 import { RepostCard } from "@/components/repost-card";
 import { PostViewTracker } from "@/components/post-view-tracker";
-import { fetchFeedPage } from "@/app/feed/feed-actions";
+import { rpc } from "@/lib/rpc";
 import type { ViewSource } from "@/app/feed/view-actions";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -76,7 +76,7 @@ export function FeedList({
 
     startTransition(async () => {
       try {
-        const result = fetchPage ? await fetchPage(lastItem.date) : await fetchFeedPage(lastItem.date);
+        const result = fetchPage ? await fetchPage(lastItem.date) : await rpc<{ items: FeedItem[]; hasMore: boolean }>("fetchFeedPage", lastItem.date);
 
         const existingIds = new Set(
           itemsRef.current.map((item) =>

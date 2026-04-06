@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { recordPostView } from "@/app/feed/view-actions";
+import { rpc } from "@/lib/rpc";
 import type { ViewSource } from "@/app/feed/view-actions";
 
 /**
@@ -19,7 +19,7 @@ export function usePostViewTracking(
     if (!enabled || trackedRef.current.has(postId)) return;
     trackedRef.current.add(postId);
 
-    recordPostView({
+    rpc("recordPostView", {
       postId,
       source,
       referrer: typeof document !== "undefined" ? document.referrer || null : null,
