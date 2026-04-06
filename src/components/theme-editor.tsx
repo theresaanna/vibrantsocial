@@ -13,6 +13,7 @@ import {
   deleteCustomPreset,
 } from "@/app/theme/generate-theme-action";
 import { BioContent } from "@/components/bio-content";
+import { isFreePresetBackground } from "@/lib/profile-backgrounds";
 import { PremiumCrown } from "./premium-crown";
 
 interface ThemeEditorProps {
@@ -204,6 +205,8 @@ export function ThemeEditor({
       }
     });
   }, [generatedTheme, presetName, currentBgImage, isSaving]);
+
+  const canGenerateFromBg = isPremium || isFreePresetBackground(currentBgImage);
 
   const themeVars = {
     "--profile-bg": colors.profileBgColor,
@@ -438,16 +441,16 @@ export function ThemeEditor({
             </div>
           )}
 
-          {/* AI theme from background — premium only */}
+          {/* AI theme from background — available for premium or free preset backgrounds */}
           <div
             className="relative"
             data-testid={
-              isPremium ? "ai-theme-generator" : "ai-theme-upgrade-prompt"
+              canGenerateFromBg ? "ai-theme-generator" : "ai-theme-upgrade-prompt"
             }
           >
-            <PremiumCrown href="/premium" />
+            {!canGenerateFromBg && <PremiumCrown href="/premium" />}
             <div
-              className={`space-y-3 ${!isPremium ? "pointer-events-none opacity-50" : ""}`}
+              className={`space-y-3 ${!canGenerateFromBg ? "pointer-events-none opacity-50" : ""}`}
             >
               <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
                 Generate a color scheme
@@ -466,7 +469,7 @@ export function ThemeEditor({
                 <button
                   type="button"
                   onClick={handleGenerate}
-                  disabled={!isPremium || isGenerating || !currentBgImage}
+                  disabled={!canGenerateFromBg || isGenerating || !currentBgImage}
                   className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
                   data-testid="ai-generate-button"
                 >

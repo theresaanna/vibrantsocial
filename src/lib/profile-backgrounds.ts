@@ -55,3 +55,9 @@ export function isValidBgSize(v: string): v is BgSize {
 export function isValidBgPosition(v: string): v is BgPosition {
   return (VALID_BG_POSITION as readonly string[]).includes(v);
 }
+
+/** Client-safe check: returns true when src is a free (non-premium) preset background. */
+export function isFreePresetBackground(src: string | null | undefined): boolean {
+  if (!src) return false;
+  return src.startsWith("/backgrounds/") && !src.startsWith("/backgrounds/premium/");
+}

@@ -13,6 +13,7 @@ import {
   THEME_COLOR_FIELDS,
 } from "@/lib/profile-themes";
 import { headers } from "next/headers";
+import { isPresetBackgroundSrc, isPremiumBackgroundSrc } from "@/lib/profile-backgrounds.server";
 
 const MAX_PROMPT_LENGTH = 200;
 const MAX_PRESETS_PER_USER = 10;
@@ -104,12 +105,15 @@ export async function generateTheme(
   }
 
   const isPremium = await checkAndExpirePremium(session.user.id);
-  if (!isPremium) {
-    return { success: false, error: "Premium subscription required" };
-  }
 
   if (!imageUrl.trim()) {
     return { success: false, error: "Please select a background image" };
+  }
+
+  // Allow non-premium users to generate themes for free preset backgrounds
+  const isFreePreset = isPresetBackgroundSrc(imageUrl) && !isPremiumBackgroundSrc(imageUrl);
+  if (!isPremium && !isFreePreset) {
+    return { success: false, error: "Premium subscription required" };
   }
 
   try {
