@@ -112,10 +112,6 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
     formAction(new FormData(e.currentTarget));
   }, [formAction]);
 
-  const handleSave = useCallback(() => {
-    formRef.current?.requestSubmit();
-  }, []);
-
   // Live color update handler
   const handleColorsChange = useCallback((colors: ProfileThemeColors) => {
     const hasTheme = !!(
@@ -407,8 +403,6 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
                     displayName={user.displayName}
                     bio={user.bio}
                     avatarSrc={avatarSrc}
-                    onSave={handleSave}
-                    isSavingForm={isPending}
                     onColorsChange={handleColorsChange}
                     isPremium={isPremium}
                     userEmail={userEmail}

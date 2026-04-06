@@ -264,6 +264,12 @@ export function BackgroundEditor({
   const content = (
       <div id={contentId} className={embedded ? "space-y-4" : "space-y-4 px-4 pb-4"}>
 
+      {embedded && (
+        <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          Background
+        </h3>
+      )}
+
       {/* Preset backgrounds */}
       <div className="flex flex-wrap gap-2">
         <button
@@ -403,34 +409,6 @@ export function BackgroundEditor({
               ))}
             </select>
           </label>
-        </div>
-      )}
-
-      {/* Container transparency slider */}
-      {containerOpacity !== undefined && (
-        <div className="flex items-center gap-3">
-          <label
-            htmlFor="bg-container-opacity-slider"
-            className="shrink-0 text-xs font-medium text-zinc-600 dark:text-zinc-400"
-          >
-            Container transparency
-          </label>
-          <input
-            id="bg-container-opacity-slider"
-            type="range"
-            min={80}
-            max={100}
-            step={1}
-            value={containerOpacity}
-            onChange={(e) => {
-              onContainerOpacityChange?.(Number(e.target.value));
-              onChange?.();
-            }}
-            className="flex-1 accent-blue-600"
-          />
-          <span className="w-8 shrink-0 text-right text-xs text-zinc-500">
-            {containerOpacity}%
-          </span>
         </div>
       )}
 

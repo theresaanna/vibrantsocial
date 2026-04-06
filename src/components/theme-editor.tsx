@@ -24,8 +24,6 @@ interface ThemeEditorProps {
   bio?: string | null;
   avatarSrc: string | null;
   onChange?: () => void;
-  onSave?: () => void;
-  isSavingForm?: boolean;
   onColorsChange?: (colors: ProfileThemeColors) => void;
   onContainerOpacityChange?: (opacity: number) => void;
   isPremium?: boolean;
@@ -46,8 +44,6 @@ export function ThemeEditor({
 
   avatarSrc,
   onChange,
-  onSave,
-  isSavingForm = false,
   onColorsChange,
   onContainerOpacityChange,
   isPremium = true,
@@ -214,22 +210,8 @@ export function ThemeEditor({
   const name = displayName || username || "Your Name";
   const initial = name[0]?.toUpperCase() ?? "?";
 
-  const saveButton = onSave ? (
-    <button
-      type="button"
-      onClick={onSave}
-      disabled={isSavingForm}
-      className="w-full rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-    >
-      {isSavingForm ? "Saving..." : "Save Theme"}
-    </button>
-  ) : null;
-
   const content = (
         <div className={embedded ? "space-y-4" : "space-y-4 px-4 pb-4"} id={contentId}>
-          {/* Save button — top */}
-          {saveButton}
-
           {/* Inline real-time preview */}
           <div
             className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700"
@@ -567,8 +549,6 @@ export function ThemeEditor({
             </span>
           </div>
 
-          {/* Save button — bottom */}
-          {saveButton}
         </div>
   );
 
