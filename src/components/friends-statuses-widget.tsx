@@ -10,7 +10,6 @@ import { StatusReplyButton } from "@/components/status-reply-button";
 import { rpc } from "@/lib/rpc";
 import type { FriendStatusData } from "@/app/feed/status-actions";
 import { timeAgo } from "@/lib/time";
-import type { FriendStatusData } from "@/app/feed/status-actions";
 
 const POLL_INTERVAL_MS = 30_000;
 
