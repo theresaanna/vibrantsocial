@@ -22,6 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       id: true,
       slug: true,
       content: true,
+      scheduledFor: true,
       author: {
         select: {
           username: true,
@@ -36,7 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
   });
 
-  if (!post?.author) return { title: "Post Not Found" };
+  if (!post?.author || post.scheduledFor) return { title: "Post Not Found" };
 
   const displayName = post.author.displayName || post.author.name || post.author.username;
   const { text, imageUrls } = extractContentFromLexicalJson(post.content);
@@ -158,7 +159,7 @@ export default async function PostPage({ params, searchParams }: Props) {
     },
   });
 
-  if (!post) notFound();
+  if (!post || post.scheduledFor) notFound();
 
   // Redirect marketplace posts to their dedicated URL
   if (post.marketplacePost) {

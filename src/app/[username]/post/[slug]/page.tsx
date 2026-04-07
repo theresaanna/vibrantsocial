@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!user) return { title: "Post Not Found" };
 
   const post = await prisma.post.findFirst({
-    where: { authorId: user.id, slug },
+    where: { authorId: user.id, slug, scheduledFor: null },
     select: {
       id: true,
       content: true,
@@ -109,7 +109,7 @@ export default async function SlugPostPage({ params, searchParams }: Props) {
   }
 
   const post = await prisma.post.findFirst({
-    where: { authorId: author.id, slug },
+    where: { authorId: author.id, slug, scheduledFor: null },
     include: {
       author: {
         select: {

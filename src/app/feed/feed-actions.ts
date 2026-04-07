@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { getPostInclude, getRepostInclude, PAGE_SIZE } from "./feed-queries";
+import { getPostInclude, getRepostInclude, PAGE_SIZE, publishedOnly } from "./feed-queries";
 import { cached, cacheKeys } from "@/lib/cache";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 import { getUserPrefs } from "@/lib/user-prefs";
@@ -16,7 +16,7 @@ export async function fetchSinglePost(postId: string) {
     where: { id: postId },
     include: getPostInclude(session.user.id),
   });
-  if (!post) return null;
+  if (!post || post.scheduledFor) return null;
 
   return {
     type: "post" as const,
@@ -67,6 +67,7 @@ export async function fetchFeedPage(cursor?: string) {
   const [posts, reposts, wallPosts] = await Promise.all([
     prisma.post.findMany({
       where: {
+        ...publishedOnly,
         authorId: { in: [...followingIds, userId] },
         ...(dateFilter ? { createdAt: dateFilter } : {}),
         ...(!showNsfwContent ? { isNsfw: false } : {}),
@@ -207,6 +208,7 @@ export async function fetchNewFeedItems(sinceDate: string) {
   const [posts, reposts, wallPosts] = await Promise.all([
     prisma.post.findMany({
       where: {
+        ...publishedOnly,
         authorId: { in: [...followingIds, userId] },
         createdAt: { gt: since },
         ...(!showNsfwContent ? { isNsfw: false } : {}),

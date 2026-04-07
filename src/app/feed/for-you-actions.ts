@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { getPostInclude, PAGE_SIZE } from "./feed-queries";
+import { getPostInclude, PAGE_SIZE, publishedOnly } from "./feed-queries";
 import { cached, cacheKeys } from "@/lib/cache";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 import { getUserPrefs } from "@/lib/user-prefs";
@@ -44,6 +44,7 @@ export async function fetchForYouPage(cursor?: string) {
   // Fetch a larger pool to sample randomly from
   const pool = await prisma.post.findMany({
     where: {
+      ...publishedOnly,
       authorId: { notIn: excludeIds },
       createdAt: dateFilter,
       isCloseFriendsOnly: false,

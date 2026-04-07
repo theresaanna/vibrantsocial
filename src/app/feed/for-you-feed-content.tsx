@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { FeedClient } from "@/components/feed-client";
 import { calculateAge } from "@/lib/age-gate";
-import { getPostInclude, PAGE_SIZE } from "./feed-queries";
+import { getPostInclude, PAGE_SIZE, publishedOnly } from "./feed-queries";
 import { cached, cacheKeys } from "@/lib/cache";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 import { fetchForYouPage } from "./for-you-actions";
@@ -61,6 +61,7 @@ export async function ForYouFeedContent({ userId }: { userId: string }) {
   // Fetch a larger pool and randomly sample
   const pool = await prisma.post.findMany({
     where: {
+      ...publishedOnly,
       authorId: { notIn: excludeIds },
       createdAt: { gte: sevenDaysAgo },
       isCloseFriendsOnly: false,

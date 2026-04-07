@@ -3,7 +3,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { searchLimiter, isRateLimited } from "@/lib/rate-limit";
-import { PAGE_SIZE } from "@/app/feed/feed-queries";
+import { PAGE_SIZE, publishedOnly } from "@/app/feed/feed-queries";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 import { normalizeTag } from "@/lib/tags";
 import { getUserPrefs } from "@/lib/user-prefs";
@@ -93,6 +93,7 @@ export async function searchPosts(query: string, cursor?: string) {
 
     const posts = await prisma.post.findMany({
       where: {
+        ...publishedOnly,
         content: { contains: trimmed, mode: "insensitive" },
         marketplacePost: null,
         ...(blockedIds.length > 0 ? { authorId: { notIn: blockedIds } } : {}),
@@ -234,6 +235,7 @@ export async function searchMarketplacePosts(query: string, cursor?: string) {
 
   const posts = await prisma.post.findMany({
     where: {
+      ...publishedOnly,
       content: { contains: trimmed, mode: "insensitive" },
       marketplacePost: { isNot: null },
       ...(blockedIds.length > 0 ? { authorId: { notIn: blockedIds } } : {}),

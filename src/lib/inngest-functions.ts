@@ -852,6 +852,112 @@ export const scanChatMessageFn = inngest.createFunction(
   }
 );
 
+// Publish scheduled posts that are due
+
+export async function publishScheduledPosts(): Promise<{ published: number }> {
+  const now = new Date();
+  const posts = await prisma.post.findMany({
+    where: {
+      scheduledFor: { not: null, lte: now },
+      author: { suspended: false },
+    },
+    select: {
+      id: true,
+      content: true,
+      authorId: true,
+      scheduledFor: true,
+      isSensitive: true,
+      isNsfw: true,
+      isGraphicNudity: true,
+      isCloseFriendsOnly: true,
+      hasCustomAudience: true,
+      tags: { include: { tag: { select: { id: true, name: true } } } },
+      audience: { select: { userId: true } },
+    },
+  });
+
+  if (posts.length === 0) return { published: 0 };
+
+  // Import side-effect helpers once, outside the loop
+  const { extractMentionsFromLexicalJson, createMentionNotifications } = await import("./mentions");
+  const { notifyPostSubscribers } = await import("./subscription-notifications");
+  const { notifyTagSubscribers } = await import("./tag-subscription-notifications");
+  const { awardReferralFirstPostBonus, checkStarsMilestone } = await import("./referral");
+  const { invalidatePattern, invalidate, cacheKeys } = await import("./cache");
+
+  let published = 0;
+
+  for (const post of posts) {
+    if (!post.authorId) continue;
+
+    // Mark as published: clear scheduledFor and set createdAt to scheduled time
+    await prisma.post.update({
+      where: { id: post.id },
+      data: { scheduledFor: null, createdAt: post.scheduledFor! },
+    });
+
+    await awardReferralFirstPostBonus(post.authorId);
+    await checkStarsMilestone(post.authorId);
+
+    // Mention notifications
+    const mentionedUsernames = extractMentionsFromLexicalJson(post.content);
+    if (mentionedUsernames.length > 0) {
+      await createMentionNotifications({
+        usernames: mentionedUsernames,
+        actorId: post.authorId,
+        postId: post.id,
+      });
+    }
+
+    // Post subscriber notifications
+    await notifyPostSubscribers({
+      authorId: post.authorId,
+      postId: post.id,
+      isSensitive: post.isSensitive,
+      isNsfw: post.isNsfw,
+      isGraphicNudity: post.isGraphicNudity,
+      isCloseFriendsOnly: post.isCloseFriendsOnly,
+      hasCustomAudience: post.hasCustomAudience,
+      customAudienceIds: post.audience.map((a) => a.userId),
+    });
+
+    // Tag subscriber notifications
+    if (post.tags.length > 0) {
+      await notifyTagSubscribers({
+        authorId: post.authorId,
+        postId: post.id,
+        tagIds: post.tags.map((t) => t.tag.id),
+        tagNames: post.tags.map((t) => t.tag.name),
+        isSensitive: post.isSensitive,
+        isNsfw: post.isNsfw,
+        isGraphicNudity: post.isGraphicNudity,
+        isCloseFriendsOnly: post.isCloseFriendsOnly,
+        hasCustomAudience: post.hasCustomAudience,
+      });
+    }
+
+    // Trigger moderation scan
+    await inngest.send({
+      name: "moderation/scan-post",
+      data: { postId: post.id, userId: post.authorId },
+    });
+
+    // Cache invalidation
+    await invalidatePattern("user:*:feed-summary");
+    await invalidate(cacheKeys.profileTabFlags(post.authorId));
+
+    published++;
+  }
+
+  return { published };
+}
+
+export const publishScheduledPostsFn = inngest.createFunction(
+  { id: "publish-scheduled-posts" },
+  { cron: "* * * * *" },
+  async () => publishScheduledPosts()
+);
+
 export const allFunctions = [
   sendCommentEmailFn,
   sendMentionEmailFn,
@@ -864,4 +970,5 @@ export const allFunctions = [
   sendTagDigestFn,
   scanPostContentFn,
   scanChatMessageFn,
+  publishScheduledPostsFn,
 ];

@@ -3,7 +3,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
-import { getPostInclude } from "@/app/feed/feed-queries";
+import { getPostInclude, publishedOnly } from "@/app/feed/feed-queries";
 
 const TOP_DISCUSSED_LIMIT = 5;
 const DAYS_WINDOW = 7;
@@ -48,6 +48,7 @@ export async function fetchTopDiscussedPosts() {
 
   const posts = await prisma.post.findMany({
     where: {
+      ...publishedOnly,
       createdAt: { gte: since },
       author: {
         isProfilePublic: true,

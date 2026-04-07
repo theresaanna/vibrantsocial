@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { FeedClient } from "@/components/feed-client";
 import { calculateAge } from "@/lib/age-gate";
-import { getPostInclude, getRepostInclude, PAGE_SIZE } from "./feed-queries";
+import { getPostInclude, getRepostInclude, PAGE_SIZE, publishedOnly } from "./feed-queries";
 import { getCloseFriendIds, getCachedCloseFriendOfIds } from "@/app/feed/close-friends-actions";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 
@@ -72,6 +72,7 @@ export async function CloseFriendsFeedContent({ userId }: { userId: string }) {
   const [posts, reposts] = await Promise.all([
     prisma.post.findMany({
       where: {
+        ...publishedOnly,
         authorId: { in: memberIds },
         ...(!showNsfwContent ? { isNsfw: false } : {}),
         ...(!showNsfwContent || !ageVerified || !hideSensitiveOverlay ? { isSensitive: false } : {}),

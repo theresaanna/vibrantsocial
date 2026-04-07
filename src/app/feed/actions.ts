@@ -1,7 +1,8 @@
 "use server";
 
 import { auth } from "@/auth";
-import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
+import { apiLimiter, isRateLimited } from "@/lib/rate-limit";
+import { prisma } from "@/lib/prisma";
 import { requirePhoneVerification } from "@/lib/phone-gate";
 import { requireMinimumAge } from "@/lib/age-gate";
 import { requireNotSuspended } from "@/lib/suspension-gate";
@@ -108,6 +109,20 @@ export async function createPost(
   const hasCustomAudience = formData.get("hasCustomAudience") === "true";
   const isLoggedInOnly = formData.get("isLoggedInOnly") === "true";
   const hideLinkPreview = formData.get("hideLinkPreview") === "true";
+  const rawScheduledFor = formData.get("scheduledFor") as string | null;
+
+  // Scheduled posts: premium-only
+  let scheduledFor: Date | null = null;
+  if (rawScheduledFor) {
+    const hasPremium = await checkAndExpirePremium(session.user.id);
+    if (!hasPremium) {
+      return { success: false, message: "Scheduling posts is a premium feature" };
+    }
+    scheduledFor = new Date(rawScheduledFor);
+    if (isNaN(scheduledFor.getTime()) || scheduledFor <= new Date()) {
+      return { success: false, message: "Scheduled time must be in the future" };
+    }
+  }
 
   // Age verification required for sensitive/graphic content
   if (isSensitive || isGraphicNudity) {
@@ -163,7 +178,7 @@ export async function createPost(
   slug = await resolveUniqueSlug(session.user.id, slug);
 
   const post = await prisma.post.create({
-    data: { content, slug, authorId: session.user.id, isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly, hasCustomAudience, isLoggedInOnly, hideLinkPreview },
+    data: { content, slug, authorId: session.user.id, isSensitive, isNsfw, isGraphicNudity, isCloseFriendsOnly, hasCustomAudience, isLoggedInOnly, hideLinkPreview, scheduledFor },
   });
 
   // Create custom audience records
@@ -174,10 +189,6 @@ export async function createPost(
   }
 
   await prisma.user.update({ where: { id: session.user.id }, data: { stars: { increment: 1 } } });
-
-  // Award referral bonus if this is the referred user's first post
-  await awardReferralFirstPostBonus(session.user.id);
-  await checkStarsMilestone(session.user.id);
 
   // Attach tags (skip for sensitive/graphic posts; NSFW posts can have tags)
   const rawTags = formData.get("tags") as string;
@@ -197,16 +208,28 @@ export async function createPost(
       createdTagIds.push(tag.id);
       createdTagNames.push(name);
     }
-    // Invalidate tag caches
-    if (isNsfw) {
-      await invalidate(cacheKeys.nsfwTagCloud());
-    } else {
-      await invalidate(cacheKeys.tagCloud());
+    // Invalidate tag caches (only for immediate posts)
+    if (!scheduledFor) {
+      if (isNsfw) {
+        await invalidate(cacheKeys.nsfwTagCloud());
+      } else {
+        await invalidate(cacheKeys.tagCloud());
+      }
+      await Promise.all(
+        tagNames.map((name) => invalidate(cacheKeys.tagPostCount(name)))
+      );
     }
-    await Promise.all(
-      tagNames.map((name) => invalidate(cacheKeys.tagPostCount(name)))
-    );
   }
+
+  // For scheduled posts, defer side effects until publish time
+  if (scheduledFor) {
+    revalidatePath("/compose");
+    return { success: true, message: "Post scheduled", postId: post.id, slug: post.slug ?? undefined };
+  }
+
+  // Award referral bonus if this is the referred user's first post
+  await awardReferralFirstPostBonus(session.user.id);
+  await checkStarsMilestone(session.user.id);
 
   // Send mention notifications
   const mentionedUsernames = extractMentionsFromLexicalJson(content);

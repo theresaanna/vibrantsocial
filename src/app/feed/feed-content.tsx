@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { FeedClient } from "@/components/feed-client";
 import { calculateAge } from "@/lib/age-gate";
-import { getPostInclude, getRepostInclude, PAGE_SIZE } from "./feed-queries";
+import { getPostInclude, getRepostInclude, PAGE_SIZE, publishedOnly } from "./feed-queries";
 import { cached, cacheKeys } from "@/lib/cache";
 import { getCloseFriendIds, getCachedCloseFriendOfIds } from "@/app/feed/close-friends-actions";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
@@ -76,6 +76,7 @@ export async function FeedContent({ userId, activeView = "posts" }: { userId: st
   const [posts, reposts, statusData, feedSummaryData] = await Promise.all([
     prisma.post.findMany({
       where: {
+        ...publishedOnly,
         authorId: { in: [...followingIds, userId] },
         ...(!showNsfwContent ? { isNsfw: false } : {}),
         ...(!showNsfwContent || !ageVerified || !hideSensitiveOverlay ? { isSensitive: false } : {}),

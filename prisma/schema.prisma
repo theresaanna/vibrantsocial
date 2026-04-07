@@ -270,6 +270,7 @@ model Post {
   isLoggedInOnly     Boolean   @default(false)
   isPinned           Boolean   @default(false)
   hideLinkPreview    Boolean   @default(false)
+  scheduledFor       DateTime?
   editedAt           DateTime?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
@@ -292,6 +293,7 @@ model Post {
   @@unique([authorId, slug])
   @@index([authorId])
   @@index([createdAt])
+  @@index([scheduledFor])
 }
 
 model PostView {

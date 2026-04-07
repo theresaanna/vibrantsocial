@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { publishedOnly } from "@/app/feed/feed-queries";
 
 const MARKETPLACE_PAGE_SIZE = 30;
 
@@ -65,6 +66,7 @@ export async function fetchMarketplacePage(
 
   const posts = await prisma.post.findMany({
     where: {
+      ...publishedOnly,
       marketplacePost: { isNot: null },
       ...visibilityFilter,
       ...(!showNsfwContent ? { isNsfw: false } : {}),
@@ -208,6 +210,7 @@ export async function fetchUserMarketplacePosts(
 
   const posts = await prisma.post.findMany({
     where: {
+      ...publishedOnly,
       authorId: userId,
       marketplacePost: { isNot: null },
       ...(!showNsfwContent ? { isNsfw: false } : {}),
