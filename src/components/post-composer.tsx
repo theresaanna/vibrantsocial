@@ -488,9 +488,10 @@ function ScheduleSection({
 }) {
   const [expanded, setExpanded] = useState(false);
 
-  // Minimum datetime: 5 minutes from now, formatted for datetime-local input
+  // Minimum datetime: 5 minutes from now, formatted for datetime-local input (local time)
   const minDate = new Date(Date.now() + 5 * 60_000);
-  const minDateStr = minDate.toISOString().slice(0, 16);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const minDateStr = `${minDate.getFullYear()}-${pad(minDate.getMonth() + 1)}-${pad(minDate.getDate())}T${pad(minDate.getHours())}:${pad(minDate.getMinutes())}`;
 
   return (
     <div className="border-t border-zinc-200 px-4 py-2 dark:border-zinc-700">
@@ -511,7 +512,7 @@ function ScheduleSection({
           </svg>
           {scheduledFor ? `Scheduled: ${new Date(scheduledFor).toLocaleString()}` : "Schedule"}
         </button>
-        {!isPremium && <PremiumCrown href="/premium" inline />}
+        <PremiumCrown href="/premium" inline />
         {scheduledFor && (
           <button
             type="button"

@@ -41,17 +41,22 @@ export function ScheduledPostsList({ posts }: { posts: ScheduledPost[] }) {
   );
 }
 
+function toLocalDatetimeStr(date: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 function ScheduledPostCard({ post }: { post: ScheduledPost }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [editingSchedule, setEditingSchedule] = useState(false);
   const [newSchedule, setNewSchedule] = useState(
-    new Date(post.scheduledFor).toISOString().slice(0, 16)
+    toLocalDatetimeStr(new Date(post.scheduledFor))
   );
   const [error, setError] = useState("");
 
   const scheduledDate = new Date(post.scheduledFor);
-  const minDate = new Date(Date.now() + 5 * 60_000).toISOString().slice(0, 16);
+  const minDate = toLocalDatetimeStr(new Date(Date.now() + 5 * 60_000));
 
   function handleUpdateSchedule() {
     setError("");
