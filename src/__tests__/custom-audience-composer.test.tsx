@@ -245,7 +245,7 @@ describe("PostComposer - Custom Audience", () => {
     expect(screen.getByText("Custom Audience (2)")).toBeInTheDocument();
   });
 
-  it("clears audience when Custom Audience button is clicked while active", () => {
+  it("reopens picker when Custom Audience button is clicked while active", () => {
     render(
       <PostComposer phoneVerified={true} isOldEnough={true} isPremium={true} />
     );
@@ -255,13 +255,55 @@ describe("PostComposer - Custom Audience", () => {
     fireEvent.click(screen.getByTestId("mock-select-friends"));
     fireEvent.click(screen.getByTestId("mock-close-picker"));
 
-    // Click button again to clear
+    // Click button again — should reopen picker, not clear
     fireEvent.click(screen.getByTestId("custom-audience-button"));
+
+    expect(screen.getByTestId("audience-picker-modal")).toBeInTheDocument();
+
+    // Audience should still be set
+    const hasCustomAudience = document.querySelector(
+      'input[name="hasCustomAudience"]'
+    ) as HTMLInputElement;
+    expect(hasCustomAudience.value).toBe("true");
+  });
+
+  it("clears audience when × clear button is clicked", () => {
+    render(
+      <PostComposer phoneVerified={true} isOldEnough={true} isPremium={true} />
+    );
+
+    // Open picker and select friends
+    fireEvent.click(screen.getByTestId("custom-audience-button"));
+    fireEvent.click(screen.getByTestId("mock-select-friends"));
+    fireEvent.click(screen.getByTestId("mock-close-picker"));
+
+    // Verify audience is active
+    expect(screen.getByText("Custom Audience (2)")).toBeInTheDocument();
+
+    // Click the × clear button
+    fireEvent.click(screen.getByTestId("clear-custom-audience"));
 
     const hasCustomAudience = document.querySelector(
       'input[name="hasCustomAudience"]'
     ) as HTMLInputElement;
     expect(hasCustomAudience.value).toBe("false");
+  });
+
+  it("shows × clear button only when audience is selected", () => {
+    render(
+      <PostComposer phoneVerified={true} isOldEnough={true} isPremium={true} />
+    );
+
+    // No clear button initially
+    expect(screen.queryByTestId("clear-custom-audience")).not.toBeInTheDocument();
+
+    // Open picker and select friends
+    fireEvent.click(screen.getByTestId("custom-audience-button"));
+    fireEvent.click(screen.getByTestId("mock-select-friends"));
+    fireEvent.click(screen.getByTestId("mock-close-picker"));
+
+    // Clear button should now appear
+    expect(screen.getByTestId("clear-custom-audience")).toBeInTheDocument();
   });
 
   it("disables Close Friends when Custom Audience is selected", () => {

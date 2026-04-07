@@ -130,6 +130,76 @@ test.describe("Custom Audience", () => {
     ).toBeVisible({ timeout: 3000 });
   });
 
+  test("clicking Custom Audience button reopens picker to edit selection", async ({ page }) => {
+    await setTestUserTier("premium");
+    await createFriendship(TEST_USER.email, TEST_USER_2.email);
+
+    await page.goto("/compose");
+    await page.reload();
+
+    const button = page.getByTestId("custom-audience-button");
+    await expect(button).toBeVisible({ timeout: 10000 });
+    await button.click();
+
+    // Wait for friends to load and select one
+    await expect(
+      page.locator(`text=${TEST_USER_2.displayName}`)
+    ).toBeVisible({ timeout: 10000 });
+
+    const friendRow = page.locator(`label:has-text("${TEST_USER_2.displayName}")`);
+    const checkbox = friendRow.locator('input[type="checkbox"]');
+    await checkbox.click();
+
+    // Close the picker
+    await page.getByTestId("audience-done").click();
+    await expect(button).toContainText("Custom Audience (1)");
+
+    // Click the button again — should reopen the picker (not clear)
+    await button.click();
+    const modal = page.getByRole("dialog", { name: "Select custom audience" });
+    await expect(modal).toBeVisible({ timeout: 5000 });
+
+    // The previously selected friend should still be checked
+    const reopenedCheckbox = page
+      .locator(`label:has-text("${TEST_USER_2.displayName}")`)
+      .locator('input[type="checkbox"]');
+    await expect(reopenedCheckbox).toBeChecked();
+  });
+
+  test("× clear button removes custom audience selection", async ({ page }) => {
+    await setTestUserTier("premium");
+    await createFriendship(TEST_USER.email, TEST_USER_2.email);
+
+    await page.goto("/compose");
+    await page.reload();
+
+    const button = page.getByTestId("custom-audience-button");
+    await expect(button).toBeVisible({ timeout: 10000 });
+    await button.click();
+
+    // Select a friend
+    await expect(
+      page.locator(`text=${TEST_USER_2.displayName}`)
+    ).toBeVisible({ timeout: 10000 });
+    const friendRow = page.locator(`label:has-text("${TEST_USER_2.displayName}")`);
+    await friendRow.locator('input[type="checkbox"]').click();
+    await page.getByTestId("audience-done").click();
+
+    await expect(button).toContainText("Custom Audience (1)");
+
+    // Click the × clear button
+    const clearButton = page.getByTestId("clear-custom-audience");
+    await expect(clearButton).toBeVisible();
+    await clearButton.click();
+
+    // Button text should reset
+    await expect(button).toContainText("Custom Audience");
+    await expect(button).not.toContainText("(1)");
+
+    // Clear button should disappear
+    await expect(clearButton).not.toBeVisible();
+  });
+
   test("Custom Audience and Close Friends are mutually exclusive", async ({ page }) => {
     await setTestUserTier("premium");
     await page.goto("/compose");
