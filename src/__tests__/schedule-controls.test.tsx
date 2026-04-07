@@ -156,7 +156,7 @@ describe("PostComposer scheduling controls", () => {
     expect(toggle).toBeDisabled();
   });
 
-  it("shows premium badge for non-premium users near schedule section", () => {
+  it("shows premium badge near schedule section for all users", () => {
     render(
       <PostComposer phoneVerified={true} isOldEnough={true} isPremium={false} />
     );

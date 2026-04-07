@@ -511,7 +511,7 @@ function ScheduleSection({
           </svg>
           {scheduledFor ? `Scheduled: ${new Date(scheduledFor).toLocaleString()}` : "Schedule"}
         </button>
-        {!isPremium && <PremiumCrown href="/premium" inline />}
+        <PremiumCrown href="/premium" inline />
         {scheduledFor && (
           <button
             type="button"
