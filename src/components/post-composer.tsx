@@ -80,6 +80,7 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, isAgeVerif
   const [draftStatus, setDraftStatus] = useState<DraftSaveStatus>("idle");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewDismissed, setPreviewDismissed] = useState(false);
+  const [scheduledFor, setScheduledFor] = useState("");
   const [previewStatus, setPreviewStatus] = useState<"loading" | "loaded" | "empty">("loading");
   const previewDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -118,10 +119,11 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, isAgeVerif
         setIsLoggedInOnly(false);
         setSlug("");
         setShowSlugInput(false);
+        setScheduledFor("");
         setPreviewUrl(null);
         setPreviewDismissed(false);
         clearDraft("compose");
-        if (result.postId) onPostCreated?.(result.postId);
+        if (result.postId && !formData.get("scheduledFor")) onPostCreated?.(result.postId);
       }
       return result;
     },
@@ -251,6 +253,7 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, isAgeVerif
           )}
         </div>
         <input type="hidden" name="hideLinkPreview" value={previewDismissed ? "true" : "false"} />
+        {scheduledFor && <input type="hidden" name="scheduledFor" value={new Date(scheduledFor).toISOString()} />}
         <input type="hidden" name="isGraphicNudity" value={isGraphicNudity ? "true" : "false"} />
         <input type="hidden" name="isCloseFriendsOnly" value={isCloseFriendsOnly ? "true" : "false"} />
         <input type="hidden" name="hasCustomAudience" value={customAudienceIds.length > 0 ? "true" : "false"} />
@@ -285,6 +288,11 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, isAgeVerif
             </div>
           )}
         </div>
+        <ScheduleSection
+          isPremium={!!isPremium}
+          scheduledFor={scheduledFor}
+          onChange={setScheduledFor}
+        />
         <div className="border-t border-zinc-200 px-4 py-2 dark:border-zinc-700">
           <button
             type="button"
@@ -458,11 +466,81 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, isAgeVerif
               disabled={isPending}
               className="rounded-lg bg-gradient-to-r from-fuchsia-600 to-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:from-fuchsia-500 hover:to-blue-500 disabled:opacity-50"
             >
-              {isPending ? "Posting..." : "Post"}
+              {isPending
+                ? scheduledFor ? "Scheduling..." : "Posting..."
+                : scheduledFor ? "Schedule" : "Post"}
             </button>
           </div>
         </div>
       </form>
+    </div>
+  );
+}
+
+function ScheduleSection({
+  isPremium,
+  scheduledFor,
+  onChange,
+}: {
+  isPremium: boolean;
+  scheduledFor: string;
+  onChange: (value: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  // Minimum datetime: 5 minutes from now, formatted for datetime-local input
+  const minDate = new Date(Date.now() + 5 * 60_000);
+  const minDateStr = minDate.toISOString().slice(0, 16);
+
+  return (
+    <div className="border-t border-zinc-200 px-4 py-2 dark:border-zinc-700">
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => isPremium && setExpanded(!expanded)}
+          disabled={!isPremium}
+          className="flex flex-1 items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-400 dark:hover:text-zinc-300"
+          data-testid="schedule-toggle"
+        >
+          <svg className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-90" : ""}`} fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+          </svg>
+          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" />
+            <path strokeLinecap="round" d="M12 6v6l4 2" />
+          </svg>
+          {scheduledFor ? `Scheduled: ${new Date(scheduledFor).toLocaleString()}` : "Schedule Post"}
+        </button>
+        {!isPremium && <PremiumCrown href="/premium" inline />}
+        {scheduledFor && (
+          <button
+            type="button"
+            onClick={() => { onChange(""); setExpanded(false); }}
+            className="rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+            title="Clear schedule"
+            data-testid="clear-schedule"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+      </div>
+      {expanded && isPremium && (
+        <div className="mt-2">
+          <input
+            type="datetime-local"
+            value={scheduledFor}
+            onChange={(e) => onChange(e.target.value)}
+            min={minDateStr}
+            className="w-full rounded-md border border-zinc-200 px-3 py-1.5 text-sm text-zinc-900 focus:border-zinc-400 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-500"
+            data-testid="schedule-datetime"
+          />
+          <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+            Post will be published at this time
+          </p>
+        </div>
+      )}
     </div>
   );
 }

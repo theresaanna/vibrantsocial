@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { invalidate, cached, cacheKeys } from "@/lib/cache";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
-import { getPostInclude, getRepostInclude, PAGE_SIZE } from "@/app/feed/feed-queries";
+import { getPostInclude, getRepostInclude, PAGE_SIZE, publishedOnly } from "@/app/feed/feed-queries";
 import {
   requireAuthWithRateLimit,
   isActionError,
@@ -778,6 +778,7 @@ export async function fetchListFeedPage(listId: string, cursor?: string) {
   const [posts, reposts] = await Promise.all([
     prisma.post.findMany({
       where: {
+        ...publishedOnly,
         authorId: { in: memberIds },
         ...(dateFilter ? { createdAt: dateFilter } : {}),
         ...(!showNsfwContent ? { isNsfw: false } : {}),
@@ -861,6 +862,7 @@ export async function fetchNewListFeedItems(listId: string, sinceDate: string) {
   const [posts, reposts] = await Promise.all([
     prisma.post.findMany({
       where: {
+        ...publishedOnly,
         authorId: { in: memberIds },
         createdAt: { gt: since },
         ...(!showNsfwContent ? { isNsfw: false } : {}),

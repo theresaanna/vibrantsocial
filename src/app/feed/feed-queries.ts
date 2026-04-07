@@ -1,5 +1,8 @@
 export const PAGE_SIZE = 10;
 
+/** Filter that excludes scheduled (not-yet-published) posts from queries */
+export const publishedOnly = { scheduledFor: null } as const;
+
 export function getPostInclude(userId: string) {
   return {
     author: {

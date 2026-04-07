@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { extractMediaFromLexicalJson } from "@/lib/lexical-text";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
+import { publishedOnly } from "@/app/feed/feed-queries";
 
 const MEDIA_PAGE_SIZE = 30;
 
@@ -54,6 +55,7 @@ export async function fetchCommunitiesMediaPage(
 
   const posts = await prisma.post.findMany({
     where: {
+      ...publishedOnly,
       ...(isLoggedIn ? {} : { author: { isProfilePublic: true } }),
       ...(blockedIds.length > 0 ? { authorId: { notIn: blockedIds } } : {}),
       marketplacePost: null,

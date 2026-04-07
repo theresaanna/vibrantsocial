@@ -24,6 +24,7 @@ import { getChatRequestStatus, type ChatRequestStatus } from "@/app/chat/actions
 import { deriveBlockStatus } from "@/app/feed/block-actions";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
+import { publishedOnly } from "@/app/feed/feed-queries";
 import { buildProfilePostsContentFilter } from "./profile-queries";
 import { MarketplaceGrid } from "@/components/marketplace-grid";
 import { fetchUserMarketplacePosts } from "@/app/marketplace/media-actions";
@@ -409,6 +410,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   const posts = activeTab === "posts"
     ? await prisma.post.findMany({
         where: {
+          ...publishedOnly,
           authorId: user.id,
           ...loggedOutFilter,
           ...closeFriendsFilter,
@@ -440,7 +442,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   // Sensitive tab: only isSensitive posts, only for logged-in users
   const sensitivePosts = activeTab === "sensitive" && currentUserId
     ? await prisma.post.findMany({
-        where: { authorId: user.id, isSensitive: true, ...closeFriendsFilter, ...audienceFilter },
+        where: { ...publishedOnly, authorId: user.id, isSensitive: true, ...closeFriendsFilter, ...audienceFilter },
         orderBy: { createdAt: "desc" },
         take: 20,
         include: postInclude,
@@ -450,7 +452,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   // NSFW tab: only isNsfw posts, only for logged-in users
   const nsfwPosts = activeTab === "nsfw" && currentUserId
     ? await prisma.post.findMany({
-        where: { authorId: user.id, isNsfw: true, ...closeFriendsFilter, ...audienceFilter },
+        where: { ...publishedOnly, authorId: user.id, isNsfw: true, ...closeFriendsFilter, ...audienceFilter },
         orderBy: { createdAt: "desc" },
         take: 20,
         include: postInclude,
@@ -460,7 +462,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   // Graphic/Explicit tab: only isGraphicNudity posts, only for logged-in users
   const graphicPosts = activeTab === "graphic" && currentUserId
     ? await prisma.post.findMany({
-        where: { authorId: user.id, isGraphicNudity: true, ...closeFriendsFilter, ...audienceFilter },
+        where: { ...publishedOnly, authorId: user.id, isGraphicNudity: true, ...closeFriendsFilter, ...audienceFilter },
         orderBy: { createdAt: "desc" },
         take: 20,
         include: postInclude,

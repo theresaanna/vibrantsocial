@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { extractMediaFromLexicalJson } from "@/lib/lexical-text";
 import { getUserPrefs } from "@/lib/user-prefs";
+import { publishedOnly } from "@/app/feed/feed-queries";
 
 const MEDIA_PAGE_SIZE = 30;
 
@@ -82,6 +83,7 @@ export async function fetchUserMediaPosts(
 
   const posts = await prisma.post.findMany({
     where: {
+      ...publishedOnly,
       authorId: userId,
       ...nsfwFilter,
       ...closeFriendsFilter,

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { anthropic } from "@/lib/anthropic";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
 import { cached, getCached, cacheKeys, invalidate } from "@/lib/cache";
+import { publishedOnly } from "@/app/feed/feed-queries";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 import { getUserPrefs } from "@/lib/user-prefs";
 import { getCachedCloseFriendOfIds } from "@/app/feed/close-friends-actions";
@@ -58,6 +59,7 @@ async function fetchMissedPosts(userId: string, since: Date, limit: number) {
 
   return prisma.post.findMany({
     where: {
+      ...publishedOnly,
       authorId: { in: [...followingIds, userId] },
       createdAt: { gt: since },
       ...(!showNsfwContent ? { isNsfw: false } : {}),
