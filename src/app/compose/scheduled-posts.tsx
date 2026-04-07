@@ -98,7 +98,7 @@ function ScheduledPostCard({ post }: { post: ScheduledPost }) {
     post.isNsfw && "NSFW",
     post.isSensitive && "Sensitive",
     post.isGraphicNudity && "Graphic/Explicit",
-  ].filter(Boolean);
+  ].filter((f): f is string => !!f);
 
   return (
     <div
