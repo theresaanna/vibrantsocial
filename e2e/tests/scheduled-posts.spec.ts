@@ -1,10 +1,28 @@
 import { test, expect } from "@playwright/test";
 import { setTestUserTier, TEST_USER } from "../helpers/db";
+import pg from "pg";
+
+async function deleteScheduledPosts() {
+  const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+  try {
+    await pool.query(
+      `DELETE FROM "Post" WHERE "authorId" IN (SELECT id FROM "User" WHERE email = $1) AND "scheduledFor" IS NOT NULL`,
+      [TEST_USER.email]
+    );
+  } finally {
+    await pool.end();
+  }
+}
 
 // Tagged @slow so it's skipped by pre-push hook (--grep-invert "@slow")
 test.describe("Scheduled Posts @slow", () => {
+  test.beforeEach(async () => {
+    await deleteScheduledPosts();
+  });
+
   test.afterEach(async () => {
     await setTestUserTier("free");
+    await deleteScheduledPosts();
   });
 
   test("schedule toggle is disabled for free users", async ({ page }) => {
@@ -54,7 +72,7 @@ test.describe("Scheduled Posts @slow", () => {
     await submitButton.click();
 
     // Should see the scheduled post card on the compose page
-    await expect(page.getByTestId("scheduled-post-card").first()).toBeVisible({
+    await expect(page.getByTestId("scheduled-post-card")).toBeVisible({
       timeout: 10000,
     });
   });
@@ -74,43 +92,45 @@ test.describe("Scheduled Posts @slow", () => {
     await page.getByTestId("schedule-datetime").fill("2099-06-15T10:00");
     await page.locator('button[type="submit"]').click();
 
-    // Should see the scheduled posts section
-    await expect(page.getByText("Scheduled Posts")).toBeVisible({
-      timeout: 10000,
-    });
-    await expect(page.getByTestId("scheduled-post-card").first()).toBeVisible();
+    // Should see the scheduled posts section heading
+    await expect(
+      page.locator("h2", { hasText: "Scheduled Posts" })
+    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId("scheduled-post-card")).toBeVisible();
 
     // Should see management buttons
-    await expect(page.getByTestId("publish-now-button").first()).toBeVisible();
-    await expect(page.getByTestId("edit-schedule-button").first()).toBeVisible();
-    await expect(page.getByTestId("delete-scheduled-button").first()).toBeVisible();
+    await expect(page.getByTestId("publish-now-button")).toBeVisible();
+    await expect(page.getByTestId("edit-schedule-button")).toBeVisible();
+    await expect(page.getByTestId("delete-scheduled-button")).toBeVisible();
   });
 
   test("premium user can delete a scheduled post", async ({ page }) => {
     await setTestUserTier("premium");
     await page.goto("/compose");
 
+    const uniqueDeleteText = `Delete-me-${Date.now()}`;
+
     // Create a scheduled post
     const editor = page.locator('[contenteditable="true"]').first();
     await editor.click();
     await editor.pressSequentially(
-      "A post that will be deleted before it publishes. Enough content here.",
+      `${uniqueDeleteText} Enough content here to pass validation.`,
       { delay: 10 }
     );
     await page.getByTestId("schedule-toggle").click();
     await page.getByTestId("schedule-datetime").fill("2099-03-01T08:00");
     await page.locator('button[type="submit"]').click();
 
-    await expect(page.getByTestId("scheduled-post-card").first()).toBeVisible({
+    await expect(page.getByTestId("scheduled-post-card")).toBeVisible({
       timeout: 10000,
     });
 
     // Delete it
     page.on("dialog", (dialog) => dialog.accept());
-    await page.getByTestId("delete-scheduled-button").first().click();
+    await page.getByTestId("delete-scheduled-button").click();
 
-    // The card should disappear (or the count change)
-    await expect(page.getByText("A post that will be deleted")).toBeHidden({
+    // The card should disappear
+    await expect(page.getByText(uniqueDeleteText)).toBeHidden({
       timeout: 10000,
     });
   });
@@ -131,7 +151,7 @@ test.describe("Scheduled Posts @slow", () => {
     await page.getByTestId("schedule-datetime").fill("2099-01-01T00:00");
     await page.locator('button[type="submit"]').click();
 
-    await expect(page.getByTestId("scheduled-post-card").first()).toBeVisible({
+    await expect(page.getByTestId("scheduled-post-card")).toBeVisible({
       timeout: 10000,
     });
 
