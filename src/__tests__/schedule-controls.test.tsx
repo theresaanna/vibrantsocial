@@ -140,12 +140,12 @@ describe("PostComposer scheduling controls", () => {
     vi.clearAllMocks();
   });
 
-  it("shows Schedule Post toggle for all users", () => {
+  it("shows Schedule toggle for all users", () => {
     render(
       <PostComposer phoneVerified={true} isOldEnough={true} />
     );
     expect(screen.getByTestId("schedule-toggle")).toBeInTheDocument();
-    expect(screen.getByText("Schedule Post")).toBeInTheDocument();
+    expect(screen.getByText("Schedule")).toBeInTheDocument();
   });
 
   it("disables schedule toggle for non-premium users", () => {

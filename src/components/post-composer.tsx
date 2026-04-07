@@ -509,7 +509,7 @@ function ScheduleSection({
             <circle cx="12" cy="12" r="10" />
             <path strokeLinecap="round" d="M12 6v6l4 2" />
           </svg>
-          {scheduledFor ? `Scheduled: ${new Date(scheduledFor).toLocaleString()}` : "Schedule Post"}
+          {scheduledFor ? `Scheduled: ${new Date(scheduledFor).toLocaleString()}` : "Schedule"}
         </button>
         {!isPremium && <PremiumCrown href="/premium" inline />}
         {scheduledFor && (
