@@ -425,7 +425,7 @@ export function RepostCard({
       </div>
 
       {isQuote ? (
-        <div className="overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-700">
+        <div className={`overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-700${showOverlay ? " bg-white shadow-lg dark:bg-zinc-900" : ""}`}>
           {showOverlay ? (
             <div className="px-4 py-6">
               <div className="flex flex-col items-center justify-center rounded-lg bg-zinc-100 py-8 dark:bg-zinc-800">
