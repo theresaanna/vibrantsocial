@@ -6,12 +6,14 @@ import { toggleStatusLike } from "@/app/feed/status-actions";
 
 interface StatusLikeButtonProps {
   statusId: string;
+  username: string | null;
   likeCount: number;
   isLiked: boolean;
 }
 
 export function StatusLikeButton({
   statusId,
+  username,
   likeCount,
   isLiked,
 }: StatusLikeButtonProps) {
@@ -46,13 +48,22 @@ export function StatusLikeButton({
         </svg>
       </button>
       {like.count > 0 && (
-        <Link
-          href={`/statuses/${statusId}/likes`}
-          className="text-xs text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
-          data-testid="status-like-count"
-        >
-          {like.count}
-        </Link>
+        username ? (
+          <Link
+            href={`/statuses/${username}/${statusId}/likes`}
+            className="text-xs text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+            data-testid="status-like-count"
+          >
+            {like.count}
+          </Link>
+        ) : (
+          <span
+            className="text-xs text-zinc-400 dark:text-zinc-500"
+            data-testid="status-like-count"
+          >
+            {like.count}
+          </span>
+        )
       )}
     </span>
   );

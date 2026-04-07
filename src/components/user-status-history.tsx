@@ -91,6 +91,7 @@ export function UserStatusHistory({
               </span>
               <StatusLikeButton
                 statusId={status.id}
+                username={status.user.username}
                 likeCount={status.likeCount}
                 isLiked={status.isLiked}
               />
