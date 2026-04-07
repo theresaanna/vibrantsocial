@@ -506,4 +506,51 @@ describe("PostCard - sensitive/Graphic/NSFW content gating", () => {
     expect(screen.getByText("Test User")).toBeInTheDocument();
     expect(screen.getByText("@testuser")).toBeInTheDocument();
   });
+
+  // ── Custom audience lock icon ─────────────────────────────────────
+
+  it("shows lock icon badge for custom audience posts", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, hasCustomAudience: true }}
+        currentUserId="user1"
+        {...defaultProps}
+      />
+    );
+    const badge = screen.getByTitle("Custom audience");
+    expect(badge).toBeInTheDocument();
+  });
+
+  it("does not show lock icon for posts without custom audience", () => {
+    render(
+      <PostCard
+        post={basePost}
+        currentUserId="user1"
+        {...defaultProps}
+      />
+    );
+    expect(screen.queryByTitle("Custom audience")).not.toBeInTheDocument();
+  });
+
+  it("does not show lock icon when hasCustomAudience is false", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, hasCustomAudience: false }}
+        currentUserId="user1"
+        {...defaultProps}
+      />
+    );
+    expect(screen.queryByTitle("Custom audience")).not.toBeInTheDocument();
+  });
+
+  it("shows lock icon alongside other content flags", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isCloseFriendsOnly: true, hasCustomAudience: true }}
+        currentUserId="user1"
+        {...defaultProps}
+      />
+    );
+    expect(screen.getByTitle("Custom audience")).toBeInTheDocument();
+  });
 });

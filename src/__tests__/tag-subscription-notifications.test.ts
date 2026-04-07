@@ -70,6 +70,18 @@ describe("notifyTagSubscribers", () => {
     expect(mockPrisma.tagSubscription.findMany).not.toHaveBeenCalled();
   });
 
+  it("does nothing for custom audience posts", async () => {
+    await notifyTagSubscribers({
+      authorId: "author1",
+      postId: "post1",
+      tagIds: ["tag1"],
+      tagNames: ["art"],
+      hasCustomAudience: true,
+    });
+
+    expect(mockPrisma.tagSubscription.findMany).not.toHaveBeenCalled();
+  });
+
   it("does nothing when tagIds is empty", async () => {
     await notifyTagSubscribers({
       authorId: "author1",

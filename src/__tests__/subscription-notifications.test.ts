@@ -301,4 +301,150 @@ describe("notifyPostSubscribers", () => {
 
     expect(mockCreateNotification).not.toHaveBeenCalled();
   });
+
+  // ── Custom audience filtering ──────────────────────────────────────
+
+  it("only notifies subscribers who are in the custom audience", async () => {
+    mockPrisma.postSubscription.findMany.mockResolvedValueOnce([
+      { subscriberId: "sub1" },
+      { subscriberId: "sub2" },
+      { subscriberId: "sub3" },
+    ] as never);
+
+    mockPrisma.user.findMany.mockResolvedValueOnce([] as never);
+    mockPrisma.user.findUnique.mockResolvedValueOnce({
+      displayName: "Author",
+      username: "author1",
+      name: null,
+    } as never);
+
+    mockCreateNotification.mockResolvedValue({} as never);
+
+    await notifyPostSubscribers({
+      authorId: "author1",
+      postId: "post1",
+      hasCustomAudience: true,
+      customAudienceIds: ["sub1", "sub3"],
+    });
+
+    // Only sub1 and sub3 should receive notifications (not sub2)
+    expect(mockCreateNotification).toHaveBeenCalledTimes(2);
+    expect(mockCreateNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ targetUserId: "sub1" })
+    );
+    expect(mockCreateNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ targetUserId: "sub3" })
+    );
+    expect(mockCreateNotification).not.toHaveBeenCalledWith(
+      expect.objectContaining({ targetUserId: "sub2" })
+    );
+  });
+
+  it("does not filter when custom audience list is empty", async () => {
+    mockPrisma.postSubscription.findMany.mockResolvedValueOnce([
+      { subscriberId: "sub1" },
+    ] as never);
+
+    // Email query + author lookup (subscriber passes through since empty audience skips filter)
+    mockPrisma.user.findMany.mockResolvedValueOnce([] as never);
+    mockPrisma.user.findUnique.mockResolvedValueOnce({
+      displayName: "Author",
+      username: "author1",
+      name: null,
+    } as never);
+
+    mockCreateNotification.mockResolvedValue({} as never);
+
+    await notifyPostSubscribers({
+      authorId: "author1",
+      postId: "post1",
+      hasCustomAudience: true,
+      customAudienceIds: [],
+    });
+
+    // hasCustomAudience=true but empty list — guard clause skips filter
+    // so sub1 still gets notified
+    expect(mockCreateNotification).toHaveBeenCalledTimes(1);
+    expect(mockCreateNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ targetUserId: "sub1" })
+    );
+  });
+
+  it("does not send email to subscribers outside the custom audience", async () => {
+    mockPrisma.postSubscription.findMany.mockResolvedValueOnce([
+      { subscriberId: "sub1" },
+      { subscriberId: "sub2" },
+    ] as never);
+
+    // Only sub1 has email preference — but sub1 is NOT in audience
+    mockPrisma.user.findMany.mockResolvedValueOnce([
+      { email: "sub2@test.com" },
+    ] as never);
+
+    mockPrisma.user.findUnique.mockResolvedValueOnce({
+      displayName: "Author",
+      username: "author1",
+      name: null,
+    } as never);
+
+    mockCreateNotification.mockResolvedValue({} as never);
+    mockInngest.send.mockResolvedValue({} as never);
+
+    await notifyPostSubscribers({
+      authorId: "author1",
+      postId: "post1",
+      hasCustomAudience: true,
+      customAudienceIds: ["sub2"],
+    });
+
+    // Only sub2 gets notified (in audience)
+    expect(mockCreateNotification).toHaveBeenCalledTimes(1);
+    expect(mockCreateNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ targetUserId: "sub2" })
+    );
+
+    // Email should go to sub2 only
+    expect(mockInngest.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ toEmail: "sub2@test.com" }),
+      })
+    );
+  });
+
+  it("applies both NSFW and custom audience filters together", async () => {
+    mockPrisma.postSubscription.findMany.mockResolvedValueOnce([
+      { subscriberId: "sub1" },
+      { subscriberId: "sub2" },
+      { subscriberId: "sub3" },
+    ] as never);
+
+    // Only sub1 and sub2 opted into NSFW
+    mockPrisma.user.findMany
+      .mockResolvedValueOnce([{ id: "sub1" }, { id: "sub2" }] as never) // NSFW filter
+      .mockResolvedValueOnce([] as never); // email query
+
+    mockPrisma.user.findUnique.mockResolvedValueOnce({
+      displayName: "Author",
+      username: "author1",
+      name: null,
+    } as never);
+
+    mockCreateNotification.mockResolvedValue({} as never);
+
+    await notifyPostSubscribers({
+      authorId: "author1",
+      postId: "post1",
+      isNsfw: true,
+      hasCustomAudience: true,
+      customAudienceIds: ["sub2", "sub3"], // sub3 not NSFW opted in
+    });
+
+    // sub1: NSFW opted in but NOT in audience → excluded
+    // sub2: NSFW opted in AND in audience → notified
+    // sub3: in audience but NOT NSFW opted in → excluded
+    expect(mockCreateNotification).toHaveBeenCalledTimes(1);
+    expect(mockCreateNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ targetUserId: "sub2" })
+    );
+  });
 });
