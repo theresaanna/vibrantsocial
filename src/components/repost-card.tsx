@@ -246,7 +246,52 @@ export function RepostCard({
     }
   }
 
+  const [revealed, setRevealed] = useState(false);
+
+  const isAuthenticated = !!currentUserId;
+
   if (deleted) return null;
+
+  // Overlay logic for quote posts (mirrors PostCard)
+  const isRestricted = repost.isSensitive || repost.isNsfw || repost.isGraphicNudity;
+  let showOverlay = false;
+  let overlayMessage = "";
+  let canReveal = false;
+
+  // Hide restricted quote posts from logged-out users
+  if (isQuote && isRestricted && !isAuthenticated) return null;
+
+  if (isQuote && isRestricted && !revealed) {
+    if (repost.isSensitive) {
+      if (!ageVerified && !isAuthor) {
+        showOverlay = true;
+        overlayMessage = "Verify your age to view this content.";
+        canReveal = false;
+      } else if (!hideSensitiveOverlay) {
+        showOverlay = true;
+        overlayMessage = "Click to view sensitive content";
+        canReveal = true;
+      }
+    }
+
+    if (repost.isGraphicNudity) {
+      if (!ageVerified && !isAuthor) {
+        showOverlay = true;
+        overlayMessage = "Verify your age to view this content.";
+        canReveal = false;
+      } else if (!showGraphicByDefault) {
+        showOverlay = true;
+        overlayMessage = "Click to view graphic content";
+        canReveal = true;
+      }
+    }
+
+    if (repost.isNsfw && !showOverlay && !hideNsfwOverlay) {
+      showOverlay = true;
+      overlayMessage = "Click to view NSFW content";
+      canReveal = true;
+    }
+  }
 
   // Content flag badges for quote
   const badges: string[] = [];
@@ -381,6 +426,32 @@ export function RepostCard({
 
       {isQuote ? (
         <div className="overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-700">
+          {showOverlay ? (
+            <div className="px-4 py-6">
+              <div className="flex flex-col items-center justify-center rounded-lg bg-zinc-100 py-8 dark:bg-zinc-800">
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                  {overlayMessage}
+                </p>
+                {canReveal ? (
+                  <button
+                    type="button"
+                    onClick={() => setRevealed(true)}
+                    className="mt-3 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                  >
+                    Show content
+                  </button>
+                ) : (
+                  <Link
+                    href="/age-verify"
+                    className="mt-3 inline-block rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  >
+                    Verify your age
+                  </Link>
+                )}
+              </div>
+            </div>
+          ) : (
+          <>
           {/* Quote content */}
           <div className="bg-zinc-50 px-4 py-3 dark:bg-zinc-800/50">
             {isEditing ? (
@@ -624,6 +695,8 @@ export function RepostCard({
               })}
               {...marketplaceProps(repost.post)}
             />
+          )}
+          </>
           )}
         </div>
       ) : (
