@@ -94,14 +94,21 @@ export function useComments(postId: string, initialComments: CommentData[], curr
     if (event.name === "new") {
       const data = event.data as Record<string, string | null>;
       const parentId = data.parentId || null;
+      let author: CommentAuthor;
+      try {
+        author = JSON.parse(data.author as string);
+      } catch {
+        return;
+      }
       const comment: CommentData = {
         id: data.id as string,
         content: data.content as string,
         imageUrl: data.imageUrl || null,
         createdAt: new Date(data.createdAt as string),
         parentId,
-        author: JSON.parse(data.author as string),
+        author,
         reactions: [],
+        replies: [],
       };
 
       setComments((prev) => {
@@ -113,7 +120,12 @@ export function useComments(postId: string, initialComments: CommentData[], curr
       });
     } else if (event.name === "reaction") {
       const data = event.data as { commentId: string; reactions: string };
-      const reactions: ReactionGroup[] = JSON.parse(data.reactions);
+      let reactions: ReactionGroup[];
+      try {
+        reactions = JSON.parse(data.reactions);
+      } catch {
+        return;
+      }
 
       setComments((prev) =>
         updateComment(prev, data.commentId, (c) => ({ ...c, reactions }))

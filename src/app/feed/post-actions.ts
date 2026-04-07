@@ -539,7 +539,7 @@ export async function createComment(
     return { success: false, message: "Comment cannot be empty" };
   }
 
-  if (content.length > 1000) {
+  if (content && content.length > 1000) {
     return { success: false, message: "Comment too long (max 1000 characters)" };
   }
 
@@ -797,7 +797,7 @@ export async function createRepostComment(
     return { success: false, message: "Comment cannot be empty" };
   }
 
-  if (content.length > 1000) {
+  if (content && content.length > 1000) {
     return { success: false, message: "Comment too long (max 1000 characters)" };
   }
 
