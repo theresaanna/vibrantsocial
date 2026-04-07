@@ -414,19 +414,15 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, isAgeVerif
                 Close Friends
               </span>
             </label>
-            <span className="relative">
+            <span className="relative flex items-center">
               <button
                 type="button"
                 disabled={!isPremium}
                 onClick={() => {
-                  if (customAudienceIds.length > 0) {
-                    setCustomAudienceIds([]);
-                  } else {
-                    setIsCloseFriendsOnly(false);
-                    setShowAudiencePicker(true);
-                  }
+                  setIsCloseFriendsOnly(false);
+                  setShowAudiencePicker(true);
                 }}
-                className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${customAudienceIds.length > 0 ? "border-violet-300 bg-violet-50 text-violet-700 dark:border-violet-700 dark:bg-violet-900/30 dark:text-violet-400" : "border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-500 dark:border-zinc-700 dark:text-zinc-500 dark:hover:border-zinc-600 dark:hover:text-zinc-400"} disabled:cursor-not-allowed disabled:opacity-50`}
+                className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${customAudienceIds.length > 0 ? "border-violet-300 bg-violet-50 text-violet-700 dark:border-violet-700 dark:bg-violet-900/30 dark:text-violet-400" : "border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-500 dark:border-zinc-700 dark:text-zinc-500 dark:hover:border-zinc-600 dark:hover:text-zinc-400"} ${customAudienceIds.length > 0 ? "rounded-r-none border-r-0" : ""} disabled:cursor-not-allowed disabled:opacity-50`}
                 data-testid="custom-audience-button"
               >
                 <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
@@ -436,6 +432,19 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, isAgeVerif
                   ? `Custom Audience (${customAudienceIds.length})`
                   : "Custom Audience"}
               </button>
+              {customAudienceIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setCustomAudienceIds([])}
+                  className="flex items-center rounded-full rounded-l-none border border-violet-300 bg-violet-50 px-1.5 py-1 text-violet-500 transition-colors hover:bg-violet-100 hover:text-violet-700 dark:border-violet-700 dark:bg-violet-900/30 dark:text-violet-400 dark:hover:bg-violet-900/50"
+                  title="Remove custom audience"
+                  data-testid="clear-custom-audience"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
               <PremiumCrown href="/premium" />
             </span>
             <LoggedInOnlyToggle

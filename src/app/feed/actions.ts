@@ -226,6 +226,8 @@ export async function createPost(
     isNsfw,
     isGraphicNudity,
     isCloseFriendsOnly,
+    hasCustomAudience,
+    customAudienceIds,
   });
 
   // Notify tag subscribers
@@ -239,6 +241,7 @@ export async function createPost(
       isNsfw,
       isGraphicNudity,
       isCloseFriendsOnly,
+      hasCustomAudience,
     });
   }
 
