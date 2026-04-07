@@ -158,28 +158,6 @@ export function FeedClient({
           initialOwnStatus={initialOwnStatus}
         />
       )}
-      <div
-        className={`grid transition-all duration-300 ease-out ${
-          !listId && activeView === "posts"
-            ? "grid-rows-[1fr] opacity-100"
-            : "grid-rows-[0fr] opacity-0"
-        }`}
-      >
-        <div className="overflow-hidden">
-          <div className="mb-4 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 dark:border-indigo-800 dark:bg-indigo-950/50">
-            <p className="text-sm text-indigo-800 dark:text-indigo-200">
-              The post composer has moved!{" "}
-              <a
-                href="/compose"
-                className="font-medium underline hover:text-indigo-600 dark:hover:text-indigo-300"
-              >
-                Go to Compose
-              </a>{" "}
-              to create a new post.
-            </p>
-          </div>
-        </div>
-      </div>
       {!listId && (
         <FeedViewToggleWrapper activeView={activeView} />
       )}
