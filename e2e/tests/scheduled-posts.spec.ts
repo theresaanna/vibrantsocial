@@ -49,8 +49,8 @@ test.describe("Scheduled Posts @slow", () => {
     await datetimePicker.fill("2099-12-31T23:59");
 
     // Submit button should say "Schedule"
-    const submitButton = page.getByRole("button", { name: "Schedule" });
-    await expect(submitButton).toBeVisible();
+    const submitButton = page.locator('button[type="submit"]');
+    await expect(submitButton).toHaveText("Schedule");
     await submitButton.click();
 
     // Should see the scheduled post card on the compose page
@@ -72,7 +72,7 @@ test.describe("Scheduled Posts @slow", () => {
     );
     await page.getByTestId("schedule-toggle").click();
     await page.getByTestId("schedule-datetime").fill("2099-06-15T10:00");
-    await page.getByRole("button", { name: "Schedule" }).click();
+    await page.locator('button[type="submit"]').click();
 
     // Should see the scheduled posts section
     await expect(page.getByText("Scheduled Posts")).toBeVisible({
@@ -99,7 +99,7 @@ test.describe("Scheduled Posts @slow", () => {
     );
     await page.getByTestId("schedule-toggle").click();
     await page.getByTestId("schedule-datetime").fill("2099-03-01T08:00");
-    await page.getByRole("button", { name: "Schedule" }).click();
+    await page.locator('button[type="submit"]').click();
 
     await expect(page.getByTestId("scheduled-post-card").first()).toBeVisible({
       timeout: 10000,
@@ -129,7 +129,7 @@ test.describe("Scheduled Posts @slow", () => {
     );
     await page.getByTestId("schedule-toggle").click();
     await page.getByTestId("schedule-datetime").fill("2099-01-01T00:00");
-    await page.getByRole("button", { name: "Schedule" }).click();
+    await page.locator('button[type="submit"]').click();
 
     await expect(page.getByTestId("scheduled-post-card").first()).toBeVisible({
       timeout: 10000,
