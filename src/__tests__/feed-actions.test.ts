@@ -44,6 +44,10 @@ vi.mock("@/lib/prisma", () => ({
     postSubscription: {
       findMany: vi.fn().mockResolvedValue([]),
     },
+    postAudience: {
+      deleteMany: vi.fn(),
+      createMany: vi.fn(),
+    },
   },
 }));
 
@@ -78,16 +82,35 @@ vi.mock("@/lib/tags", () => ({
 
 vi.mock("@/lib/cache", () => ({
   invalidate: vi.fn(),
+  invalidatePattern: vi.fn(),
   cacheKeys: {
     tagCloud: () => "tagCloud",
     nsfwTagCloud: () => "nsfwTagCloud",
     tagPostCount: (name: string) => `tagPostCount:${name}`,
+    profileTabFlags: (userId: string) => `profileTabFlags:${userId}`,
   },
 }));
 
 vi.mock("@/lib/referral", () => ({
   awardReferralFirstPostBonus: vi.fn(),
   checkStarsMilestone: vi.fn(),
+}));
+
+vi.mock("@/lib/premium", () => ({
+  checkAndExpirePremium: vi.fn().mockResolvedValue(true),
+}));
+
+vi.mock("@/lib/rate-limit", () => ({
+  apiLimiter: {},
+  isRateLimited: vi.fn().mockResolvedValue(false),
+}));
+
+vi.mock("@/lib/suspension-gate", () => ({
+  requireNotSuspended: vi.fn().mockResolvedValue(true),
+}));
+
+vi.mock("@/lib/inngest", () => ({
+  inngest: { send: vi.fn() },
 }));
 
 import { auth } from "@/auth";
@@ -540,7 +563,7 @@ describe("editPost", () => {
     });
     expect(mockPrisma.post.update).toHaveBeenCalledWith({
       where: { id: "p1" },
-      data: { content: "new content", editedAt: expect.any(Date), isSensitive: false, isNsfw: false, isGraphicNudity: false, isCloseFriendsOnly: false, isLoggedInOnly: false },
+      data: { content: "new content", editedAt: expect.any(Date), isSensitive: false, isNsfw: false, isGraphicNudity: false, isCloseFriendsOnly: false, hasCustomAudience: false, isLoggedInOnly: false, hideLinkPreview: false },
     });
   });
 
@@ -584,6 +607,80 @@ describe("editPost", () => {
     expect(result.success).toBe(true);
     const updateCall = mockPrisma.post.update.mock.calls[0][0];
     expect(updateCall.data).toHaveProperty("slug", "new-slug");
+  });
+
+  it("preserves isCloseFriendsOnly=true when editing a close-friends post", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce({
+      id: "p1",
+      authorId: "user1",
+      content: "old content",
+      slug: "test",
+    } as never);
+    mockPrisma.postRevision.create.mockResolvedValueOnce({} as never);
+    mockPrisma.post.update.mockResolvedValueOnce({} as never);
+
+    const result = await editPost(
+      prevState,
+      makeFormData({
+        postId: "p1",
+        content: "updated content",
+        isCloseFriendsOnly: "true",
+      })
+    );
+    expect(result.success).toBe(true);
+    const updateCall = mockPrisma.post.update.mock.calls[0][0];
+    expect(updateCall.data).toHaveProperty("isCloseFriendsOnly", true);
+  });
+
+  it("preserves hasCustomAudience=true and audience records when editing", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce({
+      id: "p1",
+      authorId: "user1",
+      content: "old content",
+      slug: "test",
+    } as never);
+    mockPrisma.postRevision.create.mockResolvedValueOnce({} as never);
+    mockPrisma.post.update.mockResolvedValueOnce({} as never);
+
+    const result = await editPost(
+      prevState,
+      makeFormData({
+        postId: "p1",
+        content: "updated content",
+        hasCustomAudience: "true",
+        customAudienceIds: "friend1,friend2",
+      })
+    );
+    expect(result.success).toBe(true);
+    const updateCall = mockPrisma.post.update.mock.calls[0][0];
+    expect(updateCall.data).toHaveProperty("hasCustomAudience", true);
+  });
+
+  it("clears hasCustomAudience when not sent in form data (bug guard)", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "user1" } } as never);
+    mockPrisma.post.findUnique.mockResolvedValueOnce({
+      id: "p1",
+      authorId: "user1",
+      content: "old content",
+      slug: "test",
+    } as never);
+    mockPrisma.postRevision.create.mockResolvedValueOnce({} as never);
+    mockPrisma.post.update.mockResolvedValueOnce({} as never);
+
+    // Simulate editing WITHOUT sending hasCustomAudience (the current bug)
+    const result = await editPost(
+      prevState,
+      makeFormData({
+        postId: "p1",
+        content: "updated content",
+      })
+    );
+    expect(result.success).toBe(true);
+    const updateCall = mockPrisma.post.update.mock.calls[0][0];
+    // This documents the bug: hasCustomAudience defaults to false when missing from form
+    expect(updateCall.data).toHaveProperty("hasCustomAudience", false);
   });
 });
 

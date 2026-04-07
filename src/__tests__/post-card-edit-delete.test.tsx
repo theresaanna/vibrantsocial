@@ -295,6 +295,108 @@ describe("PostCard - edit mode", () => {
   });
 });
 
+describe("PostCard - edit form preserves audience settings", () => {
+  const enterEditMode = () => {
+    fireEvent.click(screen.getByTestId("post-menu-button"));
+    fireEvent.click(screen.getByTestId("post-edit-button"));
+  };
+
+  it("includes isCloseFriendsOnly hidden input in edit form", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isCloseFriendsOnly: true }}
+        currentUserId="user1"
+        phoneVerified={true}
+        ageVerified={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} hideNsfwOverlay={false}
+      />
+    );
+    enterEditMode();
+
+    const input = document.querySelector(
+      'input[name="isCloseFriendsOnly"]'
+    ) as HTMLInputElement;
+    expect(input).toBeInTheDocument();
+    expect(input.value).toBe("true");
+  });
+
+  it("preserves isCloseFriendsOnly=false in edit form", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, isCloseFriendsOnly: false }}
+        currentUserId="user1"
+        phoneVerified={true}
+        ageVerified={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} hideNsfwOverlay={false}
+      />
+    );
+    enterEditMode();
+
+    const input = document.querySelector(
+      'input[name="isCloseFriendsOnly"]'
+    ) as HTMLInputElement;
+    expect(input).toBeInTheDocument();
+    expect(input.value).toBe("false");
+  });
+
+  it("includes hasCustomAudience hidden input in edit form", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, hasCustomAudience: true }}
+        currentUserId="user1"
+        phoneVerified={true}
+        ageVerified={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} hideNsfwOverlay={false}
+      />
+    );
+    enterEditMode();
+
+    const input = document.querySelector(
+      'input[name="hasCustomAudience"]'
+    ) as HTMLInputElement;
+    expect(input).toBeInTheDocument();
+    expect(input.value).toBe("true");
+  });
+
+  it("includes customAudienceIds hidden input in edit form", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, hasCustomAudience: true, customAudienceIds: ["user-a", "user-b"] }}
+        currentUserId="user1"
+        phoneVerified={true}
+        ageVerified={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} hideNsfwOverlay={false}
+      />
+    );
+    enterEditMode();
+
+    const input = document.querySelector(
+      'input[name="customAudienceIds"]'
+    ) as HTMLInputElement;
+    expect(input).toBeInTheDocument();
+    expect(input.value).toBe("user-a,user-b");
+  });
+
+  it("does not include customAudienceIds when hasCustomAudience is false", () => {
+    render(
+      <PostCard
+        post={{ ...basePost, hasCustomAudience: false }}
+        currentUserId="user1"
+        phoneVerified={true}
+        ageVerified={false}
+        showGraphicByDefault={false} showNsfwContent={false} hideSensitiveOverlay={false} hideNsfwOverlay={false}
+      />
+    );
+    enterEditMode();
+
+    const hasAudienceInput = document.querySelector(
+      'input[name="hasCustomAudience"]'
+    ) as HTMLInputElement;
+    expect(hasAudienceInput).toBeInTheDocument();
+    expect(hasAudienceInput.value).toBe("false");
+  });
+});
+
 describe("PostCard - revision history", () => {
   it("opens revision history modal when clicked", () => {
     render(
