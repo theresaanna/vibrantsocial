@@ -8,6 +8,7 @@ import { CommunitiesViewToggle } from "./communities-view-toggle";
 import { CommunitiesMediaClient } from "./communities-media-client";
 import { CommunitiesDiscussionsClient } from "./communities-discussions-client";
 import { CommunitiesNewcomersClient } from "./communities-newcomers-client";
+import { CommunitiesSpotlightClient } from "./communities-spotlight-client";
 import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
 import { ThemedPage } from "@/components/themed-page";
 
@@ -22,7 +23,7 @@ interface CommunitiesPageProps {
 
 export default async function CommunitiesPage({ searchParams }: CommunitiesPageProps) {
   const { view } = await searchParams;
-  const activeView = view === "media" ? "media" : view === "discussions" ? "discussions" : view === "newcomers" ? "newcomers" : "tags";
+  const activeView = view === "media" ? "media" : view === "discussions" ? "discussions" : view === "newcomers" ? "newcomers" : view === "spotlight" ? "spotlight" : "tags";
 
   const session = await auth();
   let showNsfwContent = false;
@@ -80,6 +81,16 @@ export default async function CommunitiesPage({ searchParams }: CommunitiesPageP
           }
         >
           <CommunitiesDiscussionsClient />
+        </Suspense>
+      ) : activeView === "spotlight" ? (
+        <Suspense
+          fallback={
+            <div className="mt-6 flex justify-center py-8">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-600 dark:border-t-zinc-100" />
+            </div>
+          }
+        >
+          <CommunitiesSpotlightClient />
         </Suspense>
       ) : activeView === "newcomers" ? (
         <Suspense

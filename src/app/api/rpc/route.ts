@@ -22,6 +22,7 @@ import { getUnreadNotificationCount, getRecentNotifications } from "@/app/notifi
 import { fetchNewcomers } from "@/app/communities/newcomer-actions";
 import { fetchTopDiscussedPosts } from "@/app/communities/discussion-actions";
 import { fetchCommunitiesMediaPage } from "@/app/communities/media-actions";
+import { fetchSpotlightUsers } from "@/app/communities/spotlight-actions";
 import { pollStatuses } from "@/app/feed/status-actions";
 import { fetchMediaFeedPage } from "@/app/feed/media-actions";
 import { recordPostView } from "@/app/feed/view-actions";
@@ -43,6 +44,7 @@ const ACTIONS: Record<string, (...args: any[]) => Promise<any>> = {
   fetchNewcomers,
   fetchTopDiscussedPosts,
   fetchCommunitiesMediaPage,
+  fetchSpotlightUsers,
   pollStatuses,
   fetchMediaFeedPage,
   recordPostView,
