@@ -10,6 +10,7 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: vi.fn(),
       create: vi.fn(),
       delete: vi.fn(),
+      update: vi.fn(),
     },
   },
 }));
@@ -23,6 +24,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
   toggleCommentSubscription,
+  toggleCommentSubscriptionEmail,
   isSubscribedToComments,
 } from "@/app/feed/comment-subscription-actions";
 
@@ -114,6 +116,73 @@ describe("toggleCommentSubscription", () => {
     );
 
     expect(mockRevalidatePath).toHaveBeenCalledWith("/post/p1");
+  });
+});
+
+describe("toggleCommentSubscriptionEmail", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("toggles email off when currently enabled", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "u1" } } as never);
+    mockPrisma.commentSubscription.findUnique.mockResolvedValueOnce({
+      id: "sub1",
+      emailEnabled: true,
+    } as never);
+    mockPrisma.commentSubscription.update.mockResolvedValueOnce({} as never);
+
+    const result = await toggleCommentSubscriptionEmail(
+      prevState,
+      makeFormData({ postId: "p1" })
+    );
+
+    expect(result).toEqual({ success: true, message: "Emails disabled" });
+    expect(mockPrisma.commentSubscription.update).toHaveBeenCalledWith({
+      where: { id: "sub1" },
+      data: { emailEnabled: false },
+    });
+  });
+
+  it("toggles email on when currently disabled", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "u1" } } as never);
+    mockPrisma.commentSubscription.findUnique.mockResolvedValueOnce({
+      id: "sub1",
+      emailEnabled: false,
+    } as never);
+    mockPrisma.commentSubscription.update.mockResolvedValueOnce({} as never);
+
+    const result = await toggleCommentSubscriptionEmail(
+      prevState,
+      makeFormData({ postId: "p1" })
+    );
+
+    expect(result).toEqual({ success: true, message: "Emails enabled" });
+    expect(mockPrisma.commentSubscription.update).toHaveBeenCalledWith({
+      where: { id: "sub1" },
+      data: { emailEnabled: true },
+    });
+  });
+
+  it("returns error when not subscribed", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "u1" } } as never);
+    mockPrisma.commentSubscription.findUnique.mockResolvedValueOnce(null as never);
+
+    const result = await toggleCommentSubscriptionEmail(
+      prevState,
+      makeFormData({ postId: "p1" })
+    );
+
+    expect(result).toEqual({ success: false, message: "Not subscribed to this post" });
+  });
+
+  it("returns error when postId is missing", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { id: "u1" } } as never);
+
+    const result = await toggleCommentSubscriptionEmail(
+      prevState,
+      makeFormData({})
+    );
+
+    expect(result).toEqual({ success: false, message: "Post ID required" });
   });
 });
 
