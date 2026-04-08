@@ -205,8 +205,8 @@ export function ThemeEditor({
       const result = await saveCustomPreset({
         name: presetName.trim(),
         imageUrl: currentBgImage ?? "",
-        light: generatedTheme.light,
-        dark: generatedTheme.dark,
+        light: colors,
+        dark: colors,
       });
       if (result.success && result.preset) {
         setCustomPresets((prev) => {
@@ -224,7 +224,7 @@ export function ThemeEditor({
         setGenerationError(result.error ?? "Failed to save preset");
       }
     });
-  }, [generatedTheme, presetName, currentBgImage, isSaving]);
+  }, [generatedTheme, presetName, currentBgImage, isSaving, colors]);
 
   const handleSingleColorChange = useCallback(
     (field: keyof ProfileThemeColors, value: string) => {
