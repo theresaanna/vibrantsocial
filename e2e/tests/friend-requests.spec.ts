@@ -210,7 +210,7 @@ test.describe("Friend Requests Management @slow", () => {
     await friendsButton.click();
 
     // Confirmation dialog should appear
-    await expect(page.locator("text=/unfriend/i")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole("heading", { name: /unfriend/i })).toBeVisible({ timeout: 5000 });
 
     // Confirm unfriend
     const unfriendConfirm = page.getByRole("button", { name: /unfriend/i }).last();

@@ -218,7 +218,7 @@ test.describe("Chat Messaging @slow", () => {
     await page.goto(`/chat/${conversationId}`);
     await page.waitForTimeout(2000);
 
-    await expect(page.locator(`text=${msgText}`)).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(`text=${msgText}`).first()).toBeVisible({ timeout: 10000 });
   });
 
   test("shows existing messages when opening conversation", async ({ page, forceLogin }) => {

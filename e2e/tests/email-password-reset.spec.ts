@@ -210,9 +210,16 @@ test.describe("Email Verification & Password Reset @slow", () => {
     await page.locator('input[name="confirmPassword"]').fill("short");
     await page.locator('button[type="submit"]').click();
 
-    await page.waitForTimeout(2000);
-    const error = page.locator("text=/8 char|too short|at least/i");
-    await expect(error).toBeVisible({ timeout: 10000 });
+    // HTML5 minLength validation prevents submission — form stays on page
+    await page.waitForTimeout(1000);
+    await expect(page).toHaveURL(/\/reset-password/);
+
+    // Password field should be marked invalid by browser validation
+    const passwordInput = page.locator('input[name="password"]');
+    const isInvalid = await passwordInput.evaluate(
+      (el: HTMLInputElement) => !el.validity.valid
+    );
+    expect(isInvalid).toBe(true);
 
     await context.close();
   });

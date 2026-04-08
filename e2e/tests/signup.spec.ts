@@ -135,9 +135,16 @@ test.describe("Signup Flow @slow", () => {
 
     await page.getByRole("button", { name: /create account/i }).click();
 
-    await page.waitForTimeout(3000);
-    const error = page.locator("text=/at least 8 characters/i");
-    await expect(error).toBeVisible({ timeout: 10000 });
+    // HTML5 minLength validation prevents submission — form stays on signup page
+    await page.waitForTimeout(1000);
+    await expect(page).toHaveURL(/\/signup/);
+
+    // Password field should be marked invalid by browser validation
+    const passwordInput = page.locator('input[name="password"]');
+    const isInvalid = await passwordInput.evaluate(
+      (el: HTMLInputElement) => !el.validity.valid
+    );
+    expect(isInvalid).toBe(true);
 
     await context.close();
   });

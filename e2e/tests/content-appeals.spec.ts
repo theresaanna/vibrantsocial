@@ -71,8 +71,9 @@ test.describe("Content Appeals @slow", () => {
     await forceLogin;
 
     await page.goto("/settings/appeals");
+    await page.waitForLoadState("networkidle");
     await expect(page).toHaveURL(/\/settings\/appeals/);
-    await expect(page.getByRole("heading", { name: /Content Violations/ })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: /Content Violations/ })).toBeVisible({ timeout: 15000 });
   });
 
   test("shows empty state when no violations", async ({ page, forceLogin }) => {

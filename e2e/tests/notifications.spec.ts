@@ -179,7 +179,7 @@ test.describe("Notifications @slow", () => {
     await page.waitForTimeout(2000);
 
     // Should see mark all as read button
-    const markAllButton = page.getByRole("button", { name: /mark all/i });
+    const markAllButton = page.getByRole("button", { name: /mark all/i }).first();
     await expect(markAllButton).toBeVisible({ timeout: 10000 });
     await markAllButton.click();
 
