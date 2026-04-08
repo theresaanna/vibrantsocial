@@ -15,6 +15,7 @@ import type { UserThemeResult } from "@/lib/user-theme";
 import { ProfileSparklefall } from "@/components/profile-sparklefall";
 import { toast } from "sonner";
 import { type ThemeExport, validateThemeExport } from "@/lib/theme-export";
+import { zipSync, unzipSync, strToU8, strFromU8 } from "fflate";
 
 /** Check if a URL is hosted on Vercel Blob storage by parsing its hostname. */
 function isVercelBlobUrl(url: string): boolean {
@@ -194,18 +195,21 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
     const formData = new FormData(form);
 
     const bgImageUrl = (formData.get("profileBgImage") as string) || null;
-    let imageData: string | undefined;
 
-    // For custom uploaded backgrounds, embed the image as base64
+    // Fetch background image bytes for custom uploads
+    let imageBytes: Uint8Array | undefined;
+    let imageFilename: string | undefined;
     if (bgImageUrl && isVercelBlobUrl(bgImageUrl)) {
       try {
         const res = await fetch(bgImageUrl);
-        const blob = await res.blob();
-        imageData = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.readAsDataURL(blob);
-        });
+        const contentType = res.headers.get("content-type") ?? "image/png";
+        const ext = contentType.includes("jpeg") || contentType.includes("jpg") ? "jpg"
+          : contentType.includes("gif") ? "gif"
+          : contentType.includes("webp") ? "webp"
+          : "png";
+        imageFilename = `background.${ext}`;
+        const buf = await res.arrayBuffer();
+        imageBytes = new Uint8Array(buf);
       } catch {
         toast.error("Could not embed background image");
       }
@@ -223,7 +227,7 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
       containerOpacity,
       background: {
         imageUrl: bgImageUrl,
-        ...(imageData ? { imageData } : {}),
+        ...(imageFilename ? { imageFile: imageFilename } : {}),
         repeat: (formData.get("profileBgRepeat") as string) || "no-repeat",
         attachment: (formData.get("profileBgAttachment") as string) || "scroll",
         size: (formData.get("profileBgSize") as string) || "contain",
@@ -231,14 +235,94 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
       },
     };
 
-    const blob = new Blob([JSON.stringify(themeExport, null, 2)], { type: "application/json" });
+    const jsonBytes = strToU8(JSON.stringify(themeExport, null, 2));
+
+    const zipFiles: Record<string, Uint8Array> = { "theme.json": jsonBytes };
+    if (imageBytes && imageFilename) {
+      zipFiles[imageFilename] = imageBytes;
+    }
+
+    const zipped = zipSync(zipFiles);
+    const blob = new Blob([zipped.buffer as ArrayBuffer], { type: "application/zip" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "vibrantsocial-theme.json";
+    a.download = "vibrantsocial-theme.zip";
     a.click();
     URL.revokeObjectURL(url);
   }, [containerOpacity]);
+
+  const applyImportedTheme = useCallback(
+    async (validated: ThemeExport, imageBlob: Blob | null) => {
+      // Apply colors
+      setAutoGenColors(validated.colors);
+      handleContainerOpacityChange(validated.containerOpacity);
+
+      let resolvedBgUrl = validated.background.imageUrl;
+
+      // Upload bundled image file from zip
+      if (imageBlob) {
+        try {
+          const uploadForm = new FormData();
+          uploadForm.append(
+            "file",
+            imageBlob,
+            validated.background.imageFile ?? "imported-background.png"
+          );
+          const uploadRes = await fetch("/api/profile-background", {
+            method: "POST",
+            body: uploadForm,
+          });
+          if (uploadRes.ok) {
+            const { url } = await uploadRes.json();
+            resolvedBgUrl = url;
+          } else {
+            toast("Could not upload background image. Colors applied.", { duration: 5000 });
+            resolvedBgUrl = null;
+          }
+        } catch {
+          toast("Could not upload background image. Colors applied.", { duration: 5000 });
+          resolvedBgUrl = null;
+        }
+      } else if (validated.background.imageData) {
+        // Legacy JSON-only format with base64 imageData
+        try {
+          const res = await fetch(validated.background.imageData);
+          const blob = await res.blob();
+          const uploadForm = new FormData();
+          uploadForm.append("file", blob, "imported-background.png");
+          const uploadRes = await fetch("/api/profile-background", {
+            method: "POST",
+            body: uploadForm,
+          });
+          if (uploadRes.ok) {
+            const { url } = await uploadRes.json();
+            resolvedBgUrl = url;
+          } else {
+            toast("Could not upload background image. Colors applied.", { duration: 5000 });
+            resolvedBgUrl = null;
+          }
+        } catch {
+          toast("Could not upload background image. Colors applied.", { duration: 5000 });
+          resolvedBgUrl = null;
+        }
+      } else if (resolvedBgUrl && isVercelBlobUrl(resolvedBgUrl)) {
+        toast("Background image can't be imported without embedded data. Colors applied.", { duration: 5000 });
+        resolvedBgUrl = null;
+      }
+
+      setImportedBackground({
+        image: resolvedBgUrl,
+        repeat: validated.background.repeat,
+        attachment: validated.background.attachment,
+        size: validated.background.size,
+        position: validated.background.position,
+      });
+
+      toast.success("Theme imported — click Save to apply");
+    },
+    [handleContainerOpacityChange]
+  );
 
   const handleImportTheme = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -247,64 +331,55 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
     const reader = new FileReader();
     reader.onload = async () => {
       try {
-        const parsed = JSON.parse(reader.result as string);
-        const validated = validateThemeExport(parsed);
-        if (!validated) {
-          toast.error("Invalid theme file");
-          return;
-        }
+        const arrayBuf = reader.result as ArrayBuffer;
+        const bytes = new Uint8Array(arrayBuf);
 
-        // Apply colors
-        setAutoGenColors(validated.colors);
-        handleContainerOpacityChange(validated.containerOpacity);
+        // Detect zip (PK header) vs plain JSON
+        const isZip = bytes[0] === 0x50 && bytes[1] === 0x4b;
 
-        // Determine background image URL
-        let resolvedBgUrl = validated.background.imageUrl;
+        if (isZip) {
+          const unzipped = unzipSync(bytes);
 
-        // If the export includes embedded image data, re-upload it
-        if (validated.background.imageData) {
-          try {
-            const res = await fetch(validated.background.imageData);
-            const blob = await res.blob();
-            const uploadForm = new FormData();
-            uploadForm.append("file", blob, "imported-background.png");
-            const uploadRes = await fetch("/api/profile-background", {
-              method: "POST",
-              body: uploadForm,
-            });
-            if (uploadRes.ok) {
-              const { url } = await uploadRes.json();
-              resolvedBgUrl = url;
-            } else {
-              toast("Could not upload background image. Colors applied.", { duration: 5000 });
-              resolvedBgUrl = null;
-            }
-          } catch {
-            toast("Could not upload background image. Colors applied.", { duration: 5000 });
-            resolvedBgUrl = null;
+          // Find theme.json
+          const jsonEntry = unzipped["theme.json"];
+          if (!jsonEntry) {
+            toast.error("Invalid theme zip: missing theme.json");
+            return;
           }
-        } else if (resolvedBgUrl && isVercelBlobUrl(resolvedBgUrl)) {
-          // Bare blob URL with no embedded data — can't use it
-          toast("Background image can't be imported without embedded data. Colors applied.", { duration: 5000 });
-          resolvedBgUrl = null;
+
+          const parsed = JSON.parse(strFromU8(jsonEntry));
+          const validated = validateThemeExport(parsed);
+          if (!validated) {
+            toast.error("Invalid theme file");
+            return;
+          }
+
+          // Find bundled background image
+          let imageBlob: Blob | null = null;
+          if (validated.background.imageFile && unzipped[validated.background.imageFile]) {
+            const imgBytes = unzipped[validated.background.imageFile];
+            imageBlob = new Blob([imgBytes.buffer as ArrayBuffer]);
+          }
+
+          await applyImportedTheme(validated, imageBlob);
+        } else {
+          // Legacy JSON-only format
+          const text = new TextDecoder().decode(bytes);
+          const parsed = JSON.parse(text);
+          const validated = validateThemeExport(parsed);
+          if (!validated) {
+            toast.error("Invalid theme file");
+            return;
+          }
+          await applyImportedTheme(validated, null);
         }
-
-        setImportedBackground({
-          image: resolvedBgUrl,
-          repeat: validated.background.repeat,
-          attachment: validated.background.attachment,
-          size: validated.background.size,
-          position: validated.background.position,
-        });
-
-        toast.success("Theme imported — click Save to apply");
       } catch {
         toast.error("Could not read theme file");
       }
     };
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
     if (importInputRef.current) importInputRef.current.value = "";
-  }, [handleContainerOpacityChange]);
+  }, [applyImportedTheme]);
 
   const handleBackgroundSelected = useCallback((imageUrl: string | null) => {
     if (!imageUrl) return;
@@ -485,7 +560,7 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
                     <input
                       ref={importInputRef}
                       type="file"
-                      accept=".json"
+                      accept=".zip,.json"
                       onChange={handleImportTheme}
                       className="hidden"
                     />
