@@ -159,6 +159,15 @@ export default async function MarketplaceIdPage({ params, searchParams }: Props)
           purchaseUrl: true,
           shippingOption: true,
           shippingPrice: true,
+          digitalFile: {
+            select: {
+              fileName: true,
+              fileSize: true,
+              isFree: true,
+              couponCode: true,
+              downloadCount: true,
+            },
+          },
         },
       },
     },
@@ -224,6 +233,14 @@ export default async function MarketplaceIdPage({ params, searchParams }: Props)
           purchaseUrl: post.marketplacePost.purchaseUrl,
           shippingOption: post.marketplacePost.shippingOption,
           shippingPrice: post.marketplacePost.shippingPrice,
+        } : undefined}
+        digitalFileData={post.marketplacePost?.digitalFile ? {
+          fileName: post.marketplacePost.digitalFile.fileName,
+          fileSize: post.marketplacePost.digitalFile.fileSize,
+          isFree: post.marketplacePost.digitalFile.isFree,
+          couponCode: userId === post.author?.id ? (post.marketplacePost.digitalFile.couponCode ?? undefined) : undefined,
+          downloadCount: userId === post.author?.id ? post.marketplacePost.digitalFile.downloadCount : undefined,
+          isOwner: userId === post.author?.id,
         } : undefined}
       />
     </ThemedPage>
