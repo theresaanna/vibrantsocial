@@ -43,9 +43,7 @@ vi.mock("@/lib/email", () => ({
   sendTagPostEmail: vi.fn(),
   sendTagDigestEmail: vi.fn(),
   sendContentNoticeEmail: vi.fn(),
-  sendContentWarningEmail: vi.fn(),
   sendPostDeclinedEmail: vi.fn(),
-  sendSuspensionEmail: vi.fn(),
   sendModerationAlertEmail: vi.fn(),
 }));
 
@@ -56,9 +54,7 @@ vi.stubEnv("MODERATION_API_KEY", "test-key");
 import { prisma } from "@/lib/prisma";
 import {
   sendContentNoticeEmail,
-  sendContentWarningEmail,
   sendPostDeclinedEmail,
-  sendSuspensionEmail,
   sendModerationAlertEmail,
 } from "@/lib/email";
 
@@ -68,9 +64,7 @@ await import("@/lib/inngest-functions");
 const mockPrisma = vi.mocked(prisma);
 const mockSendAlert = vi.mocked(sendModerationAlertEmail);
 const mockSendNotice = vi.mocked(sendContentNoticeEmail);
-const mockSendWarning = vi.mocked(sendContentWarningEmail);
 const mockSendDeclined = vi.mocked(sendPostDeclinedEmail);
-const mockSendSuspension = vi.mocked(sendSuspensionEmail);
 
 async function callHandler(postId: string, userId: string) {
   if (!capturedHandler) throw new Error("Handler not captured");
@@ -96,7 +90,6 @@ describe("scanPostContentFn", () => {
     id: "user1",
     email: "user@example.com",
     username: "testuser",
-    contentStrikes: 0,
     contentWarnings: 0,
     ageVerified: new Date(),
   };
@@ -112,7 +105,6 @@ describe("scanPostContentFn", () => {
     } as never);
     mockPrisma.user.update.mockResolvedValue({
       contentWarnings: 1,
-      contentStrikes: 0,
     } as never);
     mockPrisma.contentViolation.create.mockResolvedValue({} as never);
     mockPrisma.notification.create.mockResolvedValue({} as never);
@@ -172,7 +164,6 @@ describe("scanPostContentFn", () => {
           warningCount: 1,
         })
       );
-      expect(mockSendWarning).not.toHaveBeenCalled();
       expect(mockSendAlert).not.toHaveBeenCalled();
     });
 
@@ -218,14 +209,14 @@ describe("scanPostContentFn", () => {
       );
     });
 
-    it("issues a strike after 5 warnings", async () => {
+    it("continues sending notices beyond initial warnings (no strikes)", async () => {
       const postWithImage = {
         ...mockPost,
         content: '{"root":{"children":[{"type":"image","src":"https://example.com/img.jpg"}],"type":"root"}}',
       };
-      setupMocks({}, { contentWarnings: 5 });
+      setupMocks({}, { contentWarnings: 10 });
       mockPrisma.post.findUnique.mockResolvedValue(postWithImage as never);
-      mockPrisma.user.update.mockResolvedValue({ contentStrikes: 1 } as never);
+      mockPrisma.user.update.mockResolvedValue({ contentWarnings: 11 } as never);
       mockFetch(
         { nsfw: true, score: 0.7 },
         { is_hate_speech: false, is_bullying: false, toxicity: 0.01, identity_attack: 0.0, insult: 0.01 }
@@ -233,39 +224,12 @@ describe("scanPostContentFn", () => {
 
       await callHandler("post1", "user1");
 
-      // Should send strike warning, not notice
-      expect(mockSendWarning).toHaveBeenCalledWith(
+      // Should still send a notice, never a strike
+      expect(mockSendNotice).toHaveBeenCalledWith(
         expect.objectContaining({
           toEmail: "user@example.com",
           postId: "post1",
-          strikeCount: 1,
-        })
-      );
-      expect(mockSendNotice).not.toHaveBeenCalled();
-    });
-
-    it("suspends account at 3 strikes (after warnings exhausted)", async () => {
-      const postWithImage = {
-        ...mockPost,
-        content: '{"root":{"children":[{"type":"image","src":"https://example.com/img.jpg"}],"type":"root"}}',
-      };
-      setupMocks({}, { contentWarnings: 5, contentStrikes: 2 });
-      mockPrisma.post.findUnique.mockResolvedValue(postWithImage as never);
-      mockPrisma.user.update
-        .mockResolvedValueOnce({ contentStrikes: 3 } as never) // first call: increment strike
-        .mockResolvedValueOnce({} as never); // second call: suspend
-
-      mockFetch(
-        { nsfw: true, score: 0.7 },
-        { is_hate_speech: false, is_bullying: false, toxicity: 0.01, identity_attack: 0.0, insult: 0.01 }
-      );
-
-      await callHandler("post1", "user1");
-
-      expect(mockSendSuspension).toHaveBeenCalled();
-      expect(mockPrisma.user.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ suspended: true }),
+          warningCount: 11,
         })
       );
     });
@@ -288,7 +252,6 @@ describe("scanPostContentFn", () => {
       await callHandler("post1", "user1");
 
       expect(mockSendAlert).not.toHaveBeenCalled();
-      expect(mockSendWarning).not.toHaveBeenCalled();
       expect(mockSendNotice).not.toHaveBeenCalled();
     });
 
@@ -375,7 +338,6 @@ describe("scanPostContentFn", () => {
         expect.objectContaining({ toEmail: "user@example.com" })
       );
       expect(mockSendNotice).not.toHaveBeenCalled();
-      expect(mockSendWarning).not.toHaveBeenCalled();
       // Should return postDeclined flag
       expect(result).toEqual(expect.objectContaining({ postDeclined: true }));
     });
@@ -412,7 +374,6 @@ describe("scanPostContentFn", () => {
       await callHandler("post1", "user1");
 
       expect(mockSendAlert).not.toHaveBeenCalled();
-      expect(mockSendWarning).not.toHaveBeenCalled();
       expect(mockSendNotice).not.toHaveBeenCalled();
     });
   });
