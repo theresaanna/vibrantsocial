@@ -122,6 +122,7 @@ export async function updateProfile(
   const emailOnMention = formData.get("emailOnMention") === "true";
   const emailOnFriendRequest = formData.get("emailOnFriendRequest") === "true";
   const emailOnSubscribedPost = formData.get("emailOnSubscribedPost") === "true";
+  const emailOnSubscribedComment = formData.get("emailOnSubscribedComment") === "true";
   const emailOnTagPost = formData.get("emailOnTagPost") === "true";
   const pushEnabled = formData.get("pushEnabled") === "true";
   let isProfilePublic = formData.get("isProfilePublic") === "true";
@@ -147,6 +148,7 @@ export async function updateProfile(
       emailOnMention,
       emailOnFriendRequest,
       emailOnSubscribedPost,
+      emailOnSubscribedComment,
       emailOnTagPost,
       pushEnabled,
       isProfilePublic,

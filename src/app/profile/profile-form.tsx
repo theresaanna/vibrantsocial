@@ -38,6 +38,7 @@ interface ProfileFormProps {
   emailOnMention: boolean;
   emailOnFriendRequest: boolean;
   emailOnSubscribedPost: boolean;
+  emailOnSubscribedComment: boolean;
   emailOnTagPost: boolean;
   pushEnabled: boolean;
   isProfilePublic: boolean;
@@ -61,7 +62,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, email, emailVerified, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, hideSensitiveOverlay, hideNsfwOverlay, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, birthdayMonth: initialBirthdayMonth, birthdayDay: initialBirthdayDay, isPremium, stars, starsSpent, referralCode, userEmail }: ProfileFormProps) {
+export function ProfileForm({ user, email, emailVerified, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, hideSensitiveOverlay, hideNsfwOverlay, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnSubscribedComment, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, birthdayMonth: initialBirthdayMonth, birthdayDay: initialBirthdayDay, isPremium, stars, starsSpent, referralCode, userEmail }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [displayNameValue, setDisplayNameValue] = useState(user.displayName ?? "");
@@ -642,6 +643,18 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
               />
               <span className="text-sm text-zinc-700 dark:text-zinc-300">
                 New posts from subscribed users
+              </span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="emailOnSubscribedComment"
+                value="true"
+                defaultChecked={emailOnSubscribedComment}
+                className="rounded"
+              />
+              <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                New comments on watched posts
               </span>
             </label>
             <label className="flex items-center gap-2">

@@ -15,6 +15,7 @@ import {
   sendPostDeclinedEmail,
   sendSuspensionEmail,
   sendModerationAlertEmail,
+  sendSubscribedCommentEmail,
 } from "./email";
 
 function onFunctionFailure(functionId: string) {
@@ -958,6 +959,18 @@ export const publishScheduledPostsFn = inngest.createFunction(
   async () => publishScheduledPosts()
 );
 
+export const sendSubscribedCommentEmailFn = inngest.createFunction(
+  {
+    id: "send-subscribed-comment-email",
+    retries: 3,
+    onFailure: onFunctionFailure("send-subscribed-comment-email"),
+  },
+  { event: "email/subscribed-comment" },
+  async ({ event }) => {
+    await sendSubscribedCommentEmail(event.data);
+  }
+);
+
 export const allFunctions = [
   sendCommentEmailFn,
   sendMentionEmailFn,
@@ -971,4 +984,5 @@ export const allFunctions = [
   scanPostContentFn,
   scanChatMessageFn,
   publishScheduledPostsFn,
+  sendSubscribedCommentEmailFn,
 ];

@@ -179,6 +179,12 @@ model User {
   postSubscriptions PostSubscription[] @relation("postSubscriber")
   postSubscribers   PostSubscription[] @relation("postSubscribedTo")
 
+  // Comment subscriptions (subscribe to comments on a specific post)
+  commentSubscriptions CommentSubscription[]
+
+  // Email preference for subscribed-post comments
+  emailOnSubscribedComment Boolean @default(true)
+
   // Blocks
   blockedUsers Block[]      @relation("blocker")
   blockedBy    Block[]      @relation("blocked")
@@ -287,8 +293,9 @@ model Post {
   contentViolations ContentViolation[]
   wallPost          WallPost?
   marketplacePost   MarketplacePost?
-  pollVotes         PollVote[]
-  views             PostView[]
+  pollVotes             PollVote[]
+  views                 PostView[]
+  commentSubscriptions  CommentSubscription[]
 
   @@unique([authorId, slug])
   @@index([authorId])
@@ -795,6 +802,7 @@ enum NotificationType {
   CHAT_REQUEST
   CHAT_REQUEST_ACCEPTED
   CHAT_ABUSE
+  SUBSCRIBED_COMMENT
 }
 
 model Notification {
@@ -1106,5 +1114,21 @@ model LinksPageLink {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+}
+
+// Comment subscriptions (subscribe to notifications on a specific post's comments)
+
+model CommentSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([postId])
   @@index([userId])
 }
