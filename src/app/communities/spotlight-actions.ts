@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 
-const SPOTLIGHT_USERNAMES = ["worshipmango", "johniley"];
+const SPOTLIGHT_USERNAMES = ["WorshipMango", "johniley"];
 
 export type SpotlightUser = {
   id: string;
@@ -29,7 +29,7 @@ export type SpotlightUser = {
 
 export async function fetchSpotlightUsers(): Promise<SpotlightUser[]> {
   const users = await prisma.user.findMany({
-    where: { username: { in: SPOTLIGHT_USERNAMES } },
+    where: { username: { in: SPOTLIGHT_USERNAMES, mode: "insensitive" } },
     select: {
       id: true,
       username: true,
@@ -56,7 +56,7 @@ export async function fetchSpotlightUsers(): Promise<SpotlightUser[]> {
 
   // Preserve the order defined in SPOTLIGHT_USERNAMES
   return SPOTLIGHT_USERNAMES.flatMap((uname) => {
-    const user = users.find((u: { username: string | null }) => u.username === uname);
+    const user = users.find((u: { username: string | null }) => u.username?.toLowerCase() === uname.toLowerCase());
     return user ? [user] : [];
   });
 }
