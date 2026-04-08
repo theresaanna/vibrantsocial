@@ -32,6 +32,7 @@ interface ThemeFormProps {
     displayName: string | null;
     bio: string | null;
     usernameFont: string | null;
+    profileFrameId: string | null;
     profileBgColor: string | null;
     profileTextColor: string | null;
     profileLinkColor: string | null;
@@ -415,6 +416,8 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
                     displayName={user.displayName}
                     bio={user.bio}
                     avatarSrc={avatarSrc}
+                    frameId={user.profileFrameId}
+                    fontId={usernameFont}
                     onColorsChange={handleColorsChange}
                     isPremium={isPremium}
                     userEmail={userEmail}
@@ -455,6 +458,38 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
                     externalBackground={importedBackground}
                     embedded
                   />
+
+                  <hr className="border-zinc-200 dark:border-zinc-700" />
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleExportTheme}
+                      className="flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+                      </svg>
+                      Download Theme
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => importInputRef.current?.click()}
+                      className="flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M17 8l-5-5-5 5M12 3v12" />
+                      </svg>
+                      Upload Theme
+                    </button>
+                    <input
+                      ref={importInputRef}
+                      type="file"
+                      accept=".json"
+                      onChange={handleImportTheme}
+                      className="hidden"
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -475,37 +510,6 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
               userEmail={userEmail}
 
             />
-
-            {/* Theme export/import */}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleExportTheme}
-                className="flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-              >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
-                </svg>
-                Download Theme
-              </button>
-              <button
-                type="button"
-                onClick={() => importInputRef.current?.click()}
-                className="flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-              >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M17 8l-5-5-5 5M12 3v12" />
-                </svg>
-                Upload Theme
-              </button>
-              <input
-                ref={importInputRef}
-                type="file"
-                accept=".json"
-                onChange={handleImportTheme}
-                className="hidden"
-              />
-            </div>
 
             {/* Save button */}
             <div className="flex items-center justify-between">

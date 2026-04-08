@@ -29,6 +29,7 @@ export default async function ThemePage() {
       email: true,
       dateOfBirth: true,
       usernameFont: true,
+      profileFrameId: true,
       sparklefallPreset: true,
     },
   });
@@ -91,6 +92,7 @@ export default async function ThemePage() {
         profileBgAttachment: user.profileBgAttachment ?? null,
         profileBgSize: user.profileBgSize ?? null,
         profileBgPosition: user.profileBgPosition ?? null,
+        profileFrameId: user.profileFrameId ?? null,
         sparklefallEnabled: user.sparklefallEnabled ?? false,
         sparklefallPreset: user.sparklefallPreset ?? null,
         sparklefallSparkles: user.sparklefallSparkles ?? null,
