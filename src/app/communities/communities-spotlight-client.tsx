@@ -36,7 +36,7 @@ function SpotlightCard({ user }: { user: SpotlightUser }) {
     ? {
         backgroundImage: `url(${user.profileBgImage})`,
         backgroundRepeat: user.profileBgRepeat ?? "no-repeat",
-        backgroundSize: user.profileBgSize ?? "cover",
+        backgroundSize: "cover",
         backgroundPosition: user.profileBgPosition ?? "center",
       }
     : {};
