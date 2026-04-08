@@ -9,6 +9,11 @@ export interface ThemeExport {
     imageUrl: string | null;
     /** Base64-encoded image data for custom backgrounds (data:image/...;base64,...) */
     imageData?: string;
+    /**
+     * Filename of the background image bundled in the zip.
+     * Present in v1 exports packaged as .zip; absent in legacy JSON-only exports.
+     */
+    imageFile?: string;
     repeat: string;
     attachment: string;
     size: string;
@@ -41,6 +46,7 @@ export function validateThemeExport(data: unknown): ThemeExport | null {
   const bg = obj.background as Record<string, unknown>;
   if (bg.imageUrl !== null && typeof bg.imageUrl !== "string") return null;
   if (bg.imageData !== undefined && typeof bg.imageData !== "string") return null;
+  if (bg.imageFile !== undefined && typeof bg.imageFile !== "string") return null;
   if (typeof bg.repeat !== "string" || !isValidBgRepeat(bg.repeat)) return null;
   if (typeof bg.attachment !== "string" || !isValidBgAttachment(bg.attachment)) return null;
   if (typeof bg.size !== "string" || !isValidBgSize(bg.size)) return null;
@@ -58,6 +64,7 @@ export function validateThemeExport(data: unknown): ThemeExport | null {
     background: {
       imageUrl: bg.imageUrl as string | null,
       ...(typeof bg.imageData === "string" ? { imageData: bg.imageData } : {}),
+      ...(typeof bg.imageFile === "string" ? { imageFile: bg.imageFile } : {}),
       repeat: bg.repeat as string,
       attachment: bg.attachment as string,
       size: bg.size as string,
