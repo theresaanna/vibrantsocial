@@ -121,9 +121,9 @@ describe("FeedSummaryBanner", () => {
     );
   });
 
-  it("hides when dismiss button clicked", async () => {
+  it("renders bold markdown in summary text", async () => {
     mockFetchFeedSummary.mockResolvedValue({
-      summary: null,
+      summary: "**@Alice** posted a photo and **@Bob** shared a meme",
       missedCount: 2,
       tooMany: false,
     });
@@ -133,14 +133,11 @@ describe("FeedSummaryBanner", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/2 new posts/)).toBeInTheDocument();
+      const strong = document.querySelectorAll("strong");
+      expect(strong).toHaveLength(2);
+      expect(strong[0].textContent).toBe("@Alice");
+      expect(strong[1].textContent).toBe("@Bob");
     });
-
-    await userEvent.click(
-      screen.getByRole("button", { name: "Dismiss" })
-    );
-
-    expect(screen.queryByText(/2 new posts/)).not.toBeInTheDocument();
   });
 
   it("calls fetchFeedSummary with the lastSeenFeedAt value", async () => {
