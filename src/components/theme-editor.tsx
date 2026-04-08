@@ -14,6 +14,8 @@ import {
 } from "@/app/theme/generate-theme-action";
 import { isFreePresetBackground } from "@/lib/profile-backgrounds";
 import { PremiumCrown } from "./premium-crown";
+import { FramedAvatar } from "./framed-avatar";
+import { StyledName } from "./styled-name";
 
 interface ThemeEditorProps {
   initialColors: Partial<ProfileThemeColors>;
@@ -23,6 +25,8 @@ interface ThemeEditorProps {
   /** @deprecated No longer displayed in preview. Kept for API compat. */
   bio?: string | null;
   avatarSrc: string | null;
+  frameId?: string | null;
+  fontId?: string | null;
   onChange?: () => void;
   onColorsChange?: (colors: ProfileThemeColors) => void;
   onContainerOpacityChange?: (opacity: number) => void;
@@ -49,6 +53,8 @@ export function ThemeEditor({
   displayName,
 
   avatarSrc,
+  frameId,
+  fontId,
   onChange,
   onColorsChange,
   onContainerOpacityChange,
@@ -220,6 +226,25 @@ export function ThemeEditor({
     });
   }, [generatedTheme, presetName, currentBgImage, isSaving]);
 
+  const handleSingleColorChange = useCallback(
+    (field: keyof ProfileThemeColors, value: string) => {
+      setColors((prev) => ({ ...prev, [field]: value }));
+      setActivePreset(null);
+      if (generatedTheme) {
+        setGeneratedTheme((prev) =>
+          prev
+            ? {
+                ...prev,
+                light: { ...prev.light, [field]: value },
+                dark: { ...prev.dark, [field]: value },
+              }
+            : null
+        );
+      }
+    },
+    [generatedTheme]
+  );
+
   const canGenerateFromBg = isPremium || isFreePresetBackground(currentBgImage);
 
   const name = displayName || username || "Your Name";
@@ -240,30 +265,19 @@ export function ThemeEditor({
                 style={{ backgroundColor: colors.profileContainerColor }}
               >
                 <div className="flex items-start gap-3">
-                  {avatarSrc ? (
-                    <img
-                      src={avatarSrc}
-                      alt=""
-                      className="h-10 w-10 rounded-full"
-                    />
-                  ) : (
-                    <div
-                      className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold"
-                      style={{
-                        backgroundColor: colors.profileSecondaryColor + "33",
-                        color: colors.profileTextColor,
-                      }}
-                    >
-                      {initial}
-                    </div>
-                  )}
+                  <FramedAvatar
+                    src={avatarSrc}
+                    initial={initial}
+                    size={40}
+                    frameId={frameId}
+                  />
 
                   <div className="min-w-0 flex-1">
                     <h3
                       className="text-sm font-bold"
                       style={{ color: colors.profileTextColor }}
                     >
-                      {name}
+                      <StyledName fontId={fontId}>{name}</StyledName>
                     </h3>
                     <p
                       className="text-xs"
@@ -353,6 +367,31 @@ export function ThemeEditor({
             </div>
           )}
 
+          {/* Individual color editors */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {(
+              [
+                { field: "profileBgColor", label: "Background" },
+                { field: "profileTextColor", label: "Text" },
+                { field: "profileLinkColor", label: "Links" },
+                { field: "profileSecondaryColor", label: "Secondary" },
+                { field: "profileContainerColor", label: "Container" },
+              ] as const
+            ).map(({ field, label }) => (
+              <label key={field} className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={colors[field]}
+                  onChange={(e) => handleSingleColorChange(field, e.target.value)}
+                  className="h-7 w-7 shrink-0 cursor-pointer rounded border border-zinc-300 bg-transparent p-0.5 dark:border-zinc-600"
+                />
+                <span className="text-xs text-zinc-600 dark:text-zinc-400">
+                  {label}
+                </span>
+              </label>
+            ))}
+          </div>
+
           {/* Custom preset pills */}
           {customPresets.length > 0 && (
             <div>
@@ -429,7 +468,7 @@ export function ThemeEditor({
                   className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
                   data-testid="ai-generate-button"
                 >
-                  {isGenerating ? "Generating..." : "Generate Theme from Background"}
+                  {isGenerating ? "Generating..." : "Generate Theme from Background Upload"}
                 </button>
               </div>
 
