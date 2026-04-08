@@ -49,6 +49,35 @@ export async function sendCommentEmail(params: {
   });
 }
 
+export async function sendSubscribedCommentEmail(params: {
+  toEmail: string;
+  commenterName: string;
+  postId: string;
+}) {
+  const { toEmail, commenterName, postId } = params;
+  const postUrl = `${getBaseUrl()}/post/${postId}`;
+
+  await getResend().emails.send({
+    from: FROM_EMAIL,
+    to: toEmail,
+    subject: "New comment on a post you're watching",
+    html: `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+        <h2 style="color: #18181b; margin-bottom: 16px;">Hey, friend!</h2>
+        <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+          <strong>${escapeHtml(commenterName)}</strong> commented on a post you're subscribed to.
+        </p>
+        <a href="${postUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
+          View Comment
+        </a>
+        <p style="color: #a1a1aa; font-size: 12px; margin-top: 32px;">
+          You can turn off email notifications in your <a href="${getBaseUrl()}/profile" style="color: #a1a1aa;">profile settings</a>.
+        </p>
+      </div>
+    `,
+  });
+}
+
 export async function sendNewChatEmail(params: {
   toEmail: string;
   senderName: string;

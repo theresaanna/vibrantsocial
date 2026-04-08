@@ -45,6 +45,7 @@ export default async function ProfilePage() {
       emailOnMention: true,
       emailOnFriendRequest: true,
       emailOnSubscribedPost: true,
+      emailOnSubscribedComment: true,
       emailOnTagPost: true,
       pushEnabled: true,
       isProfilePublic: true,
@@ -104,6 +105,7 @@ export default async function ProfilePage() {
           emailOnMention={user?.emailOnMention ?? true}
           emailOnFriendRequest={user?.emailOnFriendRequest ?? true}
           emailOnSubscribedPost={user?.emailOnSubscribedPost ?? true}
+          emailOnSubscribedComment={user?.emailOnSubscribedComment ?? true}
           emailOnTagPost={user?.emailOnTagPost ?? true}
           pushEnabled={user?.pushEnabled ?? false}
           isProfilePublic={user?.isProfilePublic ?? true}

@@ -50,6 +50,8 @@ export function getNotificationText(type: NotificationType): string {
       return "accepted your chat request";
     case "CHAT_ABUSE":
       return "may be sending you abusive messages. You can report or block this user.";
+    case "SUBSCRIBED_COMMENT":
+      return "commented on a post you're watching";
     default:
       return "";
   }

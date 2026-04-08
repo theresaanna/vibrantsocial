@@ -18,6 +18,7 @@ import { extractTagsFromNames } from "@/lib/tags";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { notifyPostSubscribers } from "@/lib/subscription-notifications";
 import { checkStarsMilestone } from "@/lib/referral";
+import { notifyCommentSubscribers } from "@/lib/comment-subscription-notifications";
 import {
   requireAuthWithRateLimit,
   isActionError,
@@ -624,6 +625,16 @@ export async function createComment(
       commentId: comment.id,
     });
   }
+
+  // Notify users subscribed to comments on this post
+  const commenterName =
+    comment.author.displayName ?? comment.author.username ?? "Someone";
+  await notifyCommentSubscribers({
+    postId,
+    commentId: comment.id,
+    commentAuthorId: session.user.id,
+    commenterName,
+  });
 
   // Publish to Ably for real-time delivery
   try {
