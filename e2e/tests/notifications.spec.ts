@@ -176,17 +176,17 @@ test.describe("Notifications @slow", () => {
     await createTestNotifications(TEST_USER.email, TEST_USER_2.email, 3);
 
     await page.goto("/notifications");
-    await page.waitForTimeout(2000);
 
-    // Should see mark all as read button — use force:true because a container
-    // div can intercept pointer events in the layout
+    // Wait for notifications to render before interacting
+    await expect(page.getByText(TEST_USER_2.displayName).first()).toBeVisible({ timeout: 10000 });
+
     const markAllButton = page.getByRole("button", { name: /mark all/i }).first();
     await expect(markAllButton).toBeVisible({ timeout: 10000 });
-    await markAllButton.click({ force: true });
 
-    await page.waitForTimeout(1000);
+    // Use page.evaluate to click via JS to avoid pointer-event interception issues
+    await markAllButton.evaluate((el: HTMLElement) => el.click());
 
-    // Button should disappear or all notifications should lose unread styling
+    // Button should disappear once all notifications are optimistically marked read
     await expect(markAllButton).not.toBeVisible({ timeout: 10000 });
   });
 

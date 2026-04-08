@@ -290,12 +290,12 @@ test.describe("Email Verification & Password Reset @slow", () => {
 
     await page.goto(`/verify-email?token=${token}&email=${encodeURIComponent(newEmail)}`);
 
-    // Should show success or processing state
-    await page.waitForTimeout(3000);
+    // The heading will be "Email verified" on success or "Verification failed" on error
+    const heading = page.getByRole("heading", { level: 1 });
+    await expect(heading).toBeVisible({ timeout: 30000 });
+    await expect(heading).toHaveText(/verified|failed/i, { timeout: 10000 });
 
-    // Look for verification result — use .first() since both heading and body text may match
-    const result = page.locator("text=/verified|success|confirmed|invalid|expired/i").first();
-    await expect(result).toBeVisible({ timeout: 10000 });
+    await context.close();
   });
 
   test("verify email page rejects invalid token", async ({ browser }) => {
@@ -303,10 +303,10 @@ test.describe("Email Verification & Password Reset @slow", () => {
     const page = await context.newPage();
 
     await page.goto("/verify-email?token=fake-token&email=fake@example.com");
-    await page.waitForTimeout(3000);
 
-    const error = page.locator("text=/invalid|expired|error|failed/i");
-    await expect(error).toBeVisible({ timeout: 10000 });
+    // The heading will be "Verification failed"
+    const heading = page.getByRole("heading", { level: 1 });
+    await expect(heading).toHaveText(/failed/i, { timeout: 30000 });
 
     await context.close();
   });
@@ -317,9 +317,9 @@ test.describe("Email Verification & Password Reset @slow", () => {
 
     await page.goto("/verify-email");
 
-    // Should show error or redirect
-    const error = page.locator("text=/invalid|missing|required|error/i");
-    await expect(error).toBeVisible({ timeout: 10000 });
+    // Should show "Invalid verification link" heading
+    const heading = page.getByRole("heading", { level: 1 });
+    await expect(heading).toHaveText(/invalid verification link/i, { timeout: 10000 });
 
     await context.close();
   });
