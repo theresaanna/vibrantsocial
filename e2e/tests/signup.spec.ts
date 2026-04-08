@@ -111,7 +111,7 @@ test.describe("Signup Flow @slow", () => {
     await page.locator('input[name="confirmPassword"]').fill("DifferentPassword!");
     await page.locator('input[name="agreeToTos"]').check();
 
-    await page.locator('button[type="submit"]').click();
+    await page.getByRole("button", { name: /create account/i }).click();
 
     await page.waitForTimeout(3000);
     const error = page.locator("text=/passwords do not match|don't match/i");
@@ -133,7 +133,7 @@ test.describe("Signup Flow @slow", () => {
     await page.locator('input[name="confirmPassword"]').fill("short");
     await page.locator('input[name="agreeToTos"]').check();
 
-    await page.locator('button[type="submit"]').click();
+    await page.getByRole("button", { name: /create account/i }).click();
 
     await page.waitForTimeout(3000);
     const error = page.locator("text=/at least 8 characters/i");
@@ -155,7 +155,7 @@ test.describe("Signup Flow @slow", () => {
     await page.locator('input[name="confirmPassword"]').fill("ValidPassword123!");
     await page.locator('input[name="agreeToTos"]').check();
 
-    await page.locator('button[type="submit"]').click();
+    await page.getByRole("button", { name: /create account/i }).click();
 
     await page.waitForTimeout(3000);
     const error = page.locator("text=/letters, numbers, and underscores/i");
@@ -182,7 +182,7 @@ test.describe("Signup Flow @slow", () => {
     await page.locator('input[name="confirmPassword"]').fill("ValidPassword123!");
     await page.locator('input[name="agreeToTos"]').check();
 
-    await page.locator('button[type="submit"]').click();
+    await page.getByRole("button", { name: /create account/i }).click();
 
     await page.waitForTimeout(3000);
     const error = page.locator("text=/at least 18/i");
@@ -204,7 +204,7 @@ test.describe("Signup Flow @slow", () => {
     await page.locator('input[name="confirmPassword"]').fill("ValidPassword123!");
     // Do NOT check ToS
 
-    await page.locator('button[type="submit"]').click();
+    await page.getByRole("button", { name: /create account/i }).click();
 
     await page.waitForTimeout(3000);
     const error = page.locator("text=/agree to the Terms/i");
@@ -248,7 +248,7 @@ test.describe("Signup Flow @slow", () => {
     await page.locator('input[name="confirmPassword"]').fill("ValidPassword123!");
     await page.locator('input[name="agreeToTos"]').check();
 
-    await page.locator('button[type="submit"]').click();
+    await page.getByRole("button", { name: /create account/i }).click();
 
     await page.waitForTimeout(3000);
     const error = page.locator("text=/already exists|already taken/i");

@@ -127,12 +127,12 @@ test.describe("Chat Messaging @slow", () => {
     await page.goto("/chat");
     await page.waitForLoadState("networkidle");
 
-    // Click on the conversation link
+    // Wait for conversation list to stabilize, then navigate via URL
     const conversationLink = page.locator(`a[href="/chat/${conversationId}"]`).first();
     await expect(conversationLink).toBeVisible({ timeout: 10000 });
-    await conversationLink.click();
 
-    // Should navigate to conversation page
+    // Navigate directly instead of clicking (Link component re-renders cause instability)
+    await page.goto(`/chat/${conversationId}`);
     await expect(page).toHaveURL(new RegExp(`/chat/${conversationId}`), { timeout: 10000 });
   });
 

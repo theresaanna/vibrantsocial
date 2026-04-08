@@ -144,7 +144,7 @@ test.describe("Email Verification & Password Reset @slow", () => {
     await page.waitForTimeout(3000);
 
     // The page should show some feedback (success or generic message)
-    const feedback = page.locator("text=/check|sent|reset link/i");
+    const feedback = page.locator("text=/check|sent|reset link/i").first();
     await expect(feedback).toBeVisible({ timeout: 10000 });
 
     await context.close();

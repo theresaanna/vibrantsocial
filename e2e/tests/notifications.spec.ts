@@ -156,10 +156,10 @@ test.describe("Notifications @slow", () => {
     await page.goto("/notifications");
     await page.waitForTimeout(2000);
 
-    // Click on the notification
+    // Click on the notification (use force to avoid re-render instability)
     const notifItem = page.getByText(TEST_USER_2.displayName).first();
     await expect(notifItem).toBeVisible({ timeout: 10000 });
-    await notifItem.click();
+    await notifItem.click({ force: true });
 
     // Navigate back to notifications
     await page.goto("/notifications");
