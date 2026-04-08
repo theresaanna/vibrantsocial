@@ -42,7 +42,7 @@ export default async function Home() {
 
             <p className="mx-auto max-w-md text-lg leading-relaxed text-zinc-500 dark:text-zinc-400">
               Return to the good ol&apos; days of the internet, before
-              revenue-driving algorithms and <a href="https://www.vibrantsocial.app/theresa/post/a-clarifying-note-on-my-philosophies-and-practices" className="underline decoration-zinc-300 underline-offset-2 hover:decoration-zinc-500 dark:decoration-zinc-600 dark:hover:decoration-zinc-400">AI generated nonsense</a><a href="https://www.vibrantsocial.app/quote/cmnpd1tz500020ajph8rbuesz" className="underline decoration-zinc-300 underline-offset-2 hover:decoration-zinc-500 dark:decoration-zinc-600 dark:hover:decoration-zinc-400">*</a>.
+              revenue-driving algorithms and <Link href="https://www.vibrantsocial.app/theresa/post/a-clarifying-note-on-my-philosophies-and-practices" className="underline decoration-zinc-300 underline-offset-2 hover:decoration-zinc-500 dark:decoration-zinc-600 dark:hover:decoration-zinc-400">AI generated nonsense</Link><Link href="https://www.vibrantsocial.app/quote/cmnpd1tz500020ajph8rbuesz" className="underline decoration-zinc-300 underline-offset-2 hover:decoration-zinc-500 dark:decoration-zinc-600 dark:hover:decoration-zinc-400">*</Link>.
             </p>
 
             <p className="text-base text-zinc-400 dark:text-zinc-500">
