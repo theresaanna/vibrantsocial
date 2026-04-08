@@ -482,8 +482,7 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
                 </svg>
               </button>
 
-              {themeOpen && (
-                <div id={themeSectionId} className="space-y-6 px-4 pb-4">
+              <div id={themeSectionId} className={`space-y-6 px-4 pb-4 ${themeOpen ? "" : "hidden"}`}>
                   <ThemeEditor
                     initialColors={{
                       profileBgColor: user.profileBgColor ?? undefined,
@@ -573,7 +572,6 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
                     />
                   </div>
                 </div>
-              )}
             </div>
 
             <SparkleEditor
