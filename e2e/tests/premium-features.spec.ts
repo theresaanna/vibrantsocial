@@ -11,7 +11,10 @@ async function freshLogin(page: import("@playwright/test").Page) {
   await page.fill('input[name="email"]', TEST_USER.email);
   await page.fill('input[name="password"]', TEST_USER.password);
   await page.click('button[type="submit"]');
-  await page.waitForURL("**/feed", { timeout: 15000 });
+  await page.waitForURL(/(\/feed|\/complete-profile)/, { timeout: 15000 });
+  if (page.url().includes("/complete-profile")) {
+    await page.waitForURL("**/feed", { timeout: 30000 });
+  }
   await page.evaluate(() => {
     localStorage.setItem("vibrantsocial-cookie-notice-dismissed", "true");
     localStorage.setItem("autotag-hint-dismissed", "1");

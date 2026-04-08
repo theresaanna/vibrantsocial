@@ -192,7 +192,8 @@ test.describe("Signup Flow @slow", () => {
     await page.getByRole("button", { name: /create account/i }).click();
 
     await page.waitForTimeout(3000);
-    const error = page.locator("text=/at least 18/i");
+    // Use specific selector for error message (not the helper text that also contains "at least 18")
+    const error = page.locator(".text-red-600", { hasText: /at least 18/i });
     await expect(error).toBeVisible({ timeout: 10000 });
 
     await context.close();
