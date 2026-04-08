@@ -11,9 +11,7 @@ import {
   sendTagPostEmail,
   sendTagDigestEmail,
   sendContentNoticeEmail,
-  sendContentWarningEmail,
   sendPostDeclinedEmail,
-  sendSuspensionEmail,
   sendModerationAlertEmail,
   sendSubscribedCommentEmail,
 } from "./email";
@@ -375,8 +373,6 @@ export const pollChatEmailNotificationsFn = inngest.createFunction(
 
 const MODERATION_API_URL = process.env.MODERATION_API_URL;
 const MODERATION_API_KEY = process.env.MODERATION_API_KEY;
-const MAX_WARNINGS = 5;
-const MAX_STRIKES = 3;
 
 function extractPlainText(lexicalJson: string): string {
   try {
@@ -449,7 +445,7 @@ export const scanPostContentFn = inngest.createFunction(
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, username: true, contentStrikes: true, contentWarnings: true, ageVerified: true },
+      select: { id: true, email: true, username: true, contentWarnings: true, ageVerified: true },
     });
 
     if (!user) return { skipped: true, reason: "user not found" };
@@ -578,53 +574,20 @@ export const scanPostContentFn = inngest.createFunction(
         },
       });
 
-      // Warning-first escalation: 5 friendly notices, then strikes
-      if (user.contentWarnings < MAX_WARNINGS) {
-        const updatedUser = await prisma.user.update({
-          where: { id: user.id },
-          data: { contentWarnings: { increment: 1 } },
-          select: { contentWarnings: true },
+      // Send a friendly notice each time
+      const updatedUser = await prisma.user.update({
+        where: { id: user.id },
+        data: { contentWarnings: { increment: 1 } },
+        select: { contentWarnings: true },
+      });
+
+      if (user.email) {
+        await sendContentNoticeEmail({
+          toEmail: user.email,
+          postId,
+          markingLabel,
+          warningCount: updatedUser.contentWarnings,
         });
-
-        if (user.email) {
-          await sendContentNoticeEmail({
-            toEmail: user.email,
-            postId,
-            markingLabel,
-            warningCount: updatedUser.contentWarnings,
-          });
-        }
-      } else {
-        // Past warning threshold — issue a strike
-        const updatedUser = await prisma.user.update({
-          where: { id: user.id },
-          data: { contentStrikes: { increment: 1 } },
-          select: { contentStrikes: true },
-        });
-
-        if (user.email) {
-          await sendContentWarningEmail({
-            toEmail: user.email,
-            postId,
-            violationType: "nsfw_unmarked",
-            strikeCount: updatedUser.contentStrikes,
-          });
-        }
-
-        // Check for suspension
-        if (updatedUser.contentStrikes >= MAX_STRIKES) {
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { suspended: true, suspendedAt: new Date(), isProfilePublic: false },
-          });
-
-          if (user.email) {
-            await sendSuspensionEmail({
-              toEmail: user.email,
-              strikeCount: updatedUser.contentStrikes,
-            });
-          }
-        }
       }
     }
 

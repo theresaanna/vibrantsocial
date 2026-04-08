@@ -55,9 +55,7 @@ vi.mock("@/lib/email", () => ({
   sendTagPostEmail: vi.fn(),
   sendTagDigestEmail: vi.fn(),
   sendContentNoticeEmail: vi.fn(),
-  sendContentWarningEmail: vi.fn(),
   sendPostDeclinedEmail: vi.fn(),
-  sendSuspensionEmail: vi.fn(),
   sendModerationAlertEmail: vi.fn(),
 }));
 
