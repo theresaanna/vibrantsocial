@@ -132,7 +132,7 @@ export async function createNotification(params: CreateNotificationParams) {
       CHAT_REQUEST: "sent you a chat request",
       CHAT_REQUEST_ACCEPTED: "accepted your chat request",
       CHAT_ABUSE: "may be sending you abusive messages",
-      SUBSCRIBED_COMMENT: "commented on a post you're watching",
+      SUBSCRIBED_COMMENT: "commented on a post you're subscribed to",
     };
     const body = `${actorName} ${typeText[type] || "sent you a notification"}`;
     const url = postId ? `/notifications` : "/notifications";

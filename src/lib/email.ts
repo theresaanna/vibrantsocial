@@ -60,7 +60,7 @@ export async function sendSubscribedCommentEmail(params: {
   await getResend().emails.send({
     from: FROM_EMAIL,
     to: toEmail,
-    subject: "New comment on a post you're watching",
+    subject: "New comment on a post you're subscribed to",
     html: `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
         <h2 style="color: #18181b; margin-bottom: 16px;">Hey, friend!</h2>

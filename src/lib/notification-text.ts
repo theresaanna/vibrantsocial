@@ -51,7 +51,7 @@ export function getNotificationText(type: NotificationType): string {
     case "CHAT_ABUSE":
       return "may be sending you abusive messages. You can report or block this user.";
     case "SUBSCRIBED_COMMENT":
-      return "commented on a post you're watching";
+      return "commented on a post you're subscribed to";
     default:
       return "";
   }
