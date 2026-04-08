@@ -2,6 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { FramedAvatar } from "@/components/framed-avatar";
+import { StyledName } from "@/components/styled-name";
 import type { ChatUserProfile } from "@/types/chat";
 import type { TypeaheadMode, TagResult } from "@/hooks/use-typeahead";
 
@@ -77,7 +78,7 @@ export function TypeaheadDropdown({
               />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-medium text-zinc-900 dark:text-zinc-100">
-                  {displayName}
+                  <StyledName fontId={user.usernameFont}>{displayName}</StyledName>
                 </div>
                 {user.username && (
                   <div className="truncate text-xs text-zinc-500 dark:text-zinc-400">

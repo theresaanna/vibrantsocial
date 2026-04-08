@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { searchUsers } from "@/app/chat/actions";
 import { FramedAvatar } from "@/components/framed-avatar";
+import { StyledName } from "@/components/styled-name";
 import type { ChatUserProfile } from "@/types/chat";
 
 interface UserSearchProps {
@@ -97,7 +98,7 @@ export function UserSearch({
                   />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                      {name}
+                      <StyledName fontId={user.usernameFont}>{name}</StyledName>
                     </p>
                     {user.username && (
                       <p className="truncate text-xs text-zinc-500">@{user.username}</p>
