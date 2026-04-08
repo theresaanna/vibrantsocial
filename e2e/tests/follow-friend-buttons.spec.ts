@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { TEST_USER, TEST_USER_2, invalidateRelationshipCache } from "../helpers/db";
+import { TEST_USER, TEST_USER_2, invalidateRelationshipCache, seedTestUser, seedSecondTestUser } from "../helpers/db";
 import pg from "pg";
 
 function createPool() {
@@ -97,6 +97,11 @@ async function createFriendship(email1: string, email2: string) {
 }
 
 test.describe("Follow & Friend Button UI", () => {
+  test.beforeAll(async () => {
+    await seedTestUser();
+    await seedSecondTestUser();
+  });
+
   test.beforeEach(async () => {
     await cleanupRelationships();
   });

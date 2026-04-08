@@ -1,5 +1,19 @@
 import { test, expect } from "@playwright/test";
-import { setTestUserTier, setTestUserFrame } from "../helpers/db";
+import { setTestUserTier, setTestUserFrame, TEST_USER } from "../helpers/db";
+
+/** Force a fresh login to pick up DB changes (e.g. tier) in the JWT */
+async function freshLogin(page: import("@playwright/test").Page) {
+  await page.context().clearCookies();
+  await page.goto("/login");
+  await page.fill('input[name="email"]', TEST_USER.email);
+  await page.fill('input[name="password"]', TEST_USER.password);
+  await page.click('button[type="submit"]');
+  await page.waitForURL("**/feed", { timeout: 15000 });
+  await page.evaluate(() => {
+    localStorage.setItem("vibrantsocial-cookie-notice-dismissed", "true");
+    localStorage.setItem("autotag-hint-dismissed", "1");
+  });
+}
 
 test.describe("Profile Frame (premium)", () => {
   test.beforeEach(async () => {
@@ -15,8 +29,8 @@ test.describe("Profile Frame (premium)", () => {
   test("premium user opens frame selector and sees frame options", async ({
     page,
   }) => {
+    await freshLogin(page);
     await page.goto("/profile");
-    await page.reload();
     await page.waitForLoadState("networkidle");
 
     // Look for the frame button (text is "Add Frame" when no frame set)
@@ -41,8 +55,8 @@ test.describe("Profile Frame (premium)", () => {
   test("selecting a frame shows preview and persists after reload", async ({
     page,
   }) => {
+    await freshLogin(page);
     await page.goto("/profile");
-    await page.reload();
     await page.waitForLoadState("networkidle");
 
     const frameButton = page.getByTestId("choose-frame-button");
@@ -84,8 +98,8 @@ test.describe("Profile Frame gating (free tier)", () => {
   });
 
   test("free user sees disabled frame button", async ({ page }) => {
+    await freshLogin(page);
     await page.goto("/profile");
-    await page.reload();
     await page.waitForLoadState("networkidle");
 
     const frameButton = page.getByTestId("choose-frame-button");
@@ -107,8 +121,8 @@ test.describe("Profile Frame display", () => {
   });
 
   test("frame appears on public profile page", async ({ page }) => {
-    await page.goto("/e2e_testuser");
-    await page.reload();
+    await freshLogin(page);
+    await page.goto(`/${TEST_USER.username}`);
     await expect(page).toHaveURL(/\/e2e_testuser/);
 
     // The frame image should be rendered on the main profile avatar (largest one)

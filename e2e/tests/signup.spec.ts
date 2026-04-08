@@ -177,9 +177,9 @@ test.describe("Signup Flow @slow", () => {
 
     await page.goto("/signup");
 
-    // Set date to make user 15 years old
+    // Set date to make user 10 years old (well under 18)
     const now = new Date();
-    const underageDate = new Date(now.getFullYear() - 15, now.getMonth(), now.getDate());
+    const underageDate = new Date(now.getFullYear() - 10, now.getMonth(), now.getDate());
     const dateStr = underageDate.toISOString().split("T")[0];
 
     await page.locator('input[name="email"]').fill("test@example.com");

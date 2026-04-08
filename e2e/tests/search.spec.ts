@@ -17,9 +17,9 @@ test.describe("Search", () => {
     await page.goto("/feed");
     await expect(page).toHaveURL(/\/feed/, { timeout: 15000 });
 
-    // Wait for nav to be interactive, then click Search
-    await page.waitForSelector('a[aria-label="Search"]', { state: "visible", timeout: 15000 });
-    await page.click('a[aria-label="Search"]');
+    // Wait for nav to be interactive, then click Search link
+    await page.waitForSelector('a[href="/search"]', { state: "visible", timeout: 15000 });
+    await page.click('a[href="/search"]');
 
     await expect(page).toHaveURL(/\/search/, { timeout: 15000 });
 

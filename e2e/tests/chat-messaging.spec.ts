@@ -224,17 +224,18 @@ test.describe("Chat Messaging @slow", () => {
   test("shows existing messages when opening conversation", async ({ page, forceLogin }) => {
     await forceLogin;
 
-    // Seed multiple messages
-    await seedMessage(conversationId, TEST_USER_2.email, `History msg 1 ${Date.now()}`);
-    await seedMessage(conversationId, TEST_USER.email, `History msg 2 ${Date.now()}`);
+    // Seed multiple messages with unique text
+    const ts = Date.now();
+    const msg1Text = `History msg 1 ${ts}`;
+    const msg2Text = `History msg 2 ${ts}`;
+    await seedMessage(conversationId, TEST_USER_2.email, msg1Text);
+    await seedMessage(conversationId, TEST_USER.email, msg2Text);
 
     await page.goto(`/chat/${conversationId}`);
-    await page.waitForTimeout(2000);
 
-    // Should see messages in the thread
-    const messages = page.locator('[class*="message"], [class*="bubble"]');
-    const count = await messages.count();
-    expect(count).toBeGreaterThanOrEqual(2);
+    // Should see both seeded messages by their text content
+    await expect(page.locator(`text=${msg1Text}`).first()).toBeVisible({ timeout: 15000 });
+    await expect(page.locator(`text=${msg2Text}`).first()).toBeVisible({ timeout: 15000 });
   });
 
   // --- File Attachment ---

@@ -1,6 +1,20 @@
 import { test, expect } from "@playwright/test";
 import { setTestUserTier, setTestUserFont, TEST_USER } from "../helpers/db";
 
+/** Force a fresh login to pick up DB changes (e.g. tier) in the JWT */
+async function freshLogin(page: import("@playwright/test").Page) {
+  await page.context().clearCookies();
+  await page.goto("/login");
+  await page.fill('input[name="email"]', TEST_USER.email);
+  await page.fill('input[name="password"]', TEST_USER.password);
+  await page.click('button[type="submit"]');
+  await page.waitForURL("**/feed", { timeout: 15000 });
+  await page.evaluate(() => {
+    localStorage.setItem("vibrantsocial-cookie-notice-dismissed", "true");
+    localStorage.setItem("autotag-hint-dismissed", "1");
+  });
+}
+
 /** Navigate to /theme and wait for full hydration */
 async function gotoTheme(page: import("@playwright/test").Page) {
   await page.goto("/theme");
@@ -27,6 +41,7 @@ test.describe("Username font selector (free tier)", () => {
   });
 
   test("font selector section is visible and collapsed by default", async ({ page }) => {
+    await freshLogin(page);
     await gotoTheme(page);
 
     await expect(page.getByTestId("font-selector")).toBeVisible({ timeout: 10000 });
@@ -37,6 +52,7 @@ test.describe("Username font selector (free tier)", () => {
   });
 
   test("free user can expand and see free font options", async ({ page }) => {
+    await freshLogin(page);
     await gotoTheme(page);
     await expandFontSelector(page);
 
@@ -46,6 +62,7 @@ test.describe("Username font selector (free tier)", () => {
   });
 
   test("free user sees disabled premium font options", async ({ page }) => {
+    await freshLogin(page);
     await gotoTheme(page);
     await expandFontSelector(page);
 
@@ -56,6 +73,7 @@ test.describe("Username font selector (free tier)", () => {
   });
 
   test("free user can select a free font", async ({ page }) => {
+    await freshLogin(page);
     await gotoTheme(page);
     await expandFontSelector(page);
 
@@ -83,6 +101,7 @@ test.describe("Username font selector (premium tier)", () => {
   });
 
   test("premium user can see and select premium fonts", async ({ page }) => {
+    await freshLogin(page);
     await gotoTheme(page);
     await expandFontSelector(page);
 
@@ -95,6 +114,7 @@ test.describe("Username font selector (premium tier)", () => {
   });
 
   test("premium user does not see upgrade prompt for fonts", async ({ page }) => {
+    await freshLogin(page);
     await gotoTheme(page);
     await expandFontSelector(page);
 

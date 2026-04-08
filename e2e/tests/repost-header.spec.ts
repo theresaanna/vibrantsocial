@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures/auth";
-import { TEST_USER, TEST_USER_2 } from "../helpers/db";
+import { TEST_USER, TEST_USER_2, seedTestUser, seedSecondTestUser } from "../helpers/db";
 import pg from "pg";
 
 function createPool() {
@@ -90,6 +90,8 @@ test.describe("Repost Header", () => {
   let repostId: string;
 
   test.beforeAll(async () => {
+    await seedTestUser();
+    await seedSecondTestUser();
     const data = await seedRepostData();
     postId = data.postId;
     repostId = data.repostId;
