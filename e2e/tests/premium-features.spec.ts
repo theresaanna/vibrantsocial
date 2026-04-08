@@ -103,7 +103,14 @@ test.describe("Premium Features @slow", () => {
       // Clicking should initiate Stripe checkout (will redirect)
       const [response] = await Promise.all([
         page.waitForResponse(
-          (resp) => resp.url().includes("/api/stripe") || resp.url().includes("checkout.stripe.com"),
+          (resp) => {
+            try {
+              const url = new URL(resp.url());
+              return url.pathname.startsWith("/api/stripe") || url.hostname === "checkout.stripe.com";
+            } catch {
+              return false;
+            }
+          },
           { timeout: 10000 }
         ).catch(() => null),
         subscribeButton.click(),
