@@ -13,13 +13,6 @@ function SpotlightCard({ user }: { user: SpotlightUser }) {
   const displayName = user.displayName || user.name || user.username || "User";
   const href = user.username ? `/${user.username}` : "#";
 
-  const bgColor = user.profileBgColor || "#ffffff";
-  const textColor = user.profileTextColor || "#18181b";
-  const secondaryColor = user.profileSecondaryColor || "#71717a";
-  const containerColor = user.profileContainerColor || "#f4f4f5";
-  const linkColor = user.profileLinkColor || "#2563eb";
-  const containerOpacity = user.profileContainerOpacity ?? 100;
-
   const hasTheme = !!(
     user.profileBgColor ||
     user.profileTextColor ||
@@ -27,6 +20,17 @@ function SpotlightCard({ user }: { user: SpotlightUser }) {
     user.profileSecondaryColor ||
     user.profileContainerColor
   );
+
+  const themeVars = hasTheme
+    ? ({
+        "--profile-bg": user.profileBgColor ?? "#ffffff",
+        "--profile-text": user.profileTextColor ?? "#18181b",
+        "--profile-link": user.profileLinkColor ?? "#2563eb",
+        "--profile-secondary": user.profileSecondaryColor ?? "#71717a",
+        "--profile-container": user.profileContainerColor ?? "#f4f4f5",
+        "--profile-container-alpha": `${user.profileContainerOpacity ?? 100}%`,
+      } as React.CSSProperties)
+    : {};
 
   const bgImageStyle = user.profileBgImage
     ? {
@@ -40,20 +44,14 @@ function SpotlightCard({ user }: { user: SpotlightUser }) {
   return (
     <Link href={href} className="block">
       <div
-        className="overflow-hidden rounded-xl shadow-md transition-shadow hover:shadow-lg"
+        className={`overflow-hidden rounded-xl shadow-md transition-shadow hover:shadow-lg ${hasTheme ? "profile-themed" : ""}`}
         style={{
-          backgroundColor: bgColor,
+          ...themeVars,
           ...bgImageStyle,
+          minHeight: "auto",
         }}
       >
-        <div
-          className="rounded-xl p-5"
-          style={{
-            backgroundColor: hasTheme
-              ? `color-mix(in srgb, ${containerColor} ${containerOpacity}%, transparent)`
-              : containerColor,
-          }}
-        >
+        <div className="rounded-xl bg-white p-5 dark:bg-zinc-900">
           <div className="flex items-start gap-3">
             <FramedAvatar
               src={avatarSrc}
@@ -63,16 +61,13 @@ function SpotlightCard({ user }: { user: SpotlightUser }) {
               frameId={user.profileFrameId}
             />
             <div className="min-w-0 flex-1">
-              <h3
-                className="text-lg font-bold"
-                style={{ color: textColor }}
-              >
+              <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
                 <StyledName fontId={user.usernameFont}>
                   {displayName}
                 </StyledName>
               </h3>
               {user.username && (
-                <p className="text-sm" style={{ color: secondaryColor }}>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">
                   @{user.username}
                 </p>
               )}
@@ -80,26 +75,20 @@ function SpotlightCard({ user }: { user: SpotlightUser }) {
           </div>
 
           {user.bio && (
-            <div
-              className="mt-3 max-h-40 overflow-hidden text-sm [&_a]:underline"
-              style={{
-                color: textColor,
-                "--profile-link": linkColor,
-              } as React.CSSProperties}
-            >
+            <div className="mt-2 max-h-40 overflow-hidden">
               <BioContent content={user.bio} />
             </div>
           )}
 
           <div className="mt-3 flex gap-4 text-sm">
-            <span style={{ color: secondaryColor }}>
-              <span className="font-semibold" style={{ color: textColor }}>
+            <span className="text-zinc-500 dark:text-zinc-400">
+              <span className="font-semibold text-zinc-900 dark:text-zinc-100">
                 {user._count.posts}
               </span>{" "}
               {user._count.posts === 1 ? "post" : "posts"}
             </span>
-            <span style={{ color: secondaryColor }}>
-              <span className="font-semibold" style={{ color: textColor }}>
+            <span className="text-zinc-500 dark:text-zinc-400">
+              <span className="font-semibold text-zinc-900 dark:text-zinc-100">
                 {user._count.followers}
               </span>{" "}
               {user._count.followers === 1 ? "follower" : "followers"}
