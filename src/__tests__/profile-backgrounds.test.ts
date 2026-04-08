@@ -96,7 +96,7 @@ describe("getDefaultsForBackground", () => {
     };
     const defaults = getDefaultsForBackground(bg);
     expect(defaults.repeat).toBe("no-repeat");
-    expect(defaults.size).toBe("cover");
+    expect(defaults.size).toBe("contain");
     expect(defaults.position).toBe("center");
     expect(defaults.attachment).toBe("scroll");
   });
