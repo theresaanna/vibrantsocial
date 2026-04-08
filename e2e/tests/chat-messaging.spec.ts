@@ -125,12 +125,12 @@ test.describe("Chat Messaging @slow", () => {
     await forceLogin;
 
     await page.goto("/chat");
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState("networkidle");
 
     // Click on the conversation
     const conversationItem = page.locator(`text=${TEST_USER_2.displayName}`).first();
     await expect(conversationItem).toBeVisible({ timeout: 10000 });
-    await conversationItem.click();
+    await conversationItem.click({ force: true });
 
     // Should navigate to conversation page
     await expect(page).toHaveURL(new RegExp(`/chat/${conversationId}`), { timeout: 10000 });

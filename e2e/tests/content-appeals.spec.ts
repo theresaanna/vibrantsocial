@@ -72,7 +72,7 @@ test.describe("Content Appeals @slow", () => {
 
     await page.goto("/settings/appeals");
     await expect(page).toHaveURL(/\/settings\/appeals/);
-    await expect(page.locator("text=Content Violations")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: /Content Violations/ })).toBeVisible({ timeout: 10000 });
   });
 
   test("shows empty state when no violations", async ({ page, forceLogin }) => {

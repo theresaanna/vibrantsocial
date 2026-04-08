@@ -114,8 +114,8 @@ test.describe("Notifications @slow", () => {
     await page.goto("/notifications");
     await page.waitForTimeout(2000);
 
-    // Should see notification content from test user 2
-    await expect(page.getByText(TEST_USER_2.username).first()).toBeVisible({ timeout: 10000 });
+    // Should see notification content from test user 2 (notifications show displayName)
+    await expect(page.getByText(TEST_USER_2.displayName).first()).toBeVisible({ timeout: 10000 });
   });
 
   test("notifications show different types", async ({ page, forceLogin }) => {

@@ -179,8 +179,9 @@ test.describe("Close Friends @slow", () => {
     await expect(closeFriendsToggle).toBeVisible({ timeout: 10000 });
     await closeFriendsToggle.click();
 
-    // Should show green active styling
-    await expect(closeFriendsToggle).toHaveClass(/bg-green/, { timeout: 5000 });
+    // Should show green active styling on the span inside the label
+    const closeFriendsSpan = closeFriendsToggle.locator("span").first();
+    await expect(closeFriendsSpan).toHaveClass(/bg-green/, { timeout: 5000 });
   });
 
   test("can create a close-friends-only post", async ({ page, forceLogin }) => {

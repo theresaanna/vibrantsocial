@@ -154,7 +154,7 @@ test.describe("List Collaborators & Subscriptions @slow", () => {
     await page.goto(`/lists/${listId}`);
     await page.waitForURL(new RegExp(`/lists/${listId}`));
 
-    await expect(page.getByText(/Collaborators/)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/Collaborators/).first()).toBeVisible({ timeout: 10000 });
     await expect(
       page.locator('input[placeholder="Search users to add as collaborator..."]')
     ).toBeVisible();

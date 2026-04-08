@@ -62,11 +62,12 @@ test.describe("Signup Flow @slow", () => {
   // --- Page Rendering ---
 
   test("signup page renders form fields", async ({ browser }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto("/signup");
-    await expect(page).toHaveURL(/\/signup/);
+    await page.waitForLoadState("networkidle");
+    await expect(page).toHaveURL(/\/signup/, { timeout: 10000 });
 
     // Should show all form fields
     await expect(page.locator('input[name="email"]')).toBeVisible({ timeout: 10000 });

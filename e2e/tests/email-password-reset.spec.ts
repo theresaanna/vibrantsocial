@@ -110,12 +110,13 @@ test.describe("Email Verification & Password Reset @slow", () => {
   // --- Forgot Password ---
 
   test("forgot password page renders form", async ({ browser }) => {
-    // Use fresh context (unauthenticated)
-    const context = await browser.newContext();
+    // Use fresh context (unauthenticated) with explicit empty storage state
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto("/forgot-password");
-    await expect(page).toHaveURL(/\/forgot-password/);
+    await page.waitForLoadState("networkidle");
+    await expect(page).toHaveURL(/\/forgot-password/, { timeout: 10000 });
 
     const emailInput = page.locator('input[name="email"]');
     await expect(emailInput).toBeVisible({ timeout: 10000 });

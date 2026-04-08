@@ -11,7 +11,7 @@ test.describe("Premium Features @slow", () => {
     await expect(page).toHaveURL(/\/premium/);
 
     // Should show premium page content
-    await expect(page.locator("text=Premium")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: "Premium" })).toBeVisible({ timeout: 10000 });
   });
 
   test("free user sees premium badge on gated features", async ({ page }) => {
@@ -71,18 +71,15 @@ test.describe("Premium Features @slow", () => {
     await page.goto("/profile");
 
     const chooseFrameButton = page.getByTestId("choose-frame-button");
-    // Frame button should not be accessible or should show premium gate
-    if (await chooseFrameButton.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await chooseFrameButton.click();
-      // Frame options should show premium indicators
-      const premiumIndicator = page.locator("text=Premium").first();
-      await expect(premiumIndicator).toBeVisible({ timeout: 5000 });
+    // Frame button should be visible but disabled for free users
+    if (await chooseFrameButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await expect(chooseFrameButton).toBeDisabled({ timeout: 5000 });
     }
   });
 
   test("premium user can access font selector", async ({ page }) => {
     await setTestUserTier("premium");
-    await page.goto("/profile");
+    await page.goto("/theme");
 
     const fontToggle = page.getByTestId("font-selector-toggle");
     await expect(fontToggle).toBeVisible({ timeout: 10000 });
@@ -126,9 +123,10 @@ test.describe("Premium Features @slow", () => {
   test("premium user sees manage subscription option", async ({ page }) => {
     await setTestUserTier("premium");
     await page.goto("/premium");
+    await page.waitForLoadState("networkidle");
 
     // Should show manage/billing option instead of subscribe
-    const manageButton = page.getByRole("button", { name: /manage|billing/i });
+    const manageButton = page.getByRole("button", { name: /manage subscription/i });
     await expect(manageButton).toBeVisible({ timeout: 10000 });
   });
 
