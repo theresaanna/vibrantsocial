@@ -6,6 +6,8 @@ import { isProfileIncomplete } from "@/lib/require-profile";
 import { PostPageClient } from "@/app/post/[id]/post-page-client";
 import { extractContentFromLexicalJson } from "@/lib/lexical-text";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 interface Props {
   params: Promise<{ username: string; slug: string }>;
@@ -78,6 +80,7 @@ export default async function MarketplaceSlugPage({ params, searchParams }: Prop
   let showNsfwContent = false;
   let hideSensitiveOverlay = false;
   let hideNsfwOverlay = false;
+  let theme = NO_THEME;
 
   if (userId) {
     const currentUser = await prisma.user.findUnique({
@@ -92,6 +95,7 @@ export default async function MarketplaceSlugPage({ params, searchParams }: Prop
         showNsfwContent: true,
         hideSensitiveOverlay: true,
         hideNsfwOverlay: true,
+        ...userThemeSelect,
       },
     });
 
@@ -104,6 +108,7 @@ export default async function MarketplaceSlugPage({ params, searchParams }: Prop
     showNsfwContent = currentUser?.showNsfwContent ?? false;
     hideSensitiveOverlay = currentUser?.hideSensitiveOverlay ?? false;
     hideNsfwOverlay = currentUser?.hideNsfwOverlay ?? false;
+    theme = buildUserTheme(currentUser);
   }
 
   const post = await prisma.post.findFirst({
@@ -222,7 +227,7 @@ export default async function MarketplaceSlugPage({ params, searchParams }: Prop
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
+    <ThemedPage {...theme}>
       <PostPageClient
         post={post}
         currentUserId={userId}
@@ -250,6 +255,6 @@ export default async function MarketplaceSlugPage({ params, searchParams }: Prop
           isOwner: userId === post.author?.id,
         } : undefined}
       />
-    </main>
+    </ThemedPage>
   );
 }
