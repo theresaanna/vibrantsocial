@@ -37,12 +37,12 @@ export default async function Home() {
           <div className="space-y-5">
             <h1 className="text-4xl leading-tight tracking-tight text-zinc-900 sm:text-5xl sm:leading-tight dark:text-zinc-50">
               You&apos;ve arrived at{" "}
-              <span className="font-semibold"><span className="text-fuchsia-600 dark:text-fuchsia-400">Vibrant</span><span className="text-blue-600 dark:text-blue-400">Social</span></span>.
+              <span className="bg-gradient-to-r from-fuchsia-600 to-blue-600 bg-clip-text font-semibold text-transparent dark:from-fuchsia-400 dark:to-blue-400">VibrantSocial</span>.
             </h1>
 
             <p className="mx-auto max-w-md text-lg leading-relaxed text-zinc-500 dark:text-zinc-400">
               Return to the good ol&apos; days of the internet, before
-              revenue-driving algorithms and AI generated nonsense.
+              revenue-driving algorithms and <Link href="https://www.vibrantsocial.app/theresa/post/a-clarifying-note-on-my-philosophies-and-practices" className="underline decoration-zinc-300 underline-offset-2 hover:decoration-zinc-500 dark:decoration-zinc-600 dark:hover:decoration-zinc-400">AI generated nonsense</Link><Link href="https://www.vibrantsocial.app/quote/cmnpd1tz500020ajph8rbuesz" className="underline decoration-zinc-300 underline-offset-2 hover:decoration-zinc-500 dark:decoration-zinc-600 dark:hover:decoration-zinc-400">*</Link>.
             </p>
 
             <p className="text-base text-zinc-400 dark:text-zinc-500">
