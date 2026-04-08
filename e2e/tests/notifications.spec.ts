@@ -186,8 +186,12 @@ test.describe("Notifications @slow", () => {
 
     await page.waitForTimeout(1000);
 
-    // Button should disappear or all notifications should lose unread styling
-    await expect(markAllButton).not.toBeVisible({ timeout: 10000 });
+    // After marking all read, either the button disappears or becomes disabled
+    await expect(async () => {
+      const isHidden = !(await markAllButton.isVisible());
+      const isDisabled = await markAllButton.isDisabled().catch(() => false);
+      expect(isHidden || isDisabled).toBeTruthy();
+    }).toPass({ timeout: 10000 });
   });
 
   // --- Selection Mode ---

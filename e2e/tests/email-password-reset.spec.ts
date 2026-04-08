@@ -305,7 +305,7 @@ test.describe("Email Verification & Password Reset @slow", () => {
     await page.goto("/verify-email?token=fake-token&email=fake@example.com");
     await page.waitForTimeout(3000);
 
-    const error = page.locator("text=/invalid|expired|error|failed/i");
+    const error = page.getByRole("heading", { name: /failed/i });
     await expect(error).toBeVisible({ timeout: 10000 });
 
     await context.close();
