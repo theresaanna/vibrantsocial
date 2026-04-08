@@ -358,7 +358,14 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
           let imageBlob: Blob | null = null;
           if (validated.background.imageFile && unzipped[validated.background.imageFile]) {
             const imgBytes = unzipped[validated.background.imageFile];
-            imageBlob = new Blob([imgBytes.buffer as ArrayBuffer]);
+            const ext = validated.background.imageFile.split(".").pop()?.toLowerCase();
+            const mimeType = ext === "jpg" || ext === "jpeg" ? "image/jpeg"
+              : ext === "png" ? "image/png"
+              : ext === "gif" ? "image/gif"
+              : ext === "webp" ? "image/webp"
+              : ext === "svg" ? "image/svg+xml"
+              : "image/png";
+            imageBlob = new Blob([imgBytes.buffer as ArrayBuffer], { type: mimeType });
           }
 
           await applyImportedTheme(validated, imageBlob);
