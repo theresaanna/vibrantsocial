@@ -7,6 +7,7 @@ import { PostActions } from "./post-actions";
 import { CommentSection } from "./comment-section";
 import { clearDraft } from "./editor/plugins/DraftPlugin";
 import { editPost, deletePost, updatePostChecklist, togglePinPost } from "@/app/feed/actions";
+import { toggleCommentSubscription } from "@/app/feed/comment-subscription-actions";
 import { updateWallPostStatus, deleteWallPost } from "@/app/feed/wall-post-actions";
 import { useRouter } from "next/navigation";
 import { TagInput } from "./tag-input";
@@ -98,6 +99,7 @@ interface PostCardProps {
     shippingOption: string;
     shippingPrice: number | null;
   };
+  commentSubscribed?: boolean;
 }
 
 export const PostCard = memo(function PostCard({
@@ -120,6 +122,7 @@ export const PostCard = memo(function PostCard({
   isWallOwner = false,
   marketplacePostId,
   marketplaceData,
+  commentSubscribed: initialCommentSubscribed = false,
 }: PostCardProps) {
   const [showComments, setShowComments] = useState(defaultShowComments);
   const [commentCount, setCommentCount] = useCommentCount(post.id, post._count.comments);
@@ -176,6 +179,16 @@ export const PostCard = memo(function PostCard({
     async (prevState: { success: boolean; message: string }, formData: FormData) => {
       const result = await togglePinPost(prevState, formData);
       if (result.success) setIsPinned((prev) => !prev);
+      return result;
+    },
+    { success: false, message: "" }
+  );
+
+  const [commentSubbed, setCommentSubbed] = useState(initialCommentSubscribed);
+  const [, commentSubAction, commentSubPending] = useActionState(
+    async (prevState: { success: boolean; message: string }, formData: FormData) => {
+      const result = await toggleCommentSubscription(prevState, formData);
+      if (result.success) setCommentSubbed((prev) => !prev);
       return result;
     },
     { success: false, message: "" }
@@ -395,8 +408,8 @@ export const PostCard = memo(function PostCard({
           </div>
         </div>
 
-        {/* Author menu */}
-        {isAuthor && (
+        {/* Post menu */}
+        {isAuthenticated && (
           <div className="relative" ref={menuRef}>
             <button
               type="button"
@@ -409,58 +422,84 @@ export const PostCard = memo(function PostCard({
               </svg>
             </button>
             {showMenu && (
-              <div className="absolute right-0 top-full z-50 mt-1 w-44 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
-                <Link
-                  href={`/post/${post.id}/likes`}
-                  onClick={() => setShowMenu(false)}
-                  className="block w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                  data-testid="post-likes-list-button"
-                >
-                  Likes
-                </Link>
-                <Link
-                  href={`/post/${post.id}/reposts`}
-                  onClick={() => setShowMenu(false)}
-                  className="block w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                  data-testid="post-reposts-list-button"
-                >
-                  Reposts &amp; quotes
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditTags(currentTags.map((pt) => pt.tag.name));
-                    setIsEditing(true);
-                    setShowMenu(false);
-                  }}
-                  className="w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                  data-testid="post-edit-button"
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowRevisionHistory(true);
-                    setShowMenu(false);
-                  }}
-                  className="w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                  data-testid="post-revision-history-button"
-                >
-                  Revision history
-                </button>
-                <form action={pinAction}>
+              <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+                {isAuthor && (
+                  <>
+                    <Link
+                      href={`/post/${post.id}/likes`}
+                      onClick={() => setShowMenu(false)}
+                      className="block w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                      data-testid="post-likes-list-button"
+                    >
+                      Likes
+                    </Link>
+                    <Link
+                      href={`/post/${post.id}/reposts`}
+                      onClick={() => setShowMenu(false)}
+                      className="block w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                      data-testid="post-reposts-list-button"
+                    >
+                      Reposts &amp; quotes
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditTags(currentTags.map((pt) => pt.tag.name));
+                        setIsEditing(true);
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                      data-testid="post-edit-button"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowRevisionHistory(true);
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                      data-testid="post-revision-history-button"
+                    >
+                      Revision history
+                    </button>
+                    <form action={pinAction}>
+                      <input type="hidden" name="postId" value={post.id} />
+                      <button
+                        type="submit"
+                        disabled={pinPending}
+                        className="w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                        data-testid="post-pin-button"
+                      >
+                        {isPinned ? "Unpin" : "Pin to profile"}
+                      </button>
+                    </form>
+                  </>
+                )}
+                <form action={commentSubAction}>
                   <input type="hidden" name="postId" value={post.id} />
                   <button
                     type="submit"
-                    disabled={pinPending}
+                    disabled={commentSubPending}
                     className="w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                    data-testid="post-pin-button"
+                    data-testid="post-comment-subscribe-button"
                   >
-                    {isPinned ? "Unpin" : "Pin to profile"}
+                    {commentSubbed ? "Unwatch comments" : "Watch comments"}
                   </button>
                 </form>
-                <button
+                {!isAuthor && (
+                  <button
+                    type="button"
+                    onClick={() => { setShowReportModal(true); setShowMenu(false); }}
+                    className="w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                    data-testid="post-report-button"
+                  >
+                    Report
+                  </button>
+                )}
+                {isAuthor && (
+                  <button
                     type="button"
                     disabled={deletePending}
                     onClick={() => { setShowDeleteConfirm(true); setShowMenu(false); }}
@@ -469,25 +508,13 @@ export const PostCard = memo(function PostCard({
                   >
                     Delete
                   </button>
+                )}
               </div>
             )}
             <form action={deleteAction} ref={deleteFormRef} className="hidden">
               <input type="hidden" name="postId" value={post.id} />
             </form>
           </div>
-        )}
-        {!isAuthor && isAuthenticated && (
-          <button
-            type="button"
-            onClick={() => setShowReportModal(true)}
-            className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
-            title="Report post"
-            data-testid="post-report-button"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5" />
-            </svg>
-          </button>
         )}
       </div>
 
