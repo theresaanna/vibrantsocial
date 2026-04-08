@@ -441,6 +441,55 @@ describe("ThemeEditor — editing colors in a generated theme", () => {
     expect(nameInput.value).toBe("Sunset");
   });
 
+  it("saving without edits saves the generated colors as-is", async () => {
+    const generatedLight = {
+      profileBgColor: "#aaaaaa",
+      profileTextColor: "#bbbbbb",
+      profileLinkColor: "#cccccc",
+      profileSecondaryColor: "#dddddd",
+      profileContainerColor: "#eeeeee",
+    };
+
+    mockGenerateTheme.mockResolvedValue({
+      success: true,
+      name: "Unedited",
+      light: generatedLight,
+      dark: generatedLight,
+    });
+
+    mockSavePreset.mockResolvedValue({
+      success: true,
+      preset: {
+        id: "saved-0",
+        name: "Unedited",
+        prompt: "",
+        light: generatedLight,
+        dark: generatedLight,
+      },
+    });
+
+    render(
+      <ThemeEditor
+        {...defaultProps}
+        isPremium={true}
+        currentBgImage="/bg.jpg"
+      />
+    );
+    await expandSection();
+
+    await userEvent.click(screen.getByTestId("ai-generate-button"));
+    await screen.findByTestId("save-preset-form");
+
+    await userEvent.click(screen.getByTestId("save-preset-button"));
+
+    expect(mockSavePreset).toHaveBeenCalledWith(
+      expect.objectContaining({
+        light: generatedLight,
+        dark: generatedLight,
+      })
+    );
+  });
+
   it("non-edited colors in generated theme are preserved when saving", async () => {
     const generatedLight = {
       profileBgColor: "#aaaaaa",
