@@ -223,7 +223,8 @@ test.describe("List Collaborators & Subscriptions @slow", () => {
 
   test("subscribe button is visible on list detail page", async ({ page, forceLogin }) => {
     await forceLogin;
-    const listId = await createTestList(TEST_USER.email, "Sub Test List");
+    // Subscribe button only shows for non-owners, so create list as TEST_USER_2
+    const listId = await createTestList(TEST_USER_2.email, "Sub Test List");
 
     await page.goto(`/lists/${listId}`);
     await page.waitForURL(new RegExp(`/lists/${listId}`));
@@ -234,7 +235,8 @@ test.describe("List Collaborators & Subscriptions @slow", () => {
 
   test("can subscribe and unsubscribe from a list", async ({ page, forceLogin }) => {
     await forceLogin;
-    const listId = await createTestList(TEST_USER.email, "Toggle Sub List");
+    // Subscribe button only shows for non-owners, so create list as TEST_USER_2
+    const listId = await createTestList(TEST_USER_2.email, "Toggle Sub List");
 
     await page.goto(`/lists/${listId}`);
     await page.waitForURL(new RegExp(`/lists/${listId}`));

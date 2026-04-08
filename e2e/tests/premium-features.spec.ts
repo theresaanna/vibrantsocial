@@ -1,12 +1,13 @@
-import { test, expect } from "@playwright/test";
-import { setTestUserTier } from "../helpers/db";
+import { test, expect } from "../fixtures/auth";
+import { TEST_USER, setTestUserTier } from "../helpers/db";
 
 test.describe("Premium Features @slow", () => {
   test.afterEach(async () => {
     await setTestUserTier("free");
   });
 
-  test("premium page is accessible and shows subscription options", async ({ page }) => {
+  test("premium page is accessible and shows subscription options", async ({ page, forceLogin }) => {
+    await forceLogin;
     await page.goto("/premium");
     await expect(page).toHaveURL(/\/premium/);
 
@@ -14,8 +15,9 @@ test.describe("Premium Features @slow", () => {
     await expect(page.getByRole("heading", { name: "Premium" })).toBeVisible({ timeout: 10000 });
   });
 
-  test("free user sees premium badge on gated features", async ({ page }) => {
+  test("free user sees premium badge on gated features", async ({ page, forceLogin }) => {
     await setTestUserTier("free");
+    await forceLogin;
     await page.goto("/compose");
 
     // Schedule toggle should be disabled for free users
@@ -29,8 +31,9 @@ test.describe("Premium Features @slow", () => {
     await expect(audienceButton).toBeDisabled();
   });
 
-  test("premium user can access schedule toggle", async ({ page }) => {
+  test("premium user can access schedule toggle", async ({ page, forceLogin }) => {
     await setTestUserTier("premium");
+    await forceLogin;
     await page.goto("/compose");
 
     const scheduleToggle = page.getByTestId("schedule-toggle");
@@ -38,8 +41,9 @@ test.describe("Premium Features @slow", () => {
     await expect(scheduleToggle).toBeEnabled();
   });
 
-  test("premium user can access custom audience", async ({ page }) => {
+  test("premium user can access custom audience", async ({ page, forceLogin }) => {
     await setTestUserTier("premium");
+    await forceLogin;
     await page.goto("/compose");
 
     const audienceButton = page.getByTestId("custom-audience-button");
@@ -53,8 +57,9 @@ test.describe("Premium Features @slow", () => {
     await expect(page.getByTestId("audience-search")).toBeVisible({ timeout: 5000 });
   });
 
-  test("premium user can access profile frame selector", async ({ page }) => {
+  test("premium user can access profile frame selector", async ({ page, forceLogin }) => {
     await setTestUserTier("premium");
+    await forceLogin;
     await page.goto("/profile");
 
     const chooseFrameButton = page.getByTestId("choose-frame-button");
@@ -66,8 +71,9 @@ test.describe("Premium Features @slow", () => {
     await expect(frameOption).toBeVisible({ timeout: 5000 });
   });
 
-  test("free user cannot select premium profile frames", async ({ page }) => {
+  test("free user cannot select premium profile frames", async ({ page, forceLogin }) => {
     await setTestUserTier("free");
+    await forceLogin;
     await page.goto("/profile");
 
     const chooseFrameButton = page.getByTestId("choose-frame-button");
@@ -77,8 +83,9 @@ test.describe("Premium Features @slow", () => {
     }
   });
 
-  test("premium user can access font selector", async ({ page }) => {
+  test("premium user can access font selector", async ({ page, forceLogin }) => {
     await setTestUserTier("premium");
+    await forceLogin;
     await page.goto("/theme");
 
     const fontToggle = page.getByTestId("font-selector-toggle");
@@ -90,8 +97,9 @@ test.describe("Premium Features @slow", () => {
     await expect(fontOption).toBeVisible({ timeout: 5000 });
   });
 
-  test("premium subscribe button redirects to checkout", async ({ page }) => {
+  test("premium subscribe button redirects to checkout", async ({ page, forceLogin }) => {
     await setTestUserTier("free");
+    await forceLogin;
     await page.goto("/premium");
 
     // Look for subscribe/upgrade button
@@ -120,8 +128,9 @@ test.describe("Premium Features @slow", () => {
     }
   });
 
-  test("premium user sees manage subscription option", async ({ page }) => {
+  test("premium user sees manage subscription option", async ({ page, forceLogin }) => {
     await setTestUserTier("premium");
+    await forceLogin;
     await page.goto("/premium");
     await page.waitForLoadState("networkidle");
 
@@ -130,18 +139,24 @@ test.describe("Premium Features @slow", () => {
     await expect(manageButton).toBeVisible({ timeout: 10000 });
   });
 
-  test("premium features become gated after downgrade", async ({ page }) => {
+  test("premium features become gated after downgrade", async ({ page, forceLogin }) => {
     // Start as premium
     await setTestUserTier("premium");
+    await forceLogin;
     await page.goto("/compose");
 
     const scheduleToggle = page.getByTestId("schedule-toggle");
     await expect(scheduleToggle).toBeEnabled({ timeout: 10000 });
 
-    // Downgrade to free
+    // Downgrade to free — need fresh login to get new JWT
     await setTestUserTier("free");
-    await page.reload();
+    await page.goto("/login");
+    await page.fill('input[name="email"]', TEST_USER.email);
+    await page.fill('input[name="password"]', TEST_USER.password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL("**/feed", { timeout: 15000 });
 
+    await page.goto("/compose");
     await expect(scheduleToggle).toBeDisabled({ timeout: 10000 });
   });
 });

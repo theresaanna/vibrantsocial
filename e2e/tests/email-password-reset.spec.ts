@@ -129,7 +129,7 @@ test.describe("Email Verification & Password Reset @slow", () => {
   });
 
   test("forgot password shows success message for any email", async ({ browser }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto("/forgot-password");
@@ -161,7 +161,7 @@ test.describe("Email Verification & Password Reset @slow", () => {
   test("reset password page renders with valid token", async ({ browser }) => {
     const token = await createPasswordResetToken(TEST_USER.email);
 
-    const context = await browser.newContext();
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto(`/reset-password?token=${token}&email=${encodeURIComponent(TEST_USER.email)}`);
@@ -181,7 +181,7 @@ test.describe("Email Verification & Password Reset @slow", () => {
   test("reset password validates password mismatch", async ({ browser }) => {
     const token = await createPasswordResetToken(TEST_USER.email);
 
-    const context = await browser.newContext();
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto(`/reset-password?token=${token}&email=${encodeURIComponent(TEST_USER.email)}`);
@@ -201,7 +201,7 @@ test.describe("Email Verification & Password Reset @slow", () => {
   test("reset password validates minimum length", async ({ browser }) => {
     const token = await createPasswordResetToken(TEST_USER.email);
 
-    const context = await browser.newContext();
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto(`/reset-password?token=${token}&email=${encodeURIComponent(TEST_USER.email)}`);
@@ -220,7 +220,7 @@ test.describe("Email Verification & Password Reset @slow", () => {
   test("reset password rejects expired token", async ({ browser }) => {
     const token = await createExpiredResetToken(TEST_USER.email);
 
-    const context = await browser.newContext();
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto(`/reset-password?token=${token}&email=${encodeURIComponent(TEST_USER.email)}`);
@@ -245,7 +245,7 @@ test.describe("Email Verification & Password Reset @slow", () => {
   });
 
   test("reset password rejects invalid token", async ({ browser }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto(`/reset-password?token=invalid-token-12345&email=${encodeURIComponent(TEST_USER.email)}`);
@@ -278,7 +278,7 @@ test.describe("Email Verification & Password Reset @slow", () => {
     const newEmail = `e2e-verify-${Date.now()}@example.com`;
     const token = await createEmailVerificationToken(newEmail);
 
-    const context = await browser.newContext();
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto(`/verify-email?token=${token}&email=${encodeURIComponent(newEmail)}`);
@@ -292,7 +292,7 @@ test.describe("Email Verification & Password Reset @slow", () => {
   });
 
   test("verify email page rejects invalid token", async ({ browser }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto("/verify-email?token=fake-token&email=fake@example.com");
@@ -305,7 +305,7 @@ test.describe("Email Verification & Password Reset @slow", () => {
   });
 
   test("verify email page requires token and email params", async ({ browser }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto("/verify-email");

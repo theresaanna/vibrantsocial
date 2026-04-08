@@ -32,7 +32,7 @@ test.describe("Authentication", () => {
   });
 
   test("unauthenticated user is redirected to login", async ({ browser }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto("/feed");
@@ -48,7 +48,7 @@ test.describe("Authentication", () => {
   });
 
   test("invalid credentials show error message", async ({ browser }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto("/login");

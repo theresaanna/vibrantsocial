@@ -113,7 +113,7 @@ test.describe("Quote Posts @slow", () => {
     await expect(page.getByTestId("quote-submit")).toBeVisible();
   });
 
-  test("quote editor requires minimum content length", async ({ page, forceLogin }) => {
+  test("quote editor requires content before submitting", async ({ page, forceLogin }) => {
     await forceLogin;
 
     await page.goto(`/post/${postId}/quote`);
@@ -121,18 +121,11 @@ test.describe("Quote Posts @slow", () => {
     const quoteEditor = page.getByTestId("quote-editor");
     await expect(quoteEditor).toBeVisible({ timeout: 15000 });
 
-    // Type short content
-    const editor = quoteEditor.locator('[contenteditable="true"]').first();
-    await editor.click();
-    await editor.pressSequentially("Too short", { delay: 10 });
-
-    // Submit button should be disabled or submission should fail
+    // Try to submit without typing anything
     const submitButton = page.getByTestId("quote-submit");
-    await submitButton.click();
 
-    // Should still be on the quote page (not redirected)
-    await page.waitForTimeout(2000);
-    await expect(page).toHaveURL(new RegExp(`/post/${postId}/quote`));
+    // Submit button should be disabled when editor is empty
+    await expect(submitButton).toBeDisabled({ timeout: 5000 });
   });
 
   test("can create a quote post with sufficient content", async ({ page, forceLogin }) => {

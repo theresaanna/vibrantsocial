@@ -157,7 +157,7 @@ test.describe("Notifications @slow", () => {
     await page.waitForTimeout(2000);
 
     // Click on the notification
-    const notifItem = page.getByText(TEST_USER_2.username).first();
+    const notifItem = page.getByText(TEST_USER_2.displayName).first();
     await expect(notifItem).toBeVisible({ timeout: 10000 });
     await notifItem.click();
 
@@ -270,7 +270,7 @@ test.describe("Notifications @slow", () => {
     await bell.click();
 
     // Dropdown should show notifications
-    await expect(page.getByText(TEST_USER_2.username).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(TEST_USER_2.displayName).first()).toBeVisible({ timeout: 10000 });
 
     // Should have "View all notifications" link
     await expect(page.getByText(/view all/i)).toBeVisible({ timeout: 5000 });

@@ -78,14 +78,13 @@ test.describe("Signup Flow @slow", () => {
     await expect(page.locator('input[name="agreeToTos"]')).toBeVisible();
 
     // Submit button
-    await expect(page.locator('button[type="submit"]')).toBeVisible();
-    await expect(page.locator('button[type="submit"]')).toHaveText(/create account/i);
+    await expect(page.getByRole("button", { name: /create account/i })).toBeVisible();
 
     await context.close();
   });
 
   test("signup page shows OAuth buttons", async ({ browser }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto("/signup");
@@ -100,7 +99,7 @@ test.describe("Signup Flow @slow", () => {
   // --- Validation ---
 
   test("validates password mismatch", async ({ browser }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto("/signup");
@@ -122,7 +121,7 @@ test.describe("Signup Flow @slow", () => {
   });
 
   test("validates short password", async ({ browser }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto("/signup");
@@ -144,7 +143,7 @@ test.describe("Signup Flow @slow", () => {
   });
 
   test("validates invalid username format", async ({ browser }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto("/signup");
@@ -166,7 +165,7 @@ test.describe("Signup Flow @slow", () => {
   });
 
   test("validates underage signup", async ({ browser }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto("/signup");
@@ -193,7 +192,7 @@ test.describe("Signup Flow @slow", () => {
   });
 
   test("requires terms of service agreement", async ({ browser }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto("/signup");
@@ -217,7 +216,7 @@ test.describe("Signup Flow @slow", () => {
   // --- Username Availability ---
 
   test("shows username availability check", async ({ browser }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto("/signup");
@@ -236,7 +235,7 @@ test.describe("Signup Flow @slow", () => {
   // --- Duplicate Email ---
 
   test("shows error for existing email", async ({ browser }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto("/signup");
@@ -261,7 +260,7 @@ test.describe("Signup Flow @slow", () => {
   // --- Referral Code ---
 
   test("signup page preserves referral code from URL", async ({ browser }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
 
     await page.goto("/signup?ref=test_referral_code");
