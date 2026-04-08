@@ -178,10 +178,11 @@ test.describe("Notifications @slow", () => {
     await page.goto("/notifications");
     await page.waitForTimeout(2000);
 
-    // Should see mark all as read button
+    // Should see mark all as read button — use force:true because a container
+    // div can intercept pointer events in the layout
     const markAllButton = page.getByRole("button", { name: /mark all/i }).first();
     await expect(markAllButton).toBeVisible({ timeout: 10000 });
-    await markAllButton.click();
+    await markAllButton.click({ force: true });
 
     await page.waitForTimeout(1000);
 

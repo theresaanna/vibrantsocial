@@ -293,8 +293,8 @@ test.describe("Email Verification & Password Reset @slow", () => {
     // Should show success or processing state
     await page.waitForTimeout(3000);
 
-    // Look for verification result (success or error — both mean the page loaded correctly)
-    const result = page.locator("text=/verified|success|confirmed|invalid|expired/i");
+    // Look for verification result — use .first() since both heading and body text may match
+    const result = page.locator("text=/verified|success|confirmed|invalid|expired/i").first();
     await expect(result).toBeVisible({ timeout: 10000 });
   });
 
