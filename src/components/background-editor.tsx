@@ -270,59 +270,6 @@ export function BackgroundEditor({
         </h3>
       )}
 
-      {/* Preset backgrounds */}
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => handlePresetSelect(null)}
-          className={`flex h-12 w-12 items-center justify-center rounded-lg border text-xs transition-all ${
-            bgImage === null
-              ? "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-900"
-              : "border-zinc-200 dark:border-zinc-700"
-          } bg-zinc-50 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500`}
-        >
-          None
-        </button>
-        <BackgroundGrid
-          backgrounds={backgrounds}
-          selectedSrc={bgImage}
-          onSelect={handlePresetSelect}
-        />
-      </div>
-
-      {/* Premium backgrounds */}
-      {premiumBackgrounds.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-1.5">
-            <PremiumCrown href="/premium" inline />
-            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-              Premium Backgrounds
-            </span>
-          </div>
-          <div className={`flex flex-wrap gap-2 ${!isPremium ? "pointer-events-none opacity-50" : ""}`}>
-            <BackgroundGrid
-              backgrounds={premiumBackgrounds}
-              selectedSrc={bgImage}
-              onSelect={handlePresetSelect}
-              disabled={!isPremium}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Live preview */}
-      {bgImage && (
-        <div
-          className="h-32 w-full rounded-lg border border-zinc-200 dark:border-zinc-700"
-          style={{
-            backgroundImage: `url(${bgImage})`,
-            backgroundRepeat: bgRepeat,
-            backgroundSize: bgSize,
-            backgroundPosition: bgPosition,
-          }}
-        />
-      )}
-
       {/* Custom upload — premium only */}
       <div className="relative space-y-2">
         <PremiumCrown href="/premium" />
@@ -409,6 +356,59 @@ export function BackgroundEditor({
               ))}
             </select>
           </label>
+        </div>
+      )}
+
+      {/* Live preview */}
+      {bgImage && (
+        <div
+          className="h-32 w-full rounded-lg border border-zinc-200 dark:border-zinc-700"
+          style={{
+            backgroundImage: `url(${bgImage})`,
+            backgroundRepeat: bgRepeat,
+            backgroundSize: bgSize,
+            backgroundPosition: bgPosition,
+          }}
+        />
+      )}
+
+      {/* Preset backgrounds */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => handlePresetSelect(null)}
+          className={`flex h-12 w-12 items-center justify-center rounded-lg border text-xs transition-all ${
+            bgImage === null
+              ? "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-900"
+              : "border-zinc-200 dark:border-zinc-700"
+          } bg-zinc-50 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500`}
+        >
+          None
+        </button>
+        <BackgroundGrid
+          backgrounds={backgrounds}
+          selectedSrc={bgImage}
+          onSelect={handlePresetSelect}
+        />
+      </div>
+
+      {/* Premium backgrounds */}
+      {premiumBackgrounds.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5">
+            <PremiumCrown href="/premium" inline />
+            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              Premium Backgrounds
+            </span>
+          </div>
+          <div className={`flex flex-wrap gap-2 ${!isPremium ? "pointer-events-none opacity-50" : ""}`}>
+            <BackgroundGrid
+              backgrounds={premiumBackgrounds}
+              selectedSrc={bgImage}
+              onSelect={handlePresetSelect}
+              disabled={!isPremium}
+            />
+          </div>
         </div>
       )}
 
