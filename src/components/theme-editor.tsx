@@ -32,6 +32,12 @@ interface ThemeEditorProps {
   currentBgImage?: string | null;
   /** Colors pushed from parent (e.g. auto-generated from background). */
   externalColors?: ProfileThemeColors | null;
+  /** Generated theme pushed from parent (e.g. auto-generated from background) to show save prompt. */
+  externalGeneratedTheme?: {
+    name: string;
+    light: ProfileThemeColors;
+    dark: ProfileThemeColors;
+  } | null;
   /** When true, skip the collapsible wrapper — content is managed by a parent. */
   embedded?: boolean;
 }
@@ -51,6 +57,7 @@ export function ThemeEditor({
   customPresets: initialCustomPresets = [],
   currentBgImage = null,
   externalColors = null,
+  externalGeneratedTheme = null,
   embedded = false,
 }: ThemeEditorProps) {
   const defaultPreset = PROFILE_THEME_PRESETS.default;
@@ -101,6 +108,14 @@ export function ThemeEditor({
       setActivePreset(null);
     }
   }, [externalColors]);
+
+  // Sync generated theme pushed from parent (e.g. auto-generated from background upload)
+  useEffect(() => {
+    if (externalGeneratedTheme) {
+      setGeneratedTheme(externalGeneratedTheme);
+      setPresetName(externalGeneratedTheme.name);
+    }
+  }, [externalGeneratedTheme]);
 
   // Notify parent of live color changes for real-time preview
   useEffect(() => {

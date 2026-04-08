@@ -169,6 +169,11 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
 
   // Auto AI theme generation when a background is selected
   const [autoGenColors, setAutoGenColors] = useState<ProfileThemeColors | null>(null);
+  const [autoGenTheme, setAutoGenTheme] = useState<{
+    name: string;
+    light: ProfileThemeColors;
+    dark: ProfileThemeColors;
+  } | null>(null);
   const [isAutoGenerating, startAutoGenTransition] = useTransition();
   const autoGenDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -311,7 +316,14 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
         const result = await generateTheme(imageUrl);
         if (result.success && result.light) {
           setAutoGenColors(result.light);
-          toast.success("Colors generated from background");
+          if (result.name && result.dark) {
+            setAutoGenTheme({
+              name: result.name,
+              light: result.light,
+              dark: result.dark,
+            });
+          }
+          toast.success("Colors generated from background — save as preset?");
         }
       });
     }, 600);
@@ -409,6 +421,7 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
                     customPresets={customPresets}
                     currentBgImage={currentBgImage}
                     externalColors={autoGenColors}
+                    externalGeneratedTheme={autoGenTheme}
                     embedded
                   />
 
