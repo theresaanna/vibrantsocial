@@ -18,6 +18,7 @@ import Link from "next/link";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { StyledName } from "@/components/styled-name";
 import { MarketplaceQA } from "@/components/marketplace-qa";
+import { DigitalFileDownload } from "@/components/digital-file-download";
 
 const Editor = dynamic(() => import("./editor/Editor").then((m) => ({ default: m.Editor })), { ssr: false });
 const PostRevisionHistory = dynamic(() => import("./post-revision-history").then((m) => ({ default: m.PostRevisionHistory })), { ssr: false });
@@ -99,6 +100,14 @@ interface PostCardProps {
     shippingOption: string;
     shippingPrice: number | null;
   };
+  digitalFileData?: {
+    fileName: string;
+    fileSize: number;
+    isFree: boolean;
+    couponCode?: string;
+    downloadCount?: number;
+    isOwner: boolean;
+  };
   commentSubscribed?: boolean;
   commentEmailEnabled?: boolean;
 }
@@ -123,6 +132,7 @@ export const PostCard = memo(function PostCard({
   isWallOwner = false,
   marketplacePostId,
   marketplaceData,
+  digitalFileData,
   commentSubscribed: initialCommentSubscribed = false,
   commentEmailEnabled: initialCommentEmailEnabled = true,
 }: PostCardProps) {
@@ -782,6 +792,19 @@ export const PostCard = memo(function PostCard({
                 </svg>
               </a>
             </div>
+          )}
+
+          {/* Digital file download */}
+          {!isEditing && marketplacePostId && digitalFileData && (
+            <DigitalFileDownload
+              marketplacePostId={marketplacePostId}
+              fileName={digitalFileData.fileName}
+              fileSize={digitalFileData.fileSize}
+              isFree={digitalFileData.isFree}
+              isOwner={digitalFileData.isOwner}
+              couponCode={digitalFileData.couponCode}
+              downloadCount={digitalFileData.downloadCount}
+            />
           )}
 
           {/* Tags (hidden while editing) */}

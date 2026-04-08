@@ -37,6 +37,14 @@ interface PostPageClientProps {
     shippingOption: string;
     shippingPrice: number | null;
   };
+  digitalFileData?: {
+    fileName: string;
+    fileSize: number;
+    isFree: boolean;
+    couponCode?: string;
+    downloadCount?: number;
+    isOwner: boolean;
+  };
   /** When true, skip the outer theme/card wrappers (used when ThemedPage already provides them) */
   bare?: boolean;
 }
@@ -58,6 +66,7 @@ export function PostPageClient({
   isWallOwner,
   marketplacePostId,
   marketplaceData,
+  digitalFileData,
   bare,
 }: PostPageClientProps) {
   usePostViewTracking(post.id, "direct");
@@ -109,6 +118,7 @@ export function PostPageClient({
       isWallOwner={isWallOwner}
       marketplacePostId={marketplacePostId}
       marketplaceData={marketplaceData}
+      digitalFileData={digitalFileData}
     />
   );
 

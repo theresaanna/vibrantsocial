@@ -18,6 +18,9 @@ import { inngest } from "@/lib/inngest";
 import { awardReferralFirstPostBonus, checkStarsMilestone } from "@/lib/referral";
 import { getAblyRestClient } from "@/lib/ably";
 import type { ShippingOption } from "@/generated/prisma/client";
+import crypto from "crypto";
+
+const MAX_DIGITAL_FILE_SIZE = 200 * 1024 * 1024; // 200MB
 
 interface MarketplacePostState {
   success: boolean;
@@ -182,7 +185,7 @@ export async function createMarketplacePost(
   const promotedToFeed = formData.get("promotedToFeed") === "true";
   const publicListing = formData.get("publicListing") === "true";
 
-  await prisma.marketplacePost.create({
+  const marketplacePost = await prisma.marketplacePost.create({
     data: {
       postId: post.id,
       purchaseUrl: purchaseUrl.trim(),
@@ -194,6 +197,30 @@ export async function createMarketplacePost(
       agreedToTerms: true,
     },
   });
+
+  // Attach digital file if provided
+  const digitalFileUrl = formData.get("digitalFileUrl") as string;
+  const digitalFileName = formData.get("digitalFileName") as string;
+  const digitalFileSizeStr = formData.get("digitalFileSize") as string;
+  const digitalFileIsFree = formData.get("digitalFileIsFree") !== "false";
+
+  if (digitalFileUrl?.trim() && digitalFileName?.trim() && digitalFileSizeStr) {
+    const digitalFileSize = parseInt(digitalFileSizeStr, 10);
+    if (digitalFileSize > 0 && digitalFileSize <= MAX_DIGITAL_FILE_SIZE) {
+      await prisma.digitalFile.create({
+        data: {
+          marketplacePostId: marketplacePost.id,
+          fileUrl: digitalFileUrl.trim(),
+          fileName: digitalFileName.trim(),
+          fileSize: digitalFileSize,
+          isFree: digitalFileIsFree,
+          couponCode: digitalFileIsFree
+            ? null
+            : crypto.randomBytes(6).toString("hex").toUpperCase(),
+        },
+      });
+    }
+  }
 
   await prisma.user.update({
     where: { id: session.user.id },

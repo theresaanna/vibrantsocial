@@ -92,6 +92,15 @@ export function MarketplacePostComposer({
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
 
+  // Digital file fields
+  const [digitalFile, setDigitalFile] = useState<{
+    url: string;
+    name: string;
+    size: number;
+  } | null>(null);
+  const [digitalFileIsFree, setDigitalFileIsFree] = useState(true);
+  const [isUploadingDigitalFile, setIsUploadingDigitalFile] = useState(false);
+
   // Debounced URL extraction for live link preview
   useEffect(() => {
     if (previewDebounce.current) clearTimeout(previewDebounce.current);
@@ -132,6 +141,8 @@ export function MarketplacePostComposer({
         setPromotedToFeed(false);
         setPublicListing(false);
         setAgreedToTerms(false);
+        setDigitalFile(null);
+        setDigitalFileIsFree(true);
         clearDraft("marketplace-compose");
         if (result.postId) onPostCreated?.(result.postId);
       }
@@ -263,6 +274,14 @@ export function MarketplacePostComposer({
           )}
         </div>
         <input type="hidden" name="hideLinkPreview" value={previewDismissed ? "true" : "false"} />
+        {digitalFile && (
+          <>
+            <input type="hidden" name="digitalFileUrl" value={digitalFile.url} />
+            <input type="hidden" name="digitalFileName" value={digitalFile.name} />
+            <input type="hidden" name="digitalFileSize" value={digitalFile.size.toString()} />
+            <input type="hidden" name="digitalFileIsFree" value={digitalFileIsFree ? "true" : "false"} />
+          </>
+        )}
         <input type="hidden" name="isGraphicNudity" value={isGraphicNudity ? "true" : "false"} />
         {!showSlugInput && <input type="hidden" name="slug" value={slug} />}
 
@@ -347,6 +366,130 @@ export function MarketplacePostComposer({
                 />
               </div>
             </div>
+          )}
+        </div>
+
+        {/* Digital file */}
+        <div className="space-y-3 border-t border-zinc-200 px-4 py-3 dark:border-zinc-700">
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            <svg className="h-4 w-4 text-pink-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Digital File (optional)
+          </h3>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Attach a downloadable file up to 200MB. Make it free or require a coupon code.
+          </p>
+          {!digitalFile ? (
+            <label
+              className={`flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-300 px-4 py-3 text-sm text-zinc-500 transition-colors hover:border-pink-400 hover:text-pink-500 dark:border-zinc-600 dark:text-zinc-400 dark:hover:border-pink-500 dark:hover:text-pink-400 ${isUploadingDigitalFile ? "pointer-events-none opacity-50" : ""}`}
+              data-testid="digital-file-upload-label"
+            >
+              {isUploadingDigitalFile ? (
+                <>
+                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  Choose file
+                </>
+              )}
+              <input
+                type="file"
+                className="hidden"
+                data-testid="digital-file-input"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  if (file.size > 200 * 1024 * 1024) {
+                    alert("File must be under 200MB");
+                    return;
+                  }
+                  setIsUploadingDigitalFile(true);
+                  try {
+                    const { upload } = await import("@vercel/blob/client");
+                    const blob = await upload(file.name, file, {
+                      access: "public",
+                      handleUploadUrl: "/api/upload/digital-file",
+                      clientPayload: "digital-file",
+                    });
+                    setDigitalFile({
+                      url: blob.url,
+                      name: file.name,
+                      size: file.size,
+                    });
+                  } catch {
+                    alert("Upload failed. Please try again.");
+                  } finally {
+                    setIsUploadingDigitalFile(false);
+                    e.target.value = "";
+                  }
+                }}
+              />
+            </label>
+          ) : (
+            <div className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800">
+              <svg className="h-5 w-5 shrink-0 text-pink-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100" data-testid="digital-file-name">
+                  {digitalFile.name}
+                </p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400" data-testid="digital-file-size">
+                  {formatFileSize(digitalFile.size)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDigitalFile(null)}
+                className="rounded p-1 text-zinc-400 hover:bg-zinc-200 hover:text-zinc-600 dark:hover:bg-zinc-700 dark:hover:text-zinc-300"
+                title="Remove file"
+                data-testid="digital-file-remove"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          )}
+          {digitalFile && (
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+                <input
+                  type="radio"
+                  name="digitalFileAccessType"
+                  checked={digitalFileIsFree}
+                  onChange={() => setDigitalFileIsFree(true)}
+                  className="text-pink-500"
+                  data-testid="digital-file-free-radio"
+                />
+                Free download
+              </label>
+              <label className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+                <input
+                  type="radio"
+                  name="digitalFileAccessType"
+                  checked={!digitalFileIsFree}
+                  onChange={() => setDigitalFileIsFree(false)}
+                  className="text-pink-500"
+                  data-testid="digital-file-coupon-radio"
+                />
+                Require coupon code
+              </label>
+            </div>
+          )}
+          {digitalFile && !digitalFileIsFree && (
+            <p className="rounded-md bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+              A coupon code will be generated when you create the listing. Share it with buyers to grant access to the file.
+            </p>
           )}
         </div>
 
@@ -529,6 +672,15 @@ export function MarketplacePostComposer({
       </form>
     </div>
   );
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes >= 1024 * 1024 * 1024)
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  if (bytes >= 1024 * 1024)
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${bytes} B`;
 }
 
 function MarketplaceTermsModal({ onClose }: { onClose: () => void }) {

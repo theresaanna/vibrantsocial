@@ -1082,10 +1082,28 @@ model MarketplacePost {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
-  post      Post                  @relation(fields: [postId], references: [id], onDelete: Cascade)
-  questions MarketplaceQuestion[]
+  post        Post                  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  questions   MarketplaceQuestion[]
+  digitalFile DigitalFile?
 
   @@index([postId])
+}
+
+model DigitalFile {
+  id                String          @id @default(cuid())
+  marketplacePostId String          @unique
+  fileUrl           String
+  fileName          String
+  fileSize          Int             // bytes
+  isFree            Boolean         @default(true)
+  couponCode        String?
+  downloadCount     Int             @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  marketplacePost   MarketplacePost @relation(fields: [marketplacePostId], references: [id], onDelete: Cascade)
+
+  @@index([marketplacePostId])
 }
 
 model MarketplaceQuestion {

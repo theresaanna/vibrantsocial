@@ -28,6 +28,11 @@ export interface MarketplaceMediaPost {
     purchaseUrl: string;
     shippingOption: string;
     shippingPrice: number | null;
+    digitalFile: {
+      fileName: string;
+      fileSize: number;
+      isFree: boolean;
+    } | null;
   } | null;
 }
 
@@ -100,6 +105,13 @@ export async function fetchMarketplacePage(
           purchaseUrl: true,
           shippingOption: true,
           shippingPrice: true,
+          digitalFile: {
+            select: {
+              fileName: true,
+              fileSize: true,
+              isFree: true,
+            },
+          },
         },
       },
     },
@@ -155,6 +167,13 @@ export async function fetchSingleMarketplacePost(
           purchaseUrl: true,
           shippingOption: true,
           shippingPrice: true,
+          digitalFile: {
+            select: {
+              fileName: true,
+              fileSize: true,
+              isFree: true,
+            },
+          },
         },
       },
     },
@@ -244,6 +263,13 @@ export async function fetchUserMarketplacePosts(
           purchaseUrl: true,
           shippingOption: true,
           shippingPrice: true,
+          digitalFile: {
+            select: {
+              fileName: true,
+              fileSize: true,
+              isFree: true,
+            },
+          },
         },
       },
     },
