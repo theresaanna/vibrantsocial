@@ -7,7 +7,7 @@ import { PostActions } from "./post-actions";
 import { CommentSection } from "./comment-section";
 import { clearDraft } from "./editor/plugins/DraftPlugin";
 import { editPost, deletePost, updatePostChecklist, togglePinPost } from "@/app/feed/actions";
-import { toggleCommentSubscription } from "@/app/feed/comment-subscription-actions";
+import { toggleCommentSubscription, toggleCommentSubscriptionEmail } from "@/app/feed/comment-subscription-actions";
 import { updateWallPostStatus, deleteWallPost } from "@/app/feed/wall-post-actions";
 import { useRouter } from "next/navigation";
 import { TagInput } from "./tag-input";
@@ -100,6 +100,7 @@ interface PostCardProps {
     shippingPrice: number | null;
   };
   commentSubscribed?: boolean;
+  commentEmailEnabled?: boolean;
 }
 
 export const PostCard = memo(function PostCard({
@@ -123,6 +124,7 @@ export const PostCard = memo(function PostCard({
   marketplacePostId,
   marketplaceData,
   commentSubscribed: initialCommentSubscribed = false,
+  commentEmailEnabled: initialCommentEmailEnabled = true,
 }: PostCardProps) {
   const [showComments, setShowComments] = useState(defaultShowComments);
   const [commentCount, setCommentCount] = useCommentCount(post.id, post._count.comments);
@@ -185,10 +187,22 @@ export const PostCard = memo(function PostCard({
   );
 
   const [commentSubbed, setCommentSubbed] = useState(initialCommentSubscribed);
+  const [commentEmailOn, setCommentEmailOn] = useState(initialCommentEmailEnabled);
   const [, commentSubAction, commentSubPending] = useActionState(
     async (prevState: { success: boolean; message: string }, formData: FormData) => {
       const result = await toggleCommentSubscription(prevState, formData);
-      if (result.success) setCommentSubbed((prev) => !prev);
+      if (result.success) {
+        setCommentSubbed((prev) => !prev);
+        setCommentEmailOn(true); // Reset email to on when re-subscribing
+      }
+      return result;
+    },
+    { success: false, message: "" }
+  );
+  const [, commentEmailAction, commentEmailPending] = useActionState(
+    async (prevState: { success: boolean; message: string }, formData: FormData) => {
+      const result = await toggleCommentSubscriptionEmail(prevState, formData);
+      if (result.success) setCommentEmailOn((prev) => !prev);
       return result;
     },
     { success: false, message: "" }
@@ -488,6 +502,30 @@ export const PostCard = memo(function PostCard({
                     {commentSubbed ? "Unwatch comments" : "Watch comments"}
                   </button>
                 </form>
+                {commentSubbed && (
+                  <form action={commentEmailAction} className="px-3 py-2">
+                    <input type="hidden" name="postId" value={post.id} />
+                    <label className="flex items-center gap-2">
+                      <button
+                        type="submit"
+                        disabled={commentEmailPending}
+                        className="flex items-center gap-2 disabled:opacity-50"
+                        data-testid="post-comment-email-toggle"
+                      >
+                        <span className={`flex h-4 w-4 items-center justify-center rounded border ${commentEmailOn ? "border-fuchsia-600 bg-fuchsia-600 dark:border-fuchsia-500 dark:bg-fuchsia-500" : "border-zinc-300 dark:border-zinc-600"}`}>
+                          {commentEmailOn && (
+                            <svg className="h-3 w-3 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </span>
+                        <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                          Email me too
+                        </span>
+                      </button>
+                    </label>
+                  </form>
+                )}
                 {!isAuthor && (
                   <button
                     type="button"

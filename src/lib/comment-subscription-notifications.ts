@@ -12,6 +12,8 @@ interface NotifyCommentSubscribersParams {
 /**
  * Notify all users subscribed to comments on a post.
  * Skips the comment author and the post author (who gets a separate COMMENT notification).
+ * Emails are only sent to subscribers who have emailEnabled on the subscription
+ * AND the global emailOnSubscribedComment preference enabled.
  */
 export async function notifyCommentSubscribers(
   params: NotifyCommentSubscribersParams
@@ -25,17 +27,19 @@ export async function notifyCommentSubscribers(
 
   const subscriptions = await prisma.commentSubscription.findMany({
     where: { postId },
-    select: { userId: true },
+    select: { userId: true, emailEnabled: true },
   });
 
   if (subscriptions.length === 0) return;
 
   // Exclude the comment author and post author (already notified separately)
-  const subscriberIds = subscriptions
-    .map((s) => s.userId)
-    .filter((id) => id !== commentAuthorId && id !== post?.authorId);
+  const filtered = subscriptions.filter(
+    (s) => s.userId !== commentAuthorId && s.userId !== post?.authorId
+  );
 
-  if (subscriberIds.length === 0) return;
+  if (filtered.length === 0) return;
+
+  const subscriberIds = filtered.map((s) => s.userId);
 
   // Send in-app + push notifications
   const notificationPromises = subscriberIds.map((subscriberId) =>
@@ -50,10 +54,17 @@ export async function notifyCommentSubscribers(
 
   await Promise.allSettled(notificationPromises);
 
-  // Queue email notifications for subscribers with the preference enabled
+  // Only email subscribers who have email enabled on this specific subscription
+  const emailEnabledIds = filtered
+    .filter((s) => s.emailEnabled)
+    .map((s) => s.userId);
+
+  if (emailEnabledIds.length === 0) return;
+
+  // Also check the global user preference
   const subscribersWithEmail = await prisma.user.findMany({
     where: {
-      id: { in: subscriberIds },
+      id: { in: emailEnabledIds },
       emailOnSubscribedComment: true,
       email: { not: null },
     },

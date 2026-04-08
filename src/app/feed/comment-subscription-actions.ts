@@ -45,6 +45,41 @@ export async function toggleCommentSubscription(
   return { success: true, message: "Subscribed to comments" };
 }
 
+export async function toggleCommentSubscriptionEmail(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const result = await requireAuthWithRateLimit("comment-sub");
+  if (isActionError(result)) return result;
+  const session = result;
+
+  const postId = formData.get("postId") as string;
+  if (!postId) {
+    return { success: false, message: "Post ID required" };
+  }
+
+  const existing = await prisma.commentSubscription.findUnique({
+    where: {
+      userId_postId: {
+        userId: session.user.id,
+        postId,
+      },
+    },
+  });
+
+  if (!existing) {
+    return { success: false, message: "Not subscribed to this post" };
+  }
+
+  await prisma.commentSubscription.update({
+    where: { id: existing.id },
+    data: { emailEnabled: !existing.emailEnabled },
+  });
+
+  revalidatePath(`/post/${postId}`);
+  return { success: true, message: existing.emailEnabled ? "Emails disabled" : "Emails enabled" };
+}
+
 export async function isSubscribedToComments(
   postId: string
 ): Promise<boolean> {
