@@ -10,6 +10,7 @@ import { editPost, deletePost, updatePostChecklist, togglePinPost } from "@/app/
 import { updateWallPostStatus, deleteWallPost } from "@/app/feed/wall-post-actions";
 import { useRouter } from "next/navigation";
 import { TagInput } from "./tag-input";
+import { AutoTagButton } from "./auto-tag-button";
 import { timeAgo } from "@/lib/time";
 import { useCommentCount } from "@/hooks/use-comment-counts";
 import Link from "next/link";
@@ -140,6 +141,7 @@ export const PostCard = memo(function PostCard({
   const [editIsGraphicNudity, setEditIsGraphicNudity] = useState(post.isGraphicNudity);
   const [editIsCloseFriendsOnly, setEditIsCloseFriendsOnly] = useState(post.isCloseFriendsOnly ?? false);
   const [editIsLoggedInOnly, setEditIsLoggedInOnly] = useState(post.isLoggedInOnly ?? false);
+  const [editEditorJson, setEditEditorJson] = useState(post.content);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [showContentWarnings, setShowContentWarnings] = useState(
     post.isSensitive || post.isNsfw || post.isGraphicNudity
@@ -534,15 +536,25 @@ export const PostCard = memo(function PostCard({
                     placeholder="Edit your post..."
                     minHeight="80px"
                     draftKey={`edit-post-${post.id}`}
+                    onChange={setEditEditorJson}
                   />
                 </div>
-                <div className="mt-2">
-                  <TagInput
-                    tags={editTags}
-                    onChange={setEditTags}
-                    disabled={editIsSensitive || editIsGraphicNudity}
-                    includeNsfw={editIsNsfw}
-                  />
+                <div className="mt-2 flex items-end gap-2">
+                  <div className="flex-1">
+                    <TagInput
+                      tags={editTags}
+                      onChange={setEditTags}
+                      disabled={editIsSensitive || editIsGraphicNudity}
+                      includeNsfw={editIsNsfw}
+                    />
+                  </div>
+                  {!(editIsSensitive || editIsGraphicNudity) && (
+                    <AutoTagButton
+                      editorJson={editEditorJson}
+                      existingTags={editTags}
+                      onTagsSuggested={setEditTags}
+                    />
+                  )}
                 </div>
                 <div className="mt-2">
                   <label className="mb-1 block text-xs text-zinc-500 dark:text-zinc-400">
