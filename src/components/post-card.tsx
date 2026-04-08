@@ -499,7 +499,7 @@ export const PostCard = memo(function PostCard({
                     className="w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-zinc-700"
                     data-testid="post-comment-subscribe-button"
                   >
-                    {commentSubbed ? "Unwatch comments" : "Watch comments"}
+                    {commentSubbed ? "Unsubscribe from comments" : "Subscribe to comments"}
                   </button>
                 </form>
                 {commentSubbed && (
