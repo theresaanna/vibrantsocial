@@ -13,6 +13,7 @@ import { EmailSection } from "./email-section";
 import { StarsSection } from "./stars-section";
 import { LinkedAccountsSection } from "./linked-accounts-section";
 import { DeleteAccountSection } from "./delete-account-section";
+import { PasswordSection } from "./password-section";
 
 interface ProfileFormProps {
   user: {
@@ -752,6 +753,9 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
 
       {/* Linked Accounts */}
       <LinkedAccountsSection />
+
+      {/* Change Password */}
+      <PasswordSection isCredentialsUser={isCredentialsUser} />
 
       {/* Delete Account */}
       <DeleteAccountSection username={user.username} />

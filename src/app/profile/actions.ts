@@ -1,6 +1,7 @@
 "use server";
 
 import crypto from "crypto";
+import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { requireAuthWithRateLimit, isActionError } from "@/lib/action-utils";
@@ -12,6 +13,7 @@ import { checkAndExpirePremium } from "@/lib/premium";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { sendEmailVerificationEmail } from "@/lib/email";
 import { inngest } from "@/lib/inngest";
+import { changePasswordSchema, parseFormData } from "@/lib/validations";
 
 const MAX_BIO_REVISIONS = 20;
 
@@ -416,6 +418,50 @@ export async function resendVerificationEmail(): Promise<ActionState> {
   await sendEmailVerificationEmail({ toEmail: emailToVerify, token });
 
   return { success: true, message: "Verification email sent" };
+}
+
+export async function changePassword(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const result = await requireAuthWithRateLimit("change-password");
+  if (isActionError(result)) return result;
+  const session = result;
+
+  const parsed = parseFormData(
+    changePasswordSchema,
+    formData,
+    ["currentPassword", "newPassword", "confirmNewPassword"]
+  );
+  if (!parsed.success) {
+    return { success: false, message: parsed.error };
+  }
+  const { currentPassword, newPassword } = parsed.data;
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { passwordHash: true },
+  });
+
+  if (!user?.passwordHash) {
+    return {
+      success: false,
+      message: "Your account uses social login. Password cannot be changed here.",
+    };
+  }
+
+  const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!isValid) {
+    return { success: false, message: "Current password is incorrect" };
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { passwordHash },
+  });
+
+  return { success: true, message: "Password changed successfully" };
 }
 
 const EMPTY_LEXICAL_CONTENT = '{"root":{"children":[],"direction":null,"format":"","indent":0,"type":"root","version":1}}';
