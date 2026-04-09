@@ -224,7 +224,8 @@ export async function getPasskeyAuthenticationOptions(
   const options = await generateAuthenticationOptions({
     rpID,
     allowCredentials: credentials.map((c: { credentialId: string; transports: string[] }) => ({
-      id: c.credentialId,
+      id: Buffer.from(c.credentialId, "base64url"),
+      type: "public-key" as const,
       transports: c.transports as AuthenticatorTransport[],
     })),
     userVerification: "preferred",
@@ -287,9 +288,9 @@ export async function verifyPasskeyLogin(
       expectedChallenge: challengeEntry.challenge,
       expectedOrigin: origin,
       expectedRPID: rpID,
-      credential: {
-        id: credential.credentialId,
-        publicKey: new Uint8Array(credential.publicKey),
+      authenticator: {
+        credentialID: Buffer.from(credential.credentialId, "base64url"),
+        credentialPublicKey: new Uint8Array(credential.publicKey),
         counter: Number(credential.counter),
         transports: credential.transports as AuthenticatorTransport[],
       },

@@ -75,7 +75,7 @@ export function TwoFactorForm({ pendingToken }: TwoFactorFormProps) {
         return;
       }
 
-      const authResponse = await startAuthentication({ optionsJSON: optionsResult.options });
+      const authResponse = await startAuthentication(optionsResult.options);
       const result = await verifyPasskeyLogin(pendingToken, authResponse);
       if (!result.success) {
         setError(result.message);

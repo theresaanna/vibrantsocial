@@ -93,7 +93,8 @@ export async function generatePasskeyRegistrationOptions(): Promise<PasskeyRegis
   }
 
   const existingCredentials = user.webauthnCredentials.map((cred: { credentialId: string }) => ({
-    id: cred.credentialId,
+    id: Buffer.from(cred.credentialId, "base64url"),
+    type: "public-key" as const,
   }));
 
   const options = await generateRegistrationOptions({
@@ -147,15 +148,18 @@ export async function verifyPasskeyRegistration(
     return { success: false, message: "Passkey verification failed." };
   }
 
-  const { credential, credentialDeviceType, credentialBackedUp } =
+  const { credentialID, credentialPublicKey, counter, credentialDeviceType, credentialBackedUp } =
     verification.registrationInfo;
+
+  // credentialID is a Uint8Array in v9 — encode as base64url for storage
+  const credentialIdB64 = Buffer.from(credentialID).toString("base64url");
 
   await prisma.webAuthnCredential.create({
     data: {
       userId: session.user.id,
-      credentialId: credential.id,
-      publicKey: Buffer.from(credential.publicKey),
-      counter: BigInt(credential.counter),
+      credentialId: credentialIdB64,
+      publicKey: Buffer.from(credentialPublicKey),
+      counter: BigInt(counter),
       deviceType: credentialDeviceType,
       backedUp: credentialBackedUp,
       transports: response.response.transports ?? [],

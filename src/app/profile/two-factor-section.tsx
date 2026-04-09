@@ -118,7 +118,7 @@ export function TwoFactorSection({
         return;
       }
 
-      const regResponse = await startRegistration({ optionsJSON: optResult.options });
+      const regResponse = await startRegistration(optResult.options);
       const verifyResult = await verifyPasskeyRegistration(regResponse, passkeyName);
       if (verifyResult.success) {
         setPasskeyName("");
