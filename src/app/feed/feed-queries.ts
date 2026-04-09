@@ -64,10 +64,49 @@ export function getPostInclude(userId: string) {
         purchaseUrl: true,
         shippingOption: true,
         shippingPrice: true,
+        digitalFile: {
+          select: {
+            fileName: true,
+            fileSize: true,
+            isFree: true,
+            couponCode: true,
+            downloadCount: true,
+          },
+        },
       },
     },
     // Comments are lazy-loaded via fetchComments() when expanded
   } as const;
+}
+
+/**
+ * Build digitalFileData props for PostCard from a marketplacePost query result.
+ * Returns undefined when there is no digital file attached.
+ */
+export function buildDigitalFileData(
+  marketplacePost: {
+    digitalFile?: {
+      fileName: string;
+      fileSize: number;
+      isFree: boolean;
+      couponCode: string | null;
+      downloadCount: number;
+    } | null;
+  } | null | undefined,
+  postAuthorId: string | null | undefined,
+  currentUserId: string | null | undefined
+) {
+  const file = marketplacePost?.digitalFile;
+  if (!file) return undefined;
+  const isOwner = !!currentUserId && currentUserId === postAuthorId;
+  return {
+    fileName: file.fileName,
+    fileSize: file.fileSize,
+    isFree: file.isFree,
+    couponCode: isOwner ? (file.couponCode ?? undefined) : undefined,
+    downloadCount: isOwner ? file.downloadCount : undefined,
+    isOwner,
+  };
 }
 
 export const repostUserSelect = {

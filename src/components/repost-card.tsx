@@ -8,6 +8,7 @@ import { clearDraft } from "./editor/plugins/DraftPlugin";
 import { TagInput } from "./tag-input";
 import { AutoTagButton } from "./auto-tag-button";
 import { ContentFlagsInfoModal } from "./content-flags-info-modal";
+import { buildDigitalFileData } from "@/app/feed/feed-queries";
 import { editRepost, deleteRepost, togglePinRepost } from "@/app/feed/post-actions";
 import { QuotePostActions } from "./quote-post-actions";
 import { RepostCommentSection } from "./repost-comment-section";
@@ -37,7 +38,10 @@ interface MarketplacePostData {
 }
 
 /** Extract marketplace props to spread onto PostCard, if present. */
-function marketplaceProps(post: { marketplacePost?: MarketplacePostData | null }) {
+function marketplaceProps(
+  post: { marketplacePost?: MarketplacePostData | null; author?: { id: string } | null },
+  currentUserId?: string
+) {
   if (!post.marketplacePost) return {};
   return {
     marketplacePostId: post.marketplacePost.id,
@@ -47,6 +51,7 @@ function marketplaceProps(post: { marketplacePost?: MarketplacePostData | null }
       shippingOption: post.marketplacePost.shippingOption,
       shippingPrice: post.marketplacePost.shippingPrice,
     },
+    digitalFileData: buildDigitalFileData(post.marketplacePost, post.author?.id, currentUserId),
   };
 }
 
@@ -671,7 +676,7 @@ export function RepostCard({
                 showNsfwContent={showNsfwContent}
                 hideSensitiveOverlay={hideSensitiveOverlay}
                 hideNsfwOverlay={hideNsfwOverlay}
-                {...marketplaceProps(repost.quotedRepost.post)}
+                {...marketplaceProps(repost.quotedRepost.post, currentUserId)}
               />
             </div>
           ) : (
@@ -693,7 +698,7 @@ export function RepostCard({
                 wallPostId: repost.post.wallPost.id,
                 wallPostStatus: repost.post.wallPost.status,
               })}
-              {...marketplaceProps(repost.post)}
+              {...marketplaceProps(repost.post, currentUserId)}
             />
           )}
           </>
@@ -709,7 +714,7 @@ export function RepostCard({
           hideSensitiveOverlay={hideSensitiveOverlay}
           hideNsfwOverlay={hideNsfwOverlay}
           showNsfwContent={showNsfwContent}
-          {...marketplaceProps(repost.post)}
+          {...marketplaceProps(repost.post, currentUserId)}
         />
       )}
 

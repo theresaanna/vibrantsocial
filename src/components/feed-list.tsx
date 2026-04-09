@@ -6,6 +6,7 @@ import { RepostCard } from "@/components/repost-card";
 import { PostViewTracker } from "@/components/post-view-tracker";
 import { rpc } from "@/lib/rpc";
 import type { ViewSource } from "@/app/feed/view-actions";
+import { buildDigitalFileData } from "@/app/feed/feed-queries";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FeedItem = { type: "post" | "repost"; data: any; date: string };
@@ -168,6 +169,7 @@ export function FeedList({
                 shippingOption: item.data.marketplacePost.shippingOption,
                 shippingPrice: item.data.marketplacePost.shippingPrice,
               },
+              digitalFileData: buildDigitalFileData(item.data.marketplacePost, item.data.author?.id, currentUserId),
             })}
           />
         ) : (
