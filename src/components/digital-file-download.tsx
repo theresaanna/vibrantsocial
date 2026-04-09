@@ -164,9 +164,33 @@ export function DigitalFileDownload({
 
       {/* Owner view for free file */}
       {isOwner && isFree && (
-        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-          Downloads: {downloadCount}
-        </p>
+        <div className="mt-2 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleFreeDownload}
+            disabled={isLoading}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-indigo-400 disabled:opacity-50"
+            data-testid="owner-free-download-button"
+          >
+            {isLoading ? "Downloading..." : "Download"}
+            <svg
+              className="h-3.5 w-3.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+              />
+            </svg>
+          </button>
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">
+            Downloads: {downloadCount}
+          </span>
+        </div>
       )}
 
       {/* Non-owner: free download */}

@@ -131,12 +131,28 @@ describe("DigitalFileDownload", () => {
 
   /* ── Owner view: free file ────────────────────────── */
 
-  it("shows download count for owner of free file", () => {
+  it("shows download count and download button for owner of free file", () => {
     render(
       <DigitalFileDownload {...baseProps} isOwner downloadCount={42} />,
     );
     expect(screen.getByText("Downloads: 42")).toBeInTheDocument();
-    expect(screen.queryByTestId("free-download-button")).not.toBeInTheDocument();
+    expect(screen.getByTestId("owner-free-download-button")).toBeInTheDocument();
+  });
+
+  it("allows owner to download their own free file", async () => {
+    mockDownloadFreeFile.mockResolvedValueOnce({
+      success: true,
+      message: "Download ready",
+      downloadUrl: "https://blob.example.com/file.zip",
+      fileName: "design-template.zip",
+    });
+
+    render(
+      <DigitalFileDownload {...baseProps} isOwner downloadCount={5} />,
+    );
+    await userEvent.click(screen.getByTestId("owner-free-download-button"));
+
+    expect(mockDownloadFreeFile).toHaveBeenCalledWith("mp-1");
   });
 
   /* ── Owner view: locked file ──────────────────────── */
