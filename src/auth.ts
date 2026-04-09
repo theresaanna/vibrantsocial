@@ -86,7 +86,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { id: user.id },
           select: { suspended: true },
         });
-        if (dbUser?.suspended) return false;
+        if (dbUser?.suspended) return "/auth-error?error=Suspended";
       }
       return true;
     },

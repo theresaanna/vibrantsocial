@@ -3,12 +3,12 @@
 import { signIn } from "@/auth";
 import { AuthError } from "next-auth";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { authLimiter, isRateLimited } from "@/lib/rate-limit";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import { loginSchema, parseFormData } from "@/lib/validations";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { redirect } from "next/navigation";
 import { createPendingTwoFactorToken } from "@/lib/two-factor-pending";
 
 interface LoginState {
@@ -47,7 +47,12 @@ export async function loginWithCredentials(
     select: { id: true, passwordHash: true, twoFactorEnabled: true, suspended: true },
   });
 
-  if (!user || !user.passwordHash || user.suspended) {
+  // Redirect suspended users to a specific error page with appeal link
+  if (user?.suspended) {
+    redirect("/auth-error?error=Suspended");
+  }
+
+  if (!user || !user.passwordHash) {
     // Let signIn handle the error to avoid revealing account existence
     try {
       await signIn("credentials", { email, password, redirectTo: "/complete-profile" });

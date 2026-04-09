@@ -172,6 +172,11 @@ model User {
   contentWarnings       Int       @default(0)
   suspended             Boolean   @default(false)
   suspendedAt           DateTime?
+  suspensionReason      String?
+  moderationActionsReceived ModerationAction[] @relation("moderationActionTarget")
+  moderationActionsPerformed ModerationAction[] @relation("moderationActionAdmin")
+  appeals               Appeal[] @relation("appealUser")
+  appealsReviewed       Appeal[] @relation("appealReviewer")
 
   // Close friends
   closeFriends  CloseFriend[] @relation("closeFriendOwner")
@@ -905,6 +910,41 @@ model ContentViolation {
 
   @@index([userId])
   @@index([postId])
+}
+
+model ModerationAction {
+  id        String   @id @default(cuid())
+  adminId   String
+  userId    String
+  action    String   // "suspend", "unsuspend", "warn", "dismiss_violation"
+  reason    String?
+  targetId  String?  // violation ID, appeal ID, etc.
+  createdAt DateTime @default(now())
+
+  admin User @relation("moderationActionAdmin", fields: [adminId], references: [id], onDelete: Cascade)
+  user  User @relation("moderationActionTarget", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([adminId])
+}
+
+model Appeal {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // "content_warning", "suspension"
+  reason    String
+  status    String   @default("pending") // "pending", "approved", "denied"
+  targetId  String?  // contentViolation ID if appealing a specific warning
+  response  String?  // admin response message
+  reviewedBy String?
+  reviewedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  user     User  @relation("appealUser", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer User? @relation("appealReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
 }
 
 model QuarantinedUpload {

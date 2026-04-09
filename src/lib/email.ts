@@ -659,6 +659,84 @@ export async function sendModerationAlertEmail(params: {
 }
 
 
+export async function sendSuspensionEmail(params: {
+  toEmail: string;
+  reason: string;
+}) {
+  const { toEmail, reason } = params;
+  const baseUrl = getBaseUrl();
+
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: toEmail,
+      subject: "Your account has been suspended",
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #18181b; margin-bottom: 16px;">Account Suspended</h2>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            Your VibrantSocial account has been suspended for the following reason:
+          </p>
+          <p style="color: #18181b; font-size: 16px; line-height: 1.6; background: #f4f4f5; padding: 12px 16px; border-radius: 8px;">
+            ${escapeHtml(reason)}
+          </p>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            If you believe this was a mistake, you can submit an appeal.
+          </p>
+          <a href="${baseUrl}/appeal" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
+            Submit an Appeal
+          </a>
+          <p style="color: #a1a1aa; font-size: 12px; margin-top: 32px;">
+            Please review the <a href="${baseUrl}/tos" style="color: #a1a1aa;">terms of service</a> for more information.
+          </p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    Sentry.captureException(error, {
+      extra: { emailType: "suspension", toEmail },
+    });
+  }
+}
+
+export async function sendAppealResponseEmail(params: {
+  toEmail: string;
+  status: "approved" | "denied";
+  response: string;
+}) {
+  const { toEmail, status, response } = params;
+  const baseUrl = getBaseUrl();
+  const isApproved = status === "approved";
+
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: toEmail,
+      subject: `Your appeal has been ${isApproved ? "approved" : "denied"}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #18181b; margin-bottom: 16px;">Appeal ${isApproved ? "Approved" : "Denied"}</h2>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            ${isApproved
+              ? "Good news — your appeal has been reviewed and approved. Any actions have been reversed."
+              : "Your appeal has been reviewed and denied. The original action stands."}
+          </p>
+          <p style="color: #18181b; font-size: 16px; line-height: 1.6; background: #f4f4f5; padding: 12px 16px; border-radius: 8px;">
+            ${escapeHtml(response)}
+          </p>
+          <a href="${baseUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
+            Go to VibrantSocial
+          </a>
+        </div>
+      `,
+    });
+  } catch (error) {
+    Sentry.captureException(error, {
+      extra: { emailType: "appeal-response", toEmail, status },
+    });
+  }
+}
+
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, "&amp;")

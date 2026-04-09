@@ -13,6 +13,8 @@ const ERROR_MESSAGES: Record<string, string> = {
     "There was an issue communicating with the authentication provider. Please try again.",
   OAuthProfileParseError:
     "Could not read your profile from the authentication provider. Please try again.",
+  Suspended:
+    "Your account has been suspended due to a violation of our community guidelines. You can submit an appeal if you believe this was a mistake.",
   AccessDenied:
     "Access was denied. You may have declined the authorization request.",
   Verification:
@@ -65,12 +67,21 @@ export default async function AuthErrorPage({
         )}
 
         <div className="flex flex-col gap-2">
-          <Link
-            href="/profile"
-            className="block w-full rounded-lg bg-gradient-to-r from-fuchsia-600 to-blue-600 px-4 py-2.5 text-center text-sm font-medium text-white transition-all hover:from-fuchsia-500 hover:to-blue-500"
-          >
-            Go to Profile
-          </Link>
+          {errorType === "Suspended" ? (
+            <Link
+              href="/appeal"
+              className="block w-full rounded-lg bg-gradient-to-r from-fuchsia-600 to-blue-600 px-4 py-2.5 text-center text-sm font-medium text-white transition-all hover:from-fuchsia-500 hover:to-blue-500"
+            >
+              Submit an Appeal
+            </Link>
+          ) : (
+            <Link
+              href="/profile"
+              className="block w-full rounded-lg bg-gradient-to-r from-fuchsia-600 to-blue-600 px-4 py-2.5 text-center text-sm font-medium text-white transition-all hover:from-fuchsia-500 hover:to-blue-500"
+            >
+              Go to Profile
+            </Link>
+          )}
           <Link
             href="/login"
             className="block w-full rounded-lg border border-zinc-200 px-4 py-2.5 text-center text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
