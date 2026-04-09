@@ -252,7 +252,7 @@ test.describe("Notifications @slow", () => {
     await expect(page.getByText(TEST_USER_2.displayName).first()).toBeVisible({ timeout: 10000 });
 
     // Should have "View all notifications" link
-    await expect(page.getByText(/view all/i)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('link', { name: 'View all notifications' })).toBeVisible({ timeout: 5000 });
   });
 
   test("notification bell badge shows unread count", async ({ page, forceLogin }) => {
