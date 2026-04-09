@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { notFound } from "next/navigation";
 import { getListMembers, getListCollaborators, isSubscribedToList } from "../actions";
 import { ListMembersClient } from "./list-members-client";
 import { SubscribeListButton } from "./subscribe-list-button";
 import { ShareListButton } from "@/components/share-list-button";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -28,12 +31,19 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
   const { list, members, isCollaborator } = result;
   const isOwner = list.ownerId === session.user.id;
   const canManageMembers = isOwner || isCollaborator;
-  const [isSubscribed, collaborators] = await Promise.all([
+  const [isSubscribed, collaborators, ownerThemeUser] = await Promise.all([
     !isOwner ? isSubscribedToList(listId) : Promise.resolve(false),
     isOwner ? getListCollaborators(listId) : Promise.resolve([]),
+    prisma.user.findUnique({
+      where: { id: list.ownerId },
+      select: userThemeSelect,
+    }),
   ]);
 
+  const theme = ownerThemeUser ? buildUserTheme(ownerThemeUser) : NO_THEME;
+
   return (
+    <ThemedPage {...theme}>
     <main className="mx-auto max-w-3xl px-4 py-6">
       <div className="mb-6">
         <Link
@@ -78,5 +88,6 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
         collaborators={JSON.parse(JSON.stringify(collaborators))}
       />
     </main>
+    </ThemedPage>
   );
 }

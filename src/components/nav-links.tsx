@@ -141,6 +141,8 @@ export function NavLinks({ username }: { username?: string | null }) {
       if (pathname.startsWith(link.href)) return true;
       // /tag/* pages should highlight the Communities nav link
       if (link.href === "/communities" && pathname.startsWith("/tag/")) return true;
+      // /username/marketplace/* pages should highlight the Marketplace nav link
+      if (link.href === "/marketplace" && pathname.includes("/marketplace/")) return true;
     }
     return pathname === link.href;
   }
