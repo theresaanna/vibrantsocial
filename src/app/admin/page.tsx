@@ -2,7 +2,15 @@ import { prisma } from "@/lib/prisma";
 import { AdminDashboard } from "./dashboard";
 
 export default async function AdminPage() {
-  const [violations, appeals, flaggedUsers, recentActions] = await Promise.all([
+  const [reports, violations, appeals, flaggedUsers, recentActions] = await Promise.all([
+    prisma.report.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: {
+        reporter: { select: { username: true } },
+        reviewer: { select: { username: true } },
+      },
+    }),
     prisma.contentViolation.findMany({
       orderBy: { createdAt: "desc" },
       take: 50,
@@ -63,11 +71,12 @@ export default async function AdminPage() {
             Moderation Dashboard
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Review violations, manage users, and handle appeals
+            Review reports, violations, manage users, and handle appeals
           </p>
         </div>
       </div>
       <AdminDashboard
+        reports={reports}
         violations={violations}
         appeals={appeals}
         flaggedUsers={flaggedUsers}

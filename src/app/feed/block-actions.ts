@@ -162,9 +162,33 @@ export async function getBlockRelationships(userId: string): Promise<{
  * Get all user IDs involved in any block relationship with the given user
  * (either direction). Derived from getBlockRelationships.
  */
+/**
+ * Get IDs of users the given user has muted (cached).
+ */
+export async function getMutedUserIds(userId: string): Promise<string[]> {
+  return cached(
+    cacheKeys.userMutedIds(userId),
+    async () => {
+      const mutes = await prisma.mute.findMany({
+        where: { muterId: userId },
+        select: { mutedId: true },
+      });
+      return mutes.map((m) => m.mutedId);
+    },
+    60
+  );
+}
+
+/**
+ * Get all user IDs whose content should be hidden from the given user.
+ * Includes blocked (both directions) and muted users.
+ */
 export async function getAllBlockRelatedIds(userId: string): Promise<string[]> {
-  const rels = await getBlockRelationships(userId);
-  return [...new Set([...rels.blockedIds, ...rels.blockedByIds])];
+  const [rels, mutedIds] = await Promise.all([
+    getBlockRelationships(userId),
+    getMutedUserIds(userId),
+  ]);
+  return [...new Set([...rels.blockedIds, ...rels.blockedByIds, ...mutedIds])];
 }
 
 /**
@@ -414,4 +438,51 @@ export async function toggleBlock(
 
   revalidatePath("/");
   return { success: true, message: existing ? "Unblocked" : "Blocked" };
+}
+
+// ── Mute actions ──
+
+export async function toggleMute(formData: FormData): Promise<ActionState> {
+  const result = await requireAuthWithRateLimit("mute");
+  if (isActionError(result)) return result;
+  const session = result;
+
+  const targetUserId = formData.get("userId") as string;
+  if (!targetUserId) return { success: false, message: "Missing user" };
+  if (targetUserId === session.user.id) return { success: false, message: "Cannot mute yourself" };
+
+  const existing = await prisma.mute.findUnique({
+    where: { muterId_mutedId: { muterId: session.user.id, mutedId: targetUserId } },
+  });
+
+  if (existing) {
+    await prisma.mute.delete({ where: { id: existing.id } });
+  } else {
+    await prisma.mute.create({
+      data: { muterId: session.user.id, mutedId: targetUserId },
+    });
+  }
+
+  await invalidate(cacheKeys.userMutedIds(session.user.id));
+  revalidatePath("/");
+  return { success: true, message: existing ? "Unmuted" : "Muted" };
+}
+
+export async function getMutedUsers() {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  const mutedIds = await getMutedUserIds(session.user.id);
+  if (mutedIds.length === 0) return [];
+
+  return prisma.user.findMany({
+    where: { id: { in: mutedIds } },
+    select: {
+      id: true,
+      username: true,
+      displayName: true,
+      avatar: true,
+    },
+    orderBy: { username: "asc" },
+  });
 }
