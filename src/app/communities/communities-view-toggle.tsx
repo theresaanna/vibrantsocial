@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
-export type CommunitiesView = "tags" | "media" | "discussions" | "newcomers" | "spotlight";
+export type CommunitiesView = "tags" | "media" | "discussions" | "newcomers" | "spotlight" | "user-lists";
 
 interface CommunitiesViewToggleProps {
   activeView: CommunitiesView;
@@ -15,6 +15,7 @@ const VIEW_ROUTES: Record<CommunitiesView, string> = {
   discussions: "/communities?view=discussions",
   newcomers: "/communities?view=newcomers",
   spotlight: "/communities?view=spotlight",
+  "user-lists": "/communities?view=user-lists",
 };
 
 const TABS: { view: CommunitiesView; label: string; testId: string }[] = [
@@ -23,6 +24,7 @@ const TABS: { view: CommunitiesView; label: string; testId: string }[] = [
   { view: "discussions", label: "Discussions", testId: "communities-view-discussions" },
   { view: "newcomers", label: "Newcomers", testId: "communities-view-newcomers" },
   { view: "spotlight", label: "Theme Spotlight", testId: "communities-view-spotlight" },
+  { view: "user-lists", label: "User Lists", testId: "communities-view-user-lists" },
 ];
 
 export function CommunitiesViewToggle({ activeView }: CommunitiesViewToggleProps) {
