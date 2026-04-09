@@ -59,7 +59,9 @@ async function ncmecFetch(
   contentType: string
 ): Promise<Response> {
   const fetchBody: BodyInit =
-    typeof body === "string" ? body : new Blob([body], { type: contentType });
+    typeof body === "string"
+      ? body
+      : new Blob([body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength)], { type: contentType });
   const response = await fetch(`${getBaseUrl()}${endpoint}`, {
     method: "POST",
     headers: {
