@@ -1,0 +1,6 @@
+name = "muddy-sound-f705"
+main = "src/index.js"
+compatibility_date = "2024-09-01"
+
+[vars]
+WEBHOOK_URL = "https://vibrantsocial.app/api/webhooks/support-email"
