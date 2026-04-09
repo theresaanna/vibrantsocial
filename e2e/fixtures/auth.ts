@@ -9,11 +9,17 @@ export const test = base.extend<{ forceLogin: void }>({
   forceLogin: [
     async ({ page }, use) => {
       await page.goto("/feed");
+      // Wait for any client-side redirects to settle
+      await page.waitForLoadState("networkidle");
+      // Check if we ended up on login (server or client redirect)
       if (page.url().includes("/login")) {
         await page.fill('input[name="email"]', TEST_USER.email);
         await page.fill('input[name="password"]', TEST_USER.password);
         await page.click('button[type="submit"]');
-        await page.waitForURL("**/feed", { timeout: 15000 });
+        await page.waitForURL(/(\/feed|\/complete-profile)/, { timeout: 15000 });
+        if (page.url().includes("/complete-profile")) {
+          await page.waitForURL("**/feed", { timeout: 30000 });
+        }
       }
       // Dismiss cookie toast and auto-tag hint so they don't block UI
       await page.evaluate(() => {

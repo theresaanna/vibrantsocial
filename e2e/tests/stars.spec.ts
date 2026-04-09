@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { resetTestUserStars, getTestUserStars } from "../helpers/db";
+import { resetTestUserStars, getTestUserStars, seedTestUser } from "../helpers/db";
 
 /** Poll getTestUserStars until the predicate is true (or timeout). */
 async function waitForStars(
@@ -18,6 +18,10 @@ async function waitForStars(
 }
 
 test.describe("Stars Points System", () => {
+  test.beforeAll(async () => {
+    await seedTestUser();
+  });
+
   test.beforeEach(async () => {
     await resetTestUserStars();
   });

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { TEST_USER, TEST_USER_2 } from "../helpers/db";
+import { TEST_USER, TEST_USER_2, seedTestUser, seedSecondTestUser } from "../helpers/db";
 import pg from "pg";
 
 function createPool() {
@@ -87,6 +87,11 @@ async function addUserToTestList(listId: string, userEmail: string) {
 }
 
 test.describe("User Lists", () => {
+  test.beforeAll(async () => {
+    await seedTestUser();
+    await seedSecondTestUser();
+  });
+
   test.beforeEach(async () => {
     await cleanupTestLists();
   });

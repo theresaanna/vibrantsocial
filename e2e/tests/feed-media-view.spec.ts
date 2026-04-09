@@ -48,17 +48,13 @@ test.describe("Feed Media View", () => {
 
   test("media view shows grid or empty state", async ({ page }) => {
     await page.goto("/feed?view=media");
+    await page.waitForLoadState("networkidle");
 
-    // Wait for loading spinner to disappear (data finished loading)
-    await page
-      .locator(".animate-spin")
-      .waitFor({ state: "hidden", timeout: 30000 })
-      .catch(() => {});
-
-    // Should show either media grid or empty state message
+    // Wait for the media content to load (spinner disappears and content appears)
+    // Use a longer timeout since the RPC call may take time
     const hasGrid = await page
       .getByTestId("media-grid")
-      .isVisible({ timeout: 5000 })
+      .isVisible({ timeout: 15000 })
       .catch(() => false);
     const hasEmpty = await page
       .getByText("No media yet.")

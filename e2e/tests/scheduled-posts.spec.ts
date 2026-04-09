@@ -1,6 +1,23 @@
 import { test, expect } from "@playwright/test";
-import { setTestUserTier, TEST_USER } from "../helpers/db";
+import { setTestUserTier, TEST_USER, seedTestUser } from "../helpers/db";
 import pg from "pg";
+
+/** Force a fresh login to pick up DB changes (e.g. tier) in the JWT */
+async function freshLogin(page: import("@playwright/test").Page) {
+  await page.context().clearCookies();
+  await page.goto("/login");
+  await page.fill('input[name="email"]', TEST_USER.email);
+  await page.fill('input[name="password"]', TEST_USER.password);
+  await page.click('button[type="submit"]');
+  await page.waitForURL(/(\/feed|\/complete-profile)/, { timeout: 15000 });
+  if (page.url().includes("/complete-profile")) {
+    await page.waitForURL("**/feed", { timeout: 30000 });
+  }
+  await page.evaluate(() => {
+    localStorage.setItem("vibrantsocial-cookie-notice-dismissed", "true");
+    localStorage.setItem("autotag-hint-dismissed", "1");
+  });
+}
 
 async function deleteScheduledPosts() {
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -26,6 +43,7 @@ test.describe("Scheduled Posts @slow", () => {
   });
 
   test("schedule toggle is disabled for free users", async ({ page }) => {
+    await freshLogin(page);
     await page.goto("/compose");
     const toggle = page.getByTestId("schedule-toggle");
     await expect(toggle).toBeVisible();
@@ -34,6 +52,7 @@ test.describe("Scheduled Posts @slow", () => {
 
   test("schedule toggle is enabled for premium users", async ({ page }) => {
     await setTestUserTier("premium");
+    await freshLogin(page);
     await page.goto("/compose");
     const toggle = page.getByTestId("schedule-toggle");
     await expect(toggle).toBeVisible();
@@ -42,6 +61,7 @@ test.describe("Scheduled Posts @slow", () => {
 
   test("premium user can open schedule picker", async ({ page }) => {
     await setTestUserTier("premium");
+    await freshLogin(page);
     await page.goto("/compose");
 
     await page.getByTestId("schedule-toggle").click();
@@ -51,6 +71,7 @@ test.describe("Scheduled Posts @slow", () => {
 
   test("premium user can schedule a post", async ({ page }) => {
     await setTestUserTier("premium");
+    await freshLogin(page);
     await page.goto("/compose");
 
     // Type content in the editor
@@ -79,6 +100,7 @@ test.describe("Scheduled Posts @slow", () => {
 
   test("premium user can see scheduled posts list", async ({ page }) => {
     await setTestUserTier("premium");
+    await freshLogin(page);
     await page.goto("/compose");
 
     // Type and schedule a post
@@ -106,6 +128,7 @@ test.describe("Scheduled Posts @slow", () => {
 
   test("premium user can delete a scheduled post", async ({ page }) => {
     await setTestUserTier("premium");
+    await freshLogin(page);
     await page.goto("/compose");
 
     const uniqueDeleteText = `Delete-me-${Date.now()}`;
@@ -137,6 +160,7 @@ test.describe("Scheduled Posts @slow", () => {
 
   test("scheduled post does not appear in feed", async ({ page }) => {
     await setTestUserTier("premium");
+    await freshLogin(page);
     await page.goto("/compose");
 
     // Schedule a post
@@ -161,6 +185,7 @@ test.describe("Scheduled Posts @slow", () => {
   });
 
   test("free user sees premium badge on schedule section", async ({ page }) => {
+    await freshLogin(page);
     await page.goto("/compose");
     // The premium badge should be visible near the schedule toggle
     const premiumBadge = page.locator(

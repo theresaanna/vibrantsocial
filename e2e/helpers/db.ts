@@ -57,11 +57,19 @@ function createPool() {
 export async function seedTestUser() {
   const pool = createPool();
   try {
+    // Check by email OR username — email may have been changed by a verify-email test
     const existing = await pool.query(
-      'SELECT id FROM "User" WHERE email = $1',
-      [TEST_USER.email]
+      'SELECT id FROM "User" WHERE email = $1 OR username = $2',
+      [TEST_USER.email, TEST_USER.username]
     );
-    if (existing.rows.length > 0) return existing.rows[0];
+    if (existing.rows.length > 0) {
+      // Ensure email is reset to canonical value
+      await pool.query(
+        'UPDATE "User" SET email = $1 WHERE id = $2',
+        [TEST_USER.email, existing.rows[0].id]
+      );
+      return existing.rows[0];
+    }
 
     const passwordHash = await bcrypt.hash(TEST_USER.password, 12);
     const id = "e2e_" + Date.now().toString(36);
@@ -88,11 +96,18 @@ export async function seedTestUser() {
 export async function seedSecondTestUser() {
   const pool = createPool();
   try {
+    // Check by email OR username to handle any email changes
     const existing = await pool.query(
-      'SELECT id FROM "User" WHERE email = $1',
-      [TEST_USER_2.email]
+      'SELECT id FROM "User" WHERE email = $1 OR username = $2',
+      [TEST_USER_2.email, TEST_USER_2.username]
     );
-    if (existing.rows.length > 0) return existing.rows[0];
+    if (existing.rows.length > 0) {
+      await pool.query(
+        'UPDATE "User" SET email = $1 WHERE id = $2',
+        [TEST_USER_2.email, existing.rows[0].id]
+      );
+      return existing.rows[0];
+    }
 
     const passwordHash = await bcrypt.hash(TEST_USER_2.password, 12);
     const id = "e2e2_" + Date.now().toString(36);

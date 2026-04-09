@@ -78,7 +78,7 @@ export function PostRevisionHistory({
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} data-testid="revision-overlay" />
-      <div className="relative z-10 flex h-[80vh] w-[90vw] max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-zinc-900">
+      <div className="relative z-10 flex h-[80vh] w-[90vw] max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-zinc-900" data-testid="post-revision-history">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
           <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">

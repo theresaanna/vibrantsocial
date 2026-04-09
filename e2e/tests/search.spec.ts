@@ -1,8 +1,9 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../fixtures/auth";
 import { TEST_USER } from "../helpers/db";
 
 test.describe("Search", () => {
-  test("search for users by username", async ({ page }) => {
+  test("search for users by username", async ({ page, forceLogin }) => {
+    await forceLogin;
     await page.goto(`/search?q=${TEST_USER.username}`);
 
     // The Users tab should be active by default and show results
@@ -13,13 +14,13 @@ test.describe("Search", () => {
 
   test("search nav link navigates to search page", async ({
     page,
+    forceLogin,
   }) => {
-    await page.goto("/feed");
-    await expect(page).toHaveURL(/\/feed/, { timeout: 15000 });
+    await forceLogin;
 
-    // Wait for nav to be interactive, then click Search
-    await page.waitForSelector('a[aria-label="Search"]', { state: "visible", timeout: 15000 });
-    await page.click('a[aria-label="Search"]');
+    // Wait for nav to be interactive, then click Search link
+    await page.waitForSelector('a[href="/search"]', { state: "visible", timeout: 15000 });
+    await page.click('a[href="/search"]');
 
     await expect(page).toHaveURL(/\/search/, { timeout: 15000 });
 
@@ -37,7 +38,8 @@ test.describe("Search", () => {
     ).toBeVisible({ timeout: 10000 });
   });
 
-  test("search page has users and posts tabs", async ({ page }) => {
+  test("search page has users and posts tabs", async ({ page, forceLogin }) => {
+    await forceLogin;
     await page.goto(`/search?q=test`);
 
     // Both tab buttons should be visible in the search results area

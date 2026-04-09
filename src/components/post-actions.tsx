@@ -296,6 +296,7 @@ function RepostButton({
             : "text-zinc-500 hover:text-green-500"
         }`}
         aria-label={reposted ? "Unrepost" : "Repost"}
+        data-testid="repost-button"
       >
         <svg
           className="h-4 w-4"
