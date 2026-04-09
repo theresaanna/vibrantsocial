@@ -8,6 +8,8 @@ import { authLimiter, isRateLimited } from "@/lib/rate-limit";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import { loginSchema, parseFormData } from "@/lib/validations";
 import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
+import { createPendingTwoFactorToken } from "@/lib/two-factor-pending";
 
 interface LoginState {
   success: boolean;
@@ -39,13 +41,40 @@ export async function loginWithCredentials(
     return { success: false, message: "CAPTCHA verification failed. Please try again." };
   }
 
-  // Check suspension before attempting sign-in so we can show a specific error
+  // Check if user has 2FA enabled BEFORE calling signIn
   const user = await prisma.user.findUnique({
-    where: { email },
-    select: { suspended: true },
+    where: { email: email.trim().toLowerCase() },
+    select: { id: true, passwordHash: true, twoFactorEnabled: true, suspended: true },
   });
+
+  // Redirect suspended users to a specific error page with appeal link
   if (user?.suspended) {
     redirect("/auth-error?error=Suspended");
+  }
+
+  if (!user || !user.passwordHash) {
+    // Let signIn handle the error to avoid revealing account existence
+    try {
+      await signIn("credentials", { email, password, redirectTo: "/complete-profile" });
+      return { success: true, message: "" };
+    } catch (error) {
+      if (error instanceof AuthError) {
+        return { success: false, message: "Invalid email or password" };
+      }
+      throw error;
+    }
+  }
+
+  // Verify password ourselves when 2FA is enabled
+  const isValid = await bcrypt.compare(password, user.passwordHash);
+  if (!isValid) {
+    return { success: false, message: "Invalid email or password" };
+  }
+
+  // If 2FA is enabled, redirect to 2FA challenge page instead of completing sign-in
+  if (user.twoFactorEnabled) {
+    const pendingToken = createPendingTwoFactorToken(user.id, email.trim().toLowerCase());
+    redirect(`/login/two-factor?token=${encodeURIComponent(pendingToken)}`);
   }
 
   try {
