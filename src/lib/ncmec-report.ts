@@ -58,10 +58,14 @@ async function ncmecFetch(
   body: string | Uint8Array,
   contentType: string
 ): Promise<Response> {
-  const fetchBody: BodyInit =
-    typeof body === "string"
-      ? body
-      : new Blob([body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength)], { type: contentType });
+  let fetchBody: BodyInit;
+  if (typeof body === "string") {
+    fetchBody = body;
+  } else {
+    const ab = new ArrayBuffer(body.byteLength);
+    new Uint8Array(ab).set(body);
+    fetchBody = new Blob([ab], { type: contentType });
+  }
   const response = await fetch(`${getBaseUrl()}${endpoint}`, {
     method: "POST",
     headers: {
