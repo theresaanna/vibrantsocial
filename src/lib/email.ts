@@ -494,35 +494,29 @@ export async function sendSupportEmail(params: {
 
   const label = subjectLabels[subject] ?? subject;
 
+  // Call the webhook endpoint directly instead of sending via Resend,
+  // because Resend cannot deliver to its own verified domain via MX.
+  const webhookUrl = `${getBaseUrl()}/api/webhooks/support-email`;
+  const webhookSecret = process.env.SUPPORT_EMAIL_WEBHOOK_SECRET;
+
   try {
-    await getResend().emails.send({
-      from: FROM_EMAIL,
-      to: "support@vibrantsocial.app",
-      replyTo: email,
-      subject: `[${label}] from @${username}`,
-      html: `
-        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
-          <h2 style="color: #18181b; margin-bottom: 16px;">${escapeHtml(label)}</h2>
-          <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-              <td style="padding: 8px 0; color: #71717a; font-size: 14px; vertical-align: top; width: 100px;">From</td>
-              <td style="padding: 8px 0; color: #18181b; font-size: 14px;">@${escapeHtml(username)} (${escapeHtml(email)})</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #71717a; font-size: 14px; vertical-align: top;">Subject</td>
-              <td style="padding: 8px 0; color: #18181b; font-size: 14px;">${escapeHtml(label)}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #71717a; font-size: 14px; vertical-align: top;">Message</td>
-              <td style="padding: 8px 0; color: #18181b; font-size: 14px; white-space: pre-wrap;">${escapeHtml(body)}</td>
-            </tr>
-          </table>
-          <p style="color: #a1a1aa; font-size: 12px; margin-top: 32px;">
-            Sent at ${new Date().toISOString()}
-          </p>
-        </div>
-      `,
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${webhookSecret}`,
+      },
+      body: JSON.stringify({
+        from: email,
+        to: "support@vibrantsocial.app",
+        subject: `[${label}] from @${username}`,
+        raw: `From: @${username} (${email})\nSubject: ${label}\n\n${body}`,
+      }),
     });
+
+    if (!response.ok) {
+      throw new Error(`Webhook returned ${response.status}`);
+    }
   } catch (error) {
     Sentry.captureException(error, {
       extra: { emailType: "support", username, subject },
