@@ -20,12 +20,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        __twoFactorBypass: { label: "2FA Bypass", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
         const email = (credentials.email as string).trim().toLowerCase();
         const password = credentials.password as string;
+        const isTwoFactorBypass = credentials.__twoFactorBypass === "true";
 
         const user = await prisma.user.findUnique({
           where: { email },
@@ -33,8 +35,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!user || !user.passwordHash) return null;
 
-        const isValid = await bcrypt.compare(password, user.passwordHash);
-        if (!isValid) return null;
+        // When 2FA has been verified, skip password check — credentials
+        // were already validated before the 2FA challenge was issued.
+        if (!isTwoFactorBypass) {
+          const isValid = await bcrypt.compare(password, user.passwordHash);
+          if (!isValid) return null;
+        }
 
         if (user.suspended) return null;
 

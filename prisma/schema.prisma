@@ -94,6 +94,12 @@ model User {
   referredBy        User?     @relation("referrals", fields: [referredById], references: [id])
   referrals         User[]    @relation("referrals")
 
+  // Two-factor authentication
+  twoFactorEnabled    Boolean  @default(false)
+  twoFactorSecret     String?  // Encrypted TOTP secret
+  twoFactorBackupCodes String[] // Hashed recovery codes
+  webauthnCredentials  WebAuthnCredential[]
+
   // Phone verification
   phoneNumber   String?
   phoneVerified DateTime?
@@ -259,6 +265,24 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model WebAuthnCredential {
+  id                  String   @id @default(cuid())
+  userId              String
+  credentialId        String   @unique // Base64url-encoded credential ID
+  publicKey           Bytes    // COSE public key
+  counter             BigInt   @default(0)
+  deviceType          String   // "singleDevice" | "multiDevice"
+  backedUp            Boolean  @default(false)
+  transports          String[] // e.g. ["internal", "hybrid"]
+  name                String?  // User-provided friendly name
+  createdAt           DateTime @default(now())
+  lastUsedAt          DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Post {

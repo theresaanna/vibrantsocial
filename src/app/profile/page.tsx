@@ -31,6 +31,7 @@ export default async function ProfilePage() {
       phoneNumber: true,
       phoneVerified: true,
       passwordHash: true,
+      twoFactorEnabled: true,
       avatar: true,
       image: true,
       profileFrameId: true,
@@ -117,6 +118,7 @@ export default async function ProfilePage() {
           pendingEmail={user?.pendingEmail ?? null}
           phoneVerified={!!user?.phoneVerified}
           phoneNumber={user?.phoneNumber ?? null}
+          twoFactorEnabled={user?.twoFactorEnabled ?? false}
           isCredentialsUser={isCredentialsUser}
           isPremium={isPremium}
           stars={user?.stars ?? 0}
