@@ -8,6 +8,7 @@ import { extractContentFromLexicalJson } from "@/lib/lexical-text";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
 import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
 import { ThemedPage } from "@/components/themed-page";
+import { buildDigitalFileData } from "@/app/feed/feed-queries";
 
 interface Props {
   params: Promise<{ username: string; slug: string }>;
@@ -246,14 +247,7 @@ export default async function MarketplaceSlugPage({ params, searchParams }: Prop
           shippingOption: post.marketplacePost.shippingOption,
           shippingPrice: post.marketplacePost.shippingPrice,
         } : undefined}
-        digitalFileData={post.marketplacePost?.digitalFile ? {
-          fileName: post.marketplacePost.digitalFile.fileName,
-          fileSize: post.marketplacePost.digitalFile.fileSize,
-          isFree: post.marketplacePost.digitalFile.isFree,
-          couponCode: userId === post.author?.id ? (post.marketplacePost.digitalFile.couponCode ?? undefined) : undefined,
-          downloadCount: userId === post.author?.id ? post.marketplacePost.digitalFile.downloadCount : undefined,
-          isOwner: userId === post.author?.id,
-        } : undefined}
+        digitalFileData={buildDigitalFileData(post.marketplacePost, post.author?.id, userId)}
       />
     </ThemedPage>
   );

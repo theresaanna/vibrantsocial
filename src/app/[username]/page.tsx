@@ -24,7 +24,7 @@ import { getChatRequestStatus, type ChatRequestStatus } from "@/app/chat/actions
 import { deriveBlockStatus } from "@/app/feed/block-actions";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
-import { publishedOnly } from "@/app/feed/feed-queries";
+import { publishedOnly, buildDigitalFileData } from "@/app/feed/feed-queries";
 import { buildProfilePostsContentFilter } from "./profile-queries";
 import { MarketplaceGrid } from "@/components/marketplace-grid";
 import { fetchUserMarketplacePosts } from "@/app/marketplace/media-actions";
@@ -298,6 +298,15 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
         purchaseUrl: true,
         shippingOption: true,
         shippingPrice: true,
+        digitalFile: {
+          select: {
+            fileName: true,
+            fileSize: true,
+            isFree: true,
+            couponCode: true,
+            downloadCount: true,
+          },
+        },
       },
     },
     comments: {
@@ -830,7 +839,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             ) : (
               feedItems.map((item) =>
                 item.type === "post" ? (
-                  <PostCard key={`post-${item.data.id}`} post={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} hideSensitiveOverlay={hideSensitiveOverlay} hideNsfwOverlay={hideNsfwOverlay} showNsfwContent={showNsfwContent} showPinnedIndicator {...(item.data.wallPost && item.data.wallPost.wallOwner.username && { wallOwner: { username: item.data.wallPost.wallOwner.username, displayName: item.data.wallPost.wallOwner.displayName }, wallPostId: item.data.wallPost.id, wallPostStatus: item.data.wallPost.status })} {...(item.data.marketplacePost && { marketplacePostId: item.data.marketplacePost.id, marketplaceData: { price: item.data.marketplacePost.price, purchaseUrl: item.data.marketplacePost.purchaseUrl, shippingOption: item.data.marketplacePost.shippingOption, shippingPrice: item.data.marketplacePost.shippingPrice } })} />
+                  <PostCard key={`post-${item.data.id}`} post={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} hideSensitiveOverlay={hideSensitiveOverlay} hideNsfwOverlay={hideNsfwOverlay} showNsfwContent={showNsfwContent} showPinnedIndicator {...(item.data.wallPost && item.data.wallPost.wallOwner.username && { wallOwner: { username: item.data.wallPost.wallOwner.username, displayName: item.data.wallPost.wallOwner.displayName }, wallPostId: item.data.wallPost.id, wallPostStatus: item.data.wallPost.status })} {...(item.data.marketplacePost && { marketplacePostId: item.data.marketplacePost.id, marketplaceData: { price: item.data.marketplacePost.price, purchaseUrl: item.data.marketplacePost.purchaseUrl, shippingOption: item.data.marketplacePost.shippingOption, shippingPrice: item.data.marketplacePost.shippingPrice }, digitalFileData: buildDigitalFileData(item.data.marketplacePost, item.data.author?.id, currentUserId) })} />
                 ) : item.type === "repost" ? (
                   <RepostCard key={`repost-${item.data.id}`} repost={item.data} currentUserId={currentUserId} phoneVerified={phoneVerified} ageVerified={ageVerified} showGraphicByDefault={showGraphicByDefault} hideSensitiveOverlay={hideSensitiveOverlay} hideNsfwOverlay={hideNsfwOverlay} showNsfwContent={showNsfwContent} showPinnedIndicator />
                 ) : (
