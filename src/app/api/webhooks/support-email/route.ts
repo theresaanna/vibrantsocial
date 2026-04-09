@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resend: Resend;
+function getResend(): Resend {
+  if (!resend) {
+    resend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return resend;
+}
 
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -14,7 +20,7 @@ export async function POST(request: NextRequest) {
   const { from, to, subject, raw } = await request.json();
 
   // Forward the support email to your personal address
-  await resend.emails.send({
+  await getResend().emails.send({
     from: "VibrantSocial Support <support@vibrantsocial.app>",
     to: "theresa@vibrantsocial.app",
     subject: `[Support] ${subject}`,
