@@ -100,7 +100,7 @@ export async function generatePasskeyRegistrationOptions(): Promise<PasskeyRegis
   const options = await generateRegistrationOptions({
     rpName: RP_NAME,
     rpID: getRPID(),
-    userID: new TextEncoder().encode(session.user.id),
+    userID: session.user.id,
     userName: user.email ?? user.username ?? session.user.id,
     userDisplayName: user.displayName ?? user.username ?? "User",
     attestationType: "none",
