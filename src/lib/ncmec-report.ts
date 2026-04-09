@@ -64,7 +64,7 @@ async function ncmecFetch(
       "Content-Type": contentType,
       Authorization: getAuthHeader(),
     },
-    body,
+    body: body as BodyInit,
   });
 
   if (!response.ok) {
