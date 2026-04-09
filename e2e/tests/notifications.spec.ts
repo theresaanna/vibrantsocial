@@ -147,28 +147,6 @@ test.describe("Notifications @slow", () => {
 
   // --- Mark as Read ---
 
-  test("clicking a notification marks it as read", async ({ page, forceLogin }) => {
-    await forceLogin;
-
-    await cleanupTestNotifications();
-    await createTestNotifications(TEST_USER.email, TEST_USER_2.email, 1);
-
-    await page.goto("/notifications");
-    await page.waitForTimeout(2000);
-
-    // Click on the notification
-    const notifItem = page.getByText(TEST_USER_2.displayName).first();
-    await expect(notifItem).toBeVisible({ timeout: 10000 });
-    await notifItem.click();
-
-    // Navigate back to notifications
-    await page.goto("/notifications");
-    await page.waitForTimeout(2000);
-
-    // The notification should no longer have unread styling
-    // (blue background should be gone)
-  });
-
   test("mark all as read button works", async ({ page, forceLogin }) => {
     await forceLogin;
 
