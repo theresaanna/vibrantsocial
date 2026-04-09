@@ -3,9 +3,11 @@
 import { signIn } from "@/auth";
 import { AuthError } from "next-auth";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { authLimiter, isRateLimited } from "@/lib/rate-limit";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import { loginSchema, parseFormData } from "@/lib/validations";
+import { prisma } from "@/lib/prisma";
 
 interface LoginState {
   success: boolean;
@@ -35,6 +37,15 @@ export async function loginWithCredentials(
   // Verify Turnstile CAPTCHA
   if (!(await verifyTurnstileToken(turnstileToken))) {
     return { success: false, message: "CAPTCHA verification failed. Please try again." };
+  }
+
+  // Check suspension before attempting sign-in so we can show a specific error
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { suspended: true },
+  });
+  if (user?.suspended) {
+    redirect("/auth-error?error=Suspended");
   }
 
   try {
