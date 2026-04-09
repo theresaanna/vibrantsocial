@@ -119,6 +119,7 @@ export async function POST(req: Request) {
         mimeType: file.type,
         uploadEndpoint: "/api/upload",
         request: req,
+        imageBuffer: buffer,
       });
       return NextResponse.json(
         { error: "Upload rejected" },

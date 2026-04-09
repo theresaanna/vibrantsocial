@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { submitNCMECReport, isNCMECConfigured } from "@/lib/ncmec-report";
+import * as Sentry from "@sentry/nextjs";
 
 const ARACHNID_API_URL = "https://shield.projectarachnid.com/v1/media/";
 
@@ -62,12 +64,16 @@ export interface QuarantineParams {
   mimeType: string;
   uploadEndpoint: string;
   request: Request;
+  imageBuffer: Buffer | Uint8Array;
 }
 
 export async function quarantineUpload(params: QuarantineParams) {
-  const { userId, classification, sha256, fileName, fileSize, mimeType, uploadEndpoint, request } = params;
+  const { userId, classification, sha256, fileName, fileSize, mimeType, uploadEndpoint, request, imageBuffer } = params;
 
-  await prisma.quarantinedUpload.create({
+  const ipAddress = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip");
+  const userAgent = request.headers.get("user-agent");
+
+  const record = await prisma.quarantinedUpload.create({
     data: {
       userId,
       classification,
@@ -75,10 +81,44 @@ export async function quarantineUpload(params: QuarantineParams) {
       fileName,
       fileSize,
       mimeType,
-      ipAddress: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip"),
-      userAgent: request.headers.get("user-agent"),
+      ipAddress,
+      userAgent,
       referer: request.headers.get("referer"),
       uploadEndpoint,
     },
   });
+
+  // Submit NCMEC CyberTipline report (fire-and-forget — don't block the response)
+  if (isNCMECConfigured()) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { username: true, email: true },
+    });
+
+    submitNCMECReport({
+      quarantinedUploadId: record.id,
+      userId,
+      username: user?.username ?? userId,
+      email: user?.email ?? null,
+      classification,
+      sha256,
+      fileName,
+      fileSize,
+      mimeType,
+      ipAddress,
+      userAgent,
+      imageBuffer,
+      incidentDateTime: record.createdAt,
+    }).catch((error) => {
+      console.error("NCMEC report submission failed:", error);
+      Sentry.captureException(error, {
+        extra: {
+          quarantinedUploadId: record.id,
+          userId,
+          classification,
+          sha256,
+        },
+      });
+    });
+  }
 }

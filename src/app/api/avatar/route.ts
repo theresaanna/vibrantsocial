@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
       mimeType: file.type,
       uploadEndpoint: "/api/avatar",
       request,
+      imageBuffer: buffer,
     });
     return NextResponse.json({ error: "Upload rejected" }, { status: 400 });
   }
