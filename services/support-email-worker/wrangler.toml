@@ -3,4 +3,4 @@ main = "src/index.js"
 compatibility_date = "2024-09-01"
 
 [vars]
-WEBHOOK_URL = "https://vibrantsocial.app/api/webhooks/support-email"
+WEBHOOK_URL = "https://www.vibrantsocial.app/api/webhooks/support-email"
