@@ -55,7 +55,7 @@ interface ReportParams {
 
 async function ncmecFetch(
   endpoint: string,
-  body: string | Buffer | Uint8Array,
+  body: string | Uint8Array,
   contentType: string
 ): Promise<Response> {
   const response = await fetch(`${getBaseUrl()}${endpoint}`, {
@@ -164,7 +164,7 @@ export async function submitNCMECReport(
   const uploadUrl = `/upload?id=${reportId}&filename=${encodeURIComponent(fileName)}`;
   const uploadResponse = await ncmecFetch(
     uploadUrl,
-    Buffer.from(imageBuffer),
+    new Uint8Array(imageBuffer),
     mimeType
   );
   const uploadResult = parseResponse(await uploadResponse.text());
