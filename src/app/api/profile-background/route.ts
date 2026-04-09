@@ -77,6 +77,7 @@ export async function POST(request: NextRequest) {
         mimeType: file.type,
         uploadEndpoint: "/api/profile-background",
         request,
+        imageBuffer: buffer,
       });
       return NextResponse.json({ error: "Upload rejected" }, { status: 400 });
     }

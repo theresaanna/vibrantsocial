@@ -919,6 +919,8 @@ model QuarantinedUpload {
   userAgent      String?
   referer        String?
   uploadEndpoint String
+  ncmecReportId  Int?
+  ncmecReportedAt DateTime?
   createdAt      DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

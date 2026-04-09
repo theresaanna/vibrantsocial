@@ -1,27 +1,52 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+// Top-level mocks — these are hoisted
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     quarantinedUpload: {
       create: vi.fn(),
     },
+    user: {
+      findUnique: vi.fn(),
+    },
   },
 }));
 
+vi.mock("@/lib/ncmec-report", () => ({
+  submitNCMECReport: vi.fn().mockResolvedValue({ reportId: 12345 }),
+  isNCMECConfigured: vi.fn().mockReturnValue(false),
+}));
+
+vi.mock("@sentry/nextjs", () => ({
+  captureException: vi.fn(),
+}));
+
 import { prisma } from "@/lib/prisma";
+import { submitNCMECReport, isNCMECConfigured } from "@/lib/ncmec-report";
 
 const mockPrisma = vi.mocked(prisma);
+const mockSubmitNCMEC = vi.mocked(submitNCMECReport);
+const mockIsNCMECConfigured = vi.mocked(isNCMECConfigured);
 
-// We need to dynamically import so env vars can be set before module loads
+// Dynamic import so env vars can be set before module loads
 async function loadModule() {
-  // Clear module cache so env changes take effect
   vi.resetModules();
   vi.mock("@/lib/prisma", () => ({
     prisma: {
       quarantinedUpload: {
         create: vi.fn(),
       },
+      user: {
+        findUnique: vi.fn(),
+      },
     },
+  }));
+  vi.mock("@/lib/ncmec-report", () => ({
+    submitNCMECReport: vi.fn().mockResolvedValue({ reportId: 12345 }),
+    isNCMECConfigured: vi.fn().mockReturnValue(false),
+  }));
+  vi.mock("@sentry/nextjs", () => ({
+    captureException: vi.fn(),
   }));
   return import("@/lib/arachnid-shield");
 }
@@ -177,6 +202,12 @@ describe("quarantineUpload", () => {
 
   it("creates quarantine record with request metadata", async () => {
     const { quarantineUpload } = await loadModule();
+    const { prisma: freshPrisma } = await import("@/lib/prisma");
+
+    vi.mocked(freshPrisma.quarantinedUpload.create).mockResolvedValue({
+      id: "quarantine-1",
+      createdAt: new Date("2026-01-01"),
+    } as never);
 
     const mockRequest = new Request("http://localhost/api/upload", {
       headers: {
@@ -185,8 +216,6 @@ describe("quarantineUpload", () => {
         referer: "http://localhost/feed",
       },
     });
-
-    mockPrisma.quarantinedUpload.create.mockResolvedValue({} as never);
 
     await quarantineUpload({
       userId: "user1",
@@ -197,9 +226,10 @@ describe("quarantineUpload", () => {
       mimeType: "image/jpeg",
       uploadEndpoint: "/api/upload",
       request: mockRequest,
+      imageBuffer: Buffer.from("fake-image"),
     });
 
-    expect(mockPrisma.quarantinedUpload.create).toHaveBeenCalledWith({
+    expect(freshPrisma.quarantinedUpload.create).toHaveBeenCalledWith({
       data: {
         userId: "user1",
         classification: "csam",
@@ -217,10 +247,14 @@ describe("quarantineUpload", () => {
 
   it("handles missing request headers gracefully", async () => {
     const { quarantineUpload } = await loadModule();
+    const { prisma: freshPrisma } = await import("@/lib/prisma");
+
+    vi.mocked(freshPrisma.quarantinedUpload.create).mockResolvedValue({
+      id: "quarantine-2",
+      createdAt: new Date("2026-01-01"),
+    } as never);
 
     const mockRequest = new Request("http://localhost/api/avatar");
-
-    mockPrisma.quarantinedUpload.create.mockResolvedValue({} as never);
 
     await quarantineUpload({
       userId: "user2",
@@ -231,14 +265,92 @@ describe("quarantineUpload", () => {
       mimeType: "image/png",
       uploadEndpoint: "/api/avatar",
       request: mockRequest,
+      imageBuffer: Buffer.from("fake-image"),
     });
 
-    expect(mockPrisma.quarantinedUpload.create).toHaveBeenCalledWith({
+    expect(freshPrisma.quarantinedUpload.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         ipAddress: null,
         userAgent: null,
         referer: null,
       }),
     });
+  });
+
+  it("triggers NCMEC report when configured", async () => {
+    const { quarantineUpload } = await loadModule();
+    const { prisma: freshPrisma } = await import("@/lib/prisma");
+    const ncmec = await import("@/lib/ncmec-report");
+
+    vi.mocked(freshPrisma.quarantinedUpload.create).mockResolvedValue({
+      id: "quarantine-3",
+      createdAt: new Date("2026-01-01"),
+    } as never);
+    vi.mocked(freshPrisma.user.findUnique).mockResolvedValue({
+      username: "testuser",
+      email: "test@example.com",
+    } as never);
+    vi.mocked(ncmec.isNCMECConfigured).mockReturnValue(true);
+    vi.mocked(ncmec.submitNCMECReport).mockResolvedValue({ reportId: 99999 });
+
+    const mockRequest = new Request("http://localhost/api/upload", {
+      headers: { "x-forwarded-for": "10.0.0.1", "user-agent": "TestAgent" },
+    });
+
+    await quarantineUpload({
+      userId: "user3",
+      classification: "csam",
+      sha256: "abc123",
+      fileName: "bad.jpg",
+      fileSize: 5000,
+      mimeType: "image/jpeg",
+      uploadEndpoint: "/api/upload",
+      request: mockRequest,
+      imageBuffer: Buffer.from("image-data"),
+    });
+
+    // Allow the fire-and-forget promise to resolve
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(ncmec.submitNCMECReport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        quarantinedUploadId: "quarantine-3",
+        userId: "user3",
+        username: "testuser",
+        email: "test@example.com",
+        classification: "csam",
+        sha256: "abc123",
+      })
+    );
+  });
+
+  it("does not trigger NCMEC report when not configured", async () => {
+    const { quarantineUpload } = await loadModule();
+    const { prisma: freshPrisma } = await import("@/lib/prisma");
+    const ncmec = await import("@/lib/ncmec-report");
+
+    vi.mocked(freshPrisma.quarantinedUpload.create).mockResolvedValue({
+      id: "quarantine-4",
+      createdAt: new Date("2026-01-01"),
+    } as never);
+    vi.mocked(ncmec.isNCMECConfigured).mockReturnValue(false);
+
+    const mockRequest = new Request("http://localhost/api/upload");
+
+    await quarantineUpload({
+      userId: "user4",
+      classification: "csam",
+      sha256: "xyz",
+      fileName: "test.jpg",
+      fileSize: 1000,
+      mimeType: "image/jpeg",
+      uploadEndpoint: "/api/upload",
+      request: mockRequest,
+      imageBuffer: Buffer.from("data"),
+    });
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(ncmec.submitNCMECReport).not.toHaveBeenCalled();
   });
 });
