@@ -156,10 +156,10 @@ test.describe("Notifications @slow", () => {
     await page.goto("/notifications");
     await page.waitForTimeout(2000);
 
-    // Click on the notification (use force to avoid re-render instability)
+    // Click on the notification
     const notifItem = page.getByText(TEST_USER_2.displayName).first();
     await expect(notifItem).toBeVisible({ timeout: 10000 });
-    await notifItem.click({ force: true });
+    await notifItem.click();
 
     // Navigate back to notifications
     await page.goto("/notifications");
@@ -180,11 +180,11 @@ test.describe("Notifications @slow", () => {
     // Wait for notifications to render before interacting
     await expect(page.getByText(TEST_USER_2.displayName).first()).toBeVisible({ timeout: 10000 });
 
-    const markAllButton = page.getByRole("button", { name: /mark all/i }).first();
+    // Use exact name to target the notification list button, not the bell dropdown's
+    // "Mark all read" button which has independent state
+    const markAllButton = page.getByRole("button", { name: "Mark all as read" });
     await expect(markAllButton).toBeVisible({ timeout: 10000 });
-
-    // Use page.evaluate to click via JS to avoid pointer-event interception issues
-    await markAllButton.evaluate((el: HTMLElement) => el.click());
+    await markAllButton.click();
 
     // Button should disappear once all notifications are optimistically marked read
     await expect(markAllButton).not.toBeVisible({ timeout: 10000 });
