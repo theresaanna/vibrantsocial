@@ -35,6 +35,13 @@ interface MarketplacePostData {
   purchaseUrl: string;
   shippingOption: string;
   shippingPrice: number | null;
+  digitalFile?: {
+    fileName: string;
+    fileSize: number;
+    isFree: boolean;
+    couponCode: string | null;
+    downloadCount: number;
+  } | null;
 }
 
 /** Extract marketplace props to spread onto PostCard, if present. */
