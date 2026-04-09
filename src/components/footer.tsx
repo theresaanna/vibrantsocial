@@ -32,12 +32,12 @@ export function Footer() {
           Cookie Policy
         </Link>
         <span className="hidden text-xs text-zinc-300 sm:inline dark:text-zinc-700">·</span>
-        <a
-          href="mailto:vibrantsocial@proton.me"
+        <Link
+          href="/support"
           className="col-span-2 text-xs text-zinc-400 hover:text-zinc-600 sm:col-span-1 dark:text-zinc-500 dark:hover:text-zinc-300"
         >
           Support
-        </a>
+        </Link>
       </div>
     </footer>
   );
