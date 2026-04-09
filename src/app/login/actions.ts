@@ -9,7 +9,7 @@ import { loginSchema, parseFormData } from "@/lib/validations";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
-import { createPendingTwoFactorToken } from "./two-factor/actions";
+import { createPendingTwoFactorToken } from "@/lib/two-factor-pending";
 
 interface LoginState {
   success: boolean;

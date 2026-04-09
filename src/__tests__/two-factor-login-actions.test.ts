@@ -54,8 +54,8 @@ vi.mock("@simplewebauthn/server", () => ({
 import { prisma } from "@/lib/prisma";
 import { signIn } from "@/auth";
 import { verifyTOTPCode, verifyBackupCode } from "@/lib/two-factor";
+import { createPendingTwoFactorToken } from "@/lib/two-factor-pending";
 import {
-  createPendingTwoFactorToken,
   verifyTwoFactorLogin,
   verifyBackupCodeLogin,
   hasPasskeysForPending,

@@ -39,7 +39,7 @@ vi.mock("@/lib/validations", () => ({
 }));
 
 const mockCreateToken = vi.fn(() => "pending-token-123");
-vi.mock("@/app/login/two-factor/actions", () => ({
+vi.mock("@/lib/two-factor-pending", () => ({
   createPendingTwoFactorToken: (...args: unknown[]) => mockCreateToken(...args),
 }));
 
