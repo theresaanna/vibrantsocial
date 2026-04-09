@@ -58,13 +58,15 @@ async function ncmecFetch(
   body: string | Uint8Array,
   contentType: string
 ): Promise<Response> {
+  const fetchBody: BodyInit =
+    typeof body === "string" ? body : new Blob([body], { type: contentType });
   const response = await fetch(`${getBaseUrl()}${endpoint}`, {
     method: "POST",
     headers: {
       "Content-Type": contentType,
       Authorization: getAuthHeader(),
     },
-    body: body as BodyInit,
+    body: fetchBody,
   });
 
   if (!response.ok) {
