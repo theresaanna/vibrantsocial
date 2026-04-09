@@ -13,6 +13,7 @@ import {
 import type { ActionState } from "@/lib/action-utils";
 
 const MAX_STATUS_LENGTH = 100;
+const STATUS_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 2 weeks
 
 // ---------------------------------------------------------------------------
 // Types
@@ -218,8 +219,10 @@ export async function getFriendStatuses(
 
   if (friendIds.length === 0) return [];
 
+  const twoWeeksAgo = new Date(Date.now() - STATUS_TTL_MS);
+
   const statuses = await prisma.userStatus.findMany({
-    where: { userId: { in: friendIds } },
+    where: { userId: { in: friendIds }, createdAt: { gte: twoWeeksAgo } },
     orderBy: { createdAt: "desc" },
     distinct: ["userId"],
     take: limit,
@@ -240,9 +243,11 @@ export async function pollStatuses(
   if (!session?.user?.id) return { ownStatus: null, friendStatuses: [] };
   const userId = session.user.id;
 
+  const twoWeeksAgo = new Date(Date.now() - STATUS_TTL_MS);
+
   const [ownStatuses, friendStatuses] = await Promise.all([
     prisma.userStatus.findMany({
-      where: { userId },
+      where: { userId, createdAt: { gte: twoWeeksAgo } },
       orderBy: { createdAt: "desc" },
       take: 1,
       include: statusInclude(userId),
