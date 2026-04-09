@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ResetPasswordForm } from "./reset-password-form";
 
@@ -14,8 +12,6 @@ export default async function ResetPasswordPage({
 }: {
   searchParams: Promise<{ token?: string; email?: string }>;
 }) {
-  const session = await auth();
-  if (session) redirect("/feed");
 
   const { token, email } = await searchParams;
 

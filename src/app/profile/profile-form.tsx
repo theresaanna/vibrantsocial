@@ -272,6 +272,9 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
         pendingEmail={pendingEmail}
       />
 
+      {/* Change Password */}
+      <PasswordSection isCredentialsUser={isCredentialsUser} />
+
       {/* Phone verification */}
       <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
         <p className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
@@ -753,9 +756,6 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
 
       {/* Linked Accounts */}
       <LinkedAccountsSection />
-
-      {/* Change Password */}
-      <PasswordSection isCredentialsUser={isCredentialsUser} />
 
       {/* Delete Account */}
       <DeleteAccountSection username={user.username} />

@@ -1,7 +1,6 @@
 "use server";
 
 import crypto from "crypto";
-import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { requireAuthWithRateLimit, isActionError } from "@/lib/action-utils";
@@ -11,9 +10,8 @@ import { revalidatePath } from "next/cache";
 import { isValidFrameId } from "@/lib/profile-frames";
 import { checkAndExpirePremium } from "@/lib/premium";
 import { invalidate, cacheKeys } from "@/lib/cache";
-import { sendEmailVerificationEmail } from "@/lib/email";
+import { sendEmailVerificationEmail, sendPasswordResetEmail } from "@/lib/email";
 import { inngest } from "@/lib/inngest";
-import { changePasswordSchema, parseFormData } from "@/lib/validations";
 
 const MAX_BIO_REVISIONS = 20;
 
@@ -420,48 +418,47 @@ export async function resendVerificationEmail(): Promise<ActionState> {
   return { success: true, message: "Verification email sent" };
 }
 
-export async function changePassword(
-  _prevState: ActionState,
-  formData: FormData
-): Promise<ActionState> {
+export async function requestPasswordChangeEmail(): Promise<ActionState> {
   const result = await requireAuthWithRateLimit("change-password");
   if (isActionError(result)) return result;
   const session = result;
 
-  const parsed = parseFormData(
-    changePasswordSchema,
-    formData,
-    ["currentPassword", "newPassword", "confirmNewPassword"]
-  );
-  if (!parsed.success) {
-    return { success: false, message: parsed.error };
-  }
-  const { currentPassword, newPassword } = parsed.data;
-
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { passwordHash: true },
+    select: { email: true, passwordHash: true },
   });
 
-  if (!user?.passwordHash) {
+  if (!user?.email) {
+    return { success: false, message: "No email address on file" };
+  }
+
+  if (!user.passwordHash) {
     return {
       success: false,
       message: "Your account uses social login. Password cannot be changed here.",
     };
   }
 
-  const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
-  if (!isValid) {
-    return { success: false, message: "Current password is incorrect" };
-  }
-
-  const passwordHash = await bcrypt.hash(newPassword, 12);
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data: { passwordHash },
+  // Clean up any existing password-reset tokens for this email
+  await prisma.verificationToken.deleteMany({
+    where: { identifier: user.email },
   });
 
-  return { success: true, message: "Password changed successfully" };
+  const token = crypto.randomUUID();
+  const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+  await prisma.verificationToken.create({
+    data: {
+      identifier: user.email,
+      token,
+      expires,
+    },
+  });
+
+  // Fire-and-forget
+  sendPasswordResetEmail({ toEmail: user.email, token });
+
+  return { success: true, message: "Password reset link sent! Check your inbox." };
 }
 
 const EMPTY_LEXICAL_CONTENT = '{"root":{"children":[],"direction":null,"format":"","indent":0,"type":"root","version":1}}';

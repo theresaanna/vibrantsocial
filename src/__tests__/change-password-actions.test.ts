@@ -8,16 +8,19 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     user: {
       findUnique: vi.fn(),
-      update: vi.fn(),
+    },
+    verificationToken: {
+      deleteMany: vi.fn(),
+      create: vi.fn(),
     },
   },
 }));
 
-vi.mock("bcryptjs", () => ({
-  default: {
-    compare: vi.fn(),
-    hash: vi.fn().mockResolvedValue("new_hashed_password"),
-  },
+const mockSendPasswordResetEmail = vi.fn();
+vi.mock("@/lib/email", () => ({
+  sendEmailVerificationEmail: vi.fn(),
+  sendPasswordResetEmail: (...args: unknown[]) =>
+    mockSendPasswordResetEmail(...args),
 }));
 
 vi.mock("@/lib/cache", () => ({
@@ -29,125 +32,89 @@ vi.mock("@/lib/cache", () => ({
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
-import { changePassword } from "@/app/profile/actions";
+import { requestPasswordChangeEmail } from "@/app/profile/actions";
 
 const mockAuth = vi.mocked(auth);
 const mockPrisma = vi.mocked(prisma);
-const mockBcrypt = vi.mocked(bcrypt);
 
-function makeFormData(data: Record<string, string>): FormData {
-  const fd = new FormData();
-  for (const [key, value] of Object.entries(data)) {
-    fd.set(key, value);
-  }
-  return fd;
-}
-
-const prevState = { success: false, message: "" };
-const validForm = {
-  currentPassword: "OldPass123!",
-  newPassword: "NewPass456!",
-  confirmNewPassword: "NewPass456!",
-};
-
-describe("changePassword", () => {
+describe("requestPasswordChangeEmail", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("returns error if not authenticated", async () => {
     mockAuth.mockResolvedValueOnce(null as never);
-    const result = await changePassword(prevState, makeFormData(validForm));
+    const result = await requestPasswordChangeEmail();
     expect(result.success).toBe(false);
     expect(result.message).toBe("Not authenticated");
   });
 
-  it("returns error if current password is empty", async () => {
+  it("returns error if user has no email", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "u1" } } as never);
-    const result = await changePassword(
-      prevState,
-      makeFormData({ ...validForm, currentPassword: "" })
-    );
+    mockPrisma.user.findUnique.mockResolvedValueOnce({
+      email: null,
+      passwordHash: "hash",
+    } as never);
+    const result = await requestPasswordChangeEmail();
     expect(result.success).toBe(false);
-    expect(result.message).toBe("Current password is required");
-  });
-
-  it("returns error if new password is too short", async () => {
-    mockAuth.mockResolvedValueOnce({ user: { id: "u1" } } as never);
-    const result = await changePassword(
-      prevState,
-      makeFormData({ ...validForm, newPassword: "short", confirmNewPassword: "short" })
-    );
-    expect(result.success).toBe(false);
-    expect(result.message).toBe("Password must be at least 8 characters");
-  });
-
-  it("returns error if new password matches current password", async () => {
-    mockAuth.mockResolvedValueOnce({ user: { id: "u1" } } as never);
-    const result = await changePassword(
-      prevState,
-      makeFormData({
-        currentPassword: "SamePass123!",
-        newPassword: "SamePass123!",
-        confirmNewPassword: "SamePass123!",
-      })
-    );
-    expect(result.success).toBe(false);
-    expect(result.message).toBe(
-      "New password must be different from current password"
-    );
-  });
-
-  it("returns error if passwords do not match", async () => {
-    mockAuth.mockResolvedValueOnce({ user: { id: "u1" } } as never);
-    const result = await changePassword(
-      prevState,
-      makeFormData({
-        ...validForm,
-        confirmNewPassword: "Mismatch999!",
-      })
-    );
-    expect(result.success).toBe(false);
-    expect(result.message).toBe("Passwords do not match");
+    expect(result.message).toBe("No email address on file");
   });
 
   it("returns error for OAuth-only account (no passwordHash)", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "u1" } } as never);
     mockPrisma.user.findUnique.mockResolvedValueOnce({
+      email: "user@example.com",
       passwordHash: null,
     } as never);
-    const result = await changePassword(prevState, makeFormData(validForm));
+    const result = await requestPasswordChangeEmail();
     expect(result.success).toBe(false);
     expect(result.message).toContain("social login");
   });
 
-  it("returns error if current password is incorrect", async () => {
+  it("cleans up existing tokens and sends reset email on success", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "u1" } } as never);
     mockPrisma.user.findUnique.mockResolvedValueOnce({
+      email: "user@example.com",
       passwordHash: "existing_hash",
     } as never);
-    mockBcrypt.compare.mockResolvedValueOnce(false as never);
+    mockPrisma.verificationToken.deleteMany.mockResolvedValueOnce({} as never);
+    mockPrisma.verificationToken.create.mockResolvedValueOnce({} as never);
 
-    const result = await changePassword(prevState, makeFormData(validForm));
-    expect(result.success).toBe(false);
-    expect(result.message).toBe("Current password is incorrect");
-    expect(mockBcrypt.compare).toHaveBeenCalledWith("OldPass123!", "existing_hash");
+    const result = await requestPasswordChangeEmail();
+
+    expect(result.success).toBe(true);
+    expect(result.message).toContain("reset link sent");
+    expect(mockPrisma.verificationToken.deleteMany).toHaveBeenCalledWith({
+      where: { identifier: "user@example.com" },
+    });
+    expect(mockPrisma.verificationToken.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        identifier: "user@example.com",
+        token: expect.any(String),
+        expires: expect.any(Date),
+      }),
+    });
+    expect(mockSendPasswordResetEmail).toHaveBeenCalledWith({
+      toEmail: "user@example.com",
+      token: expect.any(String),
+    });
   });
 
-  it("updates password on success", async () => {
+  it("creates token with 1-hour expiry", async () => {
     mockAuth.mockResolvedValueOnce({ user: { id: "u1" } } as never);
     mockPrisma.user.findUnique.mockResolvedValueOnce({
+      email: "user@example.com",
       passwordHash: "existing_hash",
     } as never);
-    mockBcrypt.compare.mockResolvedValueOnce(true as never);
-    mockPrisma.user.update.mockResolvedValueOnce({} as never);
+    mockPrisma.verificationToken.deleteMany.mockResolvedValueOnce({} as never);
+    mockPrisma.verificationToken.create.mockResolvedValueOnce({} as never);
 
-    const result = await changePassword(prevState, makeFormData(validForm));
-    expect(result.success).toBe(true);
-    expect(result.message).toBe("Password changed successfully");
-    expect(mockBcrypt.hash).toHaveBeenCalledWith("NewPass456!", 12);
-    expect(mockPrisma.user.update).toHaveBeenCalledWith({
-      where: { id: "u1" },
-      data: { passwordHash: "new_hashed_password" },
-    });
+    const before = Date.now();
+    await requestPasswordChangeEmail();
+    const after = Date.now();
+
+    const createCall = mockPrisma.verificationToken.create.mock.calls[0][0];
+    const expires = (createCall.data as { expires: Date }).expires.getTime();
+    // Token should expire ~1 hour from now (within a few seconds tolerance)
+    expect(expires).toBeGreaterThanOrEqual(before + 59 * 60 * 1000);
+    expect(expires).toBeLessThanOrEqual(after + 61 * 60 * 1000);
   });
 });
