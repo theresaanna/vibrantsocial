@@ -33,6 +33,7 @@ jobs:
       AUTH_SECRET: e2e-test-secret-at-least-32-chars-long
       NEXTAUTH_URL: http://localhost:3000
       AUTH_TRUST_HOST: "true"
+      TWO_FACTOR_ENCRYPTION_KEY: f842d12198d7bb595c860be3ae1a139f0e16cae20929f54bbf68771d2aafbdfb
       CI: true
 
     steps:

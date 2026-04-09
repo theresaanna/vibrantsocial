@@ -285,7 +285,7 @@ test.describe("Notifications @slow", () => {
     const bell = page.locator('button[aria-label="Notifications"]');
     await bell.click();
 
-    const viewAllLink = page.getByText(/view all/i);
+    const viewAllLink = page.getByRole("link", { name: "View all notifications" });
     await expect(viewAllLink).toBeVisible({ timeout: 10000 });
     await viewAllLink.click();
 

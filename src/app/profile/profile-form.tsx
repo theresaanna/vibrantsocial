@@ -14,6 +14,7 @@ import { StarsSection } from "./stars-section";
 import { LinkedAccountsSection } from "./linked-accounts-section";
 import { DeleteAccountSection } from "./delete-account-section";
 import { PasswordSection } from "./password-section";
+import { TwoFactorSection } from "./two-factor-section";
 
 interface ProfileFormProps {
   user: {
@@ -46,6 +47,7 @@ interface ProfileFormProps {
   hideWallFromFeed: boolean;
   phoneVerified: boolean;
   phoneNumber: string | null;
+  twoFactorEnabled: boolean;
   isCredentialsUser: boolean;
   birthdayMonth: number | null;
   birthdayDay: number | null;
@@ -63,7 +65,7 @@ interface ProfileState {
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
-export function ProfileForm({ user, email, emailVerified, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, hideSensitiveOverlay, hideNsfwOverlay, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnSubscribedComment, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, isCredentialsUser, birthdayMonth: initialBirthdayMonth, birthdayDay: initialBirthdayDay, isPremium, stars, starsSpent, referralCode, userEmail }: ProfileFormProps) {
+export function ProfileForm({ user, email, emailVerified, pendingEmail, currentAvatar, oauthImage, ageVerified, showGraphicByDefault, showNsfwContent, hideSensitiveOverlay, hideNsfwOverlay, emailOnComment, emailOnNewChat, emailOnMention, emailOnFriendRequest, emailOnSubscribedPost, emailOnSubscribedComment, emailOnTagPost, pushEnabled: initialPushEnabled, isProfilePublic, hideWallFromFeed, phoneVerified, phoneNumber, twoFactorEnabled, isCredentialsUser, birthdayMonth: initialBirthdayMonth, birthdayDay: initialBirthdayDay, isPremium, stars, starsSpent, referralCode, userEmail }: ProfileFormProps) {
   const { update } = useSession();
   const [usernameValue, setUsernameValue] = useState(user.username ?? "");
   const [displayNameValue, setDisplayNameValue] = useState(user.displayName ?? "");
@@ -274,6 +276,12 @@ export function ProfileForm({ user, email, emailVerified, pendingEmail, currentA
 
       {/* Change Password */}
       <PasswordSection isCredentialsUser={isCredentialsUser} />
+
+      {/* Two-Factor Authentication */}
+      <TwoFactorSection
+        twoFactorEnabled={twoFactorEnabled}
+        isCredentialsUser={isCredentialsUser}
+      />
 
       {/* Phone verification */}
       <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
