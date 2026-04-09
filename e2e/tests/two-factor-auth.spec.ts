@@ -238,7 +238,7 @@ test.describe("Two-Factor Authentication", () => {
       await page.getByTestId("done-backup-codes").click();
 
       // Should show enabled status
-      await expect(page.getByText("Enabled")).toBeVisible();
+      await expect(page.getByTestId("two-factor-section").getByText("Enabled")).toBeVisible();
       await expect(page.getByTestId("disable-2fa-button")).toBeVisible();
     });
   });
@@ -256,7 +256,7 @@ test.describe("Two-Factor Authentication", () => {
       await forceLogin;
       await page.goto("/profile");
 
-      await expect(page.getByText("Enabled")).toBeVisible();
+      await expect(page.getByTestId("two-factor-section").getByText("Enabled")).toBeVisible();
       await page.getByTestId("disable-2fa-button").click();
 
       await expect(page.getByTestId("2fa-password-input")).toBeVisible();
@@ -445,7 +445,7 @@ test.describe("Two-Factor Authentication", () => {
       await forceLogin;
       await page.goto("/profile");
 
-      await expect(page.getByText("Enabled")).toBeVisible();
+      await expect(page.getByTestId("two-factor-section").getByText("Enabled")).toBeVisible();
 
       // Click regenerate (shares the disable flow button which shows password input)
       await page.getByTestId("show-regenerate-backup").click();
