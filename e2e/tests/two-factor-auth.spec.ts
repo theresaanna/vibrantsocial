@@ -121,7 +121,7 @@ test.describe("Two-Factor Authentication", () => {
       await forceLogin;
       await page.goto("/profile");
       await expect(page.getByTestId("two-factor-section")).toBeVisible();
-      await expect(page.getByText("Two-Factor Authentication")).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Two-Factor Authentication" })).toBeVisible();
       await expect(page.getByText("Not enabled")).toBeVisible();
     });
 
@@ -316,7 +316,7 @@ test.describe("Two-Factor Authentication", () => {
       // Should redirect to 2FA page
       await page.waitForURL("**/login/two-factor**", { timeout: 15000 });
       await expect(
-        page.getByText("Two-Factor Authentication")
+        page.getByRole("heading", { name: "Two-Factor Authentication" })
       ).toBeVisible();
       await expect(page.getByTestId("totp-input")).toBeVisible();
     });
