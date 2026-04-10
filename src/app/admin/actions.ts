@@ -75,6 +75,79 @@ export async function unsuspendUser(formData: FormData) {
   revalidatePath("/admin");
 }
 
+export async function removeWarning(formData: FormData) {
+  const session = await auth();
+  const adminId = requireAdmin(session?.user?.id);
+
+  const userId = formData.get("userId") as string;
+  if (!userId) throw new Error("Missing userId");
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { contentWarnings: true },
+  });
+
+  if (!user || user.contentWarnings <= 0) return;
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { contentWarnings: { decrement: 1 } },
+  });
+
+  await prisma.moderationAction.create({
+    data: {
+      adminId,
+      userId,
+      action: "remove_warning",
+    },
+  });
+
+  revalidatePath("/admin");
+}
+
+export async function resetWarnings(formData: FormData) {
+  const session = await auth();
+  const adminId = requireAdmin(session?.user?.id);
+
+  const userId = formData.get("userId") as string;
+  if (!userId) throw new Error("Missing userId");
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { contentWarnings: 0 },
+  });
+
+  await prisma.moderationAction.create({
+    data: {
+      adminId,
+      userId,
+      action: "reset_warnings",
+    },
+  });
+
+  revalidatePath("/admin");
+}
+
+export async function reviewReport(formData: FormData) {
+  const session = await auth();
+  const adminId = requireAdmin(session?.user?.id);
+
+  const reportId = formData.get("reportId") as string;
+  const status = formData.get("status") as string || "reviewed";
+  if (!reportId) throw new Error("Missing reportId");
+
+  await prisma.report.update({
+    where: { id: reportId },
+    data: {
+      status,
+      reviewedBy: adminId,
+      reviewedAt: new Date(),
+    },
+  });
+
+  revalidatePath("/admin");
+}
+
 export async function reviewViolation(formData: FormData) {
   const session = await auth();
   requireAdmin(session?.user?.id);

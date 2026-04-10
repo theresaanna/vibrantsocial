@@ -177,6 +177,8 @@ model User {
   moderationActionsPerformed ModerationAction[] @relation("moderationActionAdmin")
   appeals               Appeal[] @relation("appealUser")
   appealsReviewed       Appeal[] @relation("appealReviewer")
+  reportsSubmitted      Report[] @relation("reportReporter")
+  reportsReviewed       Report[] @relation("reportReviewer")
 
   // Close friends
   closeFriends  CloseFriend[] @relation("closeFriendOwner")
@@ -199,6 +201,10 @@ model User {
   blockedUsers Block[]      @relation("blocker")
   blockedBy    Block[]      @relation("blocked")
   phoneBlocks  PhoneBlock[] @relation("phoneBlockBlocker")
+
+  // Mutes
+  mutedUsers Mute[] @relation("muter")
+  mutedBy    Mute[] @relation("muted")
 
   // Chat abuse tracking
   chatAbuseFlagsSent     ChatAbuseFlag[]      @relation("chatAbuseFlagSender")
@@ -671,6 +677,19 @@ model Block {
   @@index([blockedId])
 }
 
+model Mute {
+  id        String   @id @default(cuid())
+  muterId   String
+  mutedId   String
+  createdAt DateTime @default(now())
+
+  muter User @relation("muter", fields: [muterId], references: [id], onDelete: Cascade)
+  muted User @relation("muted", fields: [mutedId], references: [id], onDelete: Cascade)
+
+  @@unique([muterId, mutedId])
+  @@index([muterId])
+}
+
 // Phone-based blocks (block all accounts sharing a verified phone number)
 model PhoneBlock {
   id          String   @id @default(cuid())
@@ -910,6 +929,26 @@ model ContentViolation {
 
   @@index([userId])
   @@index([postId])
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  reporterId  String
+  contentType String   // "post", "comment", "profile", "conversation"
+  contentId   String
+  category    String   // "harassment", "hate_speech", "spam", "csam", etc.
+  description String
+  status      String   @default("pending") // "pending", "reviewed", "actioned", "dismissed"
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  reporter User  @relation("reportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reviewer User? @relation("reportReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+
+  @@index([reporterId])
+  @@index([status])
+  @@index([contentType, contentId])
 }
 
 model ModerationAction {

@@ -1,9 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { suspendUser, unsuspendUser, reviewViolation, reviewAppeal } from "./actions";
+import { suspendUser, unsuspendUser, reviewViolation, reviewAppeal, reviewReport, removeWarning, resetWarnings } from "./actions";
 
-type Tab = "violations" | "appeals" | "users" | "log";
+type Tab = "reports" | "violations" | "appeals" | "users" | "log";
+
+interface ReportRecord {
+  id: string;
+  contentType: string;
+  contentId: string;
+  category: string;
+  description: string;
+  status: string;
+  reviewedAt: Date | null;
+  createdAt: Date;
+  reporter: { username: string | null };
+  reviewer: { username: string | null } | null;
+}
 
 interface Violation {
   id: string;
@@ -50,24 +63,28 @@ interface ModerationActionRecord {
 }
 
 export function AdminDashboard({
+  reports,
   violations,
   appeals,
   flaggedUsers,
   recentActions,
 }: {
+  reports: ReportRecord[];
   violations: Violation[];
   appeals: AppealRecord[];
   flaggedUsers: FlaggedUser[];
   recentActions: ModerationActionRecord[];
 }) {
-  const [tab, setTab] = useState<Tab>("violations");
+  const [tab, setTab] = useState<Tab>("reports");
+  const pendingReports = reports.filter((r) => r.status === "pending").length;
   const pendingAppeals = appeals.filter((a) => a.status === "pending").length;
   const pendingViolations = violations.filter((v) => v.action === "pending_review").length;
 
   return (
     <div>
-      <div className="mb-4 flex gap-1 rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-700 dark:bg-zinc-800">
+      <div className="mb-4 flex gap-1 overflow-x-auto rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-700 dark:bg-zinc-800">
         {([
+          ["reports", `Reports${pendingReports ? ` (${pendingReports})` : ""}`],
           ["violations", `Violations${pendingViolations ? ` (${pendingViolations})` : ""}`],
           ["appeals", `Appeals${pendingAppeals ? ` (${pendingAppeals})` : ""}`],
           ["users", "Users"],
@@ -87,10 +104,80 @@ export function AdminDashboard({
         ))}
       </div>
 
+      {tab === "reports" && <ReportsTab reports={reports} />}
       {tab === "violations" && <ViolationsTab violations={violations} />}
       {tab === "appeals" && <AppealsTab appeals={appeals} />}
       {tab === "users" && <UsersTab users={flaggedUsers} />}
       {tab === "log" && <ActionLogTab actions={recentActions} />}
+    </div>
+  );
+}
+
+function ReportsTab({ reports }: { reports: ReportRecord[] }) {
+  const categoryColors: Record<string, string> = {
+    harassment: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+    hate_speech: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    spam: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+    csam: "bg-red-200 text-red-800 dark:bg-red-900/50 dark:text-red-300",
+    self_harm: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+    violence: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    nudity_unmarked: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400",
+    impersonation: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    privacy: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    other: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+  };
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+      {reports.length === 0 ? (
+        <p className="px-4 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">No reports submitted.</p>
+      ) : (
+        <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+          {reports.map((r) => (
+            <li key={r.id} className="px-4 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${categoryColors[r.category] || categoryColors.other}`}>
+                      {r.category.replace(/_/g, " ")}
+                    </span>
+                    <span className="text-xs text-zinc-400">{r.contentType}</span>
+                    <span className={`inline-block rounded px-1.5 py-0.5 text-xs ${
+                      r.status === "pending" ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                        : r.status === "reviewed" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                    }`}>
+                      {r.status}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">
+                    Reported by <span className="font-medium">@{r.reporter.username}</span>
+                    {" — "}{r.description.slice(0, 120)}{r.description.length > 120 ? "…" : ""}
+                  </p>
+                  {r.reviewer && (
+                    <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                      Reviewed by @{r.reviewer.username}
+                    </p>
+                  )}
+                  <p className="mt-0.5 text-xs text-zinc-400">{new Date(r.createdAt).toLocaleString()}</p>
+                </div>
+                {r.status === "pending" && (
+                  <form action={reviewReport}>
+                    <input type="hidden" name="reportId" value={r.id} />
+                    <input type="hidden" name="status" value="reviewed" />
+                    <button
+                      type="submit"
+                      className="rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                    >
+                      Mark Reviewed
+                    </button>
+                  </form>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -297,6 +384,30 @@ function UserRow({ user }: { user: FlaggedUser }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {user.contentWarnings > 0 && (
+            <>
+              <form action={removeWarning}>
+                <input type="hidden" name="userId" value={user.id} />
+                <button
+                  type="submit"
+                  className="rounded-lg bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+                >
+                  −1 Warning
+                </button>
+              </form>
+              {user.contentWarnings > 1 && (
+                <form action={resetWarnings}>
+                  <input type="hidden" name="userId" value={user.id} />
+                  <button
+                    type="submit"
+                    className="rounded-lg bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+                  >
+                    Reset All
+                  </button>
+                </form>
+              )}
+            </>
+          )}
           {user.suspended ? (
             <form action={unsuspendUser}>
               <input type="hidden" name="userId" value={user.id} />

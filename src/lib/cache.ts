@@ -91,6 +91,7 @@ export const cacheKeys = {
   },
   profileTabFlags: (userId: string) => `user:${userId}:tab-flags`,
   userBlockRelationships: (userId: string) => `user:${userId}:block-rels`,
+  userMutedIds: (userId: string) => `user:${userId}:muted`,
   userSearch: (userId: string, query: string) => `search:users:${userId}:${query}`,
   postSearch: (userId: string, query: string) => `search:posts:${userId}:${query}`,
   tagSearch: (query: string, includeNsfw: boolean) => `search:tags:${query}:${includeNsfw ? 1 : 0}`,

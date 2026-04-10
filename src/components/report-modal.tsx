@@ -72,6 +72,25 @@ export function ReportModal({ contentType, contentId, isOpen, onClose }: ReportM
               for reference.
             </p>
 
+            <select
+              name="category"
+              required
+              className="mt-3 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-400"
+              data-testid="report-category"
+            >
+              <option value="">Select a category...</option>
+              <option value="harassment">Harassment or bullying</option>
+              <option value="hate_speech">Hate speech</option>
+              <option value="spam">Spam or scam</option>
+              <option value="csam">Child sexual abuse material (CSAM)</option>
+              <option value="self_harm">Self-harm or suicide</option>
+              <option value="violence">Violence or threats</option>
+              <option value="nudity_unmarked">Unmarked adult content</option>
+              <option value="impersonation">Impersonation</option>
+              <option value="privacy">Privacy violation</option>
+              <option value="other">Other</option>
+            </select>
+
             <textarea
               name="description"
               required

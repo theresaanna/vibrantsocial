@@ -12,6 +12,11 @@ export interface ReportState {
 
 const VALID_CONTENT_TYPES = ["post", "comment", "profile", "conversation"] as const;
 
+const VALID_CATEGORIES = [
+  "harassment", "hate_speech", "spam", "csam", "self_harm",
+  "violence", "nudity_unmarked", "impersonation", "privacy", "other",
+] as const;
+
 export async function submitReport(
   _prevState: ReportState,
   formData: FormData
@@ -27,6 +32,7 @@ export async function submitReport(
 
   const contentType = formData.get("contentType") as string;
   const contentId = formData.get("contentId") as string;
+  const category = formData.get("category") as string;
   const description = (formData.get("description") as string)?.trim();
 
   if (!contentType || !VALID_CONTENT_TYPES.includes(contentType as (typeof VALID_CONTENT_TYPES)[number])) {
@@ -35,6 +41,10 @@ export async function submitReport(
 
   if (!contentId) {
     return { success: false, message: "Missing content ID." };
+  }
+
+  if (!category || !VALID_CATEGORIES.includes(category as (typeof VALID_CATEGORIES)[number])) {
+    return { success: false, message: "Please select a report category." };
   }
 
   if (!description) {
@@ -89,6 +99,18 @@ export async function submitReport(
       : "Conversation not found";
   }
 
+  // Persist the report in the database for audit trail
+  await prisma.report.create({
+    data: {
+      reporterId: session.user.id,
+      contentType,
+      contentId,
+      category,
+      description,
+    },
+  });
+
+  // Also send email notification to admin
   await sendReportEmail({
     reporterUsername: reporter.username ?? "unknown",
     reporterEmail: reporter.email,
@@ -96,6 +118,7 @@ export async function submitReport(
     contentId,
     contentPreview,
     description,
+    category,
   });
 
   return {

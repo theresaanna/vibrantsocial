@@ -416,8 +416,9 @@ export async function sendReportEmail(params: {
   contentId: string;
   contentPreview: string;
   description: string;
+  category?: string;
 }) {
-  const { reporterUsername, reporterEmail, contentType, contentId, contentPreview, description } = params;
+  const { reporterUsername, reporterEmail, contentType, contentId, contentPreview, description, category } = params;
   const baseUrl = getBaseUrl();
 
   let contentUrl = baseUrl;
@@ -433,7 +434,7 @@ export async function sendReportEmail(params: {
     await getResend().emails.send({
       from: FROM_EMAIL,
       to: "vibrantsocial@proton.me",
-      subject: `Content Report: ${contentType} — ${contentId}`,
+      subject: `Content Report: ${category ? category.replace(/_/g, " ") + " — " : ""}${contentType} — ${contentId}`,
       html: `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
           <h2 style="color: #18181b; margin-bottom: 16px;">Content Report</h2>
@@ -442,6 +443,10 @@ export async function sendReportEmail(params: {
               <td style="padding: 8px 0; color: #71717a; font-size: 14px; vertical-align: top; width: 120px;">Reporter</td>
               <td style="padding: 8px 0; color: #18181b; font-size: 14px;">${escapeHtml(reporterUsername)} (${escapeHtml(reporterEmail)})</td>
             </tr>
+            ${category ? `<tr>
+              <td style="padding: 8px 0; color: #71717a; font-size: 14px; vertical-align: top;">Category</td>
+              <td style="padding: 8px 0; color: #18181b; font-size: 14px; font-weight: 600;">${escapeHtml(category.replace(/_/g, " "))}</td>
+            </tr>` : ""}
             <tr>
               <td style="padding: 8px 0; color: #71717a; font-size: 14px; vertical-align: top;">Content Type</td>
               <td style="padding: 8px 0; color: #18181b; font-size: 14px;">${escapeHtml(contentType)}</td>
