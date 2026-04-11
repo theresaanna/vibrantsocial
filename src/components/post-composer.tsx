@@ -538,7 +538,7 @@ function ScheduleSection({
             data-testid="schedule-datetime"
           />
           <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
-            Post will be published at this time
+            Post may publish up to 5 minutes after the scheduled time
           </p>
         </div>
       )}
