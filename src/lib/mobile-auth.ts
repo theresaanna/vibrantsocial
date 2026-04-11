@@ -82,7 +82,7 @@ export async function generateMobileTokenFromSession(session: Session): Promise<
 
 /** Internal helper to sign a mobile JWT from a payload. */
 function signMobileJwt(payload: MobileTokenPayload): Promise<string> {
-  return new SignJWT(payload satisfies MobileTokenPayload)
+  return new SignJWT({ ...payload } as Record<string, unknown>)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setIssuer(MOBILE_JWT_ISSUER)

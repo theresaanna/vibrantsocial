@@ -208,7 +208,7 @@ async function mobileFetchMarketplacePost(postId: string) {
     },
   });
 
-  if (!post || !post.marketplacePost) return null;
+  if (!post || !post.author || !post.marketplacePost) return null;
 
   // Extract media from Lexical content
   let media: { url: string; type: string }[] = [];
@@ -241,11 +241,9 @@ async function mobileFetchMarketplacePost(postId: string) {
 
   return {
     id: post.id,
-    title: post.marketplacePost.title || description.slice(0, 100),
+    title: description.slice(0, 100),
     description,
     price: post.marketplacePost.price,
-    currency: post.marketplacePost.currency ?? "USD",
-    condition: post.marketplacePost.condition ?? "",
     createdAt: post.createdAt.toISOString(),
     marketplacePostId: post.marketplacePost.id,
     media,
