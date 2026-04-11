@@ -14,6 +14,7 @@ import { auth } from "@/auth";
 import { generateMobileTokenFromSession } from "@/lib/mobile-auth";
 
 const APP_SCHEME = "vibrantsocial";
+const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_URL ?? "https://vibrantsocial.app";
 
 export async function GET(req: Request) {
   try {
@@ -64,7 +65,7 @@ function createCallbackResponse(token: string | null, error: string | null) {
         try {
           window.opener.postMessage(
             { type: "vibrantsocial-oauth", token: token, error: error },
-            "*"
+            ${JSON.stringify(APP_ORIGIN)}
           );
           setTimeout(function() { window.close(); }, 500);
           return;

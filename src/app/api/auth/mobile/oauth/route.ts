@@ -15,6 +15,7 @@ import { generateMobileTokenFromSession } from "@/lib/mobile-auth";
 import { corsHeaders, handleCorsPreflightRequest } from "@/lib/cors";
 
 const APP_SCHEME = "vibrantsocial";
+const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_URL ?? "https://vibrantsocial.app";
 const VALID_PROVIDERS = ["google", "discord"] as const;
 
 export async function OPTIONS(req: Request) {
@@ -99,7 +100,7 @@ function createTokenResponse(token: string | null, error: string | null) {
         try {
           window.opener.postMessage(
             { type: "vibrantsocial-oauth", token: token, error: error },
-            "*"
+            ${JSON.stringify(APP_ORIGIN)}
           );
           status.textContent = "Token sent, closing...";
           setTimeout(function() { window.close(); }, 1000);

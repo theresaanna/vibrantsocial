@@ -62,6 +62,22 @@ const SUBSCRIPTION_EXPIRED = 13;
 
 export async function POST(request: NextRequest) {
   try {
+    // Verify the Pub/Sub push authentication token
+    const verificationToken = process.env.GOOGLE_PUBSUB_VERIFICATION_TOKEN;
+    if (verificationToken) {
+      const url = new URL(request.url);
+      const token = url.searchParams.get("token");
+      if (token !== verificationToken) {
+        console.error("Google webhook: invalid Pub/Sub verification token");
+        return NextResponse.json(
+          { success: false, message: "Unauthorized" },
+          { status: 403 }
+        );
+      }
+    } else {
+      console.warn("Google webhook: GOOGLE_PUBSUB_VERIFICATION_TOKEN not set — skipping auth");
+    }
+
     const body: PubSubMessage = await request.json();
 
     // Decode the Pub/Sub message

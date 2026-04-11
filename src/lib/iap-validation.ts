@@ -159,7 +159,7 @@ export async function validateGooglePurchase(
 
   const accessToken = await getGoogleAccessToken();
 
-  const url = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${packageName}/purchases/subscriptionsv2/tokens/${purchaseToken}`;
+  const url = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${packageName}/purchases/subscriptionsv2/tokens/${encodeURIComponent(purchaseToken)}`;
 
   const response = await fetch(url, {
     headers: { Authorization: `Bearer ${accessToken}` },

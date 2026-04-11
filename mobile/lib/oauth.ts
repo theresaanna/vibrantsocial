@@ -133,8 +133,11 @@ async function startOAuthFlowWeb(oauthUrl: string, provider: OAuthProvider): Pro
     };
 
     // Listen for postMessage from the completion page
+    const expectedOrigin = new URL(API_BASE_URL).origin;
     const messageHandler = (event: MessageEvent) => {
       console.log("[oauth-web] Received message:", event.data?.type, event.origin);
+      // Only accept messages from our own server origin
+      if (event.origin !== expectedOrigin) return;
       if (event.data?.type === "vibrantsocial-oauth") {
         if (event.data.token) {
           handleSuccess(event.data.token);

@@ -3,12 +3,18 @@ import { prisma } from "@/lib/prisma";
 import { generateMobileToken } from "@/lib/mobile-auth";
 import { loginSchema } from "@vibrantsocial/shared/validations";
 import { corsJson, handleCorsPreflightRequest } from "@/lib/cors";
+import { authLimiter, checkRateLimit } from "@/lib/rate-limit";
 
 export async function OPTIONS(req: Request) {
   return handleCorsPreflightRequest(req);
 }
 
 export async function POST(req: Request) {
+  // Rate limit by IP
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const rateLimited = await checkRateLimit(authLimiter, `mobile-login:${ip}`);
+  if (rateLimited) return rateLimited;
+
   let body: unknown;
   try {
     body = await req.json();
@@ -55,10 +61,15 @@ export async function POST(req: Request) {
   if (user.twoFactorEnabled) {
     // Generate a short-lived pending token for 2FA verification
     const { SignJWT } = await import("jose");
-    const secret = new TextEncoder().encode(process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET ?? "");
+    const rawSecret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+    if (!rawSecret) {
+      return corsJson(req, { error: "Server configuration error" }, { status: 500 });
+    }
+    const secret = new TextEncoder().encode(rawSecret);
     const pendingToken = await new SignJWT({ sub: user.id, purpose: "2fa-pending" })
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
+      .setIssuer("vibrantsocial-mobile")
       .setExpirationTime("5m")
       .sign(secret);
 

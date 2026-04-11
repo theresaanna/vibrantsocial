@@ -11,7 +11,11 @@ import { prisma } from "@/lib/prisma";
 import type { Session } from "next-auth";
 
 // Use the NextAuth secret for signing mobile JWTs so tokens are compatible.
-const JWT_SECRET = new TextEncoder().encode(process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET ?? "");
+const rawSecret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+if (!rawSecret) {
+  throw new Error("AUTH_SECRET or NEXTAUTH_SECRET must be set for mobile JWT signing");
+}
+const JWT_SECRET = new TextEncoder().encode(rawSecret);
 
 const MOBILE_JWT_ISSUER = "vibrantsocial-mobile";
 const MOBILE_JWT_EXPIRY = "30d";

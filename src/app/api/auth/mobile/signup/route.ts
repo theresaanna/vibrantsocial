@@ -4,12 +4,18 @@ import { generateMobileToken } from "@/lib/mobile-auth";
 import { signupSchema } from "@vibrantsocial/shared/validations";
 import { autoFriendNewUser } from "@/lib/auto-friend";
 import { corsJson, handleCorsPreflightRequest } from "@/lib/cors";
+import { authLimiter, checkRateLimit } from "@/lib/rate-limit";
 
 export async function OPTIONS(req: Request) {
   return handleCorsPreflightRequest(req);
 }
 
 export async function POST(req: Request) {
+  // Rate limit by IP
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const rateLimited = await checkRateLimit(authLimiter, `mobile-signup:${ip}`);
+  if (rateLimited) return rateLimited;
+
   let body: unknown;
   try {
     body = await req.json();

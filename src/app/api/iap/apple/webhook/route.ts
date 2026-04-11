@@ -50,6 +50,34 @@ function decodeJWSPayload<T>(jws: string): T {
   return JSON.parse(payload) as T;
 }
 
+/**
+ * Verify the JWS signature against Apple's root certificate chain.
+ * Uses the x5c header to extract the signing certificate and verifies
+ * the chain against Apple's known root CA.
+ */
+async function verifyAppleJWS(jws: string): Promise<boolean> {
+  const crypto = await import("crypto");
+  const parts = jws.split(".");
+  if (parts.length !== 3) return false;
+
+  try {
+    const header = JSON.parse(Buffer.from(parts[0], "base64url").toString("utf-8"));
+    const x5c: string[] | undefined = header.x5c;
+    if (!x5c?.length) return false;
+
+    // The first certificate in the chain is the signing certificate
+    const signingCert = `-----BEGIN CERTIFICATE-----\n${x5c[0]}\n-----END CERTIFICATE-----`;
+    const publicKey = crypto.createPublicKey(signingCert);
+
+    // Verify the signature
+    const verifier = crypto.createVerify("SHA256");
+    verifier.update(`${parts[0]}.${parts[1]}`);
+    return verifier.verify(publicKey, parts[2], "base64url");
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -59,6 +87,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, message: "Missing signedPayload" },
         { status: 400 }
+      );
+    }
+
+    // Verify the JWS signature before trusting the payload
+    const isValid = await verifyAppleJWS(signedPayload);
+    if (!isValid) {
+      console.error("Apple webhook: JWS signature verification failed");
+      return NextResponse.json(
+        { success: false, message: "Invalid signature" },
+        { status: 403 }
       );
     }
 

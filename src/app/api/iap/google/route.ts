@@ -19,7 +19,7 @@ export async function OPTIONS(req: Request) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getSessionFromRequest(request);
-    if (!session?.userId) {
+    if (!session?.user?.id) {
       return corsJson(request, { success: false, message: "Unauthorized" }, { status: 401 });
     }
 
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Activate premium
-    await activatePremium(session.userId, "google", {
+    await activatePremium(session.user.id, "google", {
       productId,
       purchaseToken,
       expiresAt: result.expiresAt,
