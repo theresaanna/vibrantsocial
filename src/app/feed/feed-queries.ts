@@ -15,6 +15,14 @@ export function getPostInclude(userId: string) {
         avatar: true,
         profileFrameId: true,
         usernameFont: true,
+        tier: true,
+        // Theme colors for post theming
+        profileBgColor: true,
+        profileTextColor: true,
+        profileLinkColor: true,
+        profileSecondaryColor: true,
+        profileContainerColor: true,
+        profileContainerOpacity: true,
       },
     },
     _count: {

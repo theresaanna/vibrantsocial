@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { put } from "@vercel/blob";
+import { handleCorsPreflightRequest, withCors } from "@/lib/cors";
 import { scanImageBuffer, quarantineUpload } from "@/lib/arachnid-shield";
 import { isConvertibleImage, convertToWebP, isResizableImage, resizeImage } from "@/lib/image-convert";
 import { uploadLimiter, checkRateLimit } from "@/lib/rate-limit";
@@ -60,14 +61,18 @@ function getSizeLimitLabel(category: FileCategory, limits: TierLimits): string {
   return formatSizeLimit(getMaxSize(category, limits));
 }
 
+export async function OPTIONS(req: Request) {
+  return handleCorsPreflightRequest(req);
+}
+
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return withCors(req, NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
   }
 
   const rateLimited = await checkRateLimit(uploadLimiter, session.user.id);
-  if (rateLimited) return rateLimited;
+  if (rateLimited) return withCors(req, rateLimited as NextResponse);
 
   const tier = (session.user.tier as UserTier) ?? "free";
   const limits = getLimitsForTier(tier);
@@ -76,28 +81,28 @@ export async function POST(req: Request) {
   const file = formData.get("file") as File | null;
 
   if (!file) {
-    return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    return withCors(req, NextResponse.json({ error: "No file provided" }, { status: 400 }));
   }
 
   // Strip codec params (e.g. "audio/webm;codecs=opus" → "audio/webm")
   const mimeType = file.type.split(";")[0].trim();
   const category = getFileCategory(mimeType);
   if (!category) {
-    return NextResponse.json(
+    return withCors(req, NextResponse.json(
       {
         error:
           "Invalid file type. Supported: JPEG, PNG, GIF, WebP, HEIC, HEIF, MP4, WebM, MOV, OGG, MP3, PDF, Audio",
       },
       { status: 400 }
-    );
+    ));
   }
 
   const maxSize = getMaxSize(category, limits);
   if (file.size > maxSize) {
-    return NextResponse.json(
+    return withCors(req, NextResponse.json(
       { error: `File too large. Maximum size is ${getSizeLimitLabel(category, limits)}` },
       { status: 400 }
-    );
+    ));
   }
 
   const arrayBuf = await file.arrayBuffer();
@@ -119,12 +124,11 @@ export async function POST(req: Request) {
         mimeType: file.type,
         uploadEndpoint: "/api/upload",
         request: req,
-        imageBuffer: buffer,
       });
-      return NextResponse.json(
+      return withCors(req, NextResponse.json(
         { error: "Upload rejected" },
         { status: 400 }
-      );
+      ));
     }
   }
 
@@ -160,10 +164,10 @@ export async function POST(req: Request) {
           ? "audio"
           : "document";
 
-  return NextResponse.json({
+  return withCors(req, NextResponse.json({
     url: blob.url,
     fileType,
     fileName: file.name,
     fileSize: file.size,
-  });
+  }));
 }

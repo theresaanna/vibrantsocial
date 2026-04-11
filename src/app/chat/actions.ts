@@ -82,6 +82,32 @@ interface ConversationParticipantRecord {
   };
 }
 
+export async function getConversationDetails(conversationId: string) {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+
+  const conversation = await prisma.conversation.findUnique({
+    where: { id: conversationId },
+    include: {
+      participants: {
+        include: {
+          user: { select: USER_PROFILE_SELECT },
+        },
+      },
+    },
+  });
+
+  if (!conversation) return null;
+
+  // Verify user is a participant
+  const isParticipant = conversation.participants.some(
+    (p) => p.userId === session.user!.id
+  );
+  if (!isParticipant) return null;
+
+  return conversation;
+}
+
 export async function getConversations(): Promise<ConversationListItem[]> {
   const session = await auth();
   if (!session?.user?.id) return [];

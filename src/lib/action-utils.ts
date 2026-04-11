@@ -3,6 +3,7 @@ import { apiLimiter, isRateLimited } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notifications";
 import { invalidate, cacheKeys } from "@/lib/cache";
+import { getMobileSession } from "@/lib/mobile-session-context";
 import type { Session } from "next-auth";
 import type { NotificationType } from "@/generated/prisma/client";
 
@@ -43,7 +44,8 @@ type AuthenticatedSession = Session & { user: Session["user"] & { id: string } }
 export async function requireAuthWithRateLimit(
   rateLimitPrefix: string
 ): Promise<AuthenticatedSession | ActionState> {
-  const session = await auth();
+  // Try cookie-based auth first, then fall back to mobile bearer token
+  const session = (await auth()) ?? getMobileSession() ?? null;
   if (!session?.user?.id) {
     return { success: false, message: "Not authenticated" };
   }
