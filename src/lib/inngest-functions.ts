@@ -365,7 +365,7 @@ export const sendTagDigestFn = inngest.createFunction(
 
 export const pollChatEmailNotificationsFn = inngest.createFunction(
   { id: "poll-chat-email-notifications" },
-  { cron: "*/15 * * * *" },
+  { cron: "0 * * * *" },
   async () => pollChatEmailNotifications()
 );
 
@@ -918,7 +918,7 @@ export async function publishScheduledPosts(): Promise<{ published: number }> {
 
 export const publishScheduledPostsFn = inngest.createFunction(
   { id: "publish-scheduled-posts" },
-  { cron: "* * * * *" },
+  { cron: "*/5 * * * *" },
   async () => publishScheduledPosts()
 );
 
