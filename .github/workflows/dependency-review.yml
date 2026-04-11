@@ -9,10 +9,6 @@
 name: 'Dependency Review'
 on:
   pull_request:
-    paths-ignore:
-      - 'mobile/**'
-      - 'packages/**'
-      - '.github/workflows/mobile-build.yml'
 
 permissions:
   contents: read

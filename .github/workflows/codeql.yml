@@ -14,16 +14,8 @@ name: "CodeQL"
 on:
   push:
     branches: ["main"]
-    paths-ignore:
-      - 'mobile/**'
-      - 'packages/**'
-      - '.github/workflows/mobile-build.yml'
   pull_request:
     branches: ["main"]
-    paths-ignore:
-      - 'mobile/**'
-      - 'packages/**'
-      - '.github/workflows/mobile-build.yml'
   schedule:
     - cron: "0 0 * * 1"
 
