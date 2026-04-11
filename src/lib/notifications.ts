@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getAblyRestClient } from "@/lib/ably";
 import { sendPushNotification } from "@/lib/web-push";
+import { sendExpoPushNotification } from "@/lib/expo-push";
 import type { NotificationType } from "@/generated/prisma/client";
 import { invalidateMany, cacheKeys } from "@/lib/cache";
 
@@ -102,47 +103,65 @@ export async function createNotification(params: CreateNotificationParams) {
     // Non-critical — DB write succeeded
   }
 
+  // Build push notification body (shared between web and Expo push)
+  const actorName =
+    notification.actor.displayName ||
+    notification.actor.username ||
+    notification.actor.name ||
+    "Someone";
+  const typeText: Record<string, string> = {
+    LIKE: "liked your post",
+    COMMENT: "commented on your post",
+    REPLY: "replied to your comment",
+    REPOST: "reposted your post",
+    BOOKMARK: "bookmarked your post",
+    FOLLOW: "followed you",
+    REACTION: "reacted to your message",
+    MENTION: "mentioned you",
+    FRIEND_REQUEST: "sent you a friend request",
+    FRIEND_REQUEST_ACCEPTED: "accepted your friend request",
+    NEW_POST: "published a new post",
+    TAG_POST: "posted in a tag you follow",
+    REFERRAL_SIGNUP: "joined using your referral link! You earned 50 stars",
+    STARS_MILESTONE: "You have 500+ stars! Redeem them for a free month of premium",
+    LIST_ADD: "added you to a list",
+    LIST_SUBSCRIBE: "subscribed to your list",
+    LIST_COLLABORATOR_ADD: "added you as a collaborator on a list",
+    MARKETPLACE_QUESTION: "asked a question on your listing",
+    MARKETPLACE_ANSWER: "answered your question on a listing",
+    CHAT_REQUEST: "sent you a chat request",
+    CHAT_REQUEST_ACCEPTED: "accepted your chat request",
+    CHAT_ABUSE: "may be sending you abusive messages",
+    SUBSCRIBED_COMMENT: "commented on a post you're subscribed to",
+  };
+  const pushBody = `${actorName} ${typeText[type] || "sent you a notification"}`;
+
   // Send web push notification
   try {
-    const actorName =
-      notification.actor.displayName ||
-      notification.actor.username ||
-      notification.actor.name ||
-      "Someone";
-    const typeText: Record<string, string> = {
-      LIKE: "liked your post",
-      COMMENT: "commented on your post",
-      REPLY: "replied to your comment",
-      REPOST: "reposted your post",
-      BOOKMARK: "bookmarked your post",
-      FOLLOW: "followed you",
-      REACTION: "reacted to your message",
-      MENTION: "mentioned you",
-      FRIEND_REQUEST: "sent you a friend request",
-      FRIEND_REQUEST_ACCEPTED: "accepted your friend request",
-      NEW_POST: "published a new post",
-      TAG_POST: "posted in a tag you follow",
-      REFERRAL_SIGNUP: "joined using your referral link! You earned 50 stars",
-      STARS_MILESTONE: "You have 500+ stars! Redeem them for a free month of premium",
-      LIST_ADD: "added you to a list",
-      LIST_SUBSCRIBE: "subscribed to your list",
-      LIST_COLLABORATOR_ADD: "added you as a collaborator on a list",
-      MARKETPLACE_QUESTION: "asked a question on your listing",
-      MARKETPLACE_ANSWER: "answered your question on a listing",
-      CHAT_REQUEST: "sent you a chat request",
-      CHAT_REQUEST_ACCEPTED: "accepted your chat request",
-      CHAT_ABUSE: "may be sending you abusive messages",
-      SUBSCRIBED_COMMENT: "commented on a post you're subscribed to",
-    };
-    const body = `${actorName} ${typeText[type] || "sent you a notification"}`;
     const url = postId ? `/notifications` : "/notifications";
     await sendPushNotification(targetUserId, {
       title: "VibrantSocial",
-      body,
+      body: pushBody,
       url,
     });
   } catch {
     // Non-critical — DB write and Ably succeeded
+  }
+
+  // Send Expo push notification (mobile app)
+  try {
+    await sendExpoPushNotification(targetUserId, {
+      title: "VibrantSocial",
+      body: pushBody,
+      data: {
+        type,
+        postId: postId ?? null,
+        commentId: commentId ?? null,
+        actorId,
+      },
+    });
+  } catch {
+    // Non-critical
   }
 
   return notification;

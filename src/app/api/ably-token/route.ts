@@ -1,19 +1,24 @@
 import Ably from "ably";
 import { auth } from "@/auth";
-import { NextResponse } from "next/server";
 import { apiLimiter, checkRateLimit } from "@/lib/rate-limit";
+import { corsJson, handleCorsPreflightRequest, withCors } from "@/lib/cors";
+import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function OPTIONS(req: Request) {
+  return handleCorsPreflightRequest(req);
+}
+
+export async function GET(req: Request) {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    return corsJson(req, { error: "Not authenticated" }, { status: 401 });
   }
 
   const rateLimited = await checkRateLimit(apiLimiter, session.user.id);
-  if (rateLimited) return rateLimited;
+  if (rateLimited) return withCors(req, rateLimited as NextResponse);
 
   if (!process.env.ABLY_API_KEY) {
-    return NextResponse.json({ error: "Realtime not configured" }, { status: 503 });
+    return corsJson(req, { error: "Realtime not configured" }, { status: 503 });
   }
 
   const client = new Ably.Rest(process.env.ABLY_API_KEY);
@@ -21,5 +26,5 @@ export async function GET() {
     clientId: session.user.id,
   });
 
-  return NextResponse.json(tokenRequest);
+  return corsJson(req, tokenRequest);
 }

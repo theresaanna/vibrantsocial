@@ -2,6 +2,10 @@
   "name": "vibrantsocial",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "packages/*",
+    "mobile"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "prisma migrate resolve --rolled-back 20260320_schema_drift_fix 2>/dev/null; prisma migrate resolve --rolled-back 20260401_add_user_statuses_likes 2>/dev/null; prisma migrate deploy && prisma generate && next build",
@@ -64,6 +68,7 @@
     "fast-xml-parser": "^5.5.11",
     "fflate": "^0.8.2",
     "inngest": "^3.52.6",
+    "jose": "^6.0.11",
     "lexical": "^0.42.0",
     "next": "^16.2.2",
     "next-auth": "^5.0.0-beta.30",
@@ -101,7 +106,7 @@
     "eslint": "^9",
     "eslint-config-next": "^16.2.1",
     "jsdom": "^27.0.1",
-    "prisma": "^7.6.0",
+    "prisma": "7.6.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^3.2.4"

@@ -177,6 +177,7 @@ model User {
   moderationActionsPerformed ModerationAction[] @relation("moderationActionAdmin")
   appeals               Appeal[] @relation("appealUser")
   appealsReviewed       Appeal[] @relation("appealReviewer")
+  supportRequests       SupportRequest[]
   reportsSubmitted      Report[] @relation("reportReporter")
   reportsReviewed       Report[] @relation("reportReviewer")
 
@@ -232,6 +233,12 @@ model User {
 
   // Poll votes
   pollVotes PollVote[]
+
+  // Expo push tokens (mobile app)
+  expoPushTokens ExpoPushToken[]
+
+  // IAP subscriptions (Apple, Google, Stripe)
+  subscriptions Subscription[]
 
   // Linked accounts (multi-account switching)
   linkedAccountGroupId String?
@@ -1254,4 +1261,54 @@ model CommentSubscription {
   @@unique([userId, postId])
   @@index([postId])
   @@index([userId])
+}
+
+// Expo push notification tokens for the mobile app
+
+model ExpoPushToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Support requests from mobile app
+
+model SupportRequest {
+  id        String   @id @default(cuid())
+  userId    String
+  subject   String
+  message   String   @db.Text
+  status    String   @default("open") // "open", "in_progress", "resolved", "closed"
+  response  String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Subscription {
+  id                    String   @id @default(cuid())
+  userId                String
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform              String   // "apple" | "google" | "stripe"
+  productId             String   // e.g. "com.vibrantsocial.premium.monthly"
+  originalTransactionId String?  @unique // Apple original transaction ID
+  purchaseToken         String?  @unique // Google Play purchase token
+  stripeSubscriptionId  String?  @unique // Stripe subscription ID
+  status                String   // "active" | "expired" | "cancelled" | "grace_period"
+  expiresAt             DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([userId])
+  @@index([platform])
+  @@index([status])
 }
