@@ -8,6 +8,7 @@ import {
   ScrollView,
   RefreshControl,
   Switch,
+  Share,
 } from "react-native";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -42,12 +43,27 @@ interface CollaboratorEntry {
   user: MemberUser;
 }
 
-interface ListDetail {
+interface ListOwner {
+  username: string | null;
+  displayName: string | null;
+  name: string | null;
+  avatar: string | null;
+  image: string | null;
+  profileFrameId: string | null;
+}
+
+interface ListInfo {
   id: string;
   name: string;
   ownerId: string;
   isPrivate: boolean;
+  owner: ListOwner;
+}
+
+interface ListDetailResponse {
+  list: ListInfo;
   members: MemberEntry[];
+  isCollaborator: boolean;
 }
 
 interface SearchResult extends MemberUser {
@@ -77,15 +93,19 @@ export default function ListDetailScreen() {
 
   // ── Data fetching ─────────────────────────────────────────────
   const {
-    data: listData,
+    data: listResponse,
     isLoading,
     refetch,
     isRefetching,
   } = useQuery({
     queryKey: ["listMembers", listId],
-    queryFn: () => api.rpc<ListDetail>("getListMembers", listId),
+    queryFn: () => api.rpc<ListDetailResponse>("getListMembers", listId),
     enabled: !!listId,
   });
+
+  const listData = listResponse?.list;
+  const members = listResponse?.members ?? [];
+  const isCollab = listResponse?.isCollaborator ?? false;
 
   const { data: collaborators, refetch: refetchCollabs } = useQuery({
     queryKey: ["listCollaborators", listId],
@@ -95,8 +115,41 @@ export default function ListDetailScreen() {
   });
 
   const isOwner = listData?.ownerId === currentUser?.id;
-  const isCollab = collaborators?.some((c) => c.userId === currentUser?.id) ?? false;
   const canManageMembers = isOwner || isCollab;
+
+  // ── Subscription ─────────────────────────────────────────────
+  const { data: isSubscribed, refetch: refetchSub } = useQuery({
+    queryKey: ["listSubscription", listId],
+    queryFn: () => api.rpc<boolean>("isSubscribedToList", listId),
+    enabled: !!listId && !isOwner,
+  });
+
+  const subscribeMutation = useMutation({
+    mutationFn: () =>
+      api.rpc<{ success: boolean; message: string; isSubscribed: boolean }>("toggleListSubscription", listId),
+    onSuccess: (result) => {
+      if (result.success) {
+        refetchSub();
+        queryClient.invalidateQueries({ queryKey: ["userLists"] });
+        queryClient.invalidateQueries({ queryKey: ["subscribedLists"] });
+        Toast.show({ type: "success", text1: result.message });
+      } else {
+        Toast.show({ type: "error", text1: result.message });
+      }
+    },
+  });
+
+  const handleShare = async () => {
+    if (!listData) return;
+    try {
+      await Share.share({
+        message: `Check out this list on VibrantSocial: ${listData.name}`,
+        url: `https://www.vibrantsocial.app/lists/${listData.id}`,
+      });
+    } catch {
+      // User cancelled
+    }
+  };
 
   // ── Rename ────────────────────────────────────────────────────
   const [isRenaming, setIsRenaming] = useState(false);
@@ -272,7 +325,8 @@ export default function ListDetailScreen() {
     );
   }
 
-  const members = listData.members ?? [];
+  const ownerName = listData.owner.displayName || listData.owner.name || listData.owner.username || "Unknown";
+  const ownerAvatar = listData.owner.avatar || listData.owner.image;
 
   return (
     <View style={{ flex: 1 }}>
@@ -282,14 +336,127 @@ export default function ListDetailScreen() {
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
-            onRefresh={() => { refetch(); refetchCollabs(); }}
+            onRefresh={() => { refetch(); refetchCollabs(); refetchSub(); }}
             tintColor={theme.linkColor}
           />
         }
         keyboardShouldPersistTaps="handled"
       >
-        {/* List name — owner can rename */}
-        <View style={{ padding: 16 }}>
+        {/* ── Header ─────────────────────────────────────────── */}
+        <View style={{ padding: 16, flexDirection: "row", alignItems: "center", gap: 12 }}>
+          {/* List icon */}
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: "#7c3aed",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700" }}>{"\u2630"}</Text>
+          </View>
+
+          {/* Member count + owner */}
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 14, color: theme.secondaryColor }}>
+              {members.length} {members.length === 1 ? "member" : "members"}
+            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
+              {ownerAvatar ? (
+                <Image
+                  source={{ uri: ownerAvatar }}
+                  style={{ width: 16, height: 16, borderRadius: 8 }}
+                />
+              ) : null}
+              <TouchableOpacity onPress={() => listData.owner.username && router.push(`/(stack)/${listData.owner.username}`)}>
+                <Text style={{ fontSize: 12, color: theme.secondaryColor }}>
+                  by {ownerName}
+                </Text>
+              </TouchableOpacity>
+              {listData.isPrivate && (
+                <View style={{
+                  backgroundColor: theme.secondaryColor + "33",
+                  borderRadius: 4,
+                  paddingHorizontal: 5,
+                  paddingVertical: 1,
+                  marginLeft: 4,
+                }}>
+                  <Text style={{ fontSize: 10, fontWeight: "600", color: theme.secondaryColor }}>
+                    Private
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Action buttons */}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            {/* Share */}
+            <TouchableOpacity
+              onPress={handleShare}
+              style={{
+                borderWidth: 1,
+                borderColor: theme.secondaryColor + "44",
+                borderRadius: 8,
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
+              <Text style={{ fontSize: 12, color: theme.secondaryColor }}>{"<"}</Text>
+              <Text style={{ fontSize: 12, fontWeight: "500", color: theme.secondaryColor }}>Share</Text>
+            </TouchableOpacity>
+
+            {/* Subscribe (non-owners only) */}
+            {!isOwner && (
+              <TouchableOpacity
+                onPress={() => subscribeMutation.mutate()}
+                disabled={subscribeMutation.isPending}
+                style={{
+                  borderRadius: 8,
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  ...(isSubscribed
+                    ? { backgroundColor: theme.linkColor }
+                    : { borderWidth: 2, borderColor: theme.linkColor }),
+                  opacity: subscribeMutation.isPending ? 0.5 : 1,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "600",
+                    color: isSubscribed ? "#fff" : theme.linkColor,
+                  }}
+                >
+                  {subscribeMutation.isPending ? "..." : isSubscribed ? "Subscribed" : "Subscribe"}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* View Feed */}
+            <TouchableOpacity
+              onPress={() => {
+                router.back();
+              }}
+              style={{
+                backgroundColor: "#7c3aed",
+                borderRadius: 8,
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+              }}
+            >
+              <Text style={{ fontSize: 12, fontWeight: "600", color: "#fff" }}>View Feed</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* ── List name — owner can rename ────────────────────── */}
+        <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
           {isOwner && isRenaming ? (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
               <TextInput
@@ -336,7 +503,7 @@ export default function ListDetailScreen() {
                     setIsRenaming(true);
                   }}
                 >
-                  <Text style={{ color: theme.secondaryColor, fontSize: 13 }}>Rename</Text>
+                  <Text style={{ fontSize: 16, color: theme.secondaryColor }}>✏️</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -362,7 +529,7 @@ export default function ListDetailScreen() {
                 Private list
               </Text>
               <Text style={{ fontSize: 12, color: theme.secondaryColor, marginTop: 2 }}>
-                Only members and collaborators can view
+                Only members and collaborators can view this list
               </Text>
             </View>
             <Switch

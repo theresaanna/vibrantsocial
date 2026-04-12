@@ -22,7 +22,7 @@ import { fetchForYouPage } from "@/app/feed/for-you-actions";
 import {
   fetchNewListFeedItems, fetchListFeedPage, getUserLists, getSubscribedLists,
   getCollaboratingLists, getListMembers, searchUsersForList, getListCollaborators,
-  searchUsersForCollaborator,
+  searchUsersForCollaborator, isSubscribedToList,
 } from "@/app/lists/actions";
 import {
   getConversations,
@@ -1139,6 +1139,56 @@ async function mobileRemoveCollaboratorFromList(listId: string, userId: string) 
   return { success: true, message: "Collaborator removed" };
 }
 
+async function mobileGetListMembers(listId: string) {
+  const result = await getListMembers(listId);
+  if (!result) return null;
+  return JSON.parse(JSON.stringify(result));
+}
+
+async function mobileIsSubscribedToList(listId: string) {
+  return isSubscribedToList(listId);
+}
+
+async function mobileToggleListSubscription(listId: string) {
+  const { prisma } = await import("@/lib/prisma");
+  const { auth } = await import("@/auth");
+  const { invalidate, cacheKeys } = await import("@/lib/cache");
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, message: "Not authenticated" };
+
+  const list = await prisma.userList.findUnique({ where: { id: listId } });
+  if (!list) return { success: false, message: "List not found" };
+
+  if (list.ownerId === session.user.id) {
+    return { success: false, message: "You own this list" };
+  }
+
+  if (list.isPrivate) {
+    const [isMember, isCollab] = await Promise.all([
+      prisma.userListMember.findUnique({ where: { listId_userId: { listId, userId: session.user.id } } }),
+      prisma.userListCollaborator.findUnique({ where: { listId_userId: { listId, userId: session.user.id } } }),
+    ]);
+    if (!isMember && !isCollab) {
+      return { success: false, message: "This list is private" };
+    }
+  }
+
+  const existing = await prisma.userListSubscription.findUnique({
+    where: { listId_userId: { listId, userId: session.user.id } },
+  });
+
+  if (existing) {
+    await prisma.userListSubscription.delete({ where: { id: existing.id } });
+  } else {
+    await prisma.userListSubscription.create({
+      data: { listId, userId: session.user.id },
+    });
+  }
+
+  await invalidate(cacheKeys.userListSubscriptions(session.user.id));
+  return { success: true, message: existing ? "Unsubscribed" : "Subscribed", isSubscribed: !existing };
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const ACTIONS: Record<string, (...args: any[]) => Promise<any>> = {
   searchUsers,
@@ -1163,10 +1213,12 @@ const ACTIONS: Record<string, (...args: any[]) => Promise<any>> = {
   removeMemberFromList: mobileRemoveMemberFromList,
   addCollaboratorToList: mobileAddCollaboratorToList,
   removeCollaboratorFromList: mobileRemoveCollaboratorFromList,
-  getListMembers,
+  getListMembers: mobileGetListMembers,
   searchUsersForList,
   getListCollaborators,
   searchUsersForCollaborator,
+  isSubscribedToList: mobileIsSubscribedToList,
+  toggleListSubscription: mobileToggleListSubscription,
   getConversations,
   getMessages,
   getConversationDetails,
