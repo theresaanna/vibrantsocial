@@ -83,7 +83,7 @@ import {
   unmuteUser,
   setChatRoomStatus,
   searchChatRoomUsers,
-} from "@/app/chatroom/actions";
+} from "@/app/communities/chatrooms/actions";
 
 const mockAuth = vi.mocked(auth);
 const mockPrisma = vi.mocked(prisma);

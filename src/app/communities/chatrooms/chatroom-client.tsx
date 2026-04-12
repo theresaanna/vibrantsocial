@@ -403,16 +403,15 @@ export function ChatRoomClient({
     setUploadPreview(null);
     setUploadIsNsfw(false);
 
-    try {
-      await sendChatRoomMessage(trimmed, room, {
-        replyToId: reply?.id,
-        mediaUrl: media?.url,
-        mediaType: media?.fileType,
-        mediaFileName: media?.fileName,
-        mediaFileSize: media?.fileSize,
-        isNsfw: nsfw,
-      });
-    } catch {
+    const result = await sendChatRoomMessage(trimmed, room, {
+      replyToId: reply?.id,
+      mediaUrl: media?.url,
+      mediaType: media?.fileType,
+      mediaFileName: media?.fileName,
+      mediaFileSize: media?.fileSize,
+      isNsfw: nsfw,
+    });
+    if (!result.success) {
       setInputValue(trimmed);
       setReplyingTo(reply);
       setUploadPreview(media);
@@ -427,6 +426,16 @@ export function ChatRoomClient({
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+    if (e.key === "ArrowUp" && !inputValue) {
+      const lastOwn = [...messages].reverse().find(
+        (m) => m.senderId === currentUserId && !m.deletedAt
+      );
+      if (lastOwn) {
+        e.preventDefault();
+        setEditingId(lastOwn.id);
+        setEditValue(lastOwn.content);
+      }
     }
   };
 
@@ -568,12 +577,12 @@ export function ChatRoomClient({
   // -------------------------------------------------------------------------
 
   return (
-    <div className="flex min-h-0 flex-1 gap-4">
+    <div className="flex min-h-0 flex-1 flex-col md:flex-row md:gap-4">
       {/* Main chat area */}
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {/* Header */}
-        <div className="mb-3 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-cyan-600">
+        <div className="mb-1 flex items-center gap-2 md:mb-3 md:gap-3">
+          <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-cyan-600 md:flex">
             <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
             </svg>
@@ -612,8 +621,38 @@ export function ChatRoomClient({
           </div>
         </div>
 
+        {/* Mobile online users — horizontal strip */}
+        <div className="mb-1 md:hidden">
+          <div className="flex items-center gap-2 overflow-x-auto rounded-lg bg-white/80 px-2 py-1.5 shadow-sm backdrop-blur-sm dark:bg-zinc-900/80">
+            <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              Online {onlineUsers.length}
+            </span>
+            {onlineUsers.map((user) => {
+              const name = user.displayName || user.name || user.username || "?";
+              return (
+                <Link
+                  key={user.id}
+                  href={`/${user.username}`}
+                  className="relative shrink-0"
+                  title={name}
+                >
+                  <FramedAvatar
+                    src={user.avatar || user.image}
+                    initial={name[0]?.toUpperCase()}
+                    size={28}
+                    frameId={user.profileFrameId}
+                  />
+                  <div className="absolute -bottom-0.5 -right-0.5">
+                    <PresenceIndicator isOnline={true} size="sm" />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Messages area */}
-        <div className="flex-1 overflow-y-auto rounded-xl bg-white/80 p-4 shadow-sm backdrop-blur-sm dark:bg-zinc-900/80">
+        <div className="min-h-0 flex-1 overflow-y-auto rounded-xl bg-white/80 p-2 shadow-sm backdrop-blur-sm md:p-4 dark:bg-zinc-900/80">
           {messages.length === 0 ? (
             <div className="flex h-full items-center justify-center">
               <p className="text-sm text-zinc-400 dark:text-zinc-500">
@@ -621,7 +660,7 @@ export function ChatRoomClient({
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-1 md:space-y-3">
               {messages.map((msg) => {
                 const isOwn = msg.senderId === currentUserId;
                 const isDeleted = !!msg.deletedAt;
@@ -637,7 +676,7 @@ export function ChatRoomClient({
                   <div
                     key={msg.id}
                     id={`msg-${msg.id}`}
-                    className="group rounded-lg p-2 transition-colors"
+                    className="group rounded-lg p-1 transition-colors md:p-2"
                   >
                     {/* Reply quote */}
                     {msg.replyTo && (
@@ -657,12 +696,21 @@ export function ChatRoomClient({
                       </button>
                     )}
 
-                    <div className="flex gap-3">
-                      <Link href={`/${msg.sender.username}`} className="shrink-0">
+                    <div className="flex gap-2 md:gap-3">
+                      <Link href={`/${msg.sender.username}`} className="shrink-0 max-md:hidden">
                         <FramedAvatar
                           src={avatarSrc}
                           initial={initial}
                           size={36}
+                          frameId={msg.sender.profileFrameId}
+                          referrerPolicy="no-referrer"
+                        />
+                      </Link>
+                      <Link href={`/${msg.sender.username}`} className="shrink-0 md:hidden">
+                        <FramedAvatar
+                          src={avatarSrc}
+                          initial={initial}
+                          size={24}
                           frameId={msg.sender.profileFrameId}
                           referrerPolicy="no-referrer"
                         />
@@ -1112,7 +1160,7 @@ export function ChatRoomClient({
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="rounded-lg p-2.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 disabled:opacity-50 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+                className="hidden rounded-lg p-2.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 disabled:opacity-50 md:block dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
                 title="Upload image or video"
               >
                 {uploading ? (
@@ -1130,7 +1178,7 @@ export function ChatRoomClient({
               {/* GIF button */}
               <button
                 onClick={() => setShowGifPicker(true)}
-                className="rounded-lg p-2.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+                className="hidden rounded-lg p-2.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 md:block dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
                 title="Send a GIF"
               >
                 <span className="text-xs font-bold">GIF</span>
@@ -1156,7 +1204,7 @@ export function ChatRoomClient({
               <button
                 onClick={handleSend}
                 disabled={(!inputValue.trim() && !uploadPreview) || isSending}
-                className="rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:from-emerald-500 hover:to-cyan-500 disabled:opacity-50"
+                className="hidden rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:from-emerald-500 hover:to-cyan-500 disabled:opacity-50 md:block"
               >
                 {isSending ? "..." : "Send"}
               </button>
