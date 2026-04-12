@@ -44,10 +44,19 @@ interface SignupData {
 
 // ── Context ───────���──────────────────────────────────────────────────
 
+/** Decode a base64url string (JWT uses base64url, not standard base64). */
+function decodeBase64Url(str: string): string {
+  // Convert base64url → base64: replace - with +, _ with /, add padding
+  const base64 = str.replace(/-/g, "+").replace(/_/g, "/");
+  const pad = base64.length % 4;
+  const padded = pad ? base64 + "=".repeat(4 - pad) : base64;
+  return atob(padded);
+}
+
 /** Decode user info from a mobile JWT without verifying signature (client-side). */
 function decodeUserFromJwt(token: string): User | null {
   try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
+    const payload = JSON.parse(decodeBase64Url(token.split(".")[1]));
     return {
       id: payload.sub,
       username: payload.username ?? null,
@@ -128,12 +137,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginWithOAuth = useCallback(async (provider: OAuthProvider): Promise<LoginResult> => {
     try {
       const result = await startOAuthFlow(provider);
+      console.log("[auth] OAuth result:", result.success, result.error);
       if (result.success && result.token) {
         await setAuthToken(result.token);
+        console.log("[auth] Token stored, decoding JWT...");
+        // Debug: log the raw JWT payload
+        try {
+          const rawPayload = JSON.parse(decodeBase64Url(result.token.split(".")[1]));
+          console.log("[auth] Raw JWT payload:", JSON.stringify(rawPayload));
+        } catch (e) {
+          console.error("[auth] Failed to decode JWT:", e);
+        }
         // Decode user info directly from the JWT to avoid a cross-origin /me fetch
         const userFromToken = decodeUserFromJwt(result.token);
+        console.log("[auth] Decoded user:", userFromToken?.id, userFromToken?.username);
         if (userFromToken) {
           setUser(userFromToken);
+          console.log("[auth] User set, isAuthenticated will be true");
           return { success: true };
         }
         // Fallback: fetch from API

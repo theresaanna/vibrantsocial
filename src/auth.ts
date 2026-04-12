@@ -11,7 +11,9 @@ import { inngest } from "@/lib/inngest";
 import { loadLinkedAccounts } from "@/lib/account-linking-db";
 import type { LinkedAccount } from "@/types/next-auth";
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+import { getMobileSession } from "@/lib/mobile-session-context";
+
+const nextAuth = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [
     Google({}),
@@ -246,3 +248,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 });
+
+export const { handlers, signIn, signOut } = nextAuth;
+
+/**
+ * Get the current session. Checks cookie-based NextAuth session first,
+ * then falls back to the mobile bearer token session stored in
+ * AsyncLocalStorage by the RPC route's `withMobileSession()` wrapper.
+ */
+export async function auth() {
+  const session = await nextAuth.auth();
+  if (session?.user?.id) return session;
+  return getMobileSession() ?? null;
+}
