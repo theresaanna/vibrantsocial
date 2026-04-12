@@ -1,9 +1,9 @@
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { put, del } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { scanImageBuffer, quarantineUpload } from "@/lib/arachnid-shield";
+import { getSessionFromRequest } from "@/lib/mobile-auth";
 import { uploadLimiter, checkRateLimit } from "@/lib/rate-limit";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { checkAndExpirePremium } from "@/lib/premium";
@@ -18,7 +18,7 @@ const ALLOWED_TYPES = [
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
 export async function POST(request: NextRequest) {
-  const session = await auth();
+  const session = await getSessionFromRequest(request);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = await auth();
+  const session = await getSessionFromRequest(request);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }

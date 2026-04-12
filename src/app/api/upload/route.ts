@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 import { put } from "@vercel/blob";
 import { handleCorsPreflightRequest, withCors } from "@/lib/cors";
+import { getSessionFromRequest } from "@/lib/mobile-auth";
 import { scanImageBuffer, quarantineUpload } from "@/lib/arachnid-shield";
 import { isConvertibleImage, convertToWebP, isResizableImage, resizeImage } from "@/lib/image-convert";
 import { uploadLimiter, checkRateLimit } from "@/lib/rate-limit";
@@ -66,7 +66,7 @@ export async function OPTIONS(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const session = await auth();
+  const session = await getSessionFromRequest(req);
   if (!session?.user?.id) {
     return withCors(req, NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
   }
