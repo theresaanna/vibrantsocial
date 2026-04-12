@@ -251,7 +251,7 @@ export function isValidHexColor(value: string): boolean {
   return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value);
 }
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "https://vibrantsocial.app";
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "https://www.vibrantsocial.app";
 
 /**
  * Resolve a potentially relative image path (e.g. /backgrounds/foo.jpg)

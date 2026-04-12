@@ -23,6 +23,7 @@ const ALLOWED_CALLER_ORIGINS = new Set([
   "http://127.0.0.1:8081",
   "http://localhost:19006",
   "https://vibrantsocial.app",
+  "https://www.vibrantsocial.app",
 ]);
 
 export async function GET(req: Request) {
