@@ -23,6 +23,7 @@ import {
   addModerator,
   removeModerator,
   searchChatRoomUsers,
+  getUserProfiles,
 } from "./actions";
 import type { ChatRoomMessageData, ChatRoomMeta } from "./actions";
 
@@ -143,21 +144,67 @@ export function ChatRoomClient({
   // -------------------------------------------------------------------------
   const { presenceData } = usePresenceListener(PRESENCE_CHANNEL);
 
-  // Build unique user set from messages for the sidebar
-  const chatParticipants = useMemo(() => {
+  const onlineUserIds = useMemo(
+    () => new Set(presenceData.map((m) => m.clientId)),
+    [presenceData]
+  );
+
+  // Profile cache: merge profiles from messages + fetched profiles
+  const [fetchedProfiles, setFetchedProfiles] = useState<
+    Map<string, ChatRoomMessageData["sender"]>
+  >(new Map());
+  const fetchingRef = useRef<Set<string>>(new Set());
+
+  // Seed profiles from messages
+  const knownProfiles = useMemo(() => {
     const map = new Map<string, ChatRoomMessageData["sender"]>();
     for (const msg of messages) {
       if (!map.has(msg.senderId)) {
         map.set(msg.senderId, msg.sender);
       }
     }
-    return Array.from(map.values());
-  }, [messages]);
+    // Merge fetched profiles
+    for (const [id, profile] of fetchedProfiles) {
+      if (!map.has(id)) map.set(id, profile);
+    }
+    return map;
+  }, [messages, fetchedProfiles]);
 
-  const onlineUserIds = useMemo(
-    () => new Set(presenceData.map((m) => m.clientId)),
-    [presenceData]
-  );
+  // Fetch missing profiles when presence changes
+  useEffect(() => {
+    const missing = Array.from(onlineUserIds).filter(
+      (id) => !knownProfiles.has(id) && !fetchingRef.current.has(id)
+    );
+    if (missing.length === 0) return;
+
+    for (const id of missing) fetchingRef.current.add(id);
+
+    getUserProfiles(missing).then((profiles) => {
+      setFetchedProfiles((prev) => {
+        const next = new Map(prev);
+        for (const p of profiles) next.set(p.id, p);
+        return next;
+      });
+      for (const id of missing) fetchingRef.current.delete(id);
+    });
+  }, [onlineUserIds, knownProfiles]);
+
+  // Build sorted online user list: current user first, then alphabetical
+  const onlineUsers = useMemo(() => {
+    const list: ChatRoomMessageData["sender"][] = [];
+    for (const id of onlineUserIds) {
+      const profile = knownProfiles.get(id);
+      if (profile) list.push(profile);
+    }
+    list.sort((a, b) => {
+      if (a.id === currentUserId) return -1;
+      if (b.id === currentUserId) return 1;
+      const nameA = (a.displayName || a.name || a.username || "").toLowerCase();
+      const nameB = (b.displayName || b.name || b.username || "").toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
+    return list;
+  }, [onlineUserIds, knownProfiles, currentUserId]);
 
   // -------------------------------------------------------------------------
   // Scroll to bottom
@@ -1135,12 +1182,11 @@ export function ChatRoomClient({
       <div className="hidden w-52 shrink-0 flex-col md:flex">
         <div className="rounded-xl bg-white/80 p-3 shadow-sm backdrop-blur-sm dark:bg-zinc-900/80">
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            In Chat &mdash; {chatParticipants.length}
+            Online &mdash; {onlineUsers.length}
           </h2>
           <div className="max-h-[calc(100dvh-12rem)] space-y-1.5 overflow-y-auto">
-            {chatParticipants.map((user) => {
+            {onlineUsers.map((user) => {
               const name = user.displayName || user.name || user.username || "?";
-              const isOnline = onlineUserIds.has(user.id);
               const userIsOwner = user.id === initialMeta.ownerId;
               const userIsMod = userIsOwner || moderatorIds.includes(user.id);
 
@@ -1158,7 +1204,7 @@ export function ChatRoomClient({
                       frameId={user.profileFrameId}
                     />
                     <div className="absolute -bottom-0.5 -right-0.5">
-                      <PresenceIndicator isOnline={isOnline} size="sm" />
+                      <PresenceIndicator isOnline={true} size="sm" />
                     </div>
                   </div>
                   <span className="min-w-0 flex-1 truncate text-xs font-medium text-zinc-700 dark:text-zinc-300">

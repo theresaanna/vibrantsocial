@@ -674,3 +674,21 @@ export async function searchChatRoomUsers(
 
   return users;
 }
+
+// ---------------------------------------------------------------------------
+// Fetch user profiles by IDs (for online sidebar)
+// ---------------------------------------------------------------------------
+
+export async function getUserProfiles(
+  userIds: string[]
+): Promise<{ id: string; username: string | null; displayName: string | null; name: string | null; avatar: string | null; image: string | null; profileFrameId: string | null; usernameFont: string | null }[]> {
+  const session = await auth();
+  if (!session?.user?.id || userIds.length === 0) return [];
+
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: USER_PROFILE_SELECT,
+  });
+
+  return users;
+}
