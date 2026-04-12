@@ -829,6 +829,88 @@ export const scanChatMessageFn = inngest.createFunction(
   }
 );
 
+// Chatroom message moderation scanning
+
+export const scanChatRoomMessageFn = inngest.createFunction(
+  {
+    id: "scan-chatroom-message",
+    retries: 3,
+    onFailure: onFunctionFailure("scan-chatroom-message"),
+  },
+  { event: "moderation/scan-chatroom-message" },
+  async ({ event }) => {
+    const { messageId, senderId, roomSlug } = event.data as {
+      messageId: string;
+      senderId: string;
+      roomSlug: string;
+    };
+
+    if (!MODERATION_API_URL || !MODERATION_API_KEY) {
+      console.warn("Moderation service not configured, skipping chatroom scan");
+      return { skipped: true };
+    }
+
+    const message = await prisma.chatRoomMessage.findUnique({
+      where: { id: messageId },
+      select: { id: true, content: true, mediaUrl: true, mediaType: true, deletedAt: true, isNsfw: true },
+    });
+
+    if (!message || message.deletedAt) {
+      return { skipped: true, reason: "message not found or deleted" };
+    }
+
+    const headers = {
+      "Content-Type": "application/json",
+      "X-API-Key": MODERATION_API_KEY,
+    };
+
+    // Scan media for NSFW content
+    let nsfwDetected = false;
+
+    if (message.mediaUrl && (message.mediaType === "image" || message.mediaType === "video")) {
+      try {
+        const resp = await fetch(`${MODERATION_API_URL}/scan/image`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ url: message.mediaUrl }),
+        });
+        if (resp.ok) {
+          const result = await resp.json() as { nsfw: boolean; score: number };
+          if (result.nsfw) {
+            nsfwDetected = true;
+          }
+        }
+      } catch (error) {
+        Sentry.captureException(error, {
+          extra: { context: "chatroom-moderation-image-scan", messageId },
+        });
+      }
+    }
+
+    // Auto-mark as NSFW if detected and not already marked
+    if (nsfwDetected && !message.isNsfw) {
+      await prisma.chatRoomMessage.update({
+        where: { id: messageId },
+        data: { isNsfw: true },
+      });
+
+      // Publish real-time update so clients show the overlay
+      try {
+        const { getAblyRestClient } = await import("./ably");
+        const ably = getAblyRestClient();
+        const channel = ably.channels.get(`chatroom:${roomSlug}`);
+        await channel.publish("nsfw-update", JSON.stringify({ id: messageId, isNsfw: true }));
+      } catch {
+        // Non-critical
+      }
+
+      // Log for admin awareness (ContentViolation requires postId, so skip for chatroom messages)
+    }
+
+    return { messageId, nsfwDetected };
+  }
+);
+
 // Publish scheduled posts that are due
 
 export async function publishScheduledPosts(): Promise<{ published: number }> {
@@ -959,6 +1041,7 @@ export const allFunctions = [
   sendTagDigestFn,
   scanPostContentFn,
   scanChatMessageFn,
+  scanChatRoomMessageFn,
   publishScheduledPostsFn,
   sendSubscribedCommentEmailFn,
 ];

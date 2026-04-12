@@ -155,6 +155,11 @@ model User {
   sentMessageRequests      MessageRequest[] @relation("sentMessageRequests")
   receivedMessageRequests  MessageRequest[] @relation("receivedMessageRequests")
   chatRoomMessages         ChatRoomMessage[] @relation("chatRoomMessages")
+  chatRoomOwned            ChatRoom[] @relation("chatRoomOwner")
+  chatRoomModerating       ChatRoomModerator[] @relation("chatRoomModerator")
+  chatRoomMutes            ChatRoomMute[] @relation("chatRoomMuted")
+  chatRoomMutesGiven       ChatRoomMute[] @relation("chatRoomMutedBy")
+  chatRoomReactions        ChatRoomMessageReaction[] @relation("chatRoomReactions")
 
   // Reactions
   messageReactions       MessageReaction[]
@@ -834,19 +839,92 @@ model MessageRequest {
 
 // Public chat rooms
 
-model ChatRoomMessage {
+model ChatRoom {
+  id        String   @id @default(cuid())
+  slug      String   @unique @default("lobby")
+  name      String   @default("Lobby")
+  status    String?
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner      User                   @relation("chatRoomOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  messages   ChatRoomMessage[]
+  moderators ChatRoomModerator[]
+  mutes      ChatRoomMute[]
+
+  @@index([ownerId])
+}
+
+model ChatRoomModerator {
+  id        String   @id @default(cuid())
+  roomId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  room ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User     @relation("chatRoomModerator", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@index([userId])
+}
+
+model ChatRoomMute {
   id        String    @id @default(cuid())
-  room      String    @default("lobby")
-  senderId  String
-  content   String    @db.Text
-  editedAt  DateTime?
-  deletedAt DateTime?
+  roomId    String
+  userId    String
+  mutedById String
+  expiresAt DateTime?
   createdAt DateTime  @default(now())
 
-  sender User @relation("chatRoomMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  room    ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user    User     @relation("chatRoomMuted", fields: [userId], references: [id], onDelete: Cascade)
+  mutedBy User     @relation("chatRoomMutedBy", fields: [mutedById], references: [id], onDelete: Cascade)
 
-  @@index([room, createdAt])
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@index([userId])
+}
+
+model ChatRoomMessage {
+  id            String    @id @default(cuid())
+  roomId        String
+  senderId      String
+  content       String    @db.Text
+  mediaUrl      String?
+  mediaType     String?
+  mediaFileName String?
+  mediaFileSize Int?
+  isNsfw        Boolean   @default(false)
+  replyToId     String?
+  editedAt      DateTime?
+  deletedAt     DateTime?
+  createdAt     DateTime  @default(now())
+
+  room      ChatRoom                 @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender    User                     @relation("chatRoomMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  replyTo   ChatRoomMessage?         @relation("ChatRoomMessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies   ChatRoomMessage[]        @relation("ChatRoomMessageReplies")
+  reactions ChatRoomMessageReaction[]
+
+  @@index([roomId, createdAt])
   @@index([senderId])
+  @@index([replyToId])
+}
+
+model ChatRoomMessageReaction {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  message ChatRoomMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User            @relation("chatRoomReactions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
 }
 
 // Notifications
@@ -878,6 +956,7 @@ enum NotificationType {
   CHAT_ABUSE
   SUBSCRIBED_COMMENT
   LIST_JOIN_REQUEST
+  CHATROOM_MENTION
 }
 
 model Notification {
