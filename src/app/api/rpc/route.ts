@@ -18,7 +18,8 @@ import { corsJson, handleCorsPreflightRequest } from "@/lib/cors";
 
 import { searchUsers, searchPosts, searchTagsForSearch, searchMarketplacePosts } from "@/app/search/actions";
 import { fetchNewFeedItems, fetchSinglePost, fetchFeedPage } from "@/app/feed/feed-actions";
-import { fetchNewListFeedItems } from "@/app/lists/actions";
+import { fetchForYouPage } from "@/app/feed/for-you-actions";
+import { fetchNewListFeedItems, fetchListFeedPage } from "@/app/lists/actions";
 import {
   getConversations,
   getMessages,
@@ -911,7 +912,9 @@ const ACTIONS: Record<string, (...args: any[]) => Promise<any>> = {
   fetchNewFeedItems,
   fetchSinglePost,
   fetchFeedPage,
+  fetchForYouPage,
   fetchNewListFeedItems,
+  fetchListFeedPage,
   getConversations,
   getMessages,
   getConversationDetails,
