@@ -1,7 +1,7 @@
 import Ably from "ably";
-import { auth } from "@/auth";
 import { apiLimiter, checkRateLimit } from "@/lib/rate-limit";
 import { corsJson, handleCorsPreflightRequest, withCors } from "@/lib/cors";
+import { getSessionFromRequest } from "@/lib/mobile-auth";
 import { NextResponse } from "next/server";
 
 export async function OPTIONS(req: Request) {
@@ -9,7 +9,8 @@ export async function OPTIONS(req: Request) {
 }
 
 export async function GET(req: Request) {
-  const session = await auth();
+  // Support both cookie-based (web) and Bearer token (mobile) auth
+  const session = await getSessionFromRequest(req);
   if (!session?.user?.id) {
     return corsJson(req, { error: "Not authenticated" }, { status: 401 });
   }
