@@ -137,23 +137,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginWithOAuth = useCallback(async (provider: OAuthProvider): Promise<LoginResult> => {
     try {
       const result = await startOAuthFlow(provider);
-      console.log("[auth] OAuth result:", result.success, result.error);
       if (result.success && result.token) {
         await setAuthToken(result.token);
-        console.log("[auth] Token stored, decoding JWT...");
-        // Debug: log the raw JWT payload
-        try {
-          const rawPayload = JSON.parse(decodeBase64Url(result.token.split(".")[1]));
-          console.log("[auth] Raw JWT payload:", JSON.stringify(rawPayload));
-        } catch (e) {
-          console.error("[auth] Failed to decode JWT:", e);
-        }
         // Decode user info directly from the JWT to avoid a cross-origin /me fetch
         const userFromToken = decodeUserFromJwt(result.token);
-        console.log("[auth] Decoded user:", userFromToken?.id, userFromToken?.username);
         if (userFromToken) {
           setUser(userFromToken);
-          console.log("[auth] User set, isAuthenticated will be true");
           return { success: true };
         }
         // Fallback: fetch from API

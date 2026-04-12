@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator, Text, TextInput } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -12,6 +12,27 @@ import { registerForPushNotifications } from "@/lib/notifications";
 import { ablyClient } from "@/lib/ably";
 import { initIAP, endIAP } from "@/lib/iap";
 import { useAppFonts } from "@/hooks/use-app-fonts";
+
+// Set Lexend 300 as the default font for all Text and TextInput components
+const DEFAULT_FONT = "Lexend_300Light";
+const originalTextRender = (Text as any).render;
+if (originalTextRender) {
+  (Text as any).render = function (props: any, ref: any) {
+    return originalTextRender.call(this, {
+      ...props,
+      style: [{ fontFamily: DEFAULT_FONT }, props.style],
+    }, ref);
+  };
+}
+const originalTextInputRender = (TextInput as any).render;
+if (originalTextInputRender) {
+  (TextInput as any).render = function (props: any, ref: any) {
+    return originalTextInputRender.call(this, {
+      ...props,
+      style: [{ fontFamily: DEFAULT_FONT }, props.style],
+    }, ref);
+  };
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {

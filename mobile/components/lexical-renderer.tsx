@@ -3,6 +3,7 @@ import {
   View,
   Text,
   Linking,
+  useWindowDimensions,
   type TextStyle,
   type ViewStyle,
 } from "react-native";
@@ -312,6 +313,41 @@ function InlineChildren({
   );
 }
 
+/** When a paragraph contains a mix of inline (text) and block-level (image)
+ *  nodes, we split them into groups so images render outside <Text>. */
+function renderMixedChildren(nodes: LexicalNode[], paragraphStyle: TextStyle) {
+  const BLOCK_TYPES = new Set(["image", "video", "youtube"]);
+  const groups: { type: "inline" | "block"; nodes: LexicalNode[] }[] = [];
+
+  for (const node of nodes) {
+    const isBlock = BLOCK_TYPES.has(node.type);
+    const kind = isBlock ? "block" : "inline";
+    const last = groups[groups.length - 1];
+    if (last && last.type === kind) {
+      last.nodes.push(node);
+    } else {
+      groups.push({ type: kind, nodes: [node] });
+    }
+  }
+
+  return groups.map((group, i) => {
+    if (group.type === "block") {
+      return (
+        <View key={i}>
+          {group.nodes.map((n, j) => (
+            <BlockNode key={j} node={n} />
+          ))}
+        </View>
+      );
+    }
+    return (
+      <Text key={i} style={paragraphStyle}>
+        <InlineChildren nodes={group.nodes} />
+      </Text>
+    );
+  });
+}
+
 /** Renders a single block-level node */
 function BlockNode({ node }: { node: LexicalNode }) {
   const theme = useUserTheme();
@@ -329,6 +365,18 @@ function BlockNode({ node }: { node: LexicalNode }) {
       const n = node as LexicalParagraphNode;
       if (!n.children || n.children.length === 0) {
         return <View style={{ height: 10 }} />;
+      }
+      // Check if paragraph contains any block-level nodes (images, videos)
+      const hasBlockChildren = n.children.some(
+        (c) => c.type === "image" || c.type === "video" || c.type === "youtube"
+      );
+      if (hasBlockChildren) {
+        // Split into runs of inline nodes vs block-level nodes
+        return (
+          <View style={{ marginBottom: 6 }}>
+            {renderMixedChildren(n.children, paragraphStyle)}
+          </View>
+        );
       }
       return (
         <Text style={paragraphStyle}>
@@ -392,24 +440,7 @@ function BlockNode({ node }: { node: LexicalNode }) {
 
     case "image": {
       const n = node as LexicalImageNode;
-      const w = typeof n.width === "number" ? n.width : undefined;
-      const h = typeof n.height === "number" ? n.height : undefined;
-      const aspectRatio = w && h ? w / h : 16 / 9;
-      return (
-        <View style={{ marginVertical: 8, borderRadius: 12, overflow: "hidden" }}>
-          <Image
-            source={{ uri: n.src }}
-            style={{ width: "100%", aspectRatio, borderRadius: 12 } as any}
-            contentFit="cover"
-            accessibilityLabel={n.altText}
-          />
-          {n.caption ? (
-            <Text style={{ fontSize: 13, color: theme.secondaryColor, textAlign: "center", marginTop: 4, fontFamily: FONT }}>
-              {n.caption}
-            </Text>
-          ) : null}
-        </View>
-      );
+      return <ImageBlock node={n} />;
     }
 
     case "horizontalrule":
@@ -437,6 +468,38 @@ function BlockNode({ node }: { node: LexicalNode }) {
       return null;
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Image block (uses screen width for reliable sizing on web)
+// ---------------------------------------------------------------------------
+
+function ImageBlock({ node }: { node: LexicalImageNode }) {
+  const theme = useUserTheme();
+  const { width: screenWidth } = useWindowDimensions();
+  // Account for post padding (16px each side) and some margin
+  const imageWidth = screenWidth - 64;
+  const w = typeof node.width === "number" && node.width > 0 ? node.width : undefined;
+  const h = typeof node.height === "number" && node.height > 0 ? node.height : undefined;
+  const aspectRatio = w && h ? w / h : 16 / 9;
+  const imageHeight = imageWidth / aspectRatio;
+
+
+  return (
+    <View style={{ marginVertical: 8, borderRadius: 12, overflow: "hidden" }}>
+      <Image
+        source={{ uri: node.src }}
+        style={{ width: imageWidth, height: imageHeight, borderRadius: 12 }}
+        contentFit="cover"
+        accessibilityLabel={node.altText}
+      />
+      {node.caption ? (
+        <Text style={{ fontSize: 13, color: theme.secondaryColor, textAlign: "center", marginTop: 4, fontFamily: FONT }}>
+          {node.caption}
+        </Text>
+      ) : null}
+    </View>
+  );
 }
 
 // ---------------------------------------------------------------------------

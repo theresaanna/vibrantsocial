@@ -84,7 +84,6 @@ function parseAuthCallbackUrl(url: string): OAuthResult {
  */
 async function startOAuthFlowWeb(oauthUrl: string, provider: OAuthProvider): Promise<OAuthResult> {
   // Step 1: Try direct fetch — works if user is already logged in on web
-  console.log("[oauth-web] Trying direct JSON fetch...");
   try {
     const jsonUrl = `${oauthUrl}&format=json`;
     const res = await fetch(jsonUrl, {
@@ -95,28 +94,22 @@ async function startOAuthFlowWeb(oauthUrl: string, provider: OAuthProvider): Pro
     if (res.ok) {
       const data = await res.json();
       if (data.token) {
-        console.log("[oauth-web] Got token via direct fetch");
         return { success: true, token: data.token };
       }
     }
-    // 401 = no session, fall through to popup flow
-    console.log("[oauth-web] No session, falling back to popup flow");
-  } catch (e) {
-    console.log("[oauth-web] Direct fetch failed (CORS?), trying popup...", e);
+  } catch {
+    // CORS or network error, fall through to popup flow
   }
 
   // Step 2: Open popup for full OAuth flow
   return new Promise((resolve) => {
     const popupUrl = `${oauthUrl}&caller_origin=${encodeURIComponent(window.location.origin)}`;
-    console.log("[oauth-web] Opening popup:", popupUrl);
     const popup = window.open(popupUrl, "oauth", "width=500,height=700,popup=yes");
 
     if (!popup) {
-      console.error("[oauth-web] Popup was blocked by browser");
       resolve({ success: false, error: "Popup blocked. Please allow popups." });
       return;
     }
-    console.log("[oauth-web] Popup opened successfully");
 
     let resolved = false;
     const cleanup = () => {
@@ -127,7 +120,6 @@ async function startOAuthFlowWeb(oauthUrl: string, provider: OAuthProvider): Pro
 
     const handleSuccess = (token: string) => {
       if (resolved) return;
-      console.log("[oauth-web] Got token, length:", token.length);
       cleanup();
       try { popup.close(); } catch {}
       resolve({ success: true, token });
@@ -136,7 +128,6 @@ async function startOAuthFlowWeb(oauthUrl: string, provider: OAuthProvider): Pro
     // Listen for postMessage from the completion page
     const expectedOrigin = new URL(API_BASE_URL).origin;
     const messageHandler = (event: MessageEvent) => {
-      console.log("[oauth-web] Received message:", event.data?.type, event.origin);
       // Only accept messages from our own server origin
       if (event.origin !== expectedOrigin) return;
       if (event.data?.type === "vibrantsocial-oauth") {
@@ -158,7 +149,6 @@ async function startOAuthFlowWeb(oauthUrl: string, provider: OAuthProvider): Pro
       if (resolved) return;
       try {
         if (popup.closed) {
-          console.log("[oauth-web] Popup closed, trying to fetch token...");
           clearInterval(pollInterval);
 
           // The popup may have created a web session via OAuth.

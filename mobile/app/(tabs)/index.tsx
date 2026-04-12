@@ -28,7 +28,7 @@ export default function FeedScreen() {
         <NavBar />
         <FeedContent />
         {myTheme?.sparklefallEnabled && myTheme.sparklefallPreset && (
-          <Sparklefall preset={myTheme.sparklefallPreset} />
+          <Sparklefall presetName={myTheme.sparklefallPreset} />
         )}
       </SafeAreaView>
     </ThemedView>
@@ -48,6 +48,7 @@ function FeedContent() {
         style={{
           borderBottomWidth: 1,
           borderBottomColor: theme.secondaryColor + "33",
+          flexGrow: 0,
         }}
         contentContainerStyle={{ paddingHorizontal: 8 }}
       >
