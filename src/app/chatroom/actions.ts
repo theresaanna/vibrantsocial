@@ -16,9 +16,6 @@ const MAX_CONTENT_LENGTH = 2000;
 const MAX_STATUS_LENGTH = 200;
 const PAGE_SIZE = 40;
 
-// Default owner for auto-created lobby room
-const SYSTEM_OWNER_ID = "system";
-
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -78,9 +75,14 @@ export interface ChatRoomMeta {
 async function getOrCreateRoom(slug: string) {
   let room = await prisma.chatRoom.findFirst({ where: { slug } });
   if (!room) {
-    // Auto-create the lobby or requested room
+    // Auto-create room with "theresa" as the default owner
+    const owner = await prisma.user.findFirst({
+      where: { username: { equals: "theresa", mode: "insensitive" } },
+      select: { id: true },
+    });
+    if (!owner) throw new Error("Default room owner (theresa) not found");
     room = await prisma.chatRoom.create({
-      data: { slug, name: slug === "lobby" ? "Lobby" : slug, ownerId: SYSTEM_OWNER_ID },
+      data: { slug, name: slug === "lobby" ? "Lobby" : slug, ownerId: owner.id },
     });
   }
   return room;

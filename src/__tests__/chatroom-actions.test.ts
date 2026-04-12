@@ -38,6 +38,7 @@ vi.mock("@/lib/prisma", () => ({
       delete: vi.fn(),
     },
     user: {
+      findFirst: vi.fn(),
       findMany: vi.fn(),
     },
   },
