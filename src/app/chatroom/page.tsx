@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { getChatRoomMessages } from "./actions";
 import { ChatRoomClient } from "./chatroom-client";
-import { userThemeSelect, buildUserTheme } from "@/lib/user-theme";
+import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
 import { ThemedPage } from "@/components/themed-page";
 
 export const metadata: Metadata = {
@@ -24,7 +24,7 @@ export default async function ChatRoomPage() {
     }),
   ]);
 
-  const profileTheme = user ? buildUserTheme(user) : {};
+  const profileTheme = user ? buildUserTheme(user) : NO_THEME;
 
   return (
     <ThemedPage {...profileTheme} bare>
