@@ -1,7 +1,7 @@
 import { VibrantApiClient } from "@vibrantsocial/shared/api-client";
 import * as SecureStorage from "./secure-storage";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "https://vibrantsocial.app";
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "https://www.vibrantsocial.app";
 
 export const TOKEN_KEY = "auth_token";
 

@@ -2,7 +2,7 @@ import * as Ably from "ably";
 import * as SecureStorage from "./secure-storage";
 import { TOKEN_KEY } from "./api";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "https://vibrantsocial.app";
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "https://www.vibrantsocial.app";
 
 export const ablyClient = new Ably.Realtime({
   authCallback: async (_data, callback) => {

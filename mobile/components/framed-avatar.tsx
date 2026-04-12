@@ -48,7 +48,7 @@ export function getFrameById(id: string | null | undefined): FrameDefinition | n
   return FRAME_MAP.get(id) ?? null;
 }
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "https://vibrantsocial.app";
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "https://www.vibrantsocial.app";
 const AVATAR_INSET = 0.72;
 const DEFAULT_FRAME_SCALE = 1.3;
 
