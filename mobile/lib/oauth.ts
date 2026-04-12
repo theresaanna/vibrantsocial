@@ -107,8 +107,9 @@ async function startOAuthFlowWeb(oauthUrl: string, provider: OAuthProvider): Pro
 
   // Step 2: Open popup for full OAuth flow
   return new Promise((resolve) => {
-    console.log("[oauth-web] Opening popup:", oauthUrl);
-    const popup = window.open(oauthUrl, "oauth", "width=500,height=700,popup=yes");
+    const popupUrl = `${oauthUrl}&caller_origin=${encodeURIComponent(window.location.origin)}`;
+    console.log("[oauth-web] Opening popup:", popupUrl);
+    const popup = window.open(popupUrl, "oauth", "width=500,height=700,popup=yes");
 
     if (!popup) {
       console.error("[oauth-web] Popup was blocked by browser");

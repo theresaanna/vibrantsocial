@@ -10,25 +10,43 @@
  * 3. Redirects to the app's deep link with the token
  *    (or shows the token on a page for web preview debugging)
  */
+import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { generateMobileTokenFromSession } from "@/lib/mobile-auth";
 
 const APP_SCHEME = "vibrantsocial";
 const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_URL ?? "https://vibrantsocial.app";
 
+/** Origins allowed to receive tokens via postMessage. */
+const ALLOWED_CALLER_ORIGINS = new Set([
+  "http://localhost:8081",
+  "http://127.0.0.1:8081",
+  "http://localhost:19006",
+  "https://vibrantsocial.app",
+]);
+
 export async function GET(req: Request) {
   try {
     const session = await auth();
 
+    // Read the caller origin stored during OAuth initiation
+    const cookieStore = await cookies();
+    const callerOrigin = cookieStore.get("mobile_oauth_caller_origin")?.value;
+    const postMessageOrigin =
+      callerOrigin && ALLOWED_CALLER_ORIGINS.has(callerOrigin)
+        ? callerOrigin
+        : APP_ORIGIN;
+
     if (!session?.user?.id) {
       return createCallbackResponse(
         null,
-        "Authentication failed. Please try again."
+        "Authentication failed. Please try again.",
+        postMessageOrigin
       );
     }
 
     const token = await generateMobileTokenFromSession(session);
-    return createCallbackResponse(token, null);
+    return createCallbackResponse(token, null, postMessageOrigin);
   } catch (error) {
     console.error("[mobile-oauth-complete]", error);
     return createCallbackResponse(null, "An unexpected error occurred.");
@@ -39,7 +57,7 @@ export async function GET(req: Request) {
  * Returns either a deep-link redirect or an HTML page that posts the
  * token back to the opener window (for web preview compatibility).
  */
-function createCallbackResponse(token: string | null, error: string | null) {
+function createCallbackResponse(token: string | null, error: string | null, postMessageOrigin: string = APP_ORIGIN) {
   const deepLink = token
     ? `${APP_SCHEME}://auth-callback?token=${token}`
     : `${APP_SCHEME}://auth-callback?error=${encodeURIComponent(error || "Unknown error")}`;
@@ -65,7 +83,7 @@ function createCallbackResponse(token: string | null, error: string | null) {
         try {
           window.opener.postMessage(
             { type: "vibrantsocial-oauth", token: token, error: error },
-            ${JSON.stringify(APP_ORIGIN)}
+            ${JSON.stringify(postMessageOrigin)}
           );
           setTimeout(function() { window.close(); }, 500);
           return;
