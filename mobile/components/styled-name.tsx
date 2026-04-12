@@ -30,6 +30,7 @@ export const USERNAME_FONTS: FontDefinition[] = [
   { id: "bonbon", name: "Bonbon", googleFamily: "Bonbon", tier: "premium" },
   { id: "agu-display", name: "Agu Display", googleFamily: "Agu+Display", tier: "premium" },
   { id: "agbalumo", name: "Agbalumo", googleFamily: "Agbalumo", tier: "premium" },
+  { id: "manufacturing-consent", name: "Manufacturing Consent", googleFamily: "Manufacturing+Consent", tier: "premium" },
 ];
 
 const FONT_MAP = new Map(USERNAME_FONTS.map((f) => [f.id, f]));

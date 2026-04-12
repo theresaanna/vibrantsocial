@@ -2,31 +2,20 @@ import { useState, useCallback } from "react";
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { useQuery } from "@tanstack/react-query";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { api } from "@/lib/api";
 import { useDebounce } from "@/hooks/use-debounce";
-import { NavBar } from "@/components/nav-bar";
-import { ThemedView, useUserTheme } from "@/components/themed-view";
-import { useMyTheme } from "@/hooks/use-my-theme";
-import { Sparklefall } from "@/components/sparklefall";
+import { useUserTheme, ScreenBackground } from "@/components/themed-view";
 
 type SearchTab = "users" | "posts" | "tags";
 
 export default function SearchScreen() {
-  const { data: myTheme } = useMyTheme();
-
   return (
-    <ThemedView themeData={myTheme}>
-      <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
-        <NavBar />
-        <SearchContent />
-        {myTheme?.sparklefallEnabled && myTheme.sparklefallPreset && (
-          <Sparklefall preset={myTheme.sparklefallPreset} />
-        )}
-      </SafeAreaView>
-    </ThemedView>
+    <View style={{ flex: 1 }}>
+      <ScreenBackground />
+      <SearchContent />
+    </View>
   );
 }
 

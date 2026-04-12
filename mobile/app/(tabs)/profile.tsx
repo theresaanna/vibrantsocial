@@ -2,15 +2,11 @@ import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from "rea
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { StyledName } from "@/components/styled-name";
-import { Sparklefall } from "@/components/sparklefall";
 import { WallPostList } from "@/components/wall-post-list";
-import { ThemedView } from "@/components/themed-view";
-import { NavBar } from "@/components/nav-bar";
 import { getThemeStyles, hasCustomTheme, hexToRgba, resolveImageUrl } from "@/lib/user-theme";
 
 interface ProfileData {
@@ -64,20 +60,21 @@ export default function ProfileScreen() {
   const containerColor = hexToRgba(theme.containerColor, theme.containerOpacity);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }} edges={["top"]}>
-      <NavBar />
-      {/* Background image */}
+    <View style={{ flex: 1, backgroundColor: bgColor }}>
+      {/* Background image — uses theme size/position/repeat settings */}
       {theme.bgImageUrl && (
         <Image
           source={{ uri: resolveImageUrl(theme.bgImageUrl) ?? undefined }}
           style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-          contentFit="cover"
+          contentFit={
+            theme.bgSize === "contain" ? "contain"
+              : theme.bgSize === "100% 100%" ? "fill"
+              : theme.bgSize === "auto" ? "none"
+              : theme.bgRepeat === "repeat" || theme.bgRepeat === "repeat-x" || theme.bgRepeat === "repeat-y" ? "repeat"
+              : "cover"
+          }
+          contentPosition={theme.bgPosition ?? "center"}
         />
-      )}
-
-      {/* Sparklefall overlay */}
-      {profile.sparklefallEnabled && (
-        <Sparklefall presetName={profile.sparklefallPreset} />
       )}
 
       <ScrollView>
@@ -161,7 +158,7 @@ export default function ProfileScreen() {
           <MenuItem label="Log out" onPress={logout} destructive />
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

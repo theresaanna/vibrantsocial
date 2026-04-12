@@ -2,7 +2,7 @@
  * Top navigation bar matching the web app's header.
  * Custom SVG icons with per-item accent colors and active states.
  */
-import { View, TouchableOpacity, ScrollView, Text, useColorScheme } from "react-native";
+import { View, TouchableOpacity, ScrollView, Text } from "react-native";
 import { useRouter, usePathname } from "expo-router";
 import Svg, { Path, Circle } from "react-native-svg";
 import { useAuth } from "@/lib/auth-context";
@@ -167,8 +167,6 @@ function Badge({ count, color }: { count: number; color: string }) {
 export function NavBar() {
   const router = useRouter();
   const pathname = usePathname();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
   const { user } = useAuth();
 
   // Fetch unread counts
@@ -179,11 +177,11 @@ export function NavBar() {
     refetchInterval: 30000,
   });
 
-  // System theme colors (matching web's zinc palette)
-  const inactiveColor = isDark ? "#a1a1aa" : "#52525b"; // zinc-400 / zinc-600
-  const bgColor = isDark ? "#18181b" : "#ffffff"; // zinc-900 / white
-  const borderColor = isDark ? "#27272a" : "#e4e4e7"; // zinc-800 / zinc-200
-  const dividerColor = isDark ? "#3f3f46" : "#d4d4d8"; // zinc-700 / zinc-300
+  // Use fixed neutral colors for the nav bar — theme should NOT affect navigation
+  const inactiveColor = "#6b7280";
+  const bgColor = "#ffffff";
+  const borderColor = "#e5e7eb";
+  const dividerColor = "#d1d5db";
 
   function isActive(item: NavItem) {
     if (item.key === "home") return pathname === "/" || pathname === "/(tabs)" || pathname === "/(tabs)/index";
@@ -195,8 +193,7 @@ export function NavBar() {
     const active = isActive(item);
     const color = active ? item.activeColor : inactiveColor;
     const badgeCount = item.key === "notifications" ? (unreadNotifs ?? 0) : 0;
-    // Dark mode gets slightly more opaque active bg for visibility
-    const activeBg = isDark ? item.activeColor + "22" : item.activeBg;
+    const activeBg = item.activeBg;
 
     return (
       <TouchableOpacity

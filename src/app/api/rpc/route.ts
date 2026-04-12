@@ -17,9 +17,13 @@ import { withMobileSession } from "@/lib/mobile-session-context";
 import { corsJson, handleCorsPreflightRequest } from "@/lib/cors";
 
 import { searchUsers, searchPosts, searchTagsForSearch, searchMarketplacePosts } from "@/app/search/actions";
-import { fetchNewFeedItems, fetchSinglePost, fetchFeedPage } from "@/app/feed/feed-actions";
+import { fetchNewFeedItems, fetchSinglePost, fetchFeedPage, fetchCloseFriendsFeedPage } from "@/app/feed/feed-actions";
 import { fetchForYouPage } from "@/app/feed/for-you-actions";
-import { fetchNewListFeedItems, fetchListFeedPage } from "@/app/lists/actions";
+import {
+  fetchNewListFeedItems, fetchListFeedPage, getUserLists, getSubscribedLists,
+  getCollaboratingLists, getListMembers, searchUsersForList, getListCollaborators,
+  searchUsersForCollaborator, isSubscribedToList,
+} from "@/app/lists/actions";
 import {
   getConversations,
   getMessages,
@@ -919,6 +923,272 @@ async function mobileUpdateProfileCustomization(data: Record<string, string | bo
   return { success: true, message: "Profile updated" };
 }
 
+// ── Mobile List Management ─────────────────────────────────────────
+
+// ── Mobile List Management ─────────────────────────────────────────
+
+async function mobileGetCollaboratingLists() {
+  const { prisma } = await import("@/lib/prisma");
+  const { auth } = await import("@/auth");
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  const lists = await prisma.userList.findMany({
+    where: {
+      collaborators: { some: { userId: session.user.id } },
+    },
+    include: {
+      _count: { select: { members: true } },
+      owner: { select: { username: true, displayName: true, name: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return JSON.parse(JSON.stringify(lists));
+}
+
+async function mobileCreateList(name: string) {
+  const { prisma } = await import("@/lib/prisma");
+  const { auth } = await import("@/auth");
+  const { invalidate, cacheKeys } = await import("@/lib/cache");
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, message: "Not authenticated" };
+
+  const trimmed = name?.trim();
+  if (!trimmed || trimmed.length < 1 || trimmed.length > 50) {
+    return { success: false, message: "List name must be between 1 and 50 characters" };
+  }
+
+  const existing = await prisma.userList.findUnique({
+    where: { ownerId_name: { ownerId: session.user.id, name: trimmed } },
+  });
+  if (existing) {
+    return { success: false, message: "You already have a list with that name" };
+  }
+
+  const list = await prisma.userList.create({
+    data: { name: trimmed, ownerId: session.user.id },
+  });
+
+  await invalidate(cacheKeys.userLists(session.user.id));
+  return { success: true, message: "List created", listId: list.id };
+}
+
+async function mobileDeleteList(listId: string) {
+  const { prisma } = await import("@/lib/prisma");
+  const { auth } = await import("@/auth");
+  const { invalidate, cacheKeys } = await import("@/lib/cache");
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, message: "Not authenticated" };
+
+  const list = await prisma.userList.findUnique({ where: { id: listId } });
+  if (!list || list.ownerId !== session.user.id) {
+    return { success: false, message: "List not found or not owned by you" };
+  }
+
+  await prisma.userList.delete({ where: { id: listId } });
+  await Promise.all([
+    invalidate(cacheKeys.userLists(session.user.id)),
+    invalidate(cacheKeys.userListMembers(listId)),
+  ]);
+
+  return { success: true, message: "List deleted" };
+}
+
+async function mobileRenameList(listId: string, name: string) {
+  const { prisma } = await import("@/lib/prisma");
+  const { auth } = await import("@/auth");
+  const { invalidate, cacheKeys } = await import("@/lib/cache");
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, message: "Not authenticated" };
+
+  const trimmed = name?.trim();
+  if (!trimmed || trimmed.length < 1 || trimmed.length > 50) {
+    return { success: false, message: "List name must be between 1 and 50 characters" };
+  }
+
+  const list = await prisma.userList.findUnique({ where: { id: listId } });
+  if (!list || list.ownerId !== session.user.id) {
+    return { success: false, message: "List not found or not owned by you" };
+  }
+
+  const duplicate = await prisma.userList.findUnique({
+    where: { ownerId_name: { ownerId: session.user.id, name: trimmed } },
+  });
+  if (duplicate && duplicate.id !== listId) {
+    return { success: false, message: "You already have a list with that name" };
+  }
+
+  await prisma.userList.update({ where: { id: listId }, data: { name: trimmed } });
+  await invalidate(cacheKeys.userLists(session.user.id));
+  return { success: true, message: "List renamed" };
+}
+
+async function mobileToggleListPrivacy(listId: string) {
+  const { prisma } = await import("@/lib/prisma");
+  const { auth } = await import("@/auth");
+  const { invalidate, cacheKeys } = await import("@/lib/cache");
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, message: "Not authenticated" };
+
+  const list = await prisma.userList.findUnique({ where: { id: listId } });
+  if (!list || list.ownerId !== session.user.id) {
+    return { success: false, message: "List not found or not owned by you" };
+  }
+
+  const newPrivacy = !list.isPrivate;
+  await prisma.userList.update({ where: { id: listId }, data: { isPrivate: newPrivacy } });
+  await invalidate(cacheKeys.userLists(session.user.id));
+  return { success: true, message: newPrivacy ? "List is now private" : "List is now public", isPrivate: newPrivacy };
+}
+
+async function mobileAddMemberToList(listId: string, userId: string) {
+  const { prisma } = await import("@/lib/prisma");
+  const { auth } = await import("@/auth");
+  const { invalidate, cacheKeys } = await import("@/lib/cache");
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, message: "Not authenticated" };
+
+  // Check permission
+  const list = await prisma.userList.findUnique({ where: { id: listId } });
+  if (!list) return { success: false, message: "List not found" };
+  const isOwner = list.ownerId === session.user.id;
+  const collab = !isOwner ? await prisma.userListCollaborator.findUnique({
+    where: { listId_userId: { listId, userId: session.user.id } },
+  }) : null;
+  if (!isOwner && !collab) return { success: false, message: "You don't have permission" };
+
+  const existing = await prisma.userListMember.findUnique({
+    where: { listId_userId: { listId, userId } },
+  });
+  if (existing) return { success: false, message: "User is already in this list" };
+
+  await prisma.userListMember.create({ data: { listId, userId } });
+  await invalidate(cacheKeys.userListMembers(listId));
+  return { success: true, message: "Member added" };
+}
+
+async function mobileRemoveMemberFromList(listId: string, userId: string) {
+  const { prisma } = await import("@/lib/prisma");
+  const { auth } = await import("@/auth");
+  const { invalidate, cacheKeys } = await import("@/lib/cache");
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, message: "Not authenticated" };
+
+  const list = await prisma.userList.findUnique({ where: { id: listId } });
+  if (!list) return { success: false, message: "List not found" };
+  const isOwner = list.ownerId === session.user.id;
+  const collab = !isOwner ? await prisma.userListCollaborator.findUnique({
+    where: { listId_userId: { listId, userId: session.user.id } },
+  }) : null;
+  if (!isOwner && !collab) return { success: false, message: "You don't have permission" };
+
+  const member = await prisma.userListMember.findUnique({
+    where: { listId_userId: { listId, userId } },
+  });
+  if (!member) return { success: false, message: "User is not in this list" };
+
+  await prisma.userListMember.delete({ where: { id: member.id } });
+  await invalidate(cacheKeys.userListMembers(listId));
+  return { success: true, message: "Member removed" };
+}
+
+async function mobileAddCollaboratorToList(listId: string, userId: string) {
+  const { prisma } = await import("@/lib/prisma");
+  const { auth } = await import("@/auth");
+  const { invalidate, cacheKeys } = await import("@/lib/cache");
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, message: "Not authenticated" };
+
+  const list = await prisma.userList.findUnique({ where: { id: listId } });
+  if (!list || list.ownerId !== session.user.id) {
+    return { success: false, message: "Only the list owner can add collaborators" };
+  }
+
+  if (userId === session.user.id) return { success: false, message: "Cannot add yourself" };
+
+  const existing = await prisma.userListCollaborator.findUnique({
+    where: { listId_userId: { listId, userId } },
+  });
+  if (existing) return { success: false, message: "User is already a collaborator" };
+
+  await prisma.userListCollaborator.create({ data: { listId, userId } });
+  await invalidate(cacheKeys.userListCollaborators(listId));
+  return { success: true, message: "Collaborator added" };
+}
+
+async function mobileRemoveCollaboratorFromList(listId: string, userId: string) {
+  const { prisma } = await import("@/lib/prisma");
+  const { auth } = await import("@/auth");
+  const { invalidate, cacheKeys } = await import("@/lib/cache");
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, message: "Not authenticated" };
+
+  const list = await prisma.userList.findUnique({ where: { id: listId } });
+  if (!list || list.ownerId !== session.user.id) {
+    return { success: false, message: "Only the list owner can remove collaborators" };
+  }
+
+  const collab = await prisma.userListCollaborator.findUnique({
+    where: { listId_userId: { listId, userId } },
+  });
+  if (!collab) return { success: false, message: "User is not a collaborator" };
+
+  await prisma.userListCollaborator.delete({ where: { id: collab.id } });
+  await invalidate(cacheKeys.userListCollaborators(listId));
+  return { success: true, message: "Collaborator removed" };
+}
+
+async function mobileGetListMembers(listId: string) {
+  const result = await getListMembers(listId);
+  if (!result) return null;
+  return JSON.parse(JSON.stringify(result));
+}
+
+async function mobileIsSubscribedToList(listId: string) {
+  return isSubscribedToList(listId);
+}
+
+async function mobileToggleListSubscription(listId: string) {
+  const { prisma } = await import("@/lib/prisma");
+  const { auth } = await import("@/auth");
+  const { invalidate, cacheKeys } = await import("@/lib/cache");
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, message: "Not authenticated" };
+
+  const list = await prisma.userList.findUnique({ where: { id: listId } });
+  if (!list) return { success: false, message: "List not found" };
+
+  if (list.ownerId === session.user.id) {
+    return { success: false, message: "You own this list" };
+  }
+
+  if (list.isPrivate) {
+    const [isMember, isCollab] = await Promise.all([
+      prisma.userListMember.findUnique({ where: { listId_userId: { listId, userId: session.user.id } } }),
+      prisma.userListCollaborator.findUnique({ where: { listId_userId: { listId, userId: session.user.id } } }),
+    ]);
+    if (!isMember && !isCollab) {
+      return { success: false, message: "This list is private" };
+    }
+  }
+
+  const existing = await prisma.userListSubscription.findUnique({
+    where: { listId_userId: { listId, userId: session.user.id } },
+  });
+
+  if (existing) {
+    await prisma.userListSubscription.delete({ where: { id: existing.id } });
+  } else {
+    await prisma.userListSubscription.create({
+      data: { listId, userId: session.user.id },
+    });
+  }
+
+  await invalidate(cacheKeys.userListSubscriptions(session.user.id));
+  return { success: true, message: existing ? "Unsubscribed" : "Subscribed", isSubscribed: !existing };
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const ACTIONS: Record<string, (...args: any[]) => Promise<any>> = {
   searchUsers,
@@ -928,9 +1198,27 @@ const ACTIONS: Record<string, (...args: any[]) => Promise<any>> = {
   fetchNewFeedItems,
   fetchSinglePost,
   fetchFeedPage,
+  fetchCloseFriendsFeedPage,
   fetchForYouPage,
   fetchNewListFeedItems,
   fetchListFeedPage,
+  getUserLists,
+  getSubscribedLists,
+  getCollaboratingLists: mobileGetCollaboratingLists,
+  createList: mobileCreateList,
+  deleteList: mobileDeleteList,
+  renameList: mobileRenameList,
+  toggleListPrivacy: mobileToggleListPrivacy,
+  addMemberToList: mobileAddMemberToList,
+  removeMemberFromList: mobileRemoveMemberFromList,
+  addCollaboratorToList: mobileAddCollaboratorToList,
+  removeCollaboratorFromList: mobileRemoveCollaboratorFromList,
+  getListMembers: mobileGetListMembers,
+  searchUsersForList,
+  getListCollaborators,
+  searchUsersForCollaborator,
+  isSubscribedToList: mobileIsSubscribedToList,
+  toggleListSubscription: mobileToggleListSubscription,
   getConversations,
   getMessages,
   getConversationDetails,

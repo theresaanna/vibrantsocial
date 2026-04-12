@@ -21,8 +21,8 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        // Hide the default tab bar — we use our own NavBar in each screen
         tabBarStyle: { display: "none" },
+        sceneStyle: { backgroundColor: "transparent" },
       }}
     >
       <Tabs.Screen name="index" options={{ title: "Feed" }} />

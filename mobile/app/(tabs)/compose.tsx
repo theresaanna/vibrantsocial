@@ -1,14 +1,12 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Switch,
   Modal,
   Pressable,
 } from "react-native";
@@ -16,22 +14,27 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import Toast from "react-native-toast-message";
 import { PollCreator, type PollCreatorData } from "@/components/poll-creator";
+import { RichTextEditor, type RichTextEditorRef } from "@/components/rich-text-editor";
+import { ComposeToolbar } from "@/components/compose-toolbar";
+import { useUserTheme, ScreenBackground } from "@/components/themed-view";
 
 type AudienceType = "public" | "friends" | "close_friends";
 
 export default function ComposeScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [content, setContent] = useState("");
+  const theme = useUserTheme();
+  const editorRef = useRef<RichTextEditorRef>(null);
+
   const [images, setImages] = useState<ImagePicker.ImagePickerAsset[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [hasContent, setHasContent] = useState(false);
 
-  // New feature state
+  // Post meta state
   const [isNsfw, setIsNsfw] = useState(false);
   const [audience, setAudience] = useState<AudienceType>("public");
   const [showAudienceMenu, setShowAudienceMenu] = useState(false);
@@ -39,10 +42,11 @@ export default function ComposeScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [pollData, setPollData] = useState<PollCreatorData | null>(null);
+  const [youtubeIds, setYoutubeIds] = useState<string[]>([]);
 
   const createPost = useMutation({
-    mutationFn: async () => {
-      // Upload images first
+    mutationFn: async (lexicalJson: string) => {
+      // Upload images
       const mediaUrls: string[] = [];
       if (images.length > 0) {
         setUploading(true);
@@ -57,26 +61,33 @@ export default function ComposeScreen() {
         setUploading(false);
       }
 
-      // Create Lexical-compatible JSON for text content
-      const editorState = {
-        root: {
-          children: [
-            {
-              children: [{ detail: 0, format: 0, mode: "normal", style: "", text: content, type: "text", version: 1 }],
-              direction: "ltr",
-              format: "",
-              indent: 0,
-              type: "paragraph",
-              version: 1,
-            },
-          ],
+      // Build the editor state and append media nodes
+      const editorState = JSON.parse(lexicalJson);
+      for (const url of mediaUrls) {
+        editorState.root.children.push({
+          children: [{
+            type: "image",
+            src: url,
+            altText: "",
+            width: "inherit",
+            height: "inherit",
+            version: 1,
+          }],
           direction: "ltr",
           format: "",
           indent: 0,
-          type: "root",
+          type: "paragraph",
           version: 1,
-        },
-      };
+        });
+      }
+      // Append YouTube embeds
+      for (const videoID of youtubeIds) {
+        editorState.root.children.push({
+          type: "youtube",
+          videoID,
+          version: 1,
+        });
+      }
 
       // Build poll options if poll is active
       let pollOptions: { question: string; options: string[]; durationHours: number } | undefined;
@@ -103,12 +114,14 @@ export default function ComposeScreen() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["feed"] });
-      setContent("");
+      editorRef.current?.clear();
       setImages([]);
+      setYoutubeIds([]);
       setIsNsfw(false);
       setAudience("public");
       setScheduledFor(null);
       setPollData(null);
+      setHasContent(false);
       Toast.show({
         type: "success",
         text1: scheduledFor ? "Post scheduled!" : "Post created!",
@@ -119,6 +132,27 @@ export default function ComposeScreen() {
       Toast.show({ type: "error", text1: "Failed to create post" });
     },
   });
+
+  function handleSubmit() {
+    const lexicalJson = editorRef.current?.getContent();
+    if (lexicalJson) {
+      createPost.mutate(lexicalJson);
+    }
+  }
+
+  // Track whether editor has content (text or images/embeds)
+  const handleEditorChange = useCallback((html: string) => {
+    // Strip HTML tags iteratively to avoid incomplete sanitization (e.g. nested or split tags)
+    let stripped = html;
+    let prev = "";
+    while (stripped !== prev) {
+      prev = stripped;
+      stripped = stripped.replace(/<[^>]*>/g, "");
+    }
+    const text = stripped.trim();
+    const hasMedia = /<img\b/i.test(html) || /data-youtube/i.test(html);
+    setHasContent(text.length > 0 || hasMedia);
+  }, []);
 
   async function pickImage() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -141,7 +175,11 @@ export default function ComposeScreen() {
   }
 
   const isSubmitting = createPost.isPending || uploading;
-  const hasContent = content.trim() || images.length > 0 || (pollData && pollData.question.trim() && pollData.options.filter((o) => o.trim()).length >= 2);
+  const canSubmit =
+    hasContent ||
+    images.length > 0 ||
+    youtubeIds.length > 0 ||
+    (pollData && pollData.question.trim() && pollData.options.filter((o) => o.trim()).length >= 2);
 
   const audienceLabel =
     audience === "public"
@@ -151,124 +189,121 @@ export default function ComposeScreen() {
         : "Close Friends";
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={["top"]}>
+    <View style={{ flex: 1, backgroundColor: theme.backgroundColor }}>
+      <ScreenBackground />
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
         {/* Header */}
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "#e5e7eb" }}>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: 12,
+            paddingHorizontal: 16,
+            borderBottomWidth: 1,
+            borderBottomColor: theme.secondaryColor + "33",
+          }}
+        >
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={{ color: "#6b7280", fontSize: 16 }}>Cancel</Text>
+            <Text style={{ color: theme.secondaryColor, fontSize: 16 }}>Cancel</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => createPost.mutate()}
-            disabled={isSubmitting || !hasContent}
-            style={{
-              backgroundColor: "#c026d3",
-              borderRadius: 20,
-              paddingHorizontal: 20,
-              paddingVertical: 8,
-              opacity: isSubmitting || !hasContent ? 0.5 : 1,
-            }}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={{ color: "#fff", fontWeight: "600" }}>
-                {scheduledFor ? "Schedule" : "Post"}
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
 
-        <ScrollView style={{ flex: 1, padding: 16 }}>
-          {/* Audience badge */}
-          {audience !== "public" && (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 8,
-              }}
-            >
-              <View
-                style={{
-                  backgroundColor: "#fae8ff",
-                  paddingHorizontal: 10,
-                  paddingVertical: 4,
-                  borderRadius: 12,
-                }}
-              >
-                <Text style={{ color: "#c026d3", fontSize: 12, fontWeight: "600" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            {/* Audience badge in header */}
+            {audience !== "public" && (
+              <View style={{
+                backgroundColor: theme.linkColor + "22",
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 12,
+              }}>
+                <Text style={{ color: theme.linkColor, fontSize: 11, fontWeight: "600" }}>
                   {audienceLabel}
                 </Text>
               </View>
-            </View>
-          )}
+            )}
 
-          {/* Schedule indicator */}
-          {scheduledFor && (
             <TouchableOpacity
-              onPress={() => setShowDatePicker(true)}
+              onPress={handleSubmit}
+              disabled={isSubmitting || !canSubmit}
               style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 8,
-                backgroundColor: "#f0fdf4",
-                padding: 8,
-                borderRadius: 8,
+                backgroundColor: theme.linkColor,
+                borderRadius: 20,
+                paddingHorizontal: 20,
+                paddingVertical: 8,
+                opacity: isSubmitting || !canSubmit ? 0.5 : 1,
               }}
             >
-              <Text style={{ fontSize: 14, color: "#16a34a" }}>
-                Scheduled: {scheduledFor.toLocaleDateString()} at{" "}
-                {scheduledFor.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setScheduledFor(null)}
-                style={{ marginLeft: "auto", padding: 4 }}
-              >
-                <Text style={{ color: "#ef4444", fontSize: 12, fontWeight: "700" }}>
-                  X
+              {isSubmitting ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={{ color: "#fff", fontWeight: "600" }}>
+                  {scheduledFor ? "Schedule" : "Post"}
                 </Text>
-              </TouchableOpacity>
+              )}
             </TouchableOpacity>
-          )}
+          </View>
+        </View>
 
-          {/* NSFW indicator */}
-          {isNsfw && (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 8,
+        {/* Indicators row */}
+        {(scheduledFor || isNsfw) && (
+          <View style={{ flexDirection: "row", paddingHorizontal: 16, paddingTop: 8, gap: 8 }}>
+            {scheduledFor && (
+              <TouchableOpacity
+                onPress={() => setShowDatePicker(true)}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "#f0fdf4",
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  borderRadius: 12,
+                  gap: 6,
+                }}
+              >
+                <Text style={{ fontSize: 12, color: "#16a34a" }}>
+                  {scheduledFor.toLocaleDateString()} {scheduledFor.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </Text>
+                <TouchableOpacity onPress={() => setScheduledFor(null)} hitSlop={8}>
+                  <Text style={{ color: "#ef4444", fontSize: 11, fontWeight: "700" }}>X</Text>
+                </TouchableOpacity>
+              </TouchableOpacity>
+            )}
+            {isNsfw && (
+              <View style={{
                 backgroundColor: "#fef2f2",
-                padding: 8,
-                borderRadius: 8,
-              }}
-            >
-              <Text style={{ fontSize: 12, color: "#ef4444", fontWeight: "600" }}>
-                NSFW
-              </Text>
-            </View>
-          )}
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 12,
+              }}>
+                <Text style={{ fontSize: 11, color: "#ef4444", fontWeight: "600" }}>NSFW</Text>
+              </View>
+            )}
+          </View>
+        )}
 
-          <TextInput
+        {/* Editor area */}
+        <ScrollView
+          style={{ flex: 1 }}
+          keyboardShouldPersistTaps="always"
+          keyboardDismissMode="none"
+          contentContainerStyle={{ padding: 16, flexGrow: 1 }}
+        >
+          <RichTextEditor
+            ref={editorRef}
+            onChange={handleEditorChange}
             placeholder="What's on your mind?"
-            value={content}
-            onChangeText={setContent}
-            multiline
+            minHeight={200}
             autoFocus
-            style={{
-              fontSize: 18,
-              minHeight: 120,
-              textAlignVertical: "top",
-            }}
           />
 
           {/* Image previews */}
           {images.length > 0 && (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
               {images.map((img, i) => (
                 <View key={i} style={{ position: "relative" }}>
                   <Image
@@ -297,233 +332,199 @@ export default function ComposeScreen() {
             </View>
           )}
 
+          {/* YouTube previews */}
+          {youtubeIds.length > 0 && (
+            <View style={{ gap: 8, marginTop: 12 }}>
+              {youtubeIds.map((vid, i) => (
+                <View key={vid} style={{ position: "relative", borderRadius: 12, overflow: "hidden" }}>
+                  <Image
+                    source={{ uri: `https://img.youtube.com/vi/${vid}/hqdefault.jpg` }}
+                    style={{ width: "100%", aspectRatio: 16 / 9, borderRadius: 12 }}
+                    contentFit="cover"
+                  />
+                  <View style={{
+                    position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                    justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.2)",
+                  }}>
+                    <View style={{
+                      width: 48, height: 48, borderRadius: 24,
+                      backgroundColor: "rgba(255,0,0,0.9)",
+                      justifyContent: "center", alignItems: "center",
+                    }}>
+                      <View style={{
+                        width: 0, height: 0,
+                        borderLeftWidth: 18, borderTopWidth: 11, borderBottomWidth: 11,
+                        borderLeftColor: "#fff", borderTopColor: "transparent", borderBottomColor: "transparent",
+                        marginLeft: 4,
+                      }} />
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setYoutubeIds((prev) => prev.filter((_, j) => j !== i))}
+                    style={{
+                      position: "absolute", top: 6, right: 6,
+                      backgroundColor: "#000", borderRadius: 10,
+                      width: 20, height: 20, alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    <Text style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}>X</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+
           {/* Poll creator */}
           {pollData && (
-            <PollCreator
-              data={pollData}
-              onChange={setPollData}
-              onRemove={() => setPollData(null)}
-            />
+            <View style={{ marginTop: 12 }}>
+              <PollCreator
+                data={pollData}
+                onChange={setPollData}
+                onRemove={() => setPollData(null)}
+              />
+            </View>
           )}
         </ScrollView>
 
         {/* Toolbar */}
-        <View
+        <ComposeToolbar
+          editorRef={editorRef}
+          onPickImage={pickImage}
+          onTogglePoll={togglePoll}
+          onToggleNsfw={() => setIsNsfw((v) => !v)}
+          onPickAudience={() => setShowAudienceMenu(true)}
+          onInsertYouTube={(videoID) => setYoutubeIds((prev) => [...prev, videoID])}
+          onSchedule={() => setShowDatePicker(true)}
+          imageCount={images.length}
+          isNsfw={isNsfw}
+          hasPoll={!!pollData}
+          hasSchedule={!!scheduledFor}
+        />
+      </KeyboardAvoidingView>
+
+      {/* Date picker */}
+      {showDatePicker && (
+        <DateTimePicker
+          value={scheduledFor ?? new Date(Date.now() + 3600000)}
+          mode="date"
+          minimumDate={new Date()}
+          onChange={(event, date) => {
+            setShowDatePicker(false);
+            if (event.type === "set" && date) {
+              const newDate = scheduledFor ? new Date(scheduledFor) : new Date();
+              newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+              setScheduledFor(newDate);
+              setShowTimePicker(true);
+            }
+          }}
+        />
+      )}
+
+      {showTimePicker && (
+        <DateTimePicker
+          value={scheduledFor ?? new Date(Date.now() + 3600000)}
+          mode="time"
+          onChange={(event, date) => {
+            setShowTimePicker(false);
+            if (event.type === "set" && date) {
+              const newDate = scheduledFor ? new Date(scheduledFor) : new Date();
+              newDate.setHours(date.getHours(), date.getMinutes());
+              setScheduledFor(newDate);
+            }
+          }}
+        />
+      )}
+
+      {/* Audience picker modal */}
+      <Modal
+        visible={showAudienceMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAudienceMenu(false)}
+      >
+        <Pressable
           style={{
-            flexDirection: "row",
-            padding: 12,
-            borderTopWidth: 1,
-            borderTopColor: "#e5e7eb",
-            gap: 16,
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.4)",
+            justifyContent: "center",
             alignItems: "center",
           }}
+          onPress={() => setShowAudienceMenu(false)}
         >
-          {/* Image picker */}
-          <TouchableOpacity onPress={pickImage} disabled={images.length >= 4}>
-            <Text style={{ fontSize: 24, opacity: images.length >= 4 ? 0.3 : 1 }}>
-              {"\uD83D\uDDBC\uFE0F"}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Poll toggle */}
-          <TouchableOpacity onPress={togglePoll}>
-            <Text style={{ fontSize: 24, opacity: pollData ? 1 : 0.6 }}>
-              {"\uD83D\uDCCA"}
-            </Text>
-          </TouchableOpacity>
-
-          {/* NSFW toggle */}
-          <TouchableOpacity
-            onPress={() => setIsNsfw((v) => !v)}
+          <View
             style={{
-              backgroundColor: isNsfw ? "#fecaca" : "#f3f4f6",
-              paddingHorizontal: 8,
-              paddingVertical: 4,
-              borderRadius: 8,
+              backgroundColor: theme.backgroundColor || "#fff",
+              borderRadius: 16,
+              width: 280,
+              overflow: "hidden",
             }}
-          >
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: "600",
-                color: isNsfw ? "#ef4444" : "#9ca3af",
-              }}
-            >
-              NSFW
-            </Text>
-          </TouchableOpacity>
-
-          {/* Audience picker */}
-          <TouchableOpacity
-            onPress={() => setShowAudienceMenu(true)}
-            style={{
-              backgroundColor: audience === "public" ? "#f3f4f6" : "#fae8ff",
-              paddingHorizontal: 8,
-              paddingVertical: 4,
-              borderRadius: 8,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: "600",
-                color: audience === "public" ? "#9ca3af" : "#c026d3",
-              }}
-            >
-              {audience === "public"
-                ? "\uD83C\uDF0D"
-                : audience === "friends"
-                  ? "\uD83D\uDC65"
-                  : "\u2B50"}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Schedule button */}
-          <TouchableOpacity
-            onPress={() => setShowDatePicker(true)}
-            style={{
-              backgroundColor: scheduledFor ? "#dcfce7" : "#f3f4f6",
-              paddingHorizontal: 8,
-              paddingVertical: 4,
-              borderRadius: 8,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: "600",
-                color: scheduledFor ? "#16a34a" : "#9ca3af",
-              }}
-            >
-              {"\uD83D\uDD52"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Date picker */}
-        {showDatePicker && (
-          <DateTimePicker
-            value={scheduledFor ?? new Date(Date.now() + 3600000)}
-            mode="date"
-            minimumDate={new Date()}
-            onChange={(event, date) => {
-              setShowDatePicker(false);
-              if (event.type === "set" && date) {
-                const newDate = scheduledFor ? new Date(scheduledFor) : new Date();
-                newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
-                setScheduledFor(newDate);
-                setShowTimePicker(true);
-              }
-            }}
-          />
-        )}
-
-        {showTimePicker && (
-          <DateTimePicker
-            value={scheduledFor ?? new Date(Date.now() + 3600000)}
-            mode="time"
-            onChange={(event, date) => {
-              setShowTimePicker(false);
-              if (event.type === "set" && date) {
-                const newDate = scheduledFor ? new Date(scheduledFor) : new Date();
-                newDate.setHours(date.getHours(), date.getMinutes());
-                setScheduledFor(newDate);
-              }
-            }}
-          />
-        )}
-
-        {/* Audience picker modal */}
-        <Modal
-          visible={showAudienceMenu}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowAudienceMenu(false)}
-        >
-          <Pressable
-            style={{
-              flex: 1,
-              backgroundColor: "rgba(0,0,0,0.4)",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-            onPress={() => setShowAudienceMenu(false)}
           >
             <View
               style={{
-                backgroundColor: "#fff",
-                borderRadius: 16,
-                width: 280,
-                overflow: "hidden",
+                padding: 16,
+                borderBottomWidth: 1,
+                borderBottomColor: theme.secondaryColor + "22",
               }}
             >
-              <View
+              <Text style={{ fontWeight: "600", fontSize: 16, color: theme.textColor }}>
+                Who can see this post?
+              </Text>
+            </View>
+
+            {(
+              [
+                { key: "public", label: "Public", icon: "\uD83C\uDF0D", description: "Everyone" },
+                { key: "friends", label: "Friends Only", icon: "\uD83D\uDC65", description: "Your friends" },
+                { key: "close_friends", label: "Close Friends", icon: "\u2B50", description: "Your close friends" },
+              ] as const
+            ).map((option) => (
+              <TouchableOpacity
+                key={option.key}
+                onPress={() => {
+                  setAudience(option.key);
+                  setShowAudienceMenu(false);
+                }}
                 style={{
-                  padding: 16,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingVertical: 14,
+                  paddingHorizontal: 16,
                   borderBottomWidth: 1,
-                  borderBottomColor: "#f3f4f6",
+                  borderBottomColor: theme.secondaryColor + "22",
+                  backgroundColor:
+                    audience === option.key ? theme.linkColor + "11" : "transparent",
                 }}
               >
-                <Text style={{ fontWeight: "600", fontSize: 16, color: "#1f2937" }}>
-                  Who can see this post?
+                <Text style={{ fontSize: 20, marginRight: 12 }}>
+                  {option.icon}
                 </Text>
-              </View>
-
-              {(
-                [
-                  { key: "public", label: "Public", icon: "\uD83C\uDF0D", description: "Everyone" },
-                  { key: "friends", label: "Friends Only", icon: "\uD83D\uDC65", description: "Your friends" },
-                  { key: "close_friends", label: "Close Friends", icon: "\u2B50", description: "Your close friends" },
-                ] as const
-              ).map((option) => (
-                <TouchableOpacity
-                  key={option.key}
-                  onPress={() => {
-                    setAudience(option.key);
-                    setShowAudienceMenu(false);
-                  }}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    paddingVertical: 14,
-                    paddingHorizontal: 16,
-                    borderBottomWidth: 1,
-                    borderBottomColor: "#f3f4f6",
-                    backgroundColor:
-                      audience === option.key ? "#faf5ff" : "#fff",
-                  }}
-                >
-                  <Text style={{ fontSize: 20, marginRight: 12 }}>
-                    {option.icon}
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: "500", color: theme.textColor }}>
+                    {option.label}
                   </Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, fontWeight: "500", color: "#1f2937" }}>
-                      {option.label}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: "#9ca3af" }}>
-                      {option.description}
-                    </Text>
-                  </View>
-                  {audience === option.key && (
-                    <Text style={{ color: "#c026d3", fontSize: 16, fontWeight: "700" }}>
-                      {"\u2713"}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              ))}
-
-              <TouchableOpacity
-                onPress={() => setShowAudienceMenu(false)}
-                style={{ paddingVertical: 14, paddingHorizontal: 16 }}
-              >
-                <Text style={{ fontSize: 15, color: "#9ca3af", textAlign: "center" }}>
-                  Cancel
-                </Text>
+                  <Text style={{ fontSize: 12, color: theme.secondaryColor }}>
+                    {option.description}
+                  </Text>
+                </View>
+                {audience === option.key && (
+                  <Text style={{ color: theme.linkColor, fontSize: 16, fontWeight: "700" }}>
+                    {"\u2713"}
+                  </Text>
+                )}
               </TouchableOpacity>
-            </View>
-          </Pressable>
-        </Modal>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+            ))}
+
+            <TouchableOpacity
+              onPress={() => setShowAudienceMenu(false)}
+              style={{ paddingVertical: 14, paddingHorizontal: 16 }}
+            >
+              <Text style={{ fontSize: 15, color: theme.secondaryColor, textAlign: "center" }}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
+    </View>
   );
 }

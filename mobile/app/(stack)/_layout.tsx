@@ -4,8 +4,8 @@ export default function StackLayout() {
   return (
     <Stack
       screenOptions={{
-        headerTintColor: "#c026d3",
-        headerBackTitle: "Back",
+        headerShown: false,
+        contentStyle: { backgroundColor: "transparent" },
       }}
     >
       <Stack.Screen name="post/[id]/index" options={{ title: "Post" }} />
