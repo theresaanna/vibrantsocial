@@ -7,6 +7,7 @@ import {
   sendMentionEmail,
   sendWelcomeEmail,
   sendFriendRequestEmail,
+  sendListJoinRequestEmail,
   sendNewPostEmail,
   sendTagPostEmail,
   sendTagDigestEmail,
@@ -73,6 +74,18 @@ export const sendFriendRequestEmailFn = inngest.createFunction(
   { event: "email/friend-request" },
   async ({ event }) => {
     await sendFriendRequestEmail(event.data);
+  }
+);
+
+export const sendListJoinRequestEmailFn = inngest.createFunction(
+  {
+    id: "send-list-join-request-email",
+    retries: 3,
+    onFailure: onFunctionFailure("send-list-join-request-email"),
+  },
+  { event: "email/list-join-request" },
+  async ({ event }) => {
+    await sendListJoinRequestEmail(event.data);
   }
 );
 
