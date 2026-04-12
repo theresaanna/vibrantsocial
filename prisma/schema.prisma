@@ -108,7 +108,8 @@ model User {
   emailOnComment        Boolean @default(true)
   emailOnNewChat        Boolean @default(true)
   emailOnMention        Boolean @default(true)
-  emailOnFriendRequest  Boolean @default(true)
+  emailOnFriendRequest      Boolean @default(true)
+  emailOnListJoinRequest    Boolean @default(true)
   emailOnSubscribedPost Boolean @default(true)
   emailOnTagPost        Boolean @default(true)
 
@@ -218,6 +219,7 @@ model User {
   userListMembers        UserListMember[]       @relation("userListMembership")
   userListSubscriptions  UserListSubscription[] @relation("userListSubscriber")
   userListCollaborations UserListCollaborator[] @relation("userListCollaborator")
+  userListJoinRequests   UserListJoinRequest[]  @relation("userListJoinRequester")
 
   // Tag subscriptions
   tagSubscriptions TagSubscription[]
@@ -857,6 +859,7 @@ enum NotificationType {
   CHAT_REQUEST_ACCEPTED
   CHAT_ABUSE
   SUBSCRIBED_COMMENT
+  LIST_JOIN_REQUEST
 }
 
 model Notification {
@@ -1060,6 +1063,7 @@ model UserList {
   id        String   @id @default(cuid())
   name      String
   ownerId   String
+  isPrivate Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1067,6 +1071,7 @@ model UserList {
   members       UserListMember[]
   subscriptions UserListSubscription[]
   collaborators UserListCollaborator[]
+  joinRequests  UserListJoinRequest[]
   notifications Notification[]
 
   @@unique([ownerId, name])
@@ -1113,6 +1118,28 @@ model UserListCollaborator {
   @@unique([listId, userId])
   @@index([listId])
   @@index([userId])
+}
+
+model UserListJoinRequest {
+  id        String                   @id @default(cuid())
+  listId    String
+  userId    String
+  status    UserListJoinRequestStatus @default(PENDING)
+  createdAt DateTime                 @default(now())
+  updatedAt DateTime                 @updatedAt
+
+  list UserList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  user User     @relation("userListJoinRequester", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, userId])
+  @@index([listId, status])
+  @@index([userId])
+}
+
+enum UserListJoinRequestStatus {
+  PENDING
+  APPROVED
+  DECLINED
 }
 
 model PostAudience {

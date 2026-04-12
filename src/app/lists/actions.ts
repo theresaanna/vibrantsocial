@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { inngest } from "@/lib/inngest";
 import { invalidate, cached, cacheKeys } from "@/lib/cache";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 import { getPostInclude, getRepostInclude, PAGE_SIZE, publishedOnly } from "@/app/feed/feed-queries";
@@ -132,6 +133,34 @@ export async function renameList(
   revalidatePath("/lists");
 
   return { success: true, message: "List renamed" };
+}
+
+export async function toggleListPrivacy(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const listId = formData.get("listId") as string;
+  if (!listId) {
+    return { success: false, message: "Missing list ID" };
+  }
+
+  const list = await prisma.userList.findUnique({ where: { id: listId } });
+  if (!list || list.ownerId !== session.user.id) {
+    return { success: false, message: "List not found or not owned by you" };
+  }
+
+  const newPrivacy = !list.isPrivate;
+  await prisma.userList.update({ where: { id: listId }, data: { isPrivate: newPrivacy } });
+
+  await invalidate(cacheKeys.userLists(session.user.id));
+  revalidatePath(`/lists/${listId}`);
+
+  return { success: true, message: newPrivacy ? "List is now private" : "List is now public" };
 }
 
 export async function addMemberToList(
@@ -336,9 +365,31 @@ export async function getListMembers(listId: string) {
 
   const list = await prisma.userList.findUnique({
     where: { id: listId },
-    select: { id: true, name: true, ownerId: true },
+    select: {
+      id: true,
+      name: true,
+      ownerId: true,
+      isPrivate: true,
+      owner: { select: { username: true, displayName: true, name: true, avatar: true, image: true, profileFrameId: true } },
+    },
   });
   if (!list) return null;
+
+  const isOwner = list.ownerId === session.user.id;
+
+  const isCollaborator = !isOwner
+    ? !!(await prisma.userListCollaborator.findUnique({
+        where: { listId_userId: { listId, userId: session.user.id } },
+      }))
+    : false;
+
+  // Private lists: only owner, collaborators, and members can view
+  if (list.isPrivate && !isOwner && !isCollaborator) {
+    const isMember = await prisma.userListMember.findUnique({
+      where: { listId_userId: { listId, userId: session.user.id } },
+    });
+    if (!isMember) return null;
+  }
 
   const members = await cached(
     cacheKeys.userListMembers(listId),
@@ -351,12 +402,6 @@ export async function getListMembers(listId: string) {
     },
     60
   );
-
-  const isCollaborator = list.ownerId !== session.user.id
-    ? !!(await prisma.userListCollaborator.findUnique({
-        where: { listId_userId: { listId, userId: session.user.id } },
-      }))
-    : false;
 
   return { list, members, isCollaborator };
 }
@@ -491,6 +536,17 @@ export async function toggleListSubscription(
   // Can't subscribe to your own list
   if (list.ownerId === session.user.id) {
     return { success: false, message: "You own this list" };
+  }
+
+  // Can't subscribe to a private list unless already a member or collaborator
+  if (list.isPrivate) {
+    const [isMember, isCollab] = await Promise.all([
+      prisma.userListMember.findUnique({ where: { listId_userId: { listId, userId: session.user.id } } }),
+      prisma.userListCollaborator.findUnique({ where: { listId_userId: { listId, userId: session.user.id } } }),
+    ]);
+    if (!isMember && !isCollab) {
+      return { success: false, message: "This list is private" };
+    }
   }
 
   const existing = await prisma.userListSubscription.findUnique({
@@ -724,6 +780,269 @@ export async function searchUsersForCollaborator(listId: string, query: string) 
     })),
     hasMore,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Join request actions
+// ---------------------------------------------------------------------------
+
+export async function requestToJoinList(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const authResult = await requireAuthWithRateLimit("list-join");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
+
+  const listId = formData.get("listId") as string;
+  if (!listId) {
+    return { success: false, message: "Missing list ID" };
+  }
+
+  const list = await prisma.userList.findUnique({ where: { id: listId } });
+  if (!list) {
+    return { success: false, message: "List not found" };
+  }
+
+  if (list.ownerId === session.user.id) {
+    return { success: false, message: "You own this list" };
+  }
+
+  if (await hasBlock(session.user.id, list.ownerId)) {
+    return { success: false, message: "Cannot request to join this list" };
+  }
+
+  // Check if already a member
+  const existingMember = await prisma.userListMember.findUnique({
+    where: { listId_userId: { listId, userId: session.user.id } },
+  });
+  if (existingMember) {
+    return { success: false, message: "You are already in this list" };
+  }
+
+  // Check for existing pending request
+  const existingRequest = await prisma.userListJoinRequest.findUnique({
+    where: { listId_userId: { listId, userId: session.user.id } },
+  });
+  if (existingRequest) {
+    if (existingRequest.status === "PENDING") {
+      return { success: false, message: "Request already pending" };
+    }
+    // If previously declined, allow re-request by updating status
+    await prisma.userListJoinRequest.update({
+      where: { id: existingRequest.id },
+      data: { status: "PENDING" },
+    });
+  } else {
+    await prisma.userListJoinRequest.create({
+      data: { listId, userId: session.user.id },
+    });
+  }
+
+  // Notify only the list owner (not collaborators)
+  await createNotificationSafe({
+    type: "LIST_JOIN_REQUEST",
+    actorId: session.user.id,
+    targetUserId: list.ownerId,
+    userListId: listId,
+  });
+
+  // Send email notification to list owner
+  try {
+    const [owner, requester] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: list.ownerId },
+        select: { email: true, emailOnListJoinRequest: true },
+      }),
+      prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { displayName: true, username: true, name: true },
+      }),
+    ]);
+
+    if (owner?.email && owner.emailOnListJoinRequest) {
+      const requesterName =
+        requester?.displayName ?? requester?.username ?? requester?.name ?? "Someone";
+      await inngest.send({
+        name: "email/list-join-request",
+        data: { toEmail: owner.email, requesterName, listName: list.name },
+      });
+    }
+  } catch {
+    // Non-critical
+  }
+
+  revalidatePath("/notifications");
+  return { success: true, message: "Join request sent" };
+}
+
+export async function approveListJoinRequest(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const authResult = await requireAuthWithRateLimit("list-join");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
+
+  const requestId = formData.get("requestId") as string;
+  if (!requestId) {
+    return { success: false, message: "Missing request ID" };
+  }
+
+  const request = await prisma.userListJoinRequest.findUnique({
+    where: { id: requestId },
+    include: { list: { select: { id: true, ownerId: true } } },
+  });
+  if (!request) {
+    return { success: false, message: "Request not found" };
+  }
+
+  // Only the list owner can approve (not collaborators)
+  if (request.list.ownerId !== session.user.id) {
+    return { success: false, message: "Only the list owner can approve requests" };
+  }
+
+  if (request.status !== "PENDING") {
+    return { success: false, message: "Request already handled" };
+  }
+
+  // Approve: update request status and add as member
+  await Promise.all([
+    prisma.userListJoinRequest.update({
+      where: { id: requestId },
+      data: { status: "APPROVED" },
+    }),
+    prisma.userListMember.create({
+      data: { listId: request.listId, userId: request.userId },
+    }),
+  ]);
+
+  await createNotificationSafe({
+    type: "LIST_ADD",
+    actorId: session.user.id,
+    targetUserId: request.userId,
+    userListId: request.listId,
+  });
+
+  await invalidate(cacheKeys.userListMembers(request.listId));
+  revalidatePath(`/lists/${request.listId}`);
+  revalidatePath("/notifications");
+
+  return { success: true, message: "Request approved" };
+}
+
+export async function declineListJoinRequest(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const authResult = await requireAuthWithRateLimit("list-join");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
+
+  const requestId = formData.get("requestId") as string;
+  if (!requestId) {
+    return { success: false, message: "Missing request ID" };
+  }
+
+  const request = await prisma.userListJoinRequest.findUnique({
+    where: { id: requestId },
+    include: { list: { select: { id: true, ownerId: true } } },
+  });
+  if (!request) {
+    return { success: false, message: "Request not found" };
+  }
+
+  // Only the list owner can decline (not collaborators)
+  if (request.list.ownerId !== session.user.id) {
+    return { success: false, message: "Only the list owner can decline requests" };
+  }
+
+  if (request.status !== "PENDING") {
+    return { success: false, message: "Request already handled" };
+  }
+
+  await prisma.userListJoinRequest.update({
+    where: { id: requestId },
+    data: { status: "DECLINED" },
+  });
+
+  revalidatePath("/notifications");
+  return { success: true, message: "Request declined" };
+}
+
+export async function respondToListJoinRequestByActor(
+  actorId: string,
+  listId: string,
+  action: "approve" | "decline"
+): Promise<ActionState> {
+  const authResult = await requireAuthWithRateLimit("list-join");
+  if (isActionError(authResult)) return authResult;
+  const session = authResult;
+
+  const request = await prisma.userListJoinRequest.findFirst({
+    where: {
+      userId: actorId,
+      listId,
+      status: "PENDING",
+    },
+    include: { list: { select: { id: true, ownerId: true } } },
+  });
+
+  if (!request) {
+    return { success: false, message: "No pending join request found" };
+  }
+
+  if (request.list.ownerId !== session.user.id) {
+    return { success: false, message: "Only the list owner can respond to requests" };
+  }
+
+  if (action === "approve") {
+    await Promise.all([
+      prisma.userListJoinRequest.update({
+        where: { id: request.id },
+        data: { status: "APPROVED" },
+      }),
+      prisma.userListMember.create({
+        data: { listId: request.listId, userId: request.userId },
+      }),
+    ]);
+
+    await createNotificationSafe({
+      type: "LIST_ADD",
+      actorId: session.user.id,
+      targetUserId: request.userId,
+      userListId: request.listId,
+    });
+
+    await invalidate(cacheKeys.userListMembers(request.listId));
+    revalidatePath(`/lists/${request.listId}`);
+    revalidatePath("/notifications");
+    return { success: true, message: "Request approved" };
+  }
+
+  // Decline
+  await prisma.userListJoinRequest.update({
+    where: { id: request.id },
+    data: { status: "DECLINED" },
+  });
+
+  revalidatePath("/notifications");
+  return { success: true, message: "Request declined" };
+}
+
+export async function getListJoinRequestStatus(
+  listId: string
+): Promise<"none" | "pending" | "approved" | "declined"> {
+  const session = await auth();
+  if (!session?.user?.id) return "none";
+
+  const request = await prisma.userListJoinRequest.findUnique({
+    where: { listId_userId: { listId, userId: session.user.id } },
+    select: { status: true },
+  });
+
+  if (!request) return "none";
+  return request.status.toLowerCase() as "pending" | "approved" | "declined";
 }
 
 // ---------------------------------------------------------------------------

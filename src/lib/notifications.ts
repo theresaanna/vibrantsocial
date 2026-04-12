@@ -133,6 +133,7 @@ export async function createNotification(params: CreateNotificationParams) {
     CHAT_REQUEST_ACCEPTED: "accepted your chat request",
     CHAT_ABUSE: "may be sending you abusive messages",
     SUBSCRIBED_COMMENT: "commented on a post you're subscribed to",
+    LIST_JOIN_REQUEST: "requested to join your list",
   };
   const pushBody = `${actorName} ${typeText[type] || "sent you a notification"}`;
 
