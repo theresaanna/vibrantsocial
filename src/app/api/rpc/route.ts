@@ -674,6 +674,13 @@ const profileThemeSelect = {
   profileBgPosition: true,
   sparklefallEnabled: true,
   sparklefallPreset: true,
+  sparklefallSparkles: true,
+  sparklefallColors: true,
+  sparklefallInterval: true,
+  sparklefallWind: true,
+  sparklefallMaxSparkles: true,
+  sparklefallMinSize: true,
+  sparklefallMaxSize: true,
 } as const;
 
 async function mobileGetProfile(username: string) {
@@ -837,6 +844,13 @@ async function mobileGetUserTheme() {
     avatar: user.avatar ?? user.image,
     sparklefallEnabled: user.sparklefallEnabled,
     sparklefallPreset: user.sparklefallPreset,
+    sparklefallSparkles: user.sparklefallSparkles,
+    sparklefallColors: user.sparklefallColors,
+    sparklefallInterval: user.sparklefallInterval,
+    sparklefallWind: user.sparklefallWind,
+    sparklefallMaxSparkles: user.sparklefallMaxSparkles,
+    sparklefallMinSize: user.sparklefallMinSize,
+    sparklefallMaxSize: user.sparklefallMaxSize,
     profileBgColor: user.profileBgColor,
     profileTextColor: user.profileTextColor,
     profileLinkColor: user.profileLinkColor,
