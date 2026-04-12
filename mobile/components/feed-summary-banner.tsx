@@ -91,18 +91,18 @@ export function FeedSummaryBanner() {
   const [tooMany, setTooMany] = useState(false);
   const [checked, setChecked] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const lastSeenRef = useRef<string | null>(null);
+  const fetchedRef = useRef(false);
 
   // Step 1: Get lastSeenFeedAt
-  const { data: lastSeenFeedAt } = useQuery({
+  const { data: lastSeenFeedAt, isFetched } = useQuery({
     queryKey: ["lastSeenFeedAt"],
     queryFn: () => api.rpc<string | null>("getLastSeenFeedAt"),
   });
 
   // Step 2: Fetch summary data once we have lastSeenFeedAt
   useEffect(() => {
-    if (lastSeenFeedAt === undefined || lastSeenRef.current === lastSeenFeedAt) return;
-    lastSeenRef.current = lastSeenFeedAt;
+    if (!isFetched || fetchedRef.current) return;
+    fetchedRef.current = true;
 
     if (!lastSeenFeedAt) {
       setChecked(true);
@@ -118,7 +118,7 @@ export function FeedSummaryBanner() {
         setChecked(true);
       })
       .catch(() => setChecked(true));
-  }, [lastSeenFeedAt]);
+  }, [isFetched, lastSeenFeedAt]);
 
   // Step 3: Generate/regenerate on demand
   async function handleSummarize() {
