@@ -135,6 +135,34 @@ export async function renameList(
   return { success: true, message: "List renamed" };
 }
 
+export async function toggleListPrivacy(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const listId = formData.get("listId") as string;
+  if (!listId) {
+    return { success: false, message: "Missing list ID" };
+  }
+
+  const list = await prisma.userList.findUnique({ where: { id: listId } });
+  if (!list || list.ownerId !== session.user.id) {
+    return { success: false, message: "List not found or not owned by you" };
+  }
+
+  const newPrivacy = !list.isPrivate;
+  await prisma.userList.update({ where: { id: listId }, data: { isPrivate: newPrivacy } });
+
+  await invalidate(cacheKeys.userLists(session.user.id));
+  revalidatePath(`/lists/${listId}`);
+
+  return { success: true, message: newPrivacy ? "List is now private" : "List is now public" };
+}
+
 export async function addMemberToList(
   _prevState: ActionState,
   formData: FormData
@@ -337,9 +365,31 @@ export async function getListMembers(listId: string) {
 
   const list = await prisma.userList.findUnique({
     where: { id: listId },
-    select: { id: true, name: true, ownerId: true },
+    select: {
+      id: true,
+      name: true,
+      ownerId: true,
+      isPrivate: true,
+      owner: { select: { username: true, displayName: true, name: true, avatar: true, image: true, profileFrameId: true } },
+    },
   });
   if (!list) return null;
+
+  const isOwner = list.ownerId === session.user.id;
+
+  const isCollaborator = !isOwner
+    ? !!(await prisma.userListCollaborator.findUnique({
+        where: { listId_userId: { listId, userId: session.user.id } },
+      }))
+    : false;
+
+  // Private lists: only owner, collaborators, and members can view
+  if (list.isPrivate && !isOwner && !isCollaborator) {
+    const isMember = await prisma.userListMember.findUnique({
+      where: { listId_userId: { listId, userId: session.user.id } },
+    });
+    if (!isMember) return null;
+  }
 
   const members = await cached(
     cacheKeys.userListMembers(listId),
@@ -352,12 +402,6 @@ export async function getListMembers(listId: string) {
     },
     60
   );
-
-  const isCollaborator = list.ownerId !== session.user.id
-    ? !!(await prisma.userListCollaborator.findUnique({
-        where: { listId_userId: { listId, userId: session.user.id } },
-      }))
-    : false;
 
   return { list, members, isCollaborator };
 }
@@ -492,6 +536,17 @@ export async function toggleListSubscription(
   // Can't subscribe to your own list
   if (list.ownerId === session.user.id) {
     return { success: false, message: "You own this list" };
+  }
+
+  // Can't subscribe to a private list unless already a member or collaborator
+  if (list.isPrivate) {
+    const [isMember, isCollab] = await Promise.all([
+      prisma.userListMember.findUnique({ where: { listId_userId: { listId, userId: session.user.id } } }),
+      prisma.userListCollaborator.findUnique({ where: { listId_userId: { listId, userId: session.user.id } } }),
+    ]);
+    if (!isMember && !isCollab) {
+      return { success: false, message: "This list is private" };
+    }
   }
 
   const existing = await prisma.userListSubscription.findUnique({

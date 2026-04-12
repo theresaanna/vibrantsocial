@@ -8,6 +8,7 @@ import {
   addMemberToList,
   removeMemberFromList,
   renameList,
+  toggleListPrivacy,
   searchUsersForCollaborator,
   addCollaboratorToList,
   removeCollaboratorFromList,
@@ -199,9 +200,44 @@ function RemoveCollaboratorButton({ listId, userId }: { listId: string; userId: 
   );
 }
 
+function PrivacyToggle({ listId, isPrivate }: { listId: string; isPrivate: boolean }) {
+  const [, formAction, isPending] = useActionState(toggleListPrivacy, {
+    success: false,
+    message: "",
+  });
+
+  return (
+    <form action={formAction} className="mb-6">
+      <input type="hidden" name="listId" value={listId} />
+      <div className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm dark:bg-zinc-900">
+        <div>
+          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Private list</p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Only members and collaborators can view this list
+          </p>
+        </div>
+        <button
+          type="submit"
+          disabled={isPending}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 ${
+            isPrivate ? "bg-indigo-600" : "bg-zinc-300 dark:bg-zinc-600"
+          }`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              isPrivate ? "translate-x-6" : "translate-x-1"
+            }`}
+          />
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export function ListMembersClient({
   listId,
   listName,
+  isPrivate,
   members,
   isOwner,
   canManageMembers,
@@ -209,6 +245,7 @@ export function ListMembersClient({
 }: {
   listId: string;
   listName: string;
+  isPrivate: boolean;
   members: MemberEntry[];
   isOwner: boolean;
   canManageMembers: boolean;
@@ -276,6 +313,9 @@ export function ListMembersClient({
       ) : (
         <h1 className="mb-4 text-xl font-bold text-zinc-900 dark:text-zinc-100">{listName}</h1>
       )}
+
+      {/* Privacy toggle (owner only) */}
+      {isOwner && <PrivacyToggle listId={listId} isPrivate={isPrivate} />}
 
       {/* Search to add members (owner or collaborator) */}
       {canManageMembers && (
