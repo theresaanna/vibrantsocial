@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import { api } from "@/lib/api";
 import { PostCard } from "@/components/post-card";
 import { useUserTheme, ScreenBackground } from "@/components/themed-view";
+import { FeedSummaryBanner } from "@/components/feed-summary-banner";
 
 // ── Types ─────────────────────────────────────────────────────────
 
@@ -166,6 +167,7 @@ function FriendsFeed() {
       onEndReached={fetchNextPage}
       emptyText="No posts from friends yet. Follow people to see their posts here!"
       theme={theme}
+      listHeader={<FeedSummaryBanner />}
     />
   );
 }
@@ -339,6 +341,7 @@ function FeedList({
   onEndReached,
   emptyText,
   theme,
+  listHeader,
 }: {
   data: any[];
   isLoading: boolean;
@@ -349,6 +352,7 @@ function FeedList({
   onEndReached: () => void;
   emptyText: string;
   theme: any;
+  listHeader?: React.ReactNode;
 }) {
   const renderItem = useCallback(
     ({ item }: { item: any }) => <PostCard post={item} />,
@@ -368,6 +372,7 @@ function FeedList({
       refreshControl={
         <RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={theme.linkColor} />
       }
+      ListHeaderComponent={listHeader ? <>{listHeader}</> : undefined}
       ListEmptyComponent={
         isLoading ? (
           <View style={{ padding: 40, alignItems: "center" }}>

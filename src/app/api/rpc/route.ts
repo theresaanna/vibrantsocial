@@ -19,6 +19,7 @@ import { corsJson, handleCorsPreflightRequest } from "@/lib/cors";
 import { searchUsers, searchPosts, searchTagsForSearch, searchMarketplacePosts } from "@/app/search/actions";
 import { fetchNewFeedItems, fetchSinglePost, fetchFeedPage, fetchCloseFriendsFeedPage } from "@/app/feed/feed-actions";
 import { fetchForYouPage } from "@/app/feed/for-you-actions";
+import { fetchFeedSummary, generateFeedSummaryOnDemand } from "@/app/feed/summary-actions";
 import {
   fetchNewListFeedItems, fetchListFeedPage, getUserLists, getSubscribedLists,
   getCollaboratingLists, getListMembers, searchUsersForList, getListCollaborators,
@@ -1189,6 +1190,34 @@ async function mobileToggleListSubscription(listId: string) {
   return { success: true, message: existing ? "Unsubscribed" : "Subscribed", isSubscribed: !existing };
 }
 
+async function mobileGetLastSeenFeedAt() {
+  const { prisma } = await import("@/lib/prisma");
+  const { auth } = await import("@/auth");
+  const session = await auth();
+  if (!session?.user?.id) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { lastSeenFeedAt: true },
+  });
+
+  return user?.lastSeenFeedAt?.toISOString() ?? null;
+}
+
+async function mobileUpdateLastSeenFeedAt() {
+  const { prisma } = await import("@/lib/prisma");
+  const { auth } = await import("@/auth");
+  const session = await auth();
+  if (!session?.user?.id) return { success: false };
+
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { lastSeenFeedAt: new Date() },
+  });
+
+  return { success: true };
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const ACTIONS: Record<string, (...args: any[]) => Promise<any>> = {
   searchUsers,
@@ -1200,6 +1229,10 @@ const ACTIONS: Record<string, (...args: any[]) => Promise<any>> = {
   fetchFeedPage,
   fetchCloseFriendsFeedPage,
   fetchForYouPage,
+  fetchFeedSummary,
+  generateFeedSummaryOnDemand,
+  getLastSeenFeedAt: mobileGetLastSeenFeedAt,
+  updateLastSeenFeedAt: mobileUpdateLastSeenFeedAt,
   fetchNewListFeedItems,
   fetchListFeedPage,
   getUserLists,
