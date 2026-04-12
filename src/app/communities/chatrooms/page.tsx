@@ -29,8 +29,8 @@ export default async function ChatRoomPage() {
   const profileTheme = user ? buildUserTheme(user) : NO_THEME;
 
   return (
-    <ThemedPage {...profileTheme} className="mx-auto flex h-[calc(100dvh-4rem)] max-w-5xl flex-col px-4 py-4 md:py-6">
-      <div className="mb-4 flex items-center gap-3 md:mb-6">
+    <ThemedPage {...profileTheme} className="mx-auto flex h-[calc(100dvh-4rem)] max-w-5xl flex-col px-2 py-2 md:px-4 md:py-6">
+      <div className="mb-4 hidden items-center gap-3 md:mb-6 md:flex">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-400 to-pink-600">
           <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 8.25h15m-16.5 7.5h15m-1.8-13.5l-3.9 19.5m-2.1-19.5l-3.9 19.5" />
