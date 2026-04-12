@@ -660,7 +660,7 @@ export function ChatRoomClient({
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-1 md:space-y-3">
               {messages.map((msg) => {
                 const isOwn = msg.senderId === currentUserId;
                 const isDeleted = !!msg.deletedAt;
@@ -676,7 +676,7 @@ export function ChatRoomClient({
                   <div
                     key={msg.id}
                     id={`msg-${msg.id}`}
-                    className="group rounded-lg p-2 transition-colors"
+                    className="group rounded-lg p-1 transition-colors md:p-2"
                   >
                     {/* Reply quote */}
                     {msg.replyTo && (
@@ -696,12 +696,21 @@ export function ChatRoomClient({
                       </button>
                     )}
 
-                    <div className="flex gap-3">
-                      <Link href={`/${msg.sender.username}`} className="shrink-0">
+                    <div className="flex gap-2 md:gap-3">
+                      <Link href={`/${msg.sender.username}`} className="shrink-0 max-md:hidden">
                         <FramedAvatar
                           src={avatarSrc}
                           initial={initial}
                           size={36}
+                          frameId={msg.sender.profileFrameId}
+                          referrerPolicy="no-referrer"
+                        />
+                      </Link>
+                      <Link href={`/${msg.sender.username}`} className="shrink-0 md:hidden">
+                        <FramedAvatar
+                          src={avatarSrc}
+                          initial={initial}
+                          size={24}
                           frameId={msg.sender.profileFrameId}
                           referrerPolicy="no-referrer"
                         />
