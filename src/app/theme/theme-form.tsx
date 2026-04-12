@@ -230,7 +230,7 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
         ...(imageFilename ? { imageFile: imageFilename } : {}),
         repeat: (formData.get("profileBgRepeat") as string) || "no-repeat",
         attachment: (formData.get("profileBgAttachment") as string) || "scroll",
-        size: (formData.get("profileBgSize") as string) || "contain",
+        size: (formData.get("profileBgSize") as string) || "100% 100%",
         position: (formData.get("profileBgPosition") as string) || "center",
       },
     };

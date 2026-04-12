@@ -19,7 +19,7 @@ export interface BackgroundDefinition {
 
 export const VALID_BG_REPEAT = ["repeat", "repeat-x", "repeat-y", "no-repeat"] as const;
 export const VALID_BG_ATTACHMENT = ["scroll", "fixed"] as const;
-export const VALID_BG_SIZE = ["cover", "contain", "auto"] as const;
+export const VALID_BG_SIZE = ["cover", "contain", "auto", "100% 100%"] as const;
 export const VALID_BG_POSITION = [
   "center", "top", "bottom", "left", "right",
   "top left", "top center", "top right",
@@ -34,7 +34,7 @@ export type BgPosition = (typeof VALID_BG_POSITION)[number];
 
 const CATEGORY_DEFAULTS: Record<BgCategory, Required<BgDefaults>> = {
   pattern: { repeat: "repeat", size: "auto", position: "top left", attachment: "scroll" },
-  photo: { repeat: "no-repeat", size: "contain", position: "center", attachment: "scroll" },
+  photo: { repeat: "no-repeat", size: "100% 100%", position: "center", attachment: "scroll" },
 };
 
 export function getDefaultsForBackground(bg: BackgroundDefinition): Required<BgDefaults> {
