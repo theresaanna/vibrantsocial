@@ -32,9 +32,11 @@ interface Particle {
   emoji: string;
   x: number;
   size: number;
+  spinDirection: 1 | -1;
   animY: Animated.Value;
   animOpacity: Animated.Value;
   animX: Animated.Value;
+  animSpin: Animated.Value;
 }
 
 interface SparklefallProps {
@@ -51,10 +53,10 @@ export function Sparklefall({
   sparkles,
   presetName,
   interval = 800,
-  maxSparkles = 30,
+  maxSparkles = 50,
   wind = 0,
-  minSize = 12,
-  maxSize = 24,
+  minSize = 10,
+  maxSize = 30,
 }: SparklefallProps) {
   const { width, height } = useWindowDimensions();
   const [particles, setParticles] = useState<Particle[]>([]);
@@ -72,10 +74,12 @@ export function Sparklefall({
         const size = minSize + Math.random() * (maxSize - minSize);
         const duration = 3000 + Math.random() * 2000;
         const windDrift = wind * 50 + (Math.random() - 0.5) * 30;
+        const spinDirection: 1 | -1 = Math.random() > 0.5 ? 1 : -1;
 
         const animY = new Animated.Value(-size);
         const animOpacity = new Animated.Value(1);
         const animX = new Animated.Value(0);
+        const animSpin = new Animated.Value(0);
 
         Animated.parallel([
           Animated.timing(animY, {
@@ -98,11 +102,17 @@ export function Sparklefall({
             easing: Easing.inOut(Easing.sin),
             useNativeDriver: true,
           }),
+          Animated.timing(animSpin, {
+            toValue: 1,
+            duration,
+            easing: Easing.linear,
+            useNativeDriver: true,
+          }),
         ]).start(() => {
           setParticles((p) => p.filter((item) => item.id !== id));
         });
 
-        return [...prev, { id, emoji, x, size, animY, animOpacity, animX }];
+        return [...prev, { id, emoji, x, size, spinDirection, animY, animOpacity, animX, animSpin }];
       });
     }, interval);
 
@@ -121,22 +131,32 @@ export function Sparklefall({
         overflow: "hidden",
       }}
     >
-      {particles.map((p) => (
-        <Animated.View
-          key={p.id}
-          style={{
-            position: "absolute",
-            left: p.x,
-            transform: [
-              { translateY: p.animY },
-              { translateX: p.animX },
-            ],
-            opacity: p.animOpacity,
-          }}
-        >
-          <Text style={{ fontSize: p.size }}>{p.emoji}</Text>
-        </Animated.View>
-      ))}
+      {particles.map((p) => {
+        // Each particle spins 1-3 full rotations as it falls
+        const rotations = 1 + Math.abs(p.id % 3);
+        const rotate = p.animSpin.interpolate({
+          inputRange: [0, 1],
+          outputRange: ["0deg", `${p.spinDirection * rotations * 360}deg`],
+        });
+
+        return (
+          <Animated.View
+            key={p.id}
+            style={{
+              position: "absolute",
+              left: p.x,
+              transform: [
+                { translateY: p.animY },
+                { translateX: p.animX },
+                { rotate },
+              ],
+              opacity: p.animOpacity,
+            }}
+          >
+            <Text style={{ fontSize: p.size }}>{p.emoji}</Text>
+          </Animated.View>
+        );
+      })}
     </View>
   );
 }

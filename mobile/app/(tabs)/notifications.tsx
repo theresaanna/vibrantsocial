@@ -3,13 +3,9 @@ import { FlashList } from "@shopify/flash-list";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "@/lib/api";
 import { formatDistanceToNow } from "@/lib/date";
-import { NavBar } from "@/components/nav-bar";
-import { ThemedView, useUserTheme } from "@/components/themed-view";
-import { useMyTheme } from "@/hooks/use-my-theme";
-import { Sparklefall } from "@/components/sparklefall";
+import { useUserTheme, ScreenBackground } from "@/components/themed-view";
 
 interface Notification {
   id: string;
@@ -27,18 +23,11 @@ interface Notification {
 }
 
 export default function NotificationsScreen() {
-  const { data: myTheme } = useMyTheme();
-
   return (
-    <ThemedView themeData={myTheme}>
-      <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
-        <NavBar />
-        <NotificationsContent />
-        {myTheme?.sparklefallEnabled && myTheme.sparklefallPreset && (
-          <Sparklefall preset={myTheme.sparklefallPreset} />
-        )}
-      </SafeAreaView>
-    </ThemedView>
+    <View style={{ flex: 1 }}>
+      <ScreenBackground />
+      <NotificationsContent />
+    </View>
   );
 }
 

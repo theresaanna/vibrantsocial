@@ -7,11 +7,16 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Toast from "react-native-toast-message";
 import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { registerForPushNotifications } from "@/lib/notifications";
 import { ablyClient } from "@/lib/ably";
 import { initIAP, endIAP } from "@/lib/iap";
 import { useAppFonts } from "@/hooks/use-app-fonts";
+import { ThemedView } from "@/components/themed-view";
+import { useMyTheme } from "@/hooks/use-my-theme";
+import { Sparklefall } from "@/components/sparklefall";
+import { NavBar } from "@/components/nav-bar";
 
 // Set Lexend 300 as the default font for all Text and TextInput components
 const DEFAULT_FONT = "Lexend_300Light";
@@ -72,6 +77,7 @@ function handleDeepLink(url: string, router: ReturnType<typeof useRouter>) {
 function AppContent() {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const { data: myTheme } = useMyTheme();
 
   // Initialize IAP connection on mount, clean up on unmount
   useEffect(() => {
@@ -105,17 +111,51 @@ function AppContent() {
     return () => subscription.remove();
   }, [router]);
 
+  // Parse sparklefall emoji from theme
+  const sparklefallEmoji = (() => {
+    const raw = myTheme?.sparklefallSparkles;
+    if (!raw) return undefined;
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+    return raw.split(",");
+  })();
+
   return (
-    <>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="(stack)" options={{ headerShown: true }} />
-        <Stack.Screen name="+not-found" options={{ title: "Not Found" }} />
-      </Stack>
+    <ThemedView themeData={isAuthenticated ? myTheme : undefined} showBgImage={false}>
+      {isAuthenticated && (
+        <SafeAreaView edges={["top"]} style={{ backgroundColor: "#ffffff" }}>
+          <NavBar />
+        </SafeAreaView>
+      )}
+      <View style={{ flex: 1 }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: "transparent" },
+          }}
+        >
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="(stack)" />
+          <Stack.Screen name="+not-found" options={{ title: "Not Found" }} />
+        </Stack>
+      </View>
+      {isAuthenticated && myTheme?.sparklefallEnabled && (
+        <Sparklefall
+          presetName={myTheme.sparklefallPreset ?? "default"}
+          sparkles={sparklefallEmoji}
+          interval={myTheme.sparklefallInterval ?? undefined}
+          wind={myTheme.sparklefallWind ?? undefined}
+          maxSparkles={myTheme.sparklefallMaxSparkles ?? undefined}
+          minSize={myTheme.sparklefallMinSize ?? undefined}
+          maxSize={myTheme.sparklefallMaxSize ?? undefined}
+        />
+      )}
       <StatusBar style="auto" />
       <Toast />
-    </>
+    </ThemedView>
   );
 }
 

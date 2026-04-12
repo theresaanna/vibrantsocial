@@ -166,6 +166,112 @@ export async function fetchFeedPage(cursor?: string) {
 }
 
 /**
+ * Fetch posts from the user's close friends (posts marked as close-friends-only
+ * from users who added the current user as a close friend, plus the user's own
+ * close-friends-only posts).
+ */
+export async function fetchCloseFriendsFeedPage(cursor?: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { items: [] as any[], hasMore: false };
+  }
+
+  const userId = session.user.id;
+
+  const [closeFriendIds, closeFriendOfIds, blockedIds, prefs] = await Promise.all([
+    cached(
+      cacheKeys.userCloseFriendIds(userId),
+      async () => {
+        const rows = await prisma.closeFriend.findMany({
+          where: { userId },
+          select: { friendId: true },
+        });
+        return rows.map((r: { friendId: string }) => r.friendId);
+      },
+      120
+    ),
+    getCachedCloseFriendOfIds(userId),
+    getAllBlockRelatedIds(userId),
+    getUserPrefs(userId),
+  ]);
+
+  const blockedSet = new Set(blockedIds);
+  // Users the current user marked as close friends (excluding blocked)
+  const memberIds = closeFriendIds.filter((id: string) => !blockedSet.has(id));
+
+  if (memberIds.length === 0) {
+    return { items: [] as any[], hasMore: false };
+  }
+
+  // Authors whose close-friends-only posts the current user can see
+  const closeFriendAuthors = [...closeFriendOfIds, userId];
+
+  const { showNsfwContent, ageVerified } = prefs;
+  const postInclude = getPostInclude(userId);
+  const dateFilter = cursor ? { lt: new Date(cursor) } : undefined;
+  const fetchCount = PAGE_SIZE + 1;
+
+  // Fetch ALL posts from close friends (matching web app logic)
+  const [posts, reposts] = await Promise.all([
+    prisma.post.findMany({
+      where: {
+        ...publishedOnly,
+        authorId: { in: memberIds },
+        ...(dateFilter ? { createdAt: dateFilter } : {}),
+        ...(!showNsfwContent ? { isNsfw: false } : {}),
+        ...(!ageVerified ? { isSensitive: false, isGraphicNudity: false } : {}),
+        OR: [
+          { isCloseFriendsOnly: false, hasCustomAudience: false },
+          { isCloseFriendsOnly: true, authorId: { in: closeFriendAuthors } },
+          { hasCustomAudience: true, audience: { some: { userId } } },
+        ],
+      },
+      orderBy: { createdAt: "desc" },
+      take: fetchCount,
+      include: postInclude,
+    }),
+    prisma.repost.findMany({
+      where: {
+        userId: { in: memberIds },
+        ...(dateFilter ? { createdAt: dateFilter } : {}),
+        OR: [
+          { isCloseFriendsOnly: false },
+          { isCloseFriendsOnly: true, userId: { in: closeFriendAuthors } },
+        ],
+      },
+      orderBy: { createdAt: "desc" },
+      take: fetchCount,
+      include: getRepostInclude(userId),
+    }),
+  ]);
+
+  // Deduplicate: if a post appears directly and as a repost, keep the direct post
+  const directPostIds = new Set(posts.map((p: { id: string }) => p.id));
+  const filteredReposts = reposts.filter(
+    (r: { content?: string | null; post: { id: string } }) =>
+      r.content != null || !directPostIds.has(r.post.id)
+  );
+
+  const allItems = [
+    ...posts.map((p: { createdAt: Date }) => ({
+      type: "post" as const,
+      data: JSON.parse(JSON.stringify(p)),
+      date: p.createdAt.toISOString(),
+    })),
+    ...filteredReposts.map((r: { createdAt: Date }) => ({
+      type: "repost" as const,
+      data: JSON.parse(JSON.stringify(r)),
+      date: r.createdAt.toISOString(),
+    })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const hasMore = allItems.length > PAGE_SIZE;
+  const items = allItems.slice(0, PAGE_SIZE);
+
+  return { items, hasMore };
+}
+
+/**
  * Fetch feed items newer than the given date.
  * Used for polling to pick up new posts without a page reload.
  */

@@ -35,7 +35,7 @@ export default function PostDetailScreen() {
     <ThemedView themeData={post.author}>
       <PostDetailContent post={post} />
       {post.author?.sparklefallEnabled && post.author?.sparklefallPreset && (
-        <Sparklefall preset={post.author.sparklefallPreset} />
+        <Sparklefall presetName={post.author.sparklefallPreset} />
       )}
     </ThemedView>
   );

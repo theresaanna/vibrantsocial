@@ -30,6 +30,7 @@ import { Rye_400Regular } from "@expo-google-fonts/rye";
 import { Bonbon_400Regular } from "@expo-google-fonts/bonbon";
 import { AguDisplay_400Regular } from "@expo-google-fonts/agu-display";
 import { Agbalumo_400Regular } from "@expo-google-fonts/agbalumo";
+import { ManufacturingConsent_400Regular } from "@expo-google-fonts/manufacturing-consent";
 
 export function useAppFonts() {
   return useFonts({
@@ -57,6 +58,7 @@ export function useAppFonts() {
     Bonbon_400Regular,
     AguDisplay_400Regular,
     Agbalumo_400Regular,
+    ManufacturingConsent_400Regular,
   });
 }
 
@@ -84,4 +86,5 @@ export const FONT_ID_TO_FAMILY: Record<string, string> = {
   "bonbon": "Bonbon_400Regular",
   "agu-display": "AguDisplay_400Regular",
   "agbalumo": "Agbalumo_400Regular",
+  "manufacturing-consent": "ManufacturingConsent_400Regular",
 };

@@ -46,6 +46,9 @@ export interface UserThemeColors {
   containerColor: string;
   containerOpacity: number;
   bgImageUrl: string | null;
+  bgSize: string | null;
+  bgPosition: string | null;
+  bgRepeat: string | null;
 }
 
 export const DEFAULT_THEME_COLORS: UserThemeColors = {
@@ -56,6 +59,9 @@ export const DEFAULT_THEME_COLORS: UserThemeColors = {
   containerColor: "#f4f4f5",
   containerOpacity: 100,
   bgImageUrl: null,
+  bgSize: null,
+  bgPosition: null,
+  bgRepeat: null,
 };
 
 // ── Theme Color Fields ──────────────────────────────────────────────
@@ -223,6 +229,9 @@ export function getThemeStyles(themeData: Partial<UserThemeData> | null | undefi
     containerColor: themeData.profileContainerColor ?? DEFAULT_THEME_COLORS.containerColor,
     containerOpacity: themeData.profileContainerOpacity ?? DEFAULT_THEME_COLORS.containerOpacity,
     bgImageUrl: themeData.profileBgImage ?? null,
+    bgSize: themeData.profileBgSize ?? null,
+    bgPosition: themeData.profileBgPosition ?? null,
+    bgRepeat: themeData.profileBgRepeat ?? null,
   };
 }
 
@@ -282,5 +291,8 @@ export function presetToThemeColors(preset: ProfileThemeColors): UserThemeColors
     containerColor: preset.profileContainerColor,
     containerOpacity: 100,
     bgImageUrl: null,
+    bgSize: null,
+    bgPosition: null,
+    bgRepeat: null,
   };
 }
