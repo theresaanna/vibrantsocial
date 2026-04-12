@@ -46,7 +46,9 @@ export default function LoginScreen() {
     setOauthLoading(provider);
     try {
       const result = await loginWithOAuth(provider);
+      console.log("[login] OAuth result:", JSON.stringify(result));
       if (result.success) {
+        console.log("[login] Navigating to /(tabs)...");
         router.replace("/(tabs)");
       } else if (result.error && result.error !== "Login cancelled") {
         Toast.show({ type: "error", text1: result.error });

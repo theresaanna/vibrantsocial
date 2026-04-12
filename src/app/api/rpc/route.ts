@@ -835,6 +835,8 @@ async function mobileGetUserTheme() {
     displayName: user.displayName,
     username: user.username,
     avatar: user.avatar ?? user.image,
+    sparklefallEnabled: user.sparklefallEnabled,
+    sparklefallPreset: user.sparklefallPreset,
     profileBgColor: user.profileBgColor,
     profileTextColor: user.profileTextColor,
     profileLinkColor: user.profileLinkColor,
