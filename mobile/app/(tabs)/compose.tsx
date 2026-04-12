@@ -142,8 +142,15 @@ export default function ComposeScreen() {
 
   // Track whether editor has content (text or images/embeds)
   const handleEditorChange = useCallback((html: string) => {
-    const text = html.replace(/<[^>]*>/g, "").trim();
-    const hasMedia = html.includes("<img") || html.includes("data-youtube");
+    // Strip HTML tags iteratively to avoid incomplete sanitization (e.g. nested or split tags)
+    let stripped = html;
+    let prev = "";
+    while (stripped !== prev) {
+      prev = stripped;
+      stripped = stripped.replace(/<[^>]*>/g, "");
+    }
+    const text = stripped.trim();
+    const hasMedia = /<img\b/i.test(html) || /data-youtube/i.test(html);
     setHasContent(text.length > 0 || hasMedia);
   }, []);
 
