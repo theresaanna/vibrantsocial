@@ -29,6 +29,13 @@ export interface UserThemeData {
   profileBgPosition: string | null;
   sparklefallEnabled: boolean;
   sparklefallPreset: string | null;
+  sparklefallSparkles: string | null;
+  sparklefallColors: string | null;
+  sparklefallInterval: number | null;
+  sparklefallWind: number | null;
+  sparklefallMaxSparkles: number | null;
+  sparklefallMinSize: number | null;
+  sparklefallMaxSize: number | null;
 }
 
 export interface UserThemeColors {

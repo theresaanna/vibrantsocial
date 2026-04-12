@@ -27,8 +27,16 @@ export default function FeedScreen() {
       <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
         <NavBar />
         <FeedContent />
-        {myTheme?.sparklefallEnabled && myTheme.sparklefallPreset && (
-          <Sparklefall presetName={myTheme.sparklefallPreset} />
+        {myTheme?.sparklefallEnabled && (
+          <Sparklefall
+            presetName={myTheme.sparklefallPreset ?? "default"}
+            sparkles={myTheme.sparklefallSparkles ? myTheme.sparklefallSparkles.split(",") : undefined}
+            interval={myTheme.sparklefallInterval ?? undefined}
+            wind={myTheme.sparklefallWind ?? undefined}
+            maxSparkles={myTheme.sparklefallMaxSparkles ?? undefined}
+            minSize={myTheme.sparklefallMinSize ?? undefined}
+            maxSize={myTheme.sparklefallMaxSize ?? undefined}
+          />
         )}
       </SafeAreaView>
     </ThemedView>
