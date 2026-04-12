@@ -209,7 +209,7 @@ function PrivacyToggle({ listId, isPrivate }: { listId: string; isPrivate: boole
   return (
     <form action={formAction} className="mb-6">
       <input type="hidden" name="listId" value={listId} />
-      <div className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm dark:bg-zinc-900">
+      <div className="flex items-center justify-between rounded-xl bg-zinc-50 p-4 dark:bg-zinc-800">
         <div>
           <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Private list</p>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -340,7 +340,7 @@ export function ListMembersClient({
               {searchResults.map((user) => (
                 <div
                   key={user.id}
-                  className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm dark:bg-zinc-900"
+                  className="flex items-center gap-3 rounded-xl bg-zinc-50 p-3 dark:bg-zinc-800"
                 >
                   <UserAvatar user={user} />
                   <div className="min-w-0 flex-1">
@@ -374,7 +374,7 @@ export function ListMembersClient({
           Members ({members.length})
         </h2>
         {members.length === 0 ? (
-          <div className="rounded-xl bg-white p-6 text-center shadow-sm dark:bg-zinc-900">
+          <div className="rounded-xl bg-zinc-50 p-6 text-center dark:bg-zinc-800">
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
               {canManageMembers
                 ? "No members yet. Search above to add users to this list."
@@ -386,7 +386,7 @@ export function ListMembersClient({
             {members.map((member) => (
               <div
                 key={member.id}
-                className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm dark:bg-zinc-900"
+                className="flex items-center gap-3 rounded-xl bg-zinc-50 p-3 dark:bg-zinc-800"
               >
                 <UserAvatar user={member.user} />
                 <div className="min-w-0 flex-1">
@@ -433,7 +433,7 @@ export function ListMembersClient({
               {collabSearchResults.map((user) => (
                 <div
                   key={user.id}
-                  className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm dark:bg-zinc-900"
+                  className="flex items-center gap-3 rounded-xl bg-zinc-50 p-3 dark:bg-zinc-800"
                 >
                   <UserAvatar user={user} />
                   <div className="min-w-0 flex-1">
@@ -465,7 +465,7 @@ export function ListMembersClient({
               {collaborators.map((collab) => (
                 <div
                   key={collab.id}
-                  className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm dark:bg-zinc-900"
+                  className="flex items-center gap-3 rounded-xl bg-zinc-50 p-3 dark:bg-zinc-800"
                 >
                   <UserAvatar user={collab.user} />
                   <div className="min-w-0 flex-1">
@@ -484,7 +484,7 @@ export function ListMembersClient({
           )}
 
           {collaborators.length === 0 && collabQuery.trim().length === 0 && (
-            <div className="rounded-xl bg-white p-6 text-center shadow-sm dark:bg-zinc-900">
+            <div className="rounded-xl bg-zinc-50 p-6 text-center dark:bg-zinc-800">
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 No collaborators yet. Search above to add people who can manage this list.
               </p>
