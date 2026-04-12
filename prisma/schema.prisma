@@ -154,6 +154,7 @@ model User {
   sentMessages             Message[]
   sentMessageRequests      MessageRequest[] @relation("sentMessageRequests")
   receivedMessageRequests  MessageRequest[] @relation("receivedMessageRequests")
+  chatRoomMessages         ChatRoomMessage[] @relation("chatRoomMessages")
 
   // Reactions
   messageReactions       MessageReaction[]
@@ -828,6 +829,23 @@ model MessageRequest {
 
   @@unique([senderId, receiverId])
   @@index([receiverId, status])
+  @@index([senderId])
+}
+
+// Public chat rooms
+
+model ChatRoomMessage {
+  id        String    @id @default(cuid())
+  room      String    @default("lobby")
+  senderId  String
+  content   String    @db.Text
+  editedAt  DateTime?
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  sender User @relation("chatRoomMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([room, createdAt])
   @@index([senderId])
 }
 

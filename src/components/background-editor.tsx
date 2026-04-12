@@ -16,8 +16,8 @@ const BG_REPEAT_OPTIONS = [
 ] as const;
 
 const BG_SIZE_OPTIONS = [
-  { value: "contain", label: "None" },
-  { value: "cover", label: "Stretch" },
+  { value: "auto", label: "None" },
+  { value: "100% 100%", label: "Stretch" },
 ] as const;
 
 import { PremiumCrown } from "./premium-crown";
@@ -335,7 +335,7 @@ export function BackgroundEditor({
           <label className="space-y-1">
             <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Stretch</span>
             <select
-              value={bgSize === "auto" ? "contain" : bgSize}
+              value={bgSize === "cover" || bgSize === "contain" ? "100% 100%" : bgSize}
               onChange={handleSettingChange(setBgSize)}
               className="w-full rounded-lg border border-zinc-200 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
             >

@@ -110,7 +110,7 @@ export function buildUserTheme(user: UserThemeData): UserThemeResult {
         backgroundImage: `url(${user.profileBgImage})`,
         backgroundRepeat: user.profileBgRepeat ?? "no-repeat",
         backgroundAttachment: user.profileBgAttachment ?? "scroll",
-        backgroundSize: user.profileBgSize ?? "cover",
+        backgroundSize: user.profileBgSize ?? "100% 100%",
         backgroundPosition: user.profileBgPosition ?? "center",
         minHeight: "calc(100vh - 57px)",
       }
