@@ -1340,6 +1340,12 @@ const ACTIONS: Record<string, (...args: any[]) => Promise<any>> = {
 };
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+// Build a Map for safe dispatch — values are trusted objects, breaking the
+// taint chain from user-supplied action names to function invocation.
+const ACTION_MAP = new Map(
+  Object.entries(ACTIONS).map(([name, fn]) => [name, { name, fn }])
+);
+
 export async function OPTIONS(req: Request) {
   return handleCorsPreflightRequest(req);
 }
@@ -1357,30 +1363,26 @@ export async function POST(req: Request) {
     return corsJson(req, { error: "Missing action" }, { status: 400 });
   }
 
-  // Validate action against the allowlist — only exact matches are dispatched
-  const validatedAction = Object.prototype.hasOwnProperty.call(ACTIONS, action)
-    ? action
-    : null;
-  if (!validatedAction) {
+  // Look up the handler from a pre-built Map to break the taint chain —
+  // the Map values are trusted function references, not user input.
+  const handler = ACTION_MAP.get(action);
+  if (!handler) {
     return corsJson(req, { error: "Unknown action" }, { status: 400 });
   }
-
-  const handler = ACTIONS[validatedAction];
 
   try {
     // If request has a bearer token, resolve the mobile session and make
     // it available to server actions via AsyncLocalStorage so that their
     // internal `auth()` calls can pick it up.
     const mobileSession = await getSessionFromRequest(req);
-    const run = () => handler(...args);
+    const run = () => handler.fn(...args);
 
     const result = mobileSession
       ? await withMobileSession(mobileSession, run)
       : await run();
     return corsJson(req, result ?? null);
   } catch (e) {
-    const safeActionName = validatedAction.replace(/[^\w-]/g, "");
-    console.error("[rpc] " + safeActionName + " failed:", e);
+    console.error("[rpc] %s failed:", handler.name, e);
     return corsJson(req, { error: "Internal error" }, { status: 500 });
   }
 }
