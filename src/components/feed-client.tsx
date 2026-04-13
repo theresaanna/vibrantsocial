@@ -11,6 +11,7 @@ import { FeedSummaryBanner } from "@/components/feed-summary-banner";
 import type { FeedSummaryResult } from "@/app/feed/summary-actions";
 import { FriendsStatusesWidget } from "@/components/friends-statuses-widget";
 import { FeedViewToggleWrapper } from "@/components/feed-view-toggle-wrapper";
+import Link from "next/link";
 import { MediaFeedClientContent } from "@/components/media-feed-client-content";
 import type { FeedView } from "@/components/feed-view-toggle";
 import type { FriendStatusData } from "@/app/feed/status-actions";
@@ -149,7 +150,27 @@ export function FeedClient({
       <AddToHomeBanner />
       <AddEmailBanner hasEmail={hasEmail} />
       {!listId && lastSeenFeedAt && (
-        <FeedSummaryBanner lastSeenFeedAt={lastSeenFeedAt} initialData={initialSummaryData ?? undefined} />
+        <div className="mb-4 flex gap-4">
+          <div className="min-w-0 flex-1">
+            <FeedSummaryBanner lastSeenFeedAt={lastSeenFeedAt} initialData={initialSummaryData ?? undefined} />
+          </div>
+          <div className="w-64 shrink-0 rounded-2xl bg-zinc-50 p-4 shadow-sm dark:bg-zinc-800">
+            <h3 className="font-medium text-zinc-900 dark:text-zinc-100 text-sm">
+              Most Active Chatrooms
+            </h3>
+            <ul className="mt-2 space-y-1">
+              <li>
+                <Link
+                  href="/communities/chatroom"
+                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                >
+                  <span className="text-fuchsia-500">#</span>
+                  General Chat
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </div>
       )}
       {!listId && (
         <FriendsStatusesWidget
