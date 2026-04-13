@@ -161,7 +161,7 @@ export function FeedClient({
             <ul className="mt-2 space-y-1">
               <li>
                 <Link
-                  href="/communities/chatroom"
+                  href="https://www.vibrantsocial.app/communities/chatrooms"
                   className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
                 >
                   <span className="text-fuchsia-500">#</span>
