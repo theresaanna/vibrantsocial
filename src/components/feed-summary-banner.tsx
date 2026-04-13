@@ -66,7 +66,7 @@ export function FeedSummaryBanner({ lastSeenFeedAt, initialData }: FeedSummaryBa
       }`}
     >
     <div className="overflow-hidden">
-    <div className="mb-4 rounded-2xl bg-zinc-50 p-4 shadow-sm dark:bg-zinc-800">
+    <div className="rounded-2xl bg-zinc-50 p-4 shadow-sm dark:bg-zinc-800">
       <div className="text-sm text-zinc-700 dark:text-zinc-300">
         <p className="font-medium text-zinc-900 dark:text-zinc-100">
           While you were away&hellip;
