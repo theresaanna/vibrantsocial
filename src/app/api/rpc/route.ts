@@ -1353,23 +1353,34 @@ export async function POST(req: Request) {
   }
 
   const { action, args = [] } = body;
-  if (!action || !ACTIONS[action]) {
+  if (!action || typeof action !== "string") {
+    return corsJson(req, { error: "Missing action" }, { status: 400 });
+  }
+
+  // Validate action against the allowlist — only exact matches are dispatched
+  const validatedAction = Object.prototype.hasOwnProperty.call(ACTIONS, action)
+    ? action
+    : null;
+  if (!validatedAction) {
     return corsJson(req, { error: "Unknown action" }, { status: 400 });
   }
+
+  const handler = ACTIONS[validatedAction];
 
   try {
     // If request has a bearer token, resolve the mobile session and make
     // it available to server actions via AsyncLocalStorage so that their
     // internal `auth()` calls can pick it up.
     const mobileSession = await getSessionFromRequest(req);
-    const run = () => ACTIONS[action](...args);
+    const run = () => handler(...args);
 
     const result = mobileSession
       ? await withMobileSession(mobileSession, run)
       : await run();
     return corsJson(req, result ?? null);
   } catch (e) {
-    console.error(`[rpc] ${action} failed:`, e);
+    const safeActionName = validatedAction.replace(/[^\w-]/g, "");
+    console.error("[rpc] " + safeActionName + " failed:", e);
     return corsJson(req, { error: "Internal error" }, { status: 500 });
   }
 }
