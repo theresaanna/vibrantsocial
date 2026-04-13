@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { StyledName } from "@/components/styled-name";
 import { WallPostList } from "@/components/wall-post-list";
+import { LexicalRenderer } from "@/components/lexical-renderer";
 import { getThemeStyles, hasCustomTheme, hexToRgba, resolveImageUrl } from "@/lib/user-theme";
 
 interface ProfileData {
@@ -112,9 +113,9 @@ export default function ProfileScreen() {
 
         {/* Bio */}
         {profile.bio && (
-          <Text style={{ padding: 16, textAlign: "center", color: secondaryColor, lineHeight: 20 }}>
-            {profile.bio}
-          </Text>
+          <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 }}>
+            <LexicalRenderer content={profile.bio} />
+          </View>
         )}
 
         {/* Stats */}

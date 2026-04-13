@@ -10,6 +10,7 @@ import { StyledName } from "@/components/styled-name";
 import { Sparklefall } from "@/components/sparklefall";
 import { WallPostComposer } from "@/components/wall-post-composer";
 import { WallPostList } from "@/components/wall-post-list";
+import { LexicalRenderer } from "@/components/lexical-renderer";
 import { PremiumBadge } from "@/components/premium-badge";
 import { UserActionSheet } from "@/components/user-action-sheet";
 import { getThemeStyles, hasCustomTheme, hexToRgba, resolveImageUrl } from "@/lib/user-theme";
@@ -120,9 +121,9 @@ export default function UserProfileScreen() {
         </View>
 
         {profile.bio && (
-          <Text style={{ padding: 16, textAlign: "center", color: secondaryColor, lineHeight: 20 }}>
-            {profile.bio}
-          </Text>
+          <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 }}>
+            <LexicalRenderer content={profile.bio} />
+          </View>
         )}
 
         {/* Stats */}
