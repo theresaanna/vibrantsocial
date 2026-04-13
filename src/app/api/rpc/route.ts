@@ -1219,6 +1219,135 @@ async function mobileUpdateLastSeenFeedAt() {
 }
 
 
+async function mobileGetProfileTabFlags(userId: string) {
+  const { prisma } = await import("@/lib/prisma");
+  const { auth } = await import("@/auth");
+  const { cached, cacheKeys } = await import("@/lib/cache");
+
+  const session = await auth();
+  const currentUserId = session?.user?.id;
+  const isOwnProfile = currentUserId === userId;
+
+  const flags = await cached(
+    cacheKeys.profileTabFlags(userId),
+    async () => {
+      const result = await prisma.$queryRaw<[{
+        has_sensitive: boolean;
+        has_nsfw: boolean;
+        has_graphic: boolean;
+        has_marketplace: boolean;
+      }]>`
+        SELECT
+          bool_or("isSensitive") as has_sensitive,
+          bool_or("isNsfw") as has_nsfw,
+          bool_or("isGraphicNudity") as has_graphic,
+          bool_or(EXISTS(SELECT 1 FROM "MarketplacePost" mp WHERE mp."postId" = p.id)) as has_marketplace
+        FROM "Post" p WHERE p."authorId" = ${userId}
+      `;
+      const row = result[0];
+      return {
+        hasSensitive: row?.has_sensitive ?? false,
+        hasNsfw: row?.has_nsfw ?? false,
+        hasGraphic: row?.has_graphic ?? false,
+        hasMarketplace: row?.has_marketplace ?? false,
+      };
+    },
+    120
+  );
+
+  // Check if wall should be in separate tab
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      hideWallFromFeed: true,
+      _count: { select: { posts: true } },
+    },
+  });
+
+  // Wall tab: only visible if user chose to hide from feed AND viewer is owner or friend
+  let showWall = false;
+  if (user?.hideWallFromFeed) {
+    if (isOwnProfile) {
+      showWall = true;
+    } else if (currentUserId) {
+      const friendship = await prisma.friendRequest.findFirst({
+        where: {
+          OR: [
+            { senderId: currentUserId, receiverId: userId },
+            { senderId: userId, receiverId: currentUserId },
+          ],
+          status: "ACCEPTED",
+        },
+      });
+      showWall = !!friendship;
+    }
+  }
+
+  return {
+    ...flags,
+    showWall,
+    hasMedia: (user?._count.posts ?? 0) > 0,
+  };
+}
+
+async function mobileGetProfilePosts(
+  userId: string,
+  tab: "posts" | "sensitive" | "nsfw" | "graphic" | "marketplace",
+  cursor?: string
+) {
+  const { prisma } = await import("@/lib/prisma");
+  const { auth } = await import("@/auth");
+  const { getPostInclude } = await import("@/app/feed/feed-queries");
+
+  const session = await auth();
+  const currentUserId = session?.user?.id;
+  const PAGE_SIZE = 20;
+
+  const baseWhere: Record<string, unknown> = {
+    authorId: userId,
+    scheduledFor: null,
+  };
+
+  if (cursor) {
+    baseWhere.createdAt = { lt: new Date(cursor) };
+  }
+
+  let contentFilter: Record<string, unknown> = {};
+  switch (tab) {
+    case "posts":
+      contentFilter = { isSensitive: false, isGraphicNudity: false };
+      break;
+    case "sensitive":
+      contentFilter = { isSensitive: true };
+      break;
+    case "nsfw":
+      contentFilter = { isNsfw: true };
+      break;
+    case "graphic":
+      contentFilter = { isGraphicNudity: true };
+      break;
+    case "marketplace":
+      contentFilter = { marketplacePost: { isNot: null } };
+      break;
+  }
+
+  const posts = await prisma.post.findMany({
+    where: { ...baseWhere, ...contentFilter },
+    orderBy: { createdAt: "desc" },
+    take: PAGE_SIZE + 1,
+    include: getPostInclude(currentUserId ?? ""),
+  });
+
+  const hasMore = posts.length > PAGE_SIZE;
+  const items = posts.slice(0, PAGE_SIZE);
+
+  return JSON.parse(JSON.stringify({
+    items,
+    hasMore,
+    nextCursor: hasMore ? items[items.length - 1]?.createdAt : null,
+  }));
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const ACTIONS: Record<string, (...args: any[]) => Promise<any>> = {
   searchUsers,
@@ -1337,6 +1466,9 @@ const ACTIONS: Record<string, (...args: any[]) => Promise<any>> = {
   saveTheme: mobileSaveTheme,
   getBackgroundPresets: mobileGetBackgroundPresets,
   updateProfileCustomization: mobileUpdateProfileCustomization,
+  // Profile Tabs
+  getProfileTabFlags: mobileGetProfileTabFlags,
+  getProfilePosts: mobileGetProfilePosts,
 };
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
