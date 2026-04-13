@@ -10,6 +10,7 @@ import { StyledName } from "@/components/styled-name";
 import { Sparklefall } from "@/components/sparklefall";
 import { WallPostComposer } from "@/components/wall-post-composer";
 import { WallPostList } from "@/components/wall-post-list";
+import { LexicalRenderer } from "@/components/lexical-renderer";
 import { PremiumBadge } from "@/components/premium-badge";
 import { UserActionSheet } from "@/components/user-action-sheet";
 import { getThemeStyles, hasCustomTheme, hexToRgba, resolveImageUrl } from "@/lib/user-theme";
@@ -119,34 +120,40 @@ export default function UserProfileScreen() {
           <Text style={{ color: secondaryColor, fontSize: 14 }}>@{profile.username}</Text>
         </View>
 
-        {profile.bio && (
-          <Text style={{ padding: 16, textAlign: "center", color: secondaryColor, lineHeight: 20 }}>
-            {profile.bio}
-          </Text>
-        )}
-
-        {/* Stats */}
+        {/* Bio + Stats container */}
         <View style={{
-          flexDirection: "row",
-          justifyContent: "space-around",
-          paddingVertical: 16,
-          borderTopWidth: 1,
-          borderBottomWidth: 1,
-          borderColor: themed ? containerColor : "#e5e7eb",
-          marginHorizontal: 16,
+          marginHorizontal: 12,
+          marginTop: 12,
+          backgroundColor: containerColor,
+          borderRadius: 16,
+          overflow: "hidden",
         }}>
-          <TouchableOpacity onPress={() => router.push(`/(stack)/${username}/followers`)} style={{ alignItems: "center" }}>
-            <Text style={{ fontSize: 18, fontWeight: "700", color: textColor }}>{profile.followersCount}</Text>
-            <Text style={{ color: secondaryColor, fontSize: 12 }}>Followers</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push(`/(stack)/${username}/following`)} style={{ alignItems: "center" }}>
-            <Text style={{ fontSize: 18, fontWeight: "700", color: textColor }}>{profile.followingCount}</Text>
-            <Text style={{ color: secondaryColor, fontSize: 12 }}>Following</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push(`/(stack)/${username}/friends`)} style={{ alignItems: "center" }}>
-            <Text style={{ fontSize: 18, fontWeight: "700", color: textColor }}>{profile.friendsCount}</Text>
-            <Text style={{ color: secondaryColor, fontSize: 12 }}>Friends</Text>
-          </TouchableOpacity>
+          {profile.bio && (
+            <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 }}>
+              <LexicalRenderer content={profile.bio} />
+            </View>
+          )}
+
+          <View style={{
+            flexDirection: "row",
+            justifyContent: "space-around",
+            paddingVertical: 14,
+            borderTopWidth: profile.bio ? 1 : 0,
+            borderTopColor: secondaryColor + "22",
+          }}>
+            <TouchableOpacity onPress={() => router.push(`/(stack)/${username}/followers`)} style={{ alignItems: "center" }}>
+              <Text style={{ fontSize: 18, fontWeight: "700", color: textColor }}>{profile.followersCount}</Text>
+              <Text style={{ color: secondaryColor, fontSize: 12 }}>Followers</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push(`/(stack)/${username}/following`)} style={{ alignItems: "center" }}>
+              <Text style={{ fontSize: 18, fontWeight: "700", color: textColor }}>{profile.followingCount}</Text>
+              <Text style={{ color: secondaryColor, fontSize: 12 }}>Following</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push(`/(stack)/${username}/friends`)} style={{ alignItems: "center" }}>
+              <Text style={{ fontSize: 18, fontWeight: "700", color: textColor }}>{profile.friendsCount}</Text>
+              <Text style={{ color: secondaryColor, fontSize: 12 }}>Friends</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Action buttons */}
