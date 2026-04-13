@@ -111,27 +111,34 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* Bio */}
-        {profile.bio && (
-          <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 }}>
-            <LexicalRenderer content={profile.bio} />
-          </View>
-        )}
-
-        {/* Stats */}
+        {/* Bio + Stats container */}
         <View style={{
-          flexDirection: "row",
-          justifyContent: "space-around",
-          paddingVertical: 16,
-          borderTopWidth: 1,
-          borderBottomWidth: 1,
-          borderColor: themed ? containerColor : "#e5e7eb",
-          marginHorizontal: 16,
+          marginHorizontal: 12,
+          marginTop: 12,
+          backgroundColor: containerColor,
+          borderRadius: 16,
+          overflow: "hidden",
         }}>
-          <StatItem label="Posts" count={profile.postsCount} textColor={textColor} secondaryColor={secondaryColor} />
-          <StatItem label="Followers" count={profile.followersCount} textColor={textColor} secondaryColor={secondaryColor} />
-          <StatItem label="Following" count={profile.followingCount} textColor={textColor} secondaryColor={secondaryColor} />
-          <StatItem label="Friends" count={profile.friendsCount} textColor={textColor} secondaryColor={secondaryColor} />
+          {/* Bio */}
+          {profile.bio && (
+            <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 }}>
+              <LexicalRenderer content={profile.bio} />
+            </View>
+          )}
+
+          {/* Stats */}
+          <View style={{
+            flexDirection: "row",
+            justifyContent: "space-around",
+            paddingVertical: 14,
+            borderTopWidth: profile.bio ? 1 : 0,
+            borderTopColor: secondaryColor + "22",
+          }}>
+            <StatItem label="Posts" count={profile.postsCount} textColor={textColor} secondaryColor={secondaryColor} />
+            <StatItem label="Followers" count={profile.followersCount} textColor={textColor} secondaryColor={secondaryColor} />
+            <StatItem label="Following" count={profile.followingCount} textColor={textColor} secondaryColor={secondaryColor} />
+            <StatItem label="Friends" count={profile.friendsCount} textColor={textColor} secondaryColor={secondaryColor} />
+          </View>
         </View>
 
         {/* Wall Posts Section */}
