@@ -92,6 +92,13 @@ interface PollData {
   expiresAt: string | null;
 }
 
+interface RepostMeta {
+  id: string;
+  user: PostAuthor;
+  content: string | null;
+  createdAt: string;
+}
+
 interface Post {
   id: string;
   content: string;
@@ -110,6 +117,7 @@ interface Post {
   reactions?: ReactionGroup[];
   poll?: PollData | null;
   quotedPost?: QuotedPost | null;
+  _repost?: RepostMeta;
 }
 
 export type { Post };
@@ -127,6 +135,24 @@ const COLORS = {
 // ── PostCard ───────────────────────────────────────────────────────
 
 export function PostCard({ post }: { post: Post }) {
+  const repost = post._repost;
+  const isQuote = !!repost?.content;
+
+  // If this is a quote repost, render the quote wrapper instead
+  if (repost && isQuote) {
+    return <QuoteRepostCard post={post} repost={repost} />;
+  }
+
+  // For simple reposts, render a header + the normal card
+  return (
+    <View>
+      {repost && <RepostHeader repost={repost} />}
+      <PostCardInner post={post} />
+    </View>
+  );
+}
+
+function PostCardInner({ post }: { post: Post }) {
   const router = useRouter();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -438,6 +464,8 @@ export function PostCard({ post }: { post: Post }) {
 
 function QuotedPostCard({ quotedPost }: { quotedPost: QuotedPost }) {
   const router = useRouter();
+  const pageTheme = useUserTheme();
+  const secondaryColor = pageTheme.secondaryColor;
 
   return (
     <TouchableOpacity
@@ -445,22 +473,22 @@ function QuotedPostCard({ quotedPost }: { quotedPost: QuotedPost }) {
       activeOpacity={0.7}
       style={{
         borderWidth: 1,
-        borderColor: "#e5e7eb",
+        borderColor: secondaryColor + "33",
         borderRadius: 12,
         padding: 12,
         marginBottom: 8,
-        backgroundColor: "#fafafa",
+        backgroundColor: hexToRgba(pageTheme.containerColor, Math.max(0, (pageTheme.containerOpacity ?? 0.8) - 0.15)),
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
         <FramedAvatar uri={quotedPost.author.avatar} size={24} frameId={quotedPost.author.profileFrameId} />
-        <StyledName fontId={quotedPost.author.usernameFont} style={{ fontWeight: "600", fontSize: 13, marginLeft: 6 }}>
+        <StyledName fontId={quotedPost.author.usernameFont} style={{ fontWeight: "600", fontSize: 13, marginLeft: 6, color: pageTheme.textColor }}>
           {quotedPost.author.displayName || quotedPost.author.username}
         </StyledName>
         {quotedPost.author.username && (
-          <Text style={{ color: "#9ca3af", fontSize: 12, marginLeft: 4 }}>@{quotedPost.author.username}</Text>
+          <Text style={{ color: secondaryColor, fontSize: 12, marginLeft: 4 }}>@{quotedPost.author.username}</Text>
         )}
-        <Text style={{ color: "#9ca3af", fontSize: 11, marginLeft: "auto" }}>
+        <Text style={{ color: secondaryColor, fontSize: 11, marginLeft: "auto" }}>
           {formatDistanceToNow(new Date(quotedPost.createdAt))}
         </Text>
       </View>
@@ -468,6 +496,183 @@ function QuotedPostCard({ quotedPost }: { quotedPost: QuotedPost }) {
         <LexicalRenderer content={quotedPost.content} />
       </View>
     </TouchableOpacity>
+  );
+}
+
+// ── RepostHeader ──────────────────────────────────────────────────
+
+function RepostHeader({ repost }: { repost: RepostMeta }) {
+  const router = useRouter();
+  const pageTheme = useUserTheme();
+  const reposterName = repost.user.displayName || repost.user.username || "Someone";
+  const isQuote = !!repost.content;
+
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 16,
+        paddingTop: 8,
+        paddingBottom: 2,
+        marginHorizontal: 12,
+        gap: 6,
+      }}
+    >
+      <RepostIcon color={pageTheme.secondaryColor} size={14} />
+      <TouchableOpacity onPress={() => repost.user.username && router.push(`/(stack)/${repost.user.username}`)}>
+        <Text style={{ fontSize: 13, fontWeight: "600", color: pageTheme.secondaryColor }}>
+          {reposterName}
+        </Text>
+      </TouchableOpacity>
+      <Text style={{ fontSize: 13, color: pageTheme.secondaryColor }}>
+        {isQuote ? "quoted" : "reposted"}
+      </Text>
+      <Text style={{ fontSize: 12, color: pageTheme.secondaryColor, marginLeft: "auto" }}>
+        {formatDistanceToNow(new Date(repost.createdAt))}
+      </Text>
+    </View>
+  );
+}
+
+// ── QuoteRepostCard ───────────────────────────────────────────────
+
+function QuoteRepostCard({ post, repost }: { post: Post; repost: RepostMeta }) {
+  const router = useRouter();
+  const pageTheme = useUserTheme();
+  const cardBg = hexToRgba(pageTheme.containerColor, pageTheme.containerOpacity);
+  const secondaryColor = pageTheme.secondaryColor;
+
+  return (
+    <View>
+      {/* Repost header: "username quoted · timestamp" */}
+      <RepostHeader repost={repost} />
+
+      {/* Quote content card */}
+      <View
+        style={{
+          marginHorizontal: 12,
+          marginTop: 4,
+          marginBottom: 6,
+          borderRadius: 16,
+          backgroundColor: cardBg,
+          overflow: "hidden",
+        }}
+      >
+        {/* Quote author + content */}
+        <TouchableOpacity
+          onPress={() => router.push(`/(stack)/post/${post.id}`)}
+          activeOpacity={0.7}
+          style={{ padding: 16 }}
+        >
+          {/* Quote author row */}
+          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+            <FramedAvatar uri={repost.user.avatar} size={32} frameId={repost.user.profileFrameId} />
+            <View style={{ marginLeft: 8, flex: 1 }}>
+              <StyledName fontId={repost.user.usernameFont} style={{ fontWeight: "600", fontSize: 14, color: pageTheme.textColor }}>
+                {repost.user.displayName || repost.user.username}
+              </StyledName>
+              {repost.user.username && (
+                <Text style={{ color: secondaryColor, fontSize: 12 }}>@{repost.user.username}</Text>
+              )}
+            </View>
+          </View>
+
+          {/* Quote text */}
+          {repost.content && (
+            <View style={{ marginBottom: 8 }}>
+              <LexicalRenderer content={repost.content} />
+            </View>
+          )}
+        </TouchableOpacity>
+
+        {/* Embedded original post (nested) */}
+        <View style={{ marginHorizontal: 12, marginBottom: 12 }}>
+          <TouchableOpacity
+            onPress={() => router.push(`/(stack)/post/${post.id}`)}
+            activeOpacity={0.7}
+            style={{
+              borderWidth: 1,
+              borderColor: secondaryColor + "33",
+              borderRadius: 12,
+              padding: 12,
+              backgroundColor: hexToRgba(pageTheme.containerColor, Math.max(0, (pageTheme.containerOpacity ?? 0.8) - 0.15)),
+            }}
+          >
+            {/* Original post author */}
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
+              <FramedAvatar uri={post.author.avatar} size={24} frameId={post.author.profileFrameId} />
+              <StyledName fontId={post.author.usernameFont} style={{ fontWeight: "600", fontSize: 13, marginLeft: 6, color: pageTheme.textColor }}>
+                {post.author.displayName || post.author.username}
+              </StyledName>
+              {post.author.username && (
+                <Text style={{ color: secondaryColor, fontSize: 12, marginLeft: 4 }}>@{post.author.username}</Text>
+              )}
+              <Text style={{ color: secondaryColor, fontSize: 11, marginLeft: "auto" }}>
+                {formatDistanceToNow(new Date(post.createdAt))}
+              </Text>
+            </View>
+            {/* Original post content */}
+            <View style={{ maxHeight: 200, overflow: "hidden" }}>
+              <LexicalRenderer content={post.content} />
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Action buttons for the quote */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 16, paddingBottom: 12 }}>
+          <TouchableOpacity
+            onPress={() => router.push(`/(stack)/post/${post.id}`)}
+            activeOpacity={0.6}
+            style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 4, paddingHorizontal: 6 }}
+          >
+            <HeartIcon filled={false} color={COLORS.like.inactive} />
+            {post._count.likes > 0 && (
+              <Text style={{ fontSize: 13, color: COLORS.like.inactive }}>{post._count.likes}</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => router.push(`/(stack)/post/${post.id}`)}
+            activeOpacity={0.6}
+            style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 4, paddingHorizontal: 6 }}
+          >
+            <CommentIcon color={post._count.comments > 0 ? COLORS.comment.active : COLORS.comment.inactive} />
+            {post._count.comments > 0 && (
+              <Text style={{ fontSize: 13, color: COLORS.comment.active }}>{post._count.comments}</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.6}
+            style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 4, paddingHorizontal: 6 }}
+          >
+            <RepostIcon color={COLORS.repost.inactive} />
+            {post._count.reposts > 0 && (
+              <Text style={{ fontSize: 13, color: COLORS.repost.inactive }}>{post._count.reposts}</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.6}
+            style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 4, paddingHorizontal: 6 }}
+          >
+            <BookmarkIcon filled={false} color={COLORS.bookmark.inactive} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={async () => {
+              const url = `https://www.vibrantsocial.app/post/${post.id}`;
+              try { await Share.share({ url }); } catch {}
+            }}
+            activeOpacity={0.6}
+            style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 4, paddingHorizontal: 6 }}
+          >
+            <ShareIcon color={COLORS.share.inactive} />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
   );
 }
 

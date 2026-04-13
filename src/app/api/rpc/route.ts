@@ -19,6 +19,7 @@ import { corsJson, handleCorsPreflightRequest } from "@/lib/cors";
 import { searchUsers, searchPosts, searchTagsForSearch, searchMarketplacePosts } from "@/app/search/actions";
 import { fetchNewFeedItems, fetchSinglePost, fetchFeedPage, fetchCloseFriendsFeedPage } from "@/app/feed/feed-actions";
 import { fetchForYouPage } from "@/app/feed/for-you-actions";
+import { fetchFeedSummary, generateFeedSummaryOnDemand } from "@/app/feed/summary-actions";
 import {
   fetchNewListFeedItems, fetchListFeedPage, getUserLists, getSubscribedLists,
   getCollaboratingLists, getListMembers, searchUsersForList, getListCollaborators,
@@ -1189,6 +1190,35 @@ async function mobileToggleListSubscription(listId: string) {
   return { success: true, message: existing ? "Unsubscribed" : "Subscribed", isSubscribed: !existing };
 }
 
+async function mobileGetLastSeenFeedAt() {
+  const { prisma } = await import("@/lib/prisma");
+  const { auth } = await import("@/auth");
+  const session = await auth();
+  if (!session?.user?.id) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { lastSeenFeedAt: true },
+  });
+
+  return user?.lastSeenFeedAt?.toISOString() ?? null;
+}
+
+async function mobileUpdateLastSeenFeedAt() {
+  const { prisma } = await import("@/lib/prisma");
+  const { auth } = await import("@/auth");
+  const session = await auth();
+  if (!session?.user?.id) return { success: false };
+
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { lastSeenFeedAt: new Date() },
+  });
+
+  return { success: true };
+}
+
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const ACTIONS: Record<string, (...args: any[]) => Promise<any>> = {
   searchUsers,
@@ -1200,6 +1230,10 @@ const ACTIONS: Record<string, (...args: any[]) => Promise<any>> = {
   fetchFeedPage,
   fetchCloseFriendsFeedPage,
   fetchForYouPage,
+  fetchFeedSummary,
+  generateFeedSummaryOnDemand,
+  getLastSeenFeedAt: mobileGetLastSeenFeedAt,
+  updateLastSeenFeedAt: mobileUpdateLastSeenFeedAt,
   fetchNewListFeedItems,
   fetchListFeedPage,
   getUserLists,
@@ -1306,6 +1340,12 @@ const ACTIONS: Record<string, (...args: any[]) => Promise<any>> = {
 };
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+// Build a Map for safe dispatch — values are trusted objects, breaking the
+// taint chain from user-supplied action names to function invocation.
+const ACTION_MAP = new Map(
+  Object.entries(ACTIONS).map(([name, fn]) => [name, { name, fn }])
+);
+
 export async function OPTIONS(req: Request) {
   return handleCorsPreflightRequest(req);
 }
@@ -1319,7 +1359,14 @@ export async function POST(req: Request) {
   }
 
   const { action, args = [] } = body;
-  if (!action || !ACTIONS[action]) {
+  if (!action || typeof action !== "string") {
+    return corsJson(req, { error: "Missing action" }, { status: 400 });
+  }
+
+  // Look up the handler from a pre-built Map to break the taint chain —
+  // the Map values are trusted function references, not user input.
+  const handler = ACTION_MAP.get(action);
+  if (!handler) {
     return corsJson(req, { error: "Unknown action" }, { status: 400 });
   }
 
@@ -1328,14 +1375,14 @@ export async function POST(req: Request) {
     // it available to server actions via AsyncLocalStorage so that their
     // internal `auth()` calls can pick it up.
     const mobileSession = await getSessionFromRequest(req);
-    const run = () => ACTIONS[action](...args);
+    const run = () => handler.fn(...args);
 
     const result = mobileSession
       ? await withMobileSession(mobileSession, run)
       : await run();
     return corsJson(req, result ?? null);
   } catch (e) {
-    console.error(`[rpc] ${action} failed:`, e);
+    console.error("[rpc] %s failed:", handler.name, e);
     return corsJson(req, { error: "Internal error" }, { status: 500 });
   }
 }

@@ -2,14 +2,11 @@ import { useState, useCallback } from "react";
 import { View, Text, TouchableOpacity, RefreshControl, ScrollView, ActivityIndicator } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { api } from "@/lib/api";
 import { PostCard } from "@/components/post-card";
-import { NavBar } from "@/components/nav-bar";
-import { ThemedView, useUserTheme } from "@/components/themed-view";
-import { useMyTheme } from "@/hooks/use-my-theme";
-import { Sparklefall } from "@/components/sparklefall";
+import { useUserTheme, ScreenBackground } from "@/components/themed-view";
+import { FeedSummaryBanner } from "@/components/feed-summary-banner";
 
 // ── Types ─────────────────────────────────────────────────────────
 
@@ -24,26 +21,11 @@ type FeedTabId = "feed" | "foryou" | "closefriends" | string; // string = list I
 // ── Screen ────────────────────────────────────────────────────────
 
 export default function FeedScreen() {
-  const { data: myTheme } = useMyTheme();
-
   return (
-    <ThemedView themeData={myTheme}>
-      <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
-        <NavBar />
-        <FeedContent />
-        {myTheme?.sparklefallEnabled && (
-          <Sparklefall
-            presetName={myTheme.sparklefallPreset ?? "default"}
-            sparkles={myTheme.sparklefallSparkles ? myTheme.sparklefallSparkles.split(",") : undefined}
-            interval={myTheme.sparklefallInterval ?? undefined}
-            wind={myTheme.sparklefallWind ?? undefined}
-            maxSparkles={myTheme.sparklefallMaxSparkles ?? undefined}
-            minSize={myTheme.sparklefallMinSize ?? undefined}
-            maxSize={myTheme.sparklefallMaxSize ?? undefined}
-          />
-        )}
-      </SafeAreaView>
-    </ThemedView>
+    <View style={{ flex: 1 }}>
+      <ScreenBackground />
+      <FeedContent />
+    </View>
   );
 }
 
@@ -185,6 +167,7 @@ function FriendsFeed() {
       onEndReached={fetchNextPage}
       emptyText="No posts from friends yet. Follow people to see their posts here!"
       theme={theme}
+      listHeader={<FeedSummaryBanner />}
     />
   );
 }
@@ -358,6 +341,7 @@ function FeedList({
   onEndReached,
   emptyText,
   theme,
+  listHeader,
 }: {
   data: any[];
   isLoading: boolean;
@@ -368,6 +352,7 @@ function FeedList({
   onEndReached: () => void;
   emptyText: string;
   theme: any;
+  listHeader?: React.ReactNode;
 }) {
   const renderItem = useCallback(
     ({ item }: { item: any }) => <PostCard post={item} />,
@@ -387,6 +372,7 @@ function FeedList({
       refreshControl={
         <RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={theme.linkColor} />
       }
+      ListHeaderComponent={listHeader ? <>{listHeader}</> : undefined}
       ListEmptyComponent={
         isLoading ? (
           <View style={{ padding: 40, alignItems: "center" }}>
