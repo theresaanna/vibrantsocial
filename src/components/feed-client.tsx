@@ -150,11 +150,11 @@ export function FeedClient({
       <AddToHomeBanner />
       <AddEmailBanner hasEmail={hasEmail} />
       {!listId && lastSeenFeedAt && (
-        <div className="mb-4 flex gap-4">
+        <div className="mb-4 flex flex-col gap-4 md:flex-row">
           <div className="min-w-0 flex-1">
             <FeedSummaryBanner lastSeenFeedAt={lastSeenFeedAt} initialData={initialSummaryData ?? undefined} />
           </div>
-          <div className="w-64 shrink-0 rounded-2xl bg-zinc-50 p-4 shadow-sm dark:bg-zinc-800">
+          <div className="w-full shrink-0 rounded-2xl bg-zinc-50 p-4 shadow-sm md:w-64 dark:bg-zinc-800">
             <h3 className="font-medium text-zinc-900 dark:text-zinc-100 text-sm">
               Most Active Chatrooms
             </h3>
