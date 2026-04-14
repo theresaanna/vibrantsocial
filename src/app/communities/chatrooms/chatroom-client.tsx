@@ -1148,8 +1148,8 @@ export function ChatRoomClient({
               </div>
             )}
 
-            <div className="flex items-end gap-2">
-              {/* File upload */}
+            <div className="flex flex-col gap-2">
+              {/* File upload (hidden input) */}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -1157,57 +1157,96 @@ export function ChatRoomClient({
                 onChange={handleFileSelect}
                 className="hidden"
               />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="hidden rounded-lg p-2.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 disabled:opacity-50 md:block dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
-                title="Upload image or video"
-              >
-                {uploading ? (
-                  <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                ) : (
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
-                  </svg>
-                )}
-              </button>
 
-              {/* GIF button */}
-              <button
-                onClick={() => setShowGifPicker(true)}
-                className="hidden rounded-lg p-2.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 md:block dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
-                title="Send a GIF"
-              >
-                <span className="text-xs font-bold">GIF</span>
-              </button>
+              {/* Textarea row with send button on desktop */}
+              <div className="flex items-end gap-2">
+                {/* Desktop-only: image & GIF buttons inline */}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="hidden rounded-lg p-2.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 disabled:opacity-50 md:block dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+                  title="Upload image or video"
+                >
+                  {uploading ? (
+                    <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                    </svg>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowGifPicker(true)}
+                  className="hidden rounded-lg p-2.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 md:block dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+                  title="Send a GIF"
+                >
+                  <span className="text-xs font-bold">GIF</span>
+                </button>
 
-              {/* Textarea */}
-              <textarea
-                ref={textareaRef}
-                value={inputValue}
-                onChange={(e) => {
-                  setInputValue(e.target.value);
-                  detectMention();
-                }}
-                onKeyDown={handleKeyDown}
-                onKeyUp={detectMention}
-                onClick={detectMention}
-                placeholder="Type a message..."
-                rows={1}
-                className="flex-1 resize-none rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 placeholder-zinc-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
-              />
+                {/* Textarea */}
+                <textarea
+                  ref={textareaRef}
+                  value={inputValue}
+                  onChange={(e) => {
+                    setInputValue(e.target.value);
+                    detectMention();
+                  }}
+                  onKeyDown={handleKeyDown}
+                  onKeyUp={detectMention}
+                  onClick={detectMention}
+                  placeholder="Type a message..."
+                  rows={1}
+                  className="flex-1 resize-none rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 placeholder-zinc-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
+                />
 
-              {/* Send */}
-              <button
-                onClick={handleSend}
-                disabled={(!inputValue.trim() && !uploadPreview) || isSending}
-                className="hidden rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:from-emerald-500 hover:to-cyan-500 disabled:opacity-50 md:block"
-              >
-                {isSending ? "..." : "Send"}
-              </button>
+                {/* Desktop send */}
+                <button
+                  onClick={handleSend}
+                  disabled={(!inputValue.trim() && !uploadPreview) || isSending}
+                  className="hidden rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:from-emerald-500 hover:to-cyan-500 disabled:opacity-50 md:block"
+                >
+                  {isSending ? "..." : "Send"}
+                </button>
+              </div>
+
+              {/* Mobile-only: action buttons below textarea */}
+              <div className="flex items-center gap-2 md:hidden">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 disabled:opacity-50 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+                  title="Upload image or video"
+                >
+                  {uploading ? (
+                    <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                    </svg>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowGifPicker(true)}
+                  className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+                  title="Send a GIF"
+                >
+                  <span className="text-xs font-bold">GIF</span>
+                </button>
+                <div className="flex-1" />
+                <button
+                  onClick={handleSend}
+                  disabled={(!inputValue.trim() && !uploadPreview) || isSending}
+                  className="rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:from-emerald-500 hover:to-cyan-500 disabled:opacity-50"
+                >
+                  {isSending ? "..." : "Send"}
+                </button>
+              </div>
             </div>
           </div>
         )}
