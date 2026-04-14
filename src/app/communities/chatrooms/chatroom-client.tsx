@@ -864,7 +864,7 @@ export function ChatRoomClient({
 
                       {/* Action buttons */}
                       {!isDeleted && editingId !== msg.id && (
-                        <div className="flex shrink-0 items-start gap-0.5 opacity-100 md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
+                        <div className="flex shrink-0 items-start gap-0.5">
                           {/* Reply */}
                           <button
                             onClick={() => {

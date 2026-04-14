@@ -399,7 +399,7 @@ export function MessageBubble({
             {/* Action buttons: context menu + emoji reaction trigger */}
             {!isEditing && (
               <div
-                className={`absolute top-1/2 -translate-y-1/2 transition-opacity md:pointer-events-none md:opacity-0 md:group-hover:pointer-events-auto md:group-hover:opacity-100 ${
+                className={`absolute top-1/2 -translate-y-1/2 ${
                   isOwn ? "-left-16 flex flex-row" : "-right-16 flex flex-row-reverse"
                 }`}
               >
