@@ -122,8 +122,6 @@ export function NavLinks({ username }: { username?: string | null }) {
         </svg>
       ),
     },
-  ];
-
     {
       href: "/help",
       label: "Help",
