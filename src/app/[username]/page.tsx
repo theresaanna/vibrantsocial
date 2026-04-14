@@ -38,6 +38,8 @@ import { ProfileSparklefall } from "@/components/profile-sparklefall";
 import { isBirthday, getBirthdaySparkleConfig } from "@/lib/birthday";
 import { StyledName } from "@/components/styled-name";
 import { getUserPrefs } from "@/lib/user-prefs";
+import { getUserStatusHistory } from "@/app/feed/status-actions";
+import { timeAgo } from "@/lib/time";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
@@ -237,6 +239,12 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
     hideNsfwOverlay = prefs.hideNsfwOverlay;
     showNsfwContent = prefs.showNsfwContent;
   }
+
+  // Fetch latest status for this user
+  const latestStatusArr = blockStatus === "none" && user.username
+    ? await getUserStatusHistory(user.username, 1)
+    : [];
+  const latestStatus = latestStatusArr[0] ?? null;
 
   const postInclude = {
     author: {
@@ -815,6 +823,28 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             </div>
           )}
         </div>
+
+        {blockStatus === "none" && latestStatus && (
+          <Link
+            href="/feed#friends-statuses-widget"
+            className="mt-4 block rounded-xl border border-zinc-200 bg-white p-3 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+          >
+            <div className="flex items-center justify-between">
+              <span className={`text-xs font-medium ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500 dark:text-zinc-400"}`}>
+                Recent status
+              </span>
+              <span className={`text-[10px] ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-400 dark:text-zinc-500"}`}>
+                {timeAgo(latestStatus.createdAt)}
+              </span>
+            </div>
+            <p className={`mt-1 text-sm ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+              {latestStatus.content}
+            </p>
+            <span className="mt-1 block text-xs font-medium text-indigo-500 dark:text-indigo-400">
+              See all friend updates &rarr;
+            </span>
+          </Link>
+        )}
 
         {blockStatus === "none" && (
           <>
