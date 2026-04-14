@@ -1,0 +1,66 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Help",
+  description: "Get help with VibrantSocial.",
+};
+
+export default function HelpPage() {
+  return (
+    <div className="mx-auto max-w-2xl px-6 py-16">
+      <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        Help
+      </h1>
+
+      <p className="mt-8 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+        Looking for support? Visit our{" "}
+        <Link
+          href="/support"
+          className="font-medium text-purple-600 underline underline-offset-2 hover:text-purple-500 dark:text-purple-400 dark:hover:text-purple-300"
+        >
+          Support page
+        </Link>{" "}
+        to get in touch with the team.
+      </p>
+
+      <h2 className="mt-10 text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+        Policies
+      </h2>
+      <ul className="mt-4 space-y-3 text-sm text-zinc-600 dark:text-zinc-400">
+        <li>
+          <Link
+            href="/tos"
+            className="font-medium text-purple-600 underline underline-offset-2 hover:text-purple-500 dark:text-purple-400 dark:hover:text-purple-300"
+          >
+            Terms of Service
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/privacy"
+            className="font-medium text-purple-600 underline underline-offset-2 hover:text-purple-500 dark:text-purple-400 dark:hover:text-purple-300"
+          >
+            Privacy Policy
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/cookies"
+            className="font-medium text-purple-600 underline underline-offset-2 hover:text-purple-500 dark:text-purple-400 dark:hover:text-purple-300"
+          >
+            Cookie Policy
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/dmca"
+            className="font-medium text-purple-600 underline underline-offset-2 hover:text-purple-500 dark:text-purple-400 dark:hover:text-purple-300"
+          >
+            DMCA Policy
+          </Link>
+        </li>
+      </ul>
+    </div>
+  );
+}

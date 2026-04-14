@@ -8,6 +8,7 @@ import { Providers } from "./providers";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { VersionCheck } from "@/components/version-check";
+import { auth } from "@/auth";
 
 const lexend = Lexend({
   variable: "--font-lexend",
@@ -43,6 +44,7 @@ export default async function RootLayout({
 }>) {
   const host = (await headers()).get("host") || "";
   const isLinksSubdomain = host.startsWith("links.");
+  const session = await auth();
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -62,7 +64,7 @@ export default async function RootLayout({
           {!isLinksSubdomain && <VersionCheck />}
           {!isLinksSubdomain && <Header />}
           {children}
-          {!isLinksSubdomain && <Footer />}
+          {!isLinksSubdomain && !session?.user && <Footer />}
         </Providers>
         <Analytics />
         <SpeedInsights />
