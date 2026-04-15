@@ -623,7 +623,7 @@ export function ChatRoomClient({
 
         {/* Mobile online users — horizontal strip */}
         <div className="mb-1 md:hidden">
-          <div className="flex items-center gap-2 overflow-x-auto rounded-lg bg-white/80 px-2 py-1.5 shadow-sm backdrop-blur-sm dark:bg-zinc-900/80">
+          <div className="flex items-center gap-2 overflow-x-auto rounded-lg bg-white px-2 py-1.5 shadow-sm dark:bg-zinc-900">
             <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
               Online {onlineUsers.length}
             </span>
@@ -652,7 +652,7 @@ export function ChatRoomClient({
         </div>
 
         {/* Messages area */}
-        <div className="min-h-0 flex-1 overflow-y-auto rounded-xl bg-white/80 p-2 shadow-sm backdrop-blur-sm md:p-4 dark:bg-zinc-900/80">
+        <div className="min-h-0 flex-1 overflow-y-auto rounded-xl bg-white p-2 shadow-sm md:p-4 dark:bg-zinc-900">
           {messages.length === 0 ? (
             <div className="flex h-full items-center justify-center">
               <p className="text-sm text-zinc-400 dark:text-zinc-500">
@@ -1267,7 +1267,7 @@ export function ChatRoomClient({
 
       {/* Online Users Sidebar */}
       <div className="hidden w-52 shrink-0 flex-col md:flex">
-        <div className="rounded-xl bg-white/80 p-3 shadow-sm backdrop-blur-sm dark:bg-zinc-900/80">
+        <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-zinc-900">
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
             Online &mdash; {onlineUsers.length}
           </h2>
