@@ -7,14 +7,9 @@ import { AddToHomeBanner } from "@/components/add-to-home-banner";
 import { AddEmailBanner } from "@/components/add-email-banner";
 import { FeedList } from "@/components/feed-list";
 import { rpc } from "@/lib/rpc";
-import { FeedSummaryBanner } from "@/components/feed-summary-banner";
-import type { FeedSummaryResult } from "@/app/feed/summary-actions";
-import { FriendsStatusesWidget } from "@/components/friends-statuses-widget";
 import { FeedViewToggleWrapper } from "@/components/feed-view-toggle-wrapper";
-import Link from "next/link";
 import { MediaFeedClientContent } from "@/components/media-feed-client-content";
 import type { FeedView } from "@/components/feed-view-toggle";
-import type { FriendStatusData } from "@/app/feed/status-actions";
 
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,12 +31,8 @@ interface FeedClientProps {
   hasEmail: boolean;
   isPremium: boolean;
   listId?: string;
-  lastSeenFeedAt?: string | null;
-  initialSummaryData?: FeedSummaryResult | null;
   activeView?: FeedView;
   fetchPage?: (cursor: string) => Promise<{ items: FeedItem[]; hasMore: boolean }>;
-  friendStatuses?: FriendStatusData[];
-  initialOwnStatus?: FriendStatusData | null;
 }
 
 function FeedMarketplaceSubscription({
@@ -72,12 +63,8 @@ export function FeedClient({
   hasEmail,
   isPremium,
   listId,
-  lastSeenFeedAt,
-  initialSummaryData,
   activeView = "posts",
   fetchPage,
-  friendStatuses = [],
-  initialOwnStatus = null,
 }: FeedClientProps) {
   const isAblyReady = useAblyReady();
   const [newItems, setNewItems] = useState<FeedItem[]>([]);
@@ -149,36 +136,6 @@ export function FeedClient({
       )}
       <AddToHomeBanner />
       <AddEmailBanner hasEmail={hasEmail} />
-      {!listId && lastSeenFeedAt && (
-        <div className="mb-4 flex flex-col gap-4 md:flex-row">
-          <div className="min-w-0 flex-1">
-            <FeedSummaryBanner lastSeenFeedAt={lastSeenFeedAt} initialData={initialSummaryData ?? undefined} />
-          </div>
-          <div className="w-full shrink-0 rounded-2xl bg-zinc-50 p-4 shadow-sm md:w-64 dark:bg-zinc-800">
-            <h3 className="font-medium text-zinc-900 dark:text-zinc-100 text-sm">
-              Most Active Chatrooms
-            </h3>
-            <ul className="mt-2 space-y-1">
-              <li>
-                <Link
-                  href="/communities/chatrooms"
-                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                >
-                  <span className="text-fuchsia-500">#</span>
-                  General Chat
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </div>
-      )}
-      {!listId && (
-        <FriendsStatusesWidget
-          statuses={friendStatuses}
-          currentUserId={currentUserId}
-          initialOwnStatus={initialOwnStatus}
-        />
-      )}
       {!listId && (
         <FeedViewToggleWrapper activeView={activeView} />
       )}
