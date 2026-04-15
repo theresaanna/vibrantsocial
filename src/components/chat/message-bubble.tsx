@@ -249,7 +249,7 @@ export function MessageBubble({
           {message.replyTo && (
             <button
               onClick={() => onScrollToMessage?.(message.replyTo!.id)}
-              className={`mb-0.5 flex w-full cursor-pointer items-start gap-1.5 rounded-xl border-l-2 px-3 py-1.5 text-left transition-colors hover:opacity-80 ${
+              className={`mb-0.5 flex w-full min-w-0 cursor-pointer items-start gap-1.5 overflow-hidden rounded-xl border-l-2 px-3 py-1.5 text-left transition-colors hover:opacity-80 ${
                 isOwn
                   ? themeColors?.bgColor
                     ? ""
