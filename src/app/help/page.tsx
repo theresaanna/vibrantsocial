@@ -1,14 +1,30 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { userThemeSelect, buildUserTheme } from "@/lib/user-theme";
+import { ThemedPage } from "@/components/themed-page";
 
 export const metadata: Metadata = {
   title: "Help",
   description: "Get help with VibrantSocial.",
 };
 
-export default function HelpPage() {
+export default async function HelpPage() {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { ...userThemeSelect },
+  });
+  if (!user) redirect("/login");
+
+  const theme = buildUserTheme(user);
+
   return (
-    <div className="mx-auto max-w-2xl px-6 py-16">
+    <ThemedPage {...theme} className="mx-auto max-w-2xl px-6 py-16">
       <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
         Help
       </h1>
@@ -61,6 +77,6 @@ export default function HelpPage() {
           </Link>
         </li>
       </ul>
-    </div>
+    </ThemedPage>
   );
 }

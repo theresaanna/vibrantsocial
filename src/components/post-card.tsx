@@ -19,6 +19,7 @@ import { FramedAvatar } from "@/components/framed-avatar";
 import { StyledName } from "@/components/styled-name";
 import { MarketplaceQA } from "@/components/marketplace-qa";
 import { DigitalFileDownload } from "@/components/digital-file-download";
+import { DigitalFileEditor } from "@/components/digital-file-editor";
 
 const Editor = dynamic(() => import("./editor/Editor").then((m) => ({ default: m.Editor })), { ssr: false });
 const PostRevisionHistory = dynamic(() => import("./post-revision-history").then((m) => ({ default: m.PostRevisionHistory })), { ssr: false });
@@ -595,6 +596,7 @@ export const PostCard = memo(function PostCard({
           {/* Post content */}
           <div className="px-4 py-3">
             {isEditing ? (
+              <>
               <form action={handleEditSubmit}>
                 <input type="hidden" name="postId" value={post.id} />
                 <input type="hidden" name="slug" value={editSlug} />
@@ -749,6 +751,17 @@ export const PostCard = memo(function PostCard({
                   </div>
                 </div>
               </form>
+              {marketplacePostId && digitalFileData && digitalFileData.isOwner && (
+                <div className="mt-2">
+                  <DigitalFileEditor
+                    marketplacePostId={marketplacePostId}
+                    fileName={digitalFileData.fileName}
+                    fileSize={digitalFileData.fileSize}
+                    isFree={digitalFileData.isFree}
+                  />
+                </div>
+              )}
+              </>
             ) : (
               <PostContent
                 content={currentContent}
