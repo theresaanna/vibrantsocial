@@ -15,6 +15,7 @@ import {
 } from "@/lib/stripe";
 import {
   addMonths,
+  computeNewPremiumExpiry,
   computeNewTrialEnd,
   extendPremiumTrial,
   getCurrentPeriodEnd,
@@ -176,6 +177,60 @@ describe("computeNewTrialEnd", () => {
     expect(() => computeNewTrialEnd({ items: { data: [] } }, 1)).toThrow(
       PremiumCompError
     );
+  });
+});
+
+describe("computeNewPremiumExpiry", () => {
+  const NOW = new Date("2026-04-15T12:00:00Z");
+
+  it("starts from now when currentExpiry is null", () => {
+    const { anchor, newExpiry } = computeNewPremiumExpiry(null, 3, NOW);
+    expect(anchor).toEqual(NOW);
+    expect(newExpiry.toISOString().slice(0, 10)).toBe("2026-07-15");
+  });
+
+  it("starts from now when currentExpiry is in the past", () => {
+    const past = new Date("2026-01-01T00:00:00Z");
+    const { anchor, newExpiry } = computeNewPremiumExpiry(past, 2, NOW);
+    expect(anchor).toEqual(NOW);
+    expect(newExpiry.toISOString().slice(0, 10)).toBe("2026-06-15");
+  });
+
+  it("stacks on a future currentExpiry", () => {
+    const future = new Date("2026-08-01T00:00:00Z");
+    const { anchor, newExpiry } = computeNewPremiumExpiry(future, 3, NOW);
+    expect(anchor).toEqual(future);
+    expect(newExpiry.toISOString().slice(0, 10)).toBe("2026-11-01");
+  });
+
+  it("rejects non-integer months", () => {
+    expect(() => computeNewPremiumExpiry(null, 1.5, NOW)).toThrow(
+      PremiumCompError
+    );
+  });
+
+  it("rejects zero or negative months", () => {
+    expect(() => computeNewPremiumExpiry(null, 0, NOW)).toThrow(
+      PremiumCompError
+    );
+    expect(() => computeNewPremiumExpiry(null, -1, NOW)).toThrow(
+      PremiumCompError
+    );
+  });
+
+  it("rejects months greater than 24", () => {
+    expect(() => computeNewPremiumExpiry(null, 25, NOW)).toThrow(
+      PremiumCompError
+    );
+  });
+
+  it("clamps day-of-month on stacking (future Jul 31 + 1mo → Aug 31)", () => {
+    // Picks a future anchor so stacking is exercised (past anchor falls
+    // back to NOW). addMonths handles the clamping separately and is
+    // unit-tested elsewhere, but this verifies the integration.
+    const jul31 = new Date("2026-07-31T00:00:00Z");
+    const { newExpiry } = computeNewPremiumExpiry(jul31, 1, NOW);
+    expect(newExpiry.toISOString().slice(0, 10)).toBe("2026-08-31");
   });
 });
 

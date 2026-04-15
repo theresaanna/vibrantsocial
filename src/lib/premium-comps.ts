@@ -103,6 +103,33 @@ export interface ExtendPremiumResult {
 }
 
 /**
+ * Computes the new `premiumExpiresAt` value for granting/comping premium
+ * months to a user who is NOT backed by a Stripe subscription.
+ *
+ * Stacks on top of any existing future expiry so multiple comps add up
+ * linearly. If the user has no expiry, or their current expiry is in the
+ * past, the clock starts from `now`.
+ */
+export function computeNewPremiumExpiry(
+  currentExpiry: Date | null,
+  months: number,
+  now: Date = new Date()
+): { anchor: Date; newExpiry: Date } {
+  if (!Number.isInteger(months) || months <= 0 || months > 24) {
+    throw new PremiumCompError(
+      "invalid_months",
+      "months must be an integer between 1 and 24"
+    );
+  }
+  const effectiveCurrent =
+    currentExpiry && currentExpiry.getTime() > now.getTime()
+      ? currentExpiry
+      : now;
+  const newExpiry = addMonths(effectiveCurrent, months);
+  return { anchor: effectiveCurrent, newExpiry };
+}
+
+/**
  * Comps `months` free months onto an active Stripe subscription by pushing
  * its `trial_end` forward. No Prisma writes happen here; the caller is
  * responsible for the audit log (see `extendPremium` server action).

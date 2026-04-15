@@ -1,7 +1,12 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
-import { extendPremium, type ExtendPremiumState } from "./premium-actions";
+import {
+  extendPremium,
+  grantPremiumMonths,
+  type ExtendPremiumState,
+  type GrantPremiumState,
+} from "./premium-actions";
 
 export interface PremiumUser {
   id: string;
@@ -17,7 +22,7 @@ export interface PremiumUser {
 export interface PremiumCompRecord {
   id: string;
   months: number;
-  stripeSubscriptionId: string;
+  stripeSubscriptionId: string | null;
   previousTrialEnd: Date | null;
   newTrialEnd: Date;
   reason: string | null;
@@ -57,6 +62,8 @@ export function PremiumTab({
           className="w-full max-w-md rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder-zinc-500"
         />
       </div>
+
+      <GrantPremiumForm />
 
       <section>
         <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
@@ -261,4 +268,87 @@ function UserAvatar({ user }: { user: { avatar: string | null } }) {
 
 function formatDate(d: Date | string): string {
   return new Date(d).toLocaleString();
+}
+
+function GrantPremiumForm() {
+  const [state, formAction, pending] = useActionState<GrantPremiumState, FormData>(
+    grantPremiumMonths,
+    null
+  );
+  const [formKey, setFormKey] = useState(0);
+
+  // Reset the form inputs after a successful grant so the admin can
+  // comp another user without clearing fields by hand.
+  useEffect(() => {
+    if (state?.ok) setFormKey((k) => k + 1);
+  }, [state]);
+
+  return (
+    <section className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+      <h2 className="mb-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+        Grant premium to a user
+      </h2>
+      <p className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
+        Use this for users without a Stripe subscription. Stacks on any existing finite expiry.
+      </p>
+      <form
+        key={formKey}
+        action={formAction}
+        className="flex flex-wrap items-start gap-2"
+      >
+        <label className="flex flex-1 min-w-[180px] flex-col text-xs text-zinc-500 dark:text-zinc-400">
+          Username
+          <input
+            name="username"
+            type="text"
+            required
+            maxLength={50}
+            className="mt-1 w-full rounded-lg border border-zinc-200 bg-white px-2 py-1 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+            placeholder="e.g. spoilingpixie"
+          />
+        </label>
+        <label className="flex flex-col text-xs text-zinc-500 dark:text-zinc-400">
+          Months
+          <input
+            name="months"
+            type="number"
+            min={1}
+            max={24}
+            defaultValue={1}
+            required
+            className="mt-1 w-20 rounded-lg border border-zinc-200 bg-white px-2 py-1 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+          />
+        </label>
+        <label className="flex flex-1 min-w-[180px] flex-col text-xs text-zinc-500 dark:text-zinc-400">
+          Reason (optional)
+          <input
+            name="reason"
+            type="text"
+            maxLength={500}
+            className="mt-1 w-full rounded-lg border border-zinc-200 bg-white px-2 py-1 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+            placeholder="e.g. contest winner"
+          />
+        </label>
+        <div className="flex items-end pt-4">
+          <button
+            type="submit"
+            disabled={pending}
+            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+          >
+            {pending ? "Granting…" : "Grant"}
+          </button>
+        </div>
+      </form>
+      {state && !state.ok && (
+        <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-900/20 dark:text-red-400">
+          {state.error}
+        </p>
+      )}
+      {state?.ok && (
+        <p className="mt-2 rounded-lg bg-green-50 px-3 py-2 text-xs text-green-700 dark:bg-green-900/20 dark:text-green-400">
+          {state.message}
+        </p>
+      )}
+    </section>
+  );
 }
