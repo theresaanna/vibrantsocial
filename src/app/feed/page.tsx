@@ -7,6 +7,8 @@ import { FeedContent } from "./feed-content";
 import { ListFeedContent } from "./list-feed-content";
 import { CloseFriendsFeedContent } from "./close-friends-feed-content";
 import { ForYouFeedContent } from "./for-you-feed-content";
+import { LikesFeedContent } from "./likes-feed-content";
+import { BookmarksFeedContent } from "./bookmarks-feed-content";
 import { FeedSkeleton } from "@/components/feed-skeleton";
 import { FeedTabs } from "@/components/feed-tabs";
 import { getUserLists, getSubscribedLists, getListInfo } from "@/app/lists/actions";
@@ -58,7 +60,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
 
   // If viewing a list not in owned or subscribed, fetch its info for the tab
   const knownIds = new Set(allTabs.map((t) => t.id));
-  const isCustomList = activeListId && activeListId !== "for-you" && activeListId !== "close-friends";
+  const isCustomList = activeListId && activeListId !== "for-you" && activeListId !== "close-friends" && activeListId !== "likes" && activeListId !== "bookmarks";
   const activeListInfo = isCustomList && !knownIds.has(activeListId)
     ? await getListInfo(activeListId)
     : null;
@@ -78,12 +80,17 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
           name: activeListInfo.name,
           ownerUsername: activeListInfo.owner.username,
         } : null}
+        hasCustomTheme={theme?.hasCustomTheme ?? false}
       />
       <Suspense key={`${activeListId ?? "main-feed"}-${activeView}`} fallback={<FeedSkeleton />}>
         {activeListId === "for-you" ? (
           <ForYouFeedContent userId={session.user.id} />
         ) : activeListId === "close-friends" ? (
           <CloseFriendsFeedContent userId={session.user.id} />
+        ) : activeListId === "likes" ? (
+          <LikesFeedContent userId={session.user.id} />
+        ) : activeListId === "bookmarks" ? (
+          <BookmarksFeedContent userId={session.user.id} />
         ) : activeListId ? (
           <ListFeedContent userId={session.user.id} listId={activeListId} />
         ) : (
