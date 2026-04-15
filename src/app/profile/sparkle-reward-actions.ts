@@ -6,8 +6,8 @@ import { isRateLimited, sparkleRewardLimiter } from "@/lib/rate-limit";
 
 /**
  * Stars awarded per successful sparkle click. Combined with the rate
- * limiter (5 claims per 24h, see rate-limit.ts), the daily ceiling is
- * STARS_PER_CLICK * 5. Current total: 5 stars/day.
+ * limiter (10 claims per 24h, see rate-limit.ts), the daily ceiling is
+ * STARS_PER_CLICK * 10. Current total: 10 stars/day.
  */
 const STARS_PER_CLICK = 1;
 

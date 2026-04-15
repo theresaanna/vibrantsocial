@@ -57,6 +57,10 @@ export function ProfileSparklefall({
   rewardOnClick = true,
 }: ProfileSparklefallProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
+  // Track whether we've already shown the "daily cap reached" toast this
+  // session. We surface it once so the user knows the silent-fail is
+  // intentional, then stay quiet on subsequent clicks so we don't nag.
+  const capToastShownRef = useRef(false);
 
   // Tag newly-spawned sparkles as clickable via a MutationObserver — the
   // library spawns plain divs, so we opt each one in as it appears.
@@ -102,9 +106,18 @@ export function ProfileSparklefall({
             toast.success(
               `🌟 +${result.awarded} star! ${result.total} total`
             );
+            return;
           }
-          // Silently swallow rate_limited / unauthorized — users at the
-          // cap shouldn't get nagged on every click.
+          // Show the "cap reached" toast once per session so the user
+          // knows the silent pops after that are intentional, not broken.
+          // Unauthorized (not logged in) stays fully silent — no point
+          // nagging viewers who just don't have an account.
+          if (result.error === "rate_limited" && !capToastShownRef.current) {
+            capToastShownRef.current = true;
+            toast.info(
+              "Ten emoji catches today, you are a star! Try again tomorrow!"
+            );
+          }
         })
         .catch(() => {});
     };

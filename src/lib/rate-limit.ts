@@ -59,10 +59,10 @@ export const chatRequestLimiter = createLimiter(
   "ratelimit:chat-req"
 );
 
-// Sparkle-click star reward: 5 successful claims per 24h per user.
+// Sparkle-click star reward: 10 successful claims per 24h per user.
 // Fail-open if Redis is unavailable — this is cosmetic, not financial.
 export const sparkleRewardLimiter = createLimiter(
-  Ratelimit.slidingWindow(5, "1 d"),
+  Ratelimit.slidingWindow(10, "1 d"),
   "ratelimit:sparkle-reward"
 );
 
