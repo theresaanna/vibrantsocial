@@ -417,7 +417,9 @@ export function ThemeForm({ user, avatarSrc, isPremium, userEmail, backgrounds, 
       className={liveHasCustomTheme ? "profile-themed" : ""}
       style={{ ...liveThemeStyle, ...liveBgImageStyle }}
     >
-      {initialTheme.sparklefallProps && <ProfileSparklefall {...initialTheme.sparklefallProps} />}
+      {initialTheme.sparklefallProps && (
+        <ProfileSparklefall {...initialTheme.sparklefallProps} rewardOnClick={false} />
+      )}
       <div className="flex min-h-[calc(100vh-57px)] items-center justify-center">
         <div className="w-full max-w-2xl space-y-6 rounded-2xl bg-white p-8 shadow-lg dark:bg-zinc-900">
           <div className="flex items-center gap-3">
