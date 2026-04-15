@@ -11,6 +11,7 @@ import { DynamicFavicon } from "@/components/dynamic-favicon";
 import { NotificationBell } from "@/components/notification-bell";
 import { NavLinks } from "@/components/nav-links";
 import { AccountSwitcherWrapper } from "@/components/account-switcher-wrapper";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { loadLinkedAccounts } from "@/lib/account-linking-db";
 
 /**
@@ -23,12 +24,20 @@ export async function HeaderAuth() {
 
   if (!session?.user) {
     return (
-      <Link
-        href="/login"
-        className="order-2 rounded-lg bg-gradient-to-r from-fuchsia-600 to-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:from-fuchsia-500 hover:to-blue-500"
-      >
-        Sign In
-      </Link>
+      <>
+        <Link
+          href="/login"
+          className="order-2 rounded-lg bg-gradient-to-r from-fuchsia-600 to-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:from-fuchsia-500 hover:to-blue-500 md:order-none md:col-start-2 md:row-start-1 md:justify-self-end md:self-center"
+        >
+          Sign In
+        </Link>
+        {/* Desktop-only: mirror the row-2 placement so the theme toggle is
+            still reachable when logged out. On mobile the theme toggle in
+            header.tsx's logo group handles this. */}
+        <div className="hidden md:col-span-2 md:row-start-2 md:flex md:items-center md:justify-self-end">
+          <ThemeToggle />
+        </div>
+      </>
     );
   }
 
@@ -50,13 +59,16 @@ export async function HeaderAuth() {
 
   return (
     <>
-      {/* Nav links — row 2 on mobile, inline center on md+ */}
-      <div className="order-3 flex w-full items-center justify-end gap-1 border-t border-zinc-100 pl-2 pt-2 md:order-2 md:w-auto md:justify-center md:border-0 md:pl-0 md:pt-0 dark:border-zinc-800">
+      {/* Nav links — row 2 on mobile, row 1 col 2 (centered) on md+ */}
+      <div className="order-3 flex w-full items-center justify-end gap-1 border-t border-zinc-100 pl-2 pt-2 md:order-none md:col-start-2 md:row-start-1 md:w-auto md:justify-self-center md:self-center md:border-0 md:pl-0 md:pt-0 dark:border-zinc-800">
         <NavLinks username={session.user.username} />
       </div>
 
-      {/* Action icons — chat, account switch, notifications */}
-      <div className="order-2 ml-auto flex shrink-0 items-center gap-1 md:order-3 md:ml-0">
+      {/* Action icons — chat, account switch, notifications. Row 1 right on
+          mobile, row 2 right-aligned (below the logo/nav-links row) on md+.
+          The theme toggle is rendered here on desktop only; on mobile it
+          lives next to the logo in header.tsx instead. */}
+      <div className="order-2 ml-auto flex shrink-0 items-center gap-1 md:order-none md:col-span-2 md:row-start-2 md:ml-0 md:justify-self-end">
         <DynamicFavicon
           initialNotifCount={unreadNotifications}
           initialChatCount={conversations.reduce(
@@ -64,6 +76,9 @@ export async function HeaderAuth() {
             0
           )}
         />
+        <div className="hidden md:flex md:items-center">
+          <ThemeToggle />
+        </div>
         <AccountSwitcherWrapper
           initialLinkedAccounts={linkedAccounts}
           initialNotificationCounts={linkedAccountNotifCounts}
