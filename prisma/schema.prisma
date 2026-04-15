@@ -1084,7 +1084,13 @@ model PremiumComp {
   adminId              String
   userId               String
   months               Int
-  stripeSubscriptionId String
+  // Null for non-Stripe comps (users granted premium directly via
+  // `premiumExpiresAt`). Set for Stripe-backed comps where we pushed
+  // the subscription's trial_end forward.
+  stripeSubscriptionId String?
+  // Generic semantics: the premium cutoff before/after this comp.
+  // For Stripe comps these are trial_end timestamps; for non-Stripe
+  // comps they are `User.premiumExpiresAt` values.
   previousTrialEnd     DateTime?
   newTrialEnd          DateTime
   reason               String?
