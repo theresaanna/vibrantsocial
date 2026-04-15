@@ -3,9 +3,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/stripe", () => ({
   getSubscription: vi.fn(),
   extendSubscriptionTrial: vi.fn(),
+  getSubscriptionSchedule: vi.fn(),
+  extendSubscriptionScheduleTrial: vi.fn(),
 }));
 
-import { getSubscription, extendSubscriptionTrial } from "@/lib/stripe";
+import {
+  getSubscription,
+  extendSubscriptionTrial,
+  getSubscriptionSchedule,
+  extendSubscriptionScheduleTrial,
+} from "@/lib/stripe";
 import {
   addMonths,
   computeNewTrialEnd,
@@ -16,6 +23,10 @@ import {
 
 const mockGetSubscription = vi.mocked(getSubscription);
 const mockExtendSubscriptionTrial = vi.mocked(extendSubscriptionTrial);
+const mockGetSubscriptionSchedule = vi.mocked(getSubscriptionSchedule);
+const mockExtendSubscriptionScheduleTrial = vi.mocked(
+  extendSubscriptionScheduleTrial
+);
 
 /** Build a minimal Stripe subscription object for testing. */
 function makeSub(overrides: {
@@ -271,5 +282,161 @@ describe("extendPremiumTrial", () => {
     await expect(
       extendPremiumTrial({ stripeSubscriptionId: "", months: 1 })
     ).rejects.toThrow(PremiumCompError);
+  });
+
+  // --- Scheduled subscription branch ---
+  // When a sub is attached to a subscription_schedule, Stripe rejects
+  // trial_end updates on the sub directly. We must mutate the schedule's
+  // last phase instead. The anchor is the last phase's end_date, which
+  // lets stacking work naturally: the more months already queued by the
+  // schedule, the further out the new comp starts.
+
+  function makeScheduledSub(scheduleId: string) {
+    return {
+      id: "sub_test",
+      status: "active",
+      trial_end: null,
+      schedule: scheduleId,
+      items: { data: [{ current_period_end: 1_700_000_000 }] },
+    };
+  }
+
+  function makeSchedule(params: {
+    phases: Array<{
+      startDate: Date;
+      endDate: Date;
+      trial?: boolean;
+      priceId?: string;
+    }>;
+  }) {
+    return {
+      id: "sub_sched_test",
+      status: "active",
+      phases: params.phases.map((p) => ({
+        start_date: Math.floor(p.startDate.getTime() / 1000),
+        end_date: Math.floor(p.endDate.getTime() / 1000),
+        trial: p.trial === true,
+        items: [{ price: p.priceId ?? "price_test", quantity: 1 }],
+      })),
+    };
+  }
+
+  it("extends a scheduled sub via the schedule last phase, stacking on its end_date", async () => {
+    mockGetSubscription.mockResolvedValue(
+      makeScheduledSub("sub_sched_test") as never
+    );
+    mockGetSubscriptionSchedule.mockResolvedValue(
+      makeSchedule({
+        phases: [
+          {
+            startDate: new Date("2026-03-27T00:00:00Z"),
+            endDate: new Date("2026-04-20T00:00:00Z"),
+            trial: false,
+          },
+          {
+            startDate: new Date("2026-04-20T00:00:00Z"),
+            endDate: new Date("2026-05-20T00:00:00Z"),
+            trial: true,
+          },
+        ],
+      }) as never
+    );
+    mockExtendSubscriptionScheduleTrial.mockResolvedValue({} as never);
+
+    const result = await extendPremiumTrial({
+      stripeSubscriptionId: "sub_test",
+      months: 3,
+    });
+
+    expect(mockExtendSubscriptionTrial).not.toHaveBeenCalled();
+    expect(mockExtendSubscriptionScheduleTrial).toHaveBeenCalledWith({
+      scheduleId: "sub_sched_test",
+      newEndDate: expect.any(Date),
+    });
+    // Anchor is the last phase's end_date (2026-05-20), stacked by 3 months.
+    expect(result.previousTrialEnd?.toISOString().slice(0, 10)).toBe(
+      "2026-05-20"
+    );
+    expect(result.newTrialEnd.toISOString().slice(0, 10)).toBe("2026-08-20");
+    expect(result.months).toBe(3);
+  });
+
+  it("stacks further comps on a scheduled sub whose last phase was already extended", async () => {
+    mockGetSubscription.mockResolvedValue(
+      makeScheduledSub("sub_sched_test") as never
+    );
+    // A previous comp already pushed the trial phase to end 2026-08-20.
+    mockGetSubscriptionSchedule.mockResolvedValue(
+      makeSchedule({
+        phases: [
+          {
+            startDate: new Date("2026-03-27T00:00:00Z"),
+            endDate: new Date("2026-04-20T00:00:00Z"),
+            trial: false,
+          },
+          {
+            startDate: new Date("2026-04-20T00:00:00Z"),
+            endDate: new Date("2026-08-20T00:00:00Z"),
+            trial: true,
+          },
+        ],
+      }) as never
+    );
+    mockExtendSubscriptionScheduleTrial.mockResolvedValue({} as never);
+
+    const result = await extendPremiumTrial({
+      stripeSubscriptionId: "sub_test",
+      months: 2,
+    });
+
+    expect(result.previousTrialEnd?.toISOString().slice(0, 10)).toBe(
+      "2026-08-20"
+    );
+    expect(result.newTrialEnd.toISOString().slice(0, 10)).toBe("2026-10-20");
+  });
+
+  it("prefers the schedule path over the trial_end path when both are present", async () => {
+    // Defensive: even if the sub object somehow had a trial_end, the presence
+    // of a schedule must win — otherwise Stripe rejects the sub.update call.
+    mockGetSubscription.mockResolvedValue({
+      id: "sub_test",
+      status: "active",
+      trial_end: Math.floor(new Date("2026-04-01T00:00:00Z").getTime() / 1000),
+      schedule: "sub_sched_test",
+      items: { data: [{ current_period_end: 1_700_000_000 }] },
+    } as never);
+    mockGetSubscriptionSchedule.mockResolvedValue(
+      makeSchedule({
+        phases: [
+          {
+            startDate: new Date("2026-03-01T00:00:00Z"),
+            endDate: new Date("2026-06-01T00:00:00Z"),
+            trial: true,
+          },
+        ],
+      }) as never
+    );
+    mockExtendSubscriptionScheduleTrial.mockResolvedValue({} as never);
+
+    await extendPremiumTrial({ stripeSubscriptionId: "sub_test", months: 1 });
+
+    expect(mockExtendSubscriptionTrial).not.toHaveBeenCalled();
+    expect(mockExtendSubscriptionScheduleTrial).toHaveBeenCalledTimes(1);
+  });
+
+  it("throws a PremiumCompError when the schedule has no extendable last phase", async () => {
+    mockGetSubscription.mockResolvedValue(
+      makeScheduledSub("sub_sched_test") as never
+    );
+    mockGetSubscriptionSchedule.mockResolvedValue({
+      id: "sub_sched_test",
+      status: "active",
+      phases: [],
+    } as never);
+
+    await expect(
+      extendPremiumTrial({ stripeSubscriptionId: "sub_test", months: 1 })
+    ).rejects.toThrow(PremiumCompError);
+    expect(mockExtendSubscriptionScheduleTrial).not.toHaveBeenCalled();
   });
 });

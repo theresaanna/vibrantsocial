@@ -1,4 +1,9 @@
-import { getSubscription, extendSubscriptionTrial } from "@/lib/stripe";
+import {
+  getSubscription,
+  extendSubscriptionTrial,
+  extendSubscriptionScheduleTrial,
+  getSubscriptionSchedule,
+} from "@/lib/stripe";
 
 /**
  * Stripe subscription statuses that are eligible for comping free months.
@@ -127,6 +132,40 @@ export async function extendPremiumTrial(params: {
       "bad_status",
       `Subscription status is "${subscription.status}"; only active or trialing subscriptions can be extended`
     );
+  }
+
+  // Subscriptions attached to a schedule can't have `trial_end` edited on
+  // the sub directly — we have to mutate the schedule's phases. Stack on top
+  // of whatever the schedule currently queues up as the last phase's end.
+  const scheduleId =
+    typeof subscription.schedule === "string"
+      ? subscription.schedule
+      : subscription.schedule?.id ?? null;
+
+  if (scheduleId) {
+    const schedule = await getSubscriptionSchedule(scheduleId);
+    const lastPhase = schedule.phases?.[schedule.phases.length - 1];
+    if (!lastPhase || typeof lastPhase.end_date !== "number") {
+      throw new PremiumCompError(
+        "no_anchor",
+        "Subscription schedule has no extendable last phase"
+      );
+    }
+    const previousEndDate = new Date(lastPhase.end_date * 1000);
+    const newEndDate = addMonths(previousEndDate, months);
+
+    await extendSubscriptionScheduleTrial({
+      scheduleId,
+      newEndDate,
+    });
+
+    return {
+      stripeSubscriptionId,
+      previousTrialEnd: previousEndDate,
+      newTrialEnd: newEndDate,
+      months,
+      status: subscription.status,
+    };
   }
 
   const previousTrialEnd =
