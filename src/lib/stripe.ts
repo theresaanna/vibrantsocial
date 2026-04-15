@@ -257,11 +257,17 @@ export async function extendSubscriptionScheduleTrial(params: {
 /**
  * Converts a retrieved subscription schedule phase into the minimal shape
  * accepted by `subscriptionSchedules.update`. We preserve start_date/end_date
- * (so Stripe can match past phases) and trial/trial_end, and reduce each item
- * to `{ price, quantity }` (stripping expanded fields like `plan`, `tax_rates`
- * that the update endpoint rejects or deprecates).
+ * (so Stripe can match past phases) and reduce each item to `{ price, quantity }`
+ * (stripping expanded fields like `plan`, `tax_rates` that the update endpoint
+ * rejects or deprecates).
+ *
+ * Stripe's update API rejects specifying BOTH `trial: true` and `trial_end` on
+ * the same phase — even though retrieve responses may echo both. We prefer
+ * `trial: true` when present (it means "the whole phase is a trial") and only
+ * fall back to `trial_end` (a partial-phase trial cutoff) when `trial` is not
+ * set.
  */
-function serializePhaseForUpdate(
+export function serializePhaseForUpdate(
   phase: Stripe.SubscriptionSchedule.Phase
 ): Stripe.SubscriptionScheduleUpdateParams.Phase {
   const out: Stripe.SubscriptionScheduleUpdateParams.Phase = {
@@ -274,8 +280,11 @@ function serializePhaseForUpdate(
     end_date: phase.end_date ?? undefined,
   };
   const loose = phase as unknown as { trial?: boolean; trial_end?: number };
-  if (loose.trial) out.trial = true;
-  if (typeof loose.trial_end === "number") out.trial_end = loose.trial_end;
+  if (loose.trial) {
+    out.trial = true;
+  } else if (typeof loose.trial_end === "number") {
+    out.trial_end = loose.trial_end;
+  }
   return out;
 }
 
