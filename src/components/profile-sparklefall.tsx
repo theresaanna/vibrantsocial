@@ -115,7 +115,7 @@ export function ProfileSparklefall({
           if (result.error === "rate_limited" && !capToastShownRef.current) {
             capToastShownRef.current = true;
             toast.info(
-              "✨ You've earned all your sparkle stars for today — come back tomorrow!"
+              "Ten emoji catches today, you are a star! Try again tomorrow!"
             );
           }
         })
