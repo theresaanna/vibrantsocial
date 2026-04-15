@@ -22,7 +22,7 @@ function HeaderAuthSkeleton() {
       </div>
       {/* Action icons skeleton — row 1 right on mobile, row 2 right-aligned on md+ */}
       <div className="order-2 ml-auto flex shrink-0 items-center gap-1 md:order-none md:col-span-2 md:row-start-2 md:ml-0 md:justify-self-end">
-        {Array.from({ length: 2 }).map((_, i) => (
+        {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="h-8 w-8 animate-pulse rounded-lg bg-zinc-100 dark:bg-zinc-800" />
         ))}
       </div>
@@ -36,11 +36,11 @@ export function Header() {
       {/*
         Mobile: flex-wrap — logo+toggles row 1 left, action icons row 1 right,
         nav links row 2 (full width).
-        Desktop (md+): 2-row CSS grid — logo row 1 left, nav links row 1 centered,
-        theme toggle + action icons row 2 right.
+        Desktop (md+): 2-row CSS grid — logo+toggles row 1 left, nav links
+        row 1 centered, action icons row 2 right-aligned.
       */}
       <nav className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-2 px-2 py-3 sm:px-4 md:grid md:grid-cols-[auto_1fr] md:gap-x-4 md:gap-y-2">
-        {/* Logo + toggles — renders immediately, no data needed */}
+        {/* Logo + theme toggles — renders immediately, no data needed */}
         <div className="flex shrink-0 items-center gap-2 md:col-start-1 md:row-start-1 md:self-center">
           <Link href="/">
             <Image
@@ -51,11 +51,7 @@ export function Header() {
               priority
             />
           </Link>
-          {/* Mobile only: theme toggle inline with logo. On desktop the
-              theme toggle lives in the row-2 action group (see header-auth.tsx). */}
-          <span className="md:hidden">
-            <ThemeToggle />
-          </span>
+          <ThemeToggle />
           <NsfwToggle />
         </div>
 

@@ -11,7 +11,6 @@ import { DynamicFavicon } from "@/components/dynamic-favicon";
 import { NotificationBell } from "@/components/notification-bell";
 import { NavLinks } from "@/components/nav-links";
 import { AccountSwitcherWrapper } from "@/components/account-switcher-wrapper";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { loadLinkedAccounts } from "@/lib/account-linking-db";
 
 /**
@@ -24,20 +23,12 @@ export async function HeaderAuth() {
 
   if (!session?.user) {
     return (
-      <>
-        <Link
-          href="/login"
-          className="order-2 rounded-lg bg-gradient-to-r from-fuchsia-600 to-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:from-fuchsia-500 hover:to-blue-500 md:order-none md:col-start-2 md:row-start-1 md:justify-self-end md:self-center"
-        >
-          Sign In
-        </Link>
-        {/* Desktop-only: mirror the row-2 placement so the theme toggle is
-            still reachable when logged out. On mobile the theme toggle in
-            header.tsx's logo group handles this. */}
-        <div className="hidden md:col-span-2 md:row-start-2 md:flex md:items-center md:justify-self-end">
-          <ThemeToggle />
-        </div>
-      </>
+      <Link
+        href="/login"
+        className="order-2 rounded-lg bg-gradient-to-r from-fuchsia-600 to-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:from-fuchsia-500 hover:to-blue-500 md:order-none md:col-start-2 md:row-start-1 md:justify-self-end md:self-center"
+      >
+        Sign In
+      </Link>
     );
   }
 
@@ -65,9 +56,7 @@ export async function HeaderAuth() {
       </div>
 
       {/* Action icons — chat, account switch, notifications. Row 1 right on
-          mobile, row 2 right-aligned (below the logo/nav-links row) on md+.
-          The theme toggle is rendered here on desktop only; on mobile it
-          lives next to the logo in header.tsx instead. */}
+          mobile, row 2 right-aligned (below the logo/nav-links row) on md+. */}
       <div className="order-2 ml-auto flex shrink-0 items-center gap-1 md:order-none md:col-span-2 md:row-start-2 md:ml-0 md:justify-self-end">
         <DynamicFavicon
           initialNotifCount={unreadNotifications}
@@ -76,9 +65,6 @@ export async function HeaderAuth() {
             0
           )}
         />
-        <div className="hidden md:flex md:items-center">
-          <ThemeToggle />
-        </div>
         <AccountSwitcherWrapper
           initialLinkedAccounts={linkedAccounts}
           initialNotificationCounts={linkedAccountNotifCounts}
