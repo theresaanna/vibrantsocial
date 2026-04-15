@@ -24,7 +24,8 @@ export default async function HelpPage() {
   const theme = buildUserTheme(user);
 
   return (
-    <ThemedPage {...theme} className="mx-auto max-w-2xl px-6 py-16">
+    <ThemedPage {...theme} className="mx-auto max-w-2xl px-4 py-6">
+      <div className={`rounded-2xl p-6 shadow-lg ${theme.hasCustomTheme ? "profile-container" : "bg-white dark:bg-zinc-900"}`}>
       <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
         Help
       </h1>
@@ -77,6 +78,7 @@ export default async function HelpPage() {
           </Link>
         </li>
       </ul>
+      </div>
     </ThemedPage>
   );
 }
