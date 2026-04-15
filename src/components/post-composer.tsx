@@ -234,6 +234,15 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, isAgeVerif
           </div>
         )}
         <div className="flex min-h-[48px] items-center">
+          {!(isSensitive || isGraphicNudity) && (
+            <div className="pl-2">
+              <AutoTagButton
+                editorJson={editorJson}
+                existingTags={tags}
+                onTagsSuggested={setTags}
+              />
+            </div>
+          )}
           <div className="flex-1">
             <TagInput
               tags={tags}
@@ -242,15 +251,6 @@ export function PostComposer({ phoneVerified, isOldEnough, isPremium, isAgeVerif
               includeNsfw={isNsfw}
             />
           </div>
-          {!(isSensitive || isGraphicNudity) && (
-            <div className="pr-2">
-              <AutoTagButton
-                editorJson={editorJson}
-                existingTags={tags}
-                onTagsSuggested={setTags}
-              />
-            </div>
-          )}
         </div>
         <input type="hidden" name="hideLinkPreview" value={previewDismissed ? "true" : "false"} />
         {scheduledFor && <input type="hidden" name="scheduledFor" value={new Date(scheduledFor).toISOString()} />}
