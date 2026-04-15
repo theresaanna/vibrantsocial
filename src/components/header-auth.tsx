@@ -25,7 +25,7 @@ export async function HeaderAuth() {
     return (
       <Link
         href="/login"
-        className="order-2 rounded-lg bg-gradient-to-r from-fuchsia-600 to-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:from-fuchsia-500 hover:to-blue-500 md:order-none md:col-start-2 md:row-start-1 md:justify-self-end md:self-center"
+        className="order-2 rounded-lg bg-gradient-to-r from-fuchsia-600 to-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:from-fuchsia-500 hover:to-blue-500 md:order-none md:col-start-3 md:row-start-1 md:justify-self-end md:self-center"
       >
         Sign In
       </Link>
@@ -50,14 +50,15 @@ export async function HeaderAuth() {
 
   return (
     <>
-      {/* Nav links — row 2 on mobile, row 1 col 2 (centered) on md+ */}
-      <div className="order-3 flex w-full items-center justify-end gap-1 border-t border-zinc-100 pl-2 pt-2 md:order-none md:col-start-2 md:row-start-1 md:w-auto md:justify-self-center md:self-center md:border-0 md:pl-0 md:pt-0 dark:border-zinc-800">
+      {/* Nav links — row 2 on mobile, row 2 col 2 (right-aligned, flush with
+          action icons) on md+. */}
+      <div className="order-3 flex w-full items-center justify-end gap-1 border-t border-zinc-100 pl-2 pt-2 md:order-none md:col-start-2 md:row-start-2 md:w-auto md:justify-self-end md:self-center md:border-0 md:pl-0 md:pt-0 dark:border-zinc-800">
         <NavLinks username={session.user.username} />
       </div>
 
       {/* Action icons — chat, account switch, notifications. Row 1 right on
-          mobile, row 2 right-aligned (below the logo/nav-links row) on md+. */}
-      <div className="order-2 ml-auto flex shrink-0 items-center gap-1 md:order-none md:col-span-2 md:row-start-2 md:ml-0 md:justify-self-end">
+          mobile, row 2 col 3 (adjacent to nav links) on md+. */}
+      <div className="order-2 ml-auto flex shrink-0 items-center gap-1 md:order-none md:col-start-3 md:row-start-2 md:ml-0">
         <DynamicFavicon
           initialNotifCount={unreadNotifications}
           initialChatCount={conversations.reduce(
