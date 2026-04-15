@@ -114,6 +114,32 @@ export async function createBillingPortalSession(params: {
 }
 
 /**
+ * Retrieves a subscription by ID.
+ */
+export async function getSubscription(
+  subscriptionId: string
+): Promise<Stripe.Subscription> {
+  const stripe = getStripe();
+  return stripe.subscriptions.retrieve(subscriptionId);
+}
+
+/**
+ * Extends a subscription's trial_end to the given timestamp, effectively
+ * comping the user free time until that date. Uses `proration_behavior=none`
+ * so the customer is not billed for the extension.
+ */
+export async function extendSubscriptionTrial(params: {
+  subscriptionId: string;
+  newTrialEnd: Date;
+}): Promise<Stripe.Subscription> {
+  const stripe = getStripe();
+  return stripe.subscriptions.update(params.subscriptionId, {
+    trial_end: Math.floor(params.newTrialEnd.getTime() / 1000),
+    proration_behavior: "none",
+  });
+}
+
+/**
  * Constructs and verifies a Stripe webhook event from the raw body and signature.
  */
 export function constructWebhookEvent(
