@@ -19,6 +19,7 @@ export default async function HelpPage() {
     where: { id: session.user.id },
     select: { ...userThemeSelect },
   });
+  if (!user) redirect("/login");
 
   const theme = buildUserTheme(user);
 
