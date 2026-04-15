@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { suspendUser, unsuspendUser, reviewViolation, reviewAppeal, reviewReport, removeWarning, resetWarnings } from "./actions";
+import { PremiumTab, type PremiumUser, type PremiumCompRecord } from "./premium-tab";
 
-type Tab = "reports" | "violations" | "appeals" | "users" | "log";
+type Tab = "reports" | "violations" | "appeals" | "users" | "premium" | "log";
 
 interface ReportRecord {
   id: string;
@@ -68,12 +69,16 @@ export function AdminDashboard({
   appeals,
   flaggedUsers,
   recentActions,
+  premiumUsers,
+  recentComps,
 }: {
   reports: ReportRecord[];
   violations: Violation[];
   appeals: AppealRecord[];
   flaggedUsers: FlaggedUser[];
   recentActions: ModerationActionRecord[];
+  premiumUsers: PremiumUser[];
+  recentComps: PremiumCompRecord[];
 }) {
   const [tab, setTab] = useState<Tab>("reports");
   const pendingReports = reports.filter((r) => r.status === "pending").length;
@@ -88,6 +93,7 @@ export function AdminDashboard({
           ["violations", `Violations${pendingViolations ? ` (${pendingViolations})` : ""}`],
           ["appeals", `Appeals${pendingAppeals ? ` (${pendingAppeals})` : ""}`],
           ["users", "Users"],
+          ["premium", "Premium"],
           ["log", "Action Log"],
         ] as [Tab, string][]).map(([key, label]) => (
           <button
@@ -108,6 +114,7 @@ export function AdminDashboard({
       {tab === "violations" && <ViolationsTab violations={violations} />}
       {tab === "appeals" && <AppealsTab appeals={appeals} />}
       {tab === "users" && <UsersTab users={flaggedUsers} />}
+      {tab === "premium" && <PremiumTab users={premiumUsers} comps={recentComps} />}
       {tab === "log" && <ActionLogTab actions={recentActions} />}
     </div>
   );

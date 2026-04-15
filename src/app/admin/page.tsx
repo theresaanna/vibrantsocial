@@ -2,7 +2,15 @@ import { prisma } from "@/lib/prisma";
 import { AdminDashboard } from "./dashboard";
 
 export default async function AdminPage() {
-  const [reports, violations, appeals, flaggedUsers, recentActions] = await Promise.all([
+  const [
+    reports,
+    violations,
+    appeals,
+    flaggedUsers,
+    recentActions,
+    premiumUsers,
+    recentComps,
+  ] = await Promise.all([
     prisma.report.findMany({
       orderBy: { createdAt: "desc" },
       take: 50,
@@ -56,6 +64,29 @@ export default async function AdminPage() {
         user: { select: { username: true } },
       },
     }),
+    prisma.user.findMany({
+      where: { tier: "premium" },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        avatar: true,
+        stripeSubscriptionId: true,
+        stripeCustomerId: true,
+        premiumExpiresAt: true,
+        createdAt: true,
+      },
+      take: 200,
+    }),
+    prisma.premiumComp.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 25,
+      include: {
+        admin: { select: { username: true } },
+        user: { select: { username: true } },
+      },
+    }),
   ]);
 
   return (
@@ -81,6 +112,8 @@ export default async function AdminPage() {
         appeals={appeals}
         flaggedUsers={flaggedUsers}
         recentActions={recentActions}
+        premiumUsers={premiumUsers}
+        recentComps={recentComps}
       />
     </main>
   );

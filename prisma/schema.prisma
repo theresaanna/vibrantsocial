@@ -182,6 +182,8 @@ model User {
   suspensionReason      String?
   moderationActionsReceived ModerationAction[] @relation("moderationActionTarget")
   moderationActionsPerformed ModerationAction[] @relation("moderationActionAdmin")
+  premiumCompsReceived      PremiumComp[]      @relation("premiumCompTarget")
+  premiumCompsGranted       PremiumComp[]      @relation("premiumCompAdmin")
   appeals               Appeal[] @relation("appealUser")
   appealsReviewed       Appeal[] @relation("appealReviewer")
   supportRequests       SupportRequest[]
@@ -1072,6 +1074,28 @@ model ModerationAction {
 
   @@index([userId])
   @@index([adminId])
+}
+
+// Audit log for admin-granted free months on a Stripe premium subscription.
+// Each row records one "extend by N months" action applied via Stripe's
+// subscription trial_end mechanism.
+model PremiumComp {
+  id                   String    @id @default(cuid())
+  adminId              String
+  userId               String
+  months               Int
+  stripeSubscriptionId String
+  previousTrialEnd     DateTime?
+  newTrialEnd          DateTime
+  reason               String?
+  createdAt            DateTime  @default(now())
+
+  admin User @relation("premiumCompAdmin", fields: [adminId], references: [id], onDelete: Cascade)
+  user  User @relation("premiumCompTarget", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([adminId])
+  @@index([createdAt])
 }
 
 model Appeal {
