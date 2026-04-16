@@ -296,7 +296,7 @@ h6 {
 }
 
 .profile-themed .profile-link,
-.profile-themed a:not(.tag-pill):not(.links-page-btn) {
+.profile-themed a:not(.tag-pill):not(.tag-bubble):not(.links-page-btn) {
   color: var(--profile-link);
 }
 

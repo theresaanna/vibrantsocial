@@ -19,9 +19,10 @@ interface TagWithCount {
 
 function toSortedTagCloud(tags: TagWithCount[]): TagCloudEntry[] {
   return tags
-    .filter((t) => t._count.posts > 0)
+    .filter((t) => t._count.posts >= 5)
     .map((t) => ({ name: t.name, count: t._count.posts }))
-    .sort((a, b) => b.count - a.count);
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 50);
 }
 
 /**

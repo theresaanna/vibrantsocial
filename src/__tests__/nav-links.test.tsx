@@ -29,12 +29,13 @@ describe("NavLinks", () => {
     expect(screen.getByLabelText("Search")).toBeInTheDocument();
     expect(screen.getByLabelText("Home")).toBeInTheDocument();
     expect(screen.getByLabelText("Compose")).toBeInTheDocument();
-    expect(screen.getByLabelText("Likes")).toBeInTheDocument();
-    expect(screen.getByLabelText("Bookmarks")).toBeInTheDocument();
     expect(screen.getByLabelText("Lists")).toBeInTheDocument();
-    expect(screen.getByLabelText("Close Friends")).toBeInTheDocument();
-    expect(screen.getByLabelText("Communities")).toBeInTheDocument();
+    expect(screen.getByLabelText("Chat Rooms")).toBeInTheDocument();
+    expect(screen.getByLabelText("Explore")).toBeInTheDocument();
+    expect(screen.getByLabelText("Marketplace")).toBeInTheDocument();
     expect(screen.getByLabelText("Profile")).toBeInTheDocument();
+    // Help is no longer in NavLinks — it's in the header next to NSFW toggle
+    expect(screen.queryByLabelText("Help")).not.toBeInTheDocument();
   });
 
   it("links to correct hrefs", () => {
@@ -48,22 +49,13 @@ describe("NavLinks", () => {
       "href",
       "/compose"
     );
-    expect(screen.getByLabelText("Likes")).toHaveAttribute("href", "/likes");
-    expect(screen.getByLabelText("Bookmarks")).toHaveAttribute(
-      "href",
-      "/bookmarks"
-    );
     expect(screen.getByLabelText("Lists")).toHaveAttribute(
       "href",
       "/lists"
     );
-    expect(screen.getByLabelText("Close Friends")).toHaveAttribute(
+    expect(screen.getByLabelText("Explore")).toHaveAttribute(
       "href",
-      "/close-friends"
-    );
-    expect(screen.getByLabelText("Communities")).toHaveAttribute(
-      "href",
-      "/communities"
+      "/explore"
     );
   });
 
@@ -92,14 +84,14 @@ describe("NavLinks", () => {
     vi.mocked(usePathname).mockReturnValue("/search");
     render(<NavLinks username="testuser" />);
     const searchLink = screen.getByLabelText("Search");
-    expect(searchLink.className).toMatch(/(^| )text-teal-500( |$)/);
+    expect(searchLink.className).toMatch(/(^| )text-fuchsia-500( |$)/);
   });
 
   it("highlights Search link using prefix matching on /search?q=test", () => {
     vi.mocked(usePathname).mockReturnValue("/search");
     render(<NavLinks username="testuser" />);
     const searchLink = screen.getByLabelText("Search");
-    expect(searchLink.className).toMatch(/(^| )text-teal-500( |$)/);
+    expect(searchLink.className).toMatch(/(^| )text-fuchsia-500( |$)/);
   });
 
   it("does not highlight Search link when on different page", () => {
@@ -113,51 +105,28 @@ describe("NavLinks", () => {
     vi.mocked(usePathname).mockReturnValue("/feed");
     render(<NavLinks username="testuser" />);
     const feedLink = screen.getByLabelText("Home");
-    // Active state: class includes "text-purple-500" (not as hover: variant)
-    expect(feedLink.className).toMatch(/(^| )text-purple-500( |$)/);
+    expect(feedLink.className).toMatch(/(^| )text-fuchsia-500( |$)/);
   });
 
   it("does not highlight Feed link when on different page", () => {
     vi.mocked(usePathname).mockReturnValue("/likes");
     render(<NavLinks username="testuser" />);
     const feedLink = screen.getByLabelText("Home");
-    // Inactive: should have text-zinc-600, not standalone text-purple-500
     expect(feedLink.className).toContain("text-zinc-600");
   });
 
-  it("highlights Likes link when on /likes", () => {
-    vi.mocked(usePathname).mockReturnValue("/likes");
+  it("highlights Explore using prefix matching on /explore/sub", () => {
+    vi.mocked(usePathname).mockReturnValue("/explore/sub");
     render(<NavLinks username="testuser" />);
-    const likesLink = screen.getByLabelText("Likes");
-    expect(likesLink.className).toMatch(/(^| )text-red-500( |$)/);
-  });
-
-  it("highlights Bookmarks link when on /bookmarks", () => {
-    vi.mocked(usePathname).mockReturnValue("/bookmarks");
-    render(<NavLinks username="testuser" />);
-    const bookmarksLink = screen.getByLabelText("Bookmarks");
-    expect(bookmarksLink.className).toMatch(/(^| )text-yellow-500( |$)/);
-  });
-
-  it("highlights Close Friends using prefix matching on /close-friends/settings", () => {
-    vi.mocked(usePathname).mockReturnValue("/close-friends/settings");
-    render(<NavLinks username="testuser" />);
-    const closeFriendsLink = screen.getByLabelText("Close Friends");
-    expect(closeFriendsLink.className).toMatch(/(^| )text-green-500( |$)/);
-  });
-
-  it("highlights Communities using prefix matching on /communities/sub", () => {
-    vi.mocked(usePathname).mockReturnValue("/communities/sub");
-    render(<NavLinks username="testuser" />);
-    const communitiesLink = screen.getByLabelText("Communities");
-    expect(communitiesLink.className).toMatch(/(^| )text-fuchsia-500( |$)/);
+    const exploreLink = screen.getByLabelText("Explore");
+    expect(exploreLink.className).toMatch(/(^| )text-fuchsia-500( |$)/);
   });
 
   it("highlights Profile link when on user profile page", () => {
     vi.mocked(usePathname).mockReturnValue("/alice");
     render(<NavLinks username="alice" />);
     const profileLink = screen.getByLabelText("Profile");
-    expect(profileLink.className).toMatch(/(^| )text-orange-500( |$)/);
+    expect(profileLink.className).toMatch(/(^| )text-fuchsia-500( |$)/);
   });
 
   it("does not highlight Profile link when on another user's page", () => {
@@ -167,4 +136,3 @@ describe("NavLinks", () => {
     expect(profileLink.className).toContain("text-zinc-600");
   });
 });
-
