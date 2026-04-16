@@ -382,7 +382,7 @@ h6 {
 
 .chat-themed .chat-btn-themed {
   background-color: var(--chat-link-color);
-  color: var(--chat-bubble-bg);
+  color: var(--chat-btn-text, #ffffff);
 }
 
 .chat-themed .chat-btn-themed:hover {
