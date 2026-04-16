@@ -49,27 +49,29 @@ export async function HeaderAuth() {
   ]);
 
   return (
-    <div className="flex shrink-0 items-center gap-1">
-      {/* Nav links */}
+    <div className="flex shrink-0 flex-wrap items-center gap-1 sm:flex-nowrap">
+      {/* Nav links — renders two groups with a mobile line-break between them */}
       <NavLinks username={session.user.username} />
 
-      {/* Action icons — chat, account switch, notifications */}
-      <DynamicFavicon
-        initialNotifCount={unreadNotifications}
-        initialChatCount={conversations.reduce(
-          (sum: number, c: { unreadCount: number }) => sum + c.unreadCount,
-          0
-        )}
-      />
-      <AccountSwitcherWrapper
-        initialLinkedAccounts={linkedAccounts}
-        initialNotificationCounts={linkedAccountNotifCounts}
-      />
-      <NotificationBell
-        initialUnreadCount={unreadNotifications}
-        initialNotifications={recentNotifications}
-      />
-      <ChatNav initialConversations={conversations} />
+      {/* Action icons — order-1 keeps them on row 1 with the first nav group on mobile */}
+      <div className="order-1 flex items-center gap-1 sm:order-none">
+        <DynamicFavicon
+          initialNotifCount={unreadNotifications}
+          initialChatCount={conversations.reduce(
+            (sum: number, c: { unreadCount: number }) => sum + c.unreadCount,
+            0
+          )}
+        />
+        <AccountSwitcherWrapper
+          initialLinkedAccounts={linkedAccounts}
+          initialNotificationCounts={linkedAccountNotifCounts}
+        />
+        <NotificationBell
+          initialUnreadCount={unreadNotifications}
+          initialNotifications={recentNotifications}
+        />
+        <ChatNav initialConversations={conversations} />
+      </div>
     </div>
   );
 }

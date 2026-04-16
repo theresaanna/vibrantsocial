@@ -123,28 +123,35 @@ export function NavLinks({ username }: { username?: string | null }) {
   const baseClass = "rounded-lg p-1 sm:p-1.5 transition-colors";
   const inactiveText = "text-zinc-600 dark:text-zinc-400";
 
+  /* Split: row 1 = Search…Chat Rooms, row 2 = Explore…Profile */
+  const row1 = links.slice(0, 5);   // Search, Home, Compose, Lists, Chat Rooms
+  const row2 = links.slice(5);      // Explore, Marketplace, Theme
+
+  const renderLink = (link: NavLink) => (
+    <Tooltip key={link.href} label={link.label}>
+      <Link
+        href={link.href}
+        className={`${baseClass} ${isActive(link) ? activeClass : `${inactiveText} ${hoverClass}`}`}
+        aria-label={link.label}
+      >
+        {link.icon}
+      </Link>
+    </Tooltip>
+  );
+
   return (
     <>
-      {links.map((link) => (
-        <Tooltip key={link.href} label={link.label}>
-          <Link
-            href={link.href}
-            className={`${baseClass} ${isActive(link) ? activeClass : `${inactiveText} ${hoverClass}`}`}
-            aria-label={link.label}
-          >
-            {link.icon}
-          </Link>
-        </Tooltip>
-      ))}
-      <Tooltip label={profileLink.label}>
-        <Link
-          href={profileLink.href}
-          className={`${baseClass} ${isActive(profileLink) ? activeClass : `${inactiveText} ${hoverClass}`}`}
-          aria-label={profileLink.label}
-        >
-          {profileLink.icon}
-        </Link>
-      </Tooltip>
+      {/* Row 1 links — default order (0) */}
+      <div className="flex items-center gap-1">
+        {row1.map(renderLink)}
+      </div>
+      {/* Line break on mobile, hidden on sm+ */}
+      <div className="order-2 h-0 basis-full sm:hidden" aria-hidden="true" />
+      {/* Row 2 links — order-3 so they land after the break on mobile */}
+      <div className="order-3 flex items-center gap-1 sm:order-none">
+        {row2.map(renderLink)}
+        {renderLink(profileLink)}
+      </div>
     </>
   );
 }
