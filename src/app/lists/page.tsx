@@ -60,7 +60,7 @@ export default async function ListsPage({ searchParams }: ListsPageProps) {
         <div>
           <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Lists</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Create lists to organize your feed
+            Create lists to make custom feeds, and find others&apos; lists
           </p>
         </div>
       </div>

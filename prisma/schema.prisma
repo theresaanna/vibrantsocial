@@ -844,7 +844,7 @@ model MessageRequest {
 model ChatRoom {
   id        String   @id @default(cuid())
   slug      String   @unique @default("lobby")
-  name      String   @default("Lobby")
+  name      String   @default("Lounge")
   status    String?
   isNsfw    Boolean  @default(false)
   ownerId   String
