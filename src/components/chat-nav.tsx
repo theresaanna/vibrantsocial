@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { usePresenceListener } from "ably/react";
 import Link from "next/link";
-import { getConversations } from "@/app/chat/actions";
+import { getConversations } from "@/app/messages/actions";
 import { rpc } from "@/lib/rpc";
 import { useAblyReady } from "@/app/providers";
 import { PresenceIndicator } from "@/components/chat/presence-indicator";
@@ -110,11 +110,11 @@ export function ChatNav({ initialConversations }: ChatNavProps) {
   }, [isOpen]);
 
   const recent = conversations.slice(0, MAX_VISIBLE);
-  const isChatActive = pathname.startsWith("/chat");
+  const isChatActive = pathname.startsWith("/messages");
 
   return (
     <div className="relative inline-flex" ref={containerRef}>
-      <Tooltip label="Chat">
+      <Tooltip label="Messages">
       <button
         onClick={() => setIsOpen((prev) => !prev)}
         className={`relative rounded-lg p-1.5 transition-colors ${
@@ -122,7 +122,7 @@ export function ChatNav({ initialConversations }: ChatNavProps) {
             ? "bg-green-50 text-green-500 dark:bg-green-900/20 dark:text-green-500"
             : "text-zinc-600 hover:bg-green-50 hover:text-green-500 dark:text-zinc-400 dark:hover:bg-green-900/20 dark:hover:text-green-500"
         }`}
-        aria-label="Chat"
+        aria-label="Messages"
       >
         <svg
           className="h-5 w-5"
@@ -187,7 +187,7 @@ export function ChatNav({ initialConversations }: ChatNavProps) {
         </div>
 
         <Link
-          href="/chat"
+          href="/messages"
           onClick={() => setIsOpen(false)}
           className="block border-t border-zinc-100 px-4 py-2.5 text-center text-xs font-medium text-blue-500 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/50"
         >
@@ -226,7 +226,7 @@ function ChatPaneItem({
 
   return (
     <Link
-      href={`/chat/${conversation.id}`}
+      href={`/messages/${conversation.id}`}
       onClick={onClose}
       className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
     >

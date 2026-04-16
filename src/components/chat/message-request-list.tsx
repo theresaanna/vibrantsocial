@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { MessageRequestCard } from "./message-request-card";
-import { bulkDeclineMessageRequests } from "@/app/chat/actions";
+import { bulkDeclineMessageRequests } from "@/app/messages/actions";
 import type { MessageRequestData } from "@/types/chat";
 import { useSelectionSet } from "@/hooks/use-selection-set";
 

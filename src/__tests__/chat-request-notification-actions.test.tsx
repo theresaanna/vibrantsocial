@@ -6,12 +6,12 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-vi.mock("@/app/chat/actions", () => ({
+vi.mock("@/app/messages/actions", () => ({
   respondToChatRequestByActor: vi.fn(),
 }));
 
 import { ChatRequestNotificationActions } from "@/components/chat-request-notification-actions";
-import { respondToChatRequestByActor } from "@/app/chat/actions";
+import { respondToChatRequestByActor } from "@/app/messages/actions";
 
 const mockRespond = vi.mocked(respondToChatRequestByActor);
 
@@ -53,7 +53,7 @@ describe("ChatRequestNotificationActions", () => {
     fireEvent.click(screen.getByText("Accept"));
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/chat/conv-123");
+      expect(mockPush).toHaveBeenCalledWith("/messages/conv-123");
     });
   });
 

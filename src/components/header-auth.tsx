@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import Link from "next/link";
-import { getConversations } from "@/app/chat/actions";
+import { getConversations } from "@/app/messages/actions";
 import {
   getUnreadNotificationCount,
   getRecentNotifications,

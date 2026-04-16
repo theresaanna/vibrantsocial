@@ -17,7 +17,7 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-vi.mock("@/app/chat/actions", () => ({
+vi.mock("@/app/messages/actions", () => ({
   startConversation: vi.fn().mockResolvedValue({ success: true, conversationId: "conv-1" }),
 }));
 

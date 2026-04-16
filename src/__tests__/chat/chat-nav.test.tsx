@@ -36,7 +36,7 @@ vi.mock("@/app/providers", () => ({
 }));
 
 const mockGetConversations = vi.fn();
-vi.mock("@/app/chat/actions", () => ({
+vi.mock("@/app/messages/actions", () => ({
   getConversations: (...args: unknown[]) => mockGetConversations(...args),
 }));
 
@@ -118,7 +118,7 @@ describe("ChatNav", () => {
 
   it("renders Chat button", () => {
     render(<ChatNav initialConversations={[]} />);
-    expect(screen.getByRole("button", { name: /chat/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /messages/i })).toBeInTheDocument();
   });
 
   it("shows unread badge with total count", () => {
@@ -132,7 +132,7 @@ describe("ChatNav", () => {
       unreadCount: 0,
     }));
     render(<ChatNav initialConversations={readConversations} />);
-    const button = screen.getByRole("button", { name: /chat/i });
+    const button = screen.getByRole("button", { name: /messages/i });
     expect(button.querySelector(".bg-blue-500")).toBeNull();
   });
 
@@ -150,7 +150,7 @@ describe("ChatNav", () => {
     const user = userEvent.setup();
     render(<ChatNav initialConversations={mockConversations} />);
 
-    await user.click(screen.getByRole("button", { name: /chat/i }));
+    await user.click(screen.getByRole("button", { name: /messages/i }));
 
     expect(screen.getByText("Recent Chats")).toBeInTheDocument();
     expect(screen.getByText("Alice")).toBeInTheDocument();
@@ -162,7 +162,7 @@ describe("ChatNav", () => {
     const user = userEvent.setup();
     render(<ChatNav initialConversations={mockConversations} />);
 
-    await user.click(screen.getByRole("button", { name: /chat/i }));
+    await user.click(screen.getByRole("button", { name: /messages/i }));
 
     expect(screen.getByText("Hey there!")).toBeInTheDocument();
     expect(screen.getByText("Check the PR")).toBeInTheDocument();
@@ -172,7 +172,7 @@ describe("ChatNav", () => {
     const user = userEvent.setup();
     render(<ChatNav initialConversations={mockConversations} />);
 
-    await user.click(screen.getByRole("button", { name: /chat/i }));
+    await user.click(screen.getByRole("button", { name: /messages/i }));
 
     expect(screen.getByText("No messages yet")).toBeInTheDocument();
   });
@@ -182,7 +182,7 @@ describe("ChatNav", () => {
     const user = userEvent.setup();
     render(<ChatNav initialConversations={[]} />);
 
-    await user.click(screen.getByRole("button", { name: /chat/i }));
+    await user.click(screen.getByRole("button", { name: /messages/i }));
 
     expect(screen.getByText("No conversations yet")).toBeInTheDocument();
   });
@@ -191,7 +191,7 @@ describe("ChatNav", () => {
     const user = userEvent.setup();
     render(<ChatNav initialConversations={mockConversations} />);
 
-    await user.click(screen.getByRole("button", { name: /chat/i }));
+    await user.click(screen.getByRole("button", { name: /messages/i }));
 
     // user2 (Alice) is online per mock presenceData
     const onlineDots = screen.getAllByLabelText("Online");
@@ -202,7 +202,7 @@ describe("ChatNav", () => {
     const user = userEvent.setup();
     render(<ChatNav initialConversations={mockConversations} />);
 
-    await user.click(screen.getByRole("button", { name: /chat/i }));
+    await user.click(screen.getByRole("button", { name: /messages/i }));
 
     // user4 (Charlie) is not in presenceData, should be offline
     const offlineDots = screen.getAllByLabelText("Offline");
@@ -234,7 +234,7 @@ describe("ChatNav", () => {
     const user = userEvent.setup();
     render(<ChatNav initialConversations={groupOnly} />);
 
-    await user.click(screen.getByRole("button", { name: /chat/i }));
+    await user.click(screen.getByRole("button", { name: /messages/i }));
 
     await waitFor(() => {
       expect(screen.queryByLabelText("Online")).toBeNull();
@@ -245,7 +245,7 @@ describe("ChatNav", () => {
   it("toggles pane closed on second click", async () => {
     const user = userEvent.setup();
     render(<ChatNav initialConversations={mockConversations} />);
-    const button = screen.getByRole("button", { name: /chat/i });
+    const button = screen.getByRole("button", { name: /messages/i });
 
     await user.click(button);
     expect(screen.getByText("Recent Chats")).toBeInTheDocument();
@@ -262,31 +262,31 @@ describe("ChatNav", () => {
     const user = userEvent.setup();
     render(<ChatNav initialConversations={mockConversations} />);
 
-    await user.click(screen.getByRole("button", { name: /chat/i }));
+    await user.click(screen.getByRole("button", { name: /messages/i }));
 
     const viewAll = screen.getByText("View all chats");
     expect(viewAll).toBeInTheDocument();
-    expect(viewAll.closest("a")).toHaveAttribute("href", "/chat");
+    expect(viewAll.closest("a")).toHaveAttribute("href", "/messages");
   });
 
   it("conversation links point to correct chat routes", async () => {
     const user = userEvent.setup();
     render(<ChatNav initialConversations={mockConversations} />);
 
-    await user.click(screen.getByRole("button", { name: /chat/i }));
+    await user.click(screen.getByRole("button", { name: /messages/i }));
 
     const aliceLink = screen.getByText("Alice").closest("a");
-    expect(aliceLink).toHaveAttribute("href", "/chat/conv1");
+    expect(aliceLink).toHaveAttribute("href", "/messages/conv1");
 
     const teamLink = screen.getByText("Dev Team").closest("a");
-    expect(teamLink).toHaveAttribute("href", "/chat/conv2");
+    expect(teamLink).toHaveAttribute("href", "/messages/conv2");
   });
 
   it("re-fetches conversations when pane opens", async () => {
     const user = userEvent.setup();
     render(<ChatNav initialConversations={mockConversations} />);
 
-    await user.click(screen.getByRole("button", { name: /chat/i }));
+    await user.click(screen.getByRole("button", { name: /messages/i }));
 
     await waitFor(() => {
       expect(mockGetConversations).toHaveBeenCalledTimes(1);
@@ -297,7 +297,7 @@ describe("ChatNav", () => {
     const user = userEvent.setup();
     render(<ChatNav initialConversations={mockConversations} />);
 
-    await user.click(screen.getByRole("button", { name: /chat/i }));
+    await user.click(screen.getByRole("button", { name: /messages/i }));
 
     expect(screen.getByText("#")).toBeInTheDocument();
   });
@@ -306,7 +306,7 @@ describe("ChatNav", () => {
     const user = userEvent.setup();
     render(<ChatNav initialConversations={mockConversations} />);
 
-    await user.click(screen.getByRole("button", { name: /chat/i }));
+    await user.click(screen.getByRole("button", { name: /messages/i }));
 
     expect(screen.getByText("A")).toBeInTheDocument();
   });
@@ -315,7 +315,7 @@ describe("ChatNav", () => {
     const user = userEvent.setup();
     render(<ChatNav initialConversations={mockConversations} />);
 
-    await user.click(screen.getByRole("button", { name: /chat/i }));
+    await user.click(screen.getByRole("button", { name: /messages/i }));
 
     const img = screen.getByAltText("Charlie") as HTMLImageElement;
     expect(img).toBeInTheDocument();
@@ -326,7 +326,7 @@ describe("ChatNav", () => {
     const user = userEvent.setup();
     render(<ChatNav initialConversations={mockConversations} />);
 
-    await user.click(screen.getByRole("button", { name: /chat/i }));
+    await user.click(screen.getByRole("button", { name: /messages/i }));
 
     const timestamps = screen.getAllByText("2m");
     expect(timestamps.length).toBe(2);
@@ -336,7 +336,7 @@ describe("ChatNav", () => {
     const user = userEvent.setup();
     render(<ChatNav initialConversations={mockConversations} />);
 
-    await user.click(screen.getByRole("button", { name: /chat/i }));
+    await user.click(screen.getByRole("button", { name: /messages/i }));
 
     const alice = screen.getByText("Alice");
     expect(alice.className).toContain("font-semibold");

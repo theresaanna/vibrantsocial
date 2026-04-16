@@ -63,7 +63,7 @@ function getNotificationHref(notification: NotificationItem): string {
     return `/post/${notification.postId}?commentId=${notification.commentId}`;
   }
   if (notification.type === "REACTION" && notification.message) {
-    return `/chat/${notification.message.conversationId}`;
+    return `/messages/${notification.message.conversationId}`;
   }
   if (notification.type === "FRIEND_REQUEST") {
     return `/${notification.actor.username}`;

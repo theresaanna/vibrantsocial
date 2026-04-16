@@ -5,7 +5,7 @@ vi.mock("@/app/feed/block-actions", () => ({
   toggleBlock: vi.fn(() => Promise.resolve({ success: true, message: "Blocked" })),
 }));
 
-vi.mock("@/app/chat/actions", () => ({
+vi.mock("@/app/messages/actions", () => ({
   dismissChatAbuseAlerts: vi.fn(() => Promise.resolve({ success: true, message: "Dismissed" })),
 }));
 
@@ -36,7 +36,7 @@ vi.mock("@/components/confirm-dialog", () => ({
 }));
 
 import { ChatAbuseNotificationActions } from "@/components/chat-abuse-notification-actions";
-import { dismissChatAbuseAlerts } from "@/app/chat/actions";
+import { dismissChatAbuseAlerts } from "@/app/messages/actions";
 
 describe("ChatAbuseNotificationActions", () => {
   beforeEach(() => {

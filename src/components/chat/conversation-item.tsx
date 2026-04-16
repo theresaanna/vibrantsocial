@@ -37,7 +37,7 @@ export function ConversationItem({
 
   return (
     <Link
-      href={`/chat/${conversation.id}`}
+      href={`/messages/${conversation.id}`}
       className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${
         isActive && !hasThemedActive
           ? "bg-zinc-100 dark:bg-zinc-800"

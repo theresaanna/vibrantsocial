@@ -227,7 +227,7 @@ describe("NotificationList", () => {
       />
     );
     const link = screen.getByText("reacted to your message").closest("a");
-    expect(link).toHaveAttribute("href", "/chat/conv123");
+    expect(link).toHaveAttribute("href", "/messages/conv123");
   });
 
   it("shows unread indicator for unread notifications", () => {

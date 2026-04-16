@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { sendMessage, getMessages } from "@/app/chat/actions";
+import { sendMessage, getMessages } from "@/app/messages/actions";
 
 vi.mock("@/auth", () => ({
   auth: vi.fn(),

@@ -51,7 +51,7 @@ export async function proxy(request: Request) {
     "/feed",
     "/verify-phone",
     "/compose",
-    "/chat",
+    "/messages",
     "/bookmarks",
     "/likes",
     "/notifications",

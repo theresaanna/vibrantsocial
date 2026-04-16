@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { MessageRequestCard } from "@/components/chat/message-request-card";
 import type { MessageRequestData } from "@/types/chat";
 
-vi.mock("@/app/chat/actions", () => ({
+vi.mock("@/app/messages/actions", () => ({
   acceptMessageRequest: vi.fn().mockResolvedValue({ success: true, conversationId: "conv1" }),
   declineMessageRequest: vi.fn().mockResolvedValue({ success: true, message: "Request declined" }),
 }));

@@ -45,7 +45,7 @@ function NotificationToastListener() {
 
       // Extract conversationId from channel name (chat:{id})
       const channelConvId = message.name;
-      if (pathname === `/chat/${channelConvId}`) return;
+      if (pathname === `/messages/${channelConvId}`) return;
 
       const sender = JSON.parse(message.data.sender);
       const name =

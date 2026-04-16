@@ -14,7 +14,7 @@ import {
   bulkDeclineMessageRequests,
   searchUsers,
   toggleReaction,
-} from "@/app/chat/actions";
+} from "@/app/messages/actions";
 
 vi.mock("@/auth", () => ({
   auth: vi.fn(),

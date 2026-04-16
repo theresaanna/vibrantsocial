@@ -6,7 +6,7 @@ const mockUpdateGroupName = vi.fn();
 const mockAddGroupMembers = vi.fn();
 const mockRemoveGroupMember = vi.fn();
 
-vi.mock("@/app/chat/actions", () => ({
+vi.mock("@/app/messages/actions", () => ({
   updateGroupName: (...args: unknown[]) => mockUpdateGroupName(...args),
   addGroupMembers: (...args: unknown[]) => mockAddGroupMembers(...args),
   removeGroupMember: (...args: unknown[]) => mockRemoveGroupMember(...args),

@@ -14,7 +14,7 @@ import { FramedAvatar } from "@/components/framed-avatar";
 import { BioContent } from "@/components/bio-content";
 import { ProfileTabs } from "@/components/profile-tabs";
 import { RepostCard } from "@/components/repost-card";
-import { getChatRequestStatus, type ChatRequestStatus } from "@/app/chat/actions";
+import { getChatRequestStatus, type ChatRequestStatus } from "@/app/messages/actions";
 import { deriveBlockStatus } from "@/app/feed/block-actions";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { acceptMessageRequest, declineMessageRequest } from "@/app/chat/actions";
+import { acceptMessageRequest, declineMessageRequest } from "@/app/messages/actions";
 import { useRouter } from "next/navigation";
 import { FramedAvatar } from "@/components/framed-avatar";
 import type { MessageRequestData, ActionState } from "@/types/chat";
@@ -29,7 +29,7 @@ export function MessageRequestCard({
     async (_prev: ActionState) => {
       const result = await acceptMessageRequest(request.id);
       if (result.success && result.conversationId) {
-        router.push(`/chat/${result.conversationId}`);
+        router.push(`/messages/${result.conversationId}`);
       }
       return result;
     },

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useActionState } from "react";
 import { toggleBlock } from "@/app/feed/block-actions";
-import { dismissChatAbuseAlerts } from "@/app/chat/actions";
+import { dismissChatAbuseAlerts } from "@/app/messages/actions";
 import { ReportModal } from "@/components/report-modal";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 

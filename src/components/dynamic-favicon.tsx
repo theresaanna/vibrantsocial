@@ -86,7 +86,7 @@ export function DynamicFavicon({
 
     if (pathname === "/notifications") {
       setNotifCount(0);
-    } else if (pathname.startsWith("/chat/") || pathname === "/chat") {
+    } else if (pathname.startsWith("/messages/") || pathname === "/messages") {
       setChatCount(0);
     }
     // When leaving these pages, counts rebuild from Ably events
@@ -113,7 +113,7 @@ export function DynamicFavicon({
     const handleChat = (msg: InboundMessage) => {
       if (msg.data?.senderId === session?.user?.id) return;
       const convId = msg.data?.conversationId;
-      if (pathnameRef.current === `/chat/${convId}`) return;
+      if (pathnameRef.current === `/messages/${convId}`) return;
       setChatCount((prev) => prev + 1);
     };
 

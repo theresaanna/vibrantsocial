@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { sendChatRequest, cancelChatRequest, type ChatRequestStatus } from "@/app/chat/actions";
+import { sendChatRequest, cancelChatRequest, type ChatRequestStatus } from "@/app/messages/actions";
 
 interface ChatRequestButtonProps {
   userId: string;

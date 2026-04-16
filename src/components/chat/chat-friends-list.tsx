@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { PresenceIndicator } from "@/components/chat/presence-indicator";
-import { startConversation } from "@/app/chat/actions";
+import { startConversation } from "@/app/messages/actions";
 import type { ChatUserProfile } from "@/types/chat";
 import { StyledName } from "@/components/styled-name";
 
@@ -26,7 +26,7 @@ export function ChatFriendsList({ friends, onlineUserIds = new Set() }: ChatFrie
     startTransition(async () => {
       const result = await startConversation(userId);
       if (result.success && result.conversationId) {
-        router.push(`/chat/${result.conversationId}`);
+        router.push(`/messages/${result.conversationId}`);
       }
       setLoadingId(null);
     });

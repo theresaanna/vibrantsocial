@@ -285,7 +285,7 @@ export async function startConversation(
         },
       },
     });
-    revalidatePath("/chat");
+    revalidatePath("/messages");
     return { success: true, message: "Conversation created", conversationId: conversation.id };
   }
 
@@ -491,7 +491,7 @@ export async function createGroupConversation(data: {
     },
   });
 
-  revalidatePath("/chat");
+  revalidatePath("/messages");
   return { success: true, message: "Group created", conversationId: conversation.id };
 }
 
@@ -839,7 +839,7 @@ export async function acceptMessageRequest(
     targetUserId: request.senderId,
   });
 
-  revalidatePath("/chat");
+  revalidatePath("/messages");
   return {
     success: true,
     message: "Request accepted",
@@ -891,7 +891,7 @@ export async function respondToChatRequestByActor(
       targetUserId: request.senderId,
     });
 
-    revalidatePath("/chat");
+    revalidatePath("/messages");
     return { success: true, message: "Chat request accepted", conversationId: conversation.id };
   } else {
     await prisma.messageRequest.update({
@@ -899,7 +899,7 @@ export async function respondToChatRequestByActor(
       data: { status: "DECLINED" },
     });
 
-    revalidatePath("/chat");
+    revalidatePath("/messages");
     return { success: true, message: "Chat request declined" };
   }
 }
@@ -929,7 +929,7 @@ export async function declineMessageRequest(
     data: { status: "DECLINED" },
   });
 
-  revalidatePath("/chat");
+  revalidatePath("/messages");
   return { success: true, message: "Request declined" };
 }
 
@@ -964,7 +964,7 @@ export async function bulkDeclineMessageRequests(
     data: { status: "DECLINED" },
   });
 
-  revalidatePath("/chat");
+  revalidatePath("/messages");
   return { success: true, message: `${requestIds.length} request(s) declined` };
 }
 
@@ -1169,7 +1169,7 @@ export async function updateGroupName(data: {
     // Non-critical
   }
 
-  revalidatePath("/chat");
+  revalidatePath("/messages");
   return { success: true, message: "Group renamed" };
 }
 
@@ -1244,7 +1244,7 @@ export async function addGroupMembers(data: {
     // Non-critical
   }
 
-  revalidatePath("/chat");
+  revalidatePath("/messages");
   return { success: true, message: `${newIds.length} member(s) added` };
 }
 
@@ -1298,7 +1298,7 @@ export async function removeGroupMember(data: {
     // Non-critical
   }
 
-  revalidatePath("/chat");
+  revalidatePath("/messages");
   return { success: true, message: "Member removed" };
 }
 
@@ -1322,6 +1322,6 @@ export async function leaveConversation(
     where: { id: participant.id },
   });
 
-  revalidatePath("/chat");
+  revalidatePath("/messages");
   return { success: true, message: "Conversation removed" };
 }

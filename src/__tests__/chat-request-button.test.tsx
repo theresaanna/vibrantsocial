@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
-vi.mock("@/app/chat/actions", () => ({
+vi.mock("@/app/messages/actions", () => ({
   sendChatRequest: vi.fn(),
   cancelChatRequest: vi.fn(),
 }));
 
 import { ChatRequestButton } from "@/components/chat-request-button";
-import { sendChatRequest, cancelChatRequest } from "@/app/chat/actions";
+import { sendChatRequest, cancelChatRequest } from "@/app/messages/actions";
 
 const mockSendChatRequest = vi.mocked(sendChatRequest);
 const mockCancelChatRequest = vi.mocked(cancelChatRequest);

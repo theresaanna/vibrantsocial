@@ -33,7 +33,7 @@ export default async function ConversationPage({ params }: Props) {
       },
     },
   });
-  if (!participant) redirect("/chat");
+  if (!participant) redirect("/messages");
 
   const [conversations, { messages }, messageRequests, friends, conversation, phoneVerified, notSuspended, currentUser] =
     await Promise.all([
@@ -72,7 +72,7 @@ export default async function ConversationPage({ params }: Props) {
       }),
     ]);
 
-  if (!conversation) redirect("/chat");
+  if (!conversation) redirect("/messages");
 
   // Check block status for 1:1 chats
   let isBlocked = false;

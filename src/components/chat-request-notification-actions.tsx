@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { respondToChatRequestByActor } from "@/app/chat/actions";
+import { respondToChatRequestByActor } from "@/app/messages/actions";
 
 interface ChatRequestNotificationActionsProps {
   actorId: string;
@@ -34,7 +34,7 @@ export function ChatRequestNotificationActions({
         setResponded(action === "accept" ? "accepted" : "declined");
         onRespond?.();
         if (action === "accept" && result.conversationId) {
-          router.push(`/chat/${result.conversationId}`);
+          router.push(`/messages/${result.conversationId}`);
         }
       }
     });

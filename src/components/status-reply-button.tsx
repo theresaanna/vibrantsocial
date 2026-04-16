@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { startConversation } from "@/app/chat/actions";
+import { startConversation } from "@/app/messages/actions";
 
 interface StatusReplyButtonProps {
   /** The user who posted the status */
@@ -28,7 +28,7 @@ export function StatusReplyButton({
       if (result.success && result.conversationId) {
         const quote = `Replying to ${authorName}'s status: "${statusContent}"\n\n`;
         router.push(
-          `/chat/${result.conversationId}?statusReply=${encodeURIComponent(quote)}`
+          `/messages/${result.conversationId}?statusReply=${encodeURIComponent(quote)}`
         );
       }
     } finally {
