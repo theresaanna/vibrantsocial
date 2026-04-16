@@ -84,7 +84,11 @@ export function FeedSummaryBanner({ lastSeenFeedAt, initialData }: FeedSummaryBa
             <p>{parseBold(summary)}</p>
             <button
               onClick={handleSummarize}
-              className="mt-2 rounded-lg bg-fuchsia-600/80 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-fuchsia-700"
+              className="mt-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+              style={{
+                backgroundColor: "var(--profile-text, #18181b)",
+                color: "var(--profile-bg, #fff)",
+              }}
             >
               Regenerate summary
             </button>
@@ -96,7 +100,11 @@ export function FeedSummaryBanner({ lastSeenFeedAt, initialData }: FeedSummaryBa
             <p>You have {tooMany ? `${missedCount}+` : missedCount} new {missedCount === 1 ? "post" : "posts"} in your feed!</p>
             <button
               onClick={handleSummarize}
-              className="mt-2 rounded-lg bg-fuchsia-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-fuchsia-700"
+              className="mt-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+              style={{
+                backgroundColor: "var(--profile-text, #18181b)",
+                color: "var(--profile-bg, #fff)",
+              }}
             >
               Summarize what I missed
             </button>

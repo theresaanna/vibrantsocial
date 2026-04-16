@@ -45,7 +45,11 @@ export function StatusComposer({ onStatusCreated }: StatusComposerProps) {
       <button
         type="submit"
         disabled={isPending}
-        className="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-600 disabled:opacity-50"
+        className="rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50 transition-colors"
+        style={{
+          backgroundColor: "var(--profile-text, #18181b)",
+          color: "var(--profile-bg, #fff)",
+        }}
         data-testid="status-submit"
       >
         {isPending ? "..." : "Set status"}
