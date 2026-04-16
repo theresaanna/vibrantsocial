@@ -22,8 +22,6 @@ const VIEW_ROUTES: Record<CommunitiesView, string> = {
 
 const TABS: { view: CommunitiesView; label: string; testId: string }[] = [
   { view: "tags", label: "Tags", testId: "communities-view-tags" },
-  { view: "media", label: "Media", testId: "communities-view-media" },
-  { view: "discussions", label: "Discussions", testId: "communities-view-discussions" },
   { view: "newcomers", label: "Newcomers", testId: "communities-view-newcomers" },
   { view: "spotlight", label: "Theme Spotlight", testId: "communities-view-spotlight" },
   { view: "user-lists", label: "User Lists", testId: "communities-view-user-lists" },
