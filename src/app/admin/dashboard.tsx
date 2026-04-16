@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { suspendUser, unsuspendUser, reviewViolation, reviewAppeal, reviewReport, removeWarning, resetWarnings } from "./actions";
+import { suspendUser, unsuspendUser, reviewViolation, reviewAppeal, reviewReport, removeWarning, resetWarnings, applyContentWarning, removeContentWarning, searchPostsForWarning } from "./actions";
 import { PremiumTab, type PremiumUser, type PremiumCompRecord } from "./premium-tab";
 
-type Tab = "reports" | "violations" | "appeals" | "users" | "premium" | "log";
+type Tab = "reports" | "violations" | "appeals" | "users" | "warnings" | "premium" | "log";
 
 interface ReportRecord {
   id: string;
@@ -93,6 +93,7 @@ export function AdminDashboard({
           ["violations", `Violations${pendingViolations ? ` (${pendingViolations})` : ""}`],
           ["appeals", `Appeals${pendingAppeals ? ` (${pendingAppeals})` : ""}`],
           ["users", "Users"],
+          ["warnings", "Content Warnings"],
           ["premium", "Premium"],
           ["log", "Action Log"],
         ] as [Tab, string][]).map(([key, label]) => (
@@ -114,6 +115,7 @@ export function AdminDashboard({
       {tab === "violations" && <ViolationsTab violations={violations} />}
       {tab === "appeals" && <AppealsTab appeals={appeals} />}
       {tab === "users" && <UsersTab users={flaggedUsers} />}
+      {tab === "warnings" && <ContentWarningsTab />}
       {tab === "premium" && <PremiumTab users={premiumUsers} comps={recentComps} />}
       {tab === "log" && <ActionLogTab actions={recentActions} />}
     </div>
@@ -462,6 +464,144 @@ function UserRow({ user }: { user: FlaggedUser }) {
         </div>
       </div>
     </li>
+  );
+}
+
+interface SearchedPost {
+  id: string;
+  content: string | null;
+  isNsfw: boolean;
+  isGraphicNudity: boolean;
+  isSensitive: boolean;
+  createdAt: Date;
+  author: { id: string; username: string | null; avatar: string | null } | null;
+}
+
+function ContentWarningsTab() {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<SearchedPost[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searched, setSearched] = useState(false);
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+    setSearching(true);
+    try {
+      const posts = await searchPostsForWarning(query);
+      setResults(posts);
+      setSearched(true);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const warningTypes = [
+    { key: "isNsfw", label: "NSFW", color: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400" },
+    { key: "isGraphicNudity", label: "Explicit / Graphic", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
+    { key: "isSensitive", label: "Sensitive", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
+  ] as const;
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+        <p className="mb-3 text-sm text-zinc-500 dark:text-zinc-400">
+          Search for a post by ID or content to apply or remove content warnings.
+        </p>
+        <form onSubmit={handleSearch} className="flex gap-2">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Post ID or search text..."
+            className="flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-zinc-400 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-500"
+          />
+          <button
+            type="submit"
+            disabled={searching || !query.trim()}
+            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          >
+            {searching ? "Searching..." : "Search"}
+          </button>
+        </form>
+      </div>
+
+      {searched && (
+        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+          {results.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">No posts found.</p>
+          ) : (
+            <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              {results.map((post) => (
+                <li key={post.id} className="px-4 py-4">
+                  <div className="mb-2 flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        {post.author?.avatar ? (
+                          <img src={post.author.avatar} alt="" className="h-6 w-6 rounded-full object-cover" />
+                        ) : (
+                          <div className="h-6 w-6 rounded-full bg-zinc-200 dark:bg-zinc-700" />
+                        )}
+                        <a href={`/${post.author?.username}`} className="text-sm font-medium text-zinc-900 hover:underline dark:text-zinc-100">
+                          @{post.author?.username}
+                        </a>
+                        <span className="text-xs text-zinc-400">{new Date(post.createdAt).toLocaleString()}</span>
+                      </div>
+                      <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">
+                        {post.content?.slice(0, 200)}{(post.content?.length ?? 0) > 200 ? "..." : ""}
+                      </p>
+                      <a href={`/post/${post.id}`} className="mt-0.5 inline-block text-xs text-fuchsia-600 hover:underline dark:text-fuchsia-400">
+                        View post
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Current flags */}
+                  <div className="mb-2 flex flex-wrap gap-1.5">
+                    {warningTypes.map((wt) => {
+                      const isSet = post[wt.key as keyof SearchedPost] === true;
+                      return (
+                        <span
+                          key={wt.key}
+                          className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${
+                            isSet ? wt.color : "bg-zinc-50 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500"
+                          }`}
+                        >
+                          {isSet ? "✓ " : ""}{wt.label}
+                        </span>
+                      );
+                    })}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-wrap gap-2">
+                    {warningTypes.map((wt) => {
+                      const isSet = post[wt.key as keyof SearchedPost] === true;
+                      return (
+                        <form key={wt.key} action={isSet ? removeContentWarning : applyContentWarning}>
+                          <input type="hidden" name="postId" value={post.id} />
+                          <input type="hidden" name="warningType" value={wt.key} />
+                          <button
+                            type="submit"
+                            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                              isSet
+                                ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
+                                : "bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
+                            }`}
+                          >
+                            {isSet ? `Remove ${wt.label}` : `Apply ${wt.label}`}
+                          </button>
+                        </form>
+                      );
+                    })}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

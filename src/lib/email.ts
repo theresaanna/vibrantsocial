@@ -620,7 +620,7 @@ export async function sendContentNoticeEmail(params: {
             Next time, please mark your post yourself when uploading this type of content. You can do this from the content flags option in the post editor.
           </p>
           <p style="color: #71717a; font-size: 14px; line-height: 1.6;">
-            This is notice #${warningCount}. Repeated violations may result in further action.
+            Users found to be intentionally not labeling content will be removed from the platform. We must all do our part to keep the community safe. While we don&apos;t have minors, we need to make sure people don&apos;t see NSFW content unwanted, and that no one without age verification can see graphic/explicit posts. Please reach out with any questions.
           </p>
           <a href="${postUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
             View Post
