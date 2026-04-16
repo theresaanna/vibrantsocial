@@ -41,7 +41,11 @@ export async function MarketplaceContent({ userId }: MarketplaceContentProps) {
       <MarketplaceNotice />
       <Link
         href="/marketplace/compose"
-        className="mb-6 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-500 to-pink-500 px-6 py-4 text-lg font-bold text-white shadow-lg transition-all hover:from-fuchsia-600 hover:to-pink-600 hover:shadow-xl"
+        className="mb-6 flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-lg font-bold shadow-lg transition-all hover:shadow-xl hover:brightness-110"
+        style={{
+          backgroundColor: "var(--profile-link, #d946ef)",
+          color: "var(--profile-bg, #ffffff)",
+        }}
       >
         <svg className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />

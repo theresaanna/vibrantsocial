@@ -42,11 +42,12 @@ export async function ChatRoomList() {
         >
           {/* Icon */}
           <div
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white transition-transform group-hover:scale-105 ${
-              room.isNsfw
-                ? "bg-gradient-to-br from-red-400 to-red-600"
-                : "bg-gradient-to-br from-fuchsia-400 to-pink-600"
-            }`}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white transition-transform group-hover:scale-105"
+            style={{
+              backgroundColor: room.isNsfw
+                ? "#dc2626"
+                : "var(--profile-link, #d946ef)",
+            }}
           >
             <svg
               className="h-5 w-5"
