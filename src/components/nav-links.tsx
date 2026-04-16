@@ -139,8 +139,8 @@ export function NavLinks({ username }: { username?: string | null }) {
     <>
       {/* Line break on mobile — pushes all nav links to row 2 */}
       <div className="order-1 h-0 basis-full sm:hidden" aria-hidden="true" />
-      {/* All nav links — order-2 on mobile (row 2), inline on sm+ */}
-      <div className="order-2 flex items-center gap-1 sm:order-none">
+      {/* All nav links — order-2 on mobile (row 2), centered; inline on sm+ */}
+      <div className="order-2 flex w-full items-center justify-center gap-1 sm:order-none sm:w-auto sm:justify-start">
         {links.map(renderLink)}
         {renderLink(profileLink)}
       </div>
