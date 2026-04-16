@@ -13,8 +13,10 @@ import { togglePostSubscription } from "@/app/feed/subscription-actions";
 import { addCloseFriend, removeCloseFriend } from "@/app/feed/close-friends-actions";
 import { startConversation } from "@/app/chat/actions";
 import { sendChatRequest, cancelChatRequest, type ChatRequestStatus } from "@/app/chat/actions";
+import { toggleBlock } from "@/app/feed/block-actions";
 import { useRouter } from "next/navigation";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { ReportModal } from "@/components/report-modal";
 
 interface ProfileActionsDropdownProps {
   userId: string;
@@ -25,6 +27,8 @@ interface ProfileActionsDropdownProps {
   isFriend: boolean;
   isCloseFriend: boolean;
   chatRequestStatus: ChatRequestStatus;
+  isBlocked?: boolean;
+  hasVerifiedPhone?: boolean;
 }
 
 const initialState = { success: false, message: "" };
@@ -38,6 +42,8 @@ export function ProfileActionsDropdown({
   isFriend,
   isCloseFriend,
   chatRequestStatus: initialChatStatus,
+  isBlocked = false,
+  hasVerifiedPhone = false,
 }: ProfileActionsDropdownProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -45,6 +51,9 @@ export function ProfileActionsDropdown({
 
   const [showUnfollowConfirm, setShowUnfollowConfirm] = useState(false);
   const [showUnfriendConfirm, setShowUnfriendConfirm] = useState(false);
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+  const [blockByPhone, setBlockByPhone] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [chatStatus, setChatStatus] = useState<ChatRequestStatus>(initialChatStatus);
   const [chatPending, setChatPending] = useState(false);
   const [messagePending, setMessagePending] = useState(false);
@@ -57,6 +66,7 @@ export function ProfileActionsDropdown({
   const [, subscribeAction, subscribePending] = useActionState(togglePostSubscription, initialState);
   const [addCloseState, addCloseAction, addClosePending] = useActionState(addCloseFriend, initialState);
   const [removeCloseState, removeCloseAction, removeClosePending] = useActionState(removeCloseFriend, initialState);
+  const [, blockAction, blockPending] = useActionState(toggleBlock, initialState);
 
   const closePending = addClosePending || removeClosePending;
   const isClose = addCloseState.success ? true : removeCloseState.success ? false : isCloseFriend;
@@ -127,6 +137,23 @@ export function ProfileActionsDropdown({
     setShowUnfriendConfirm(false);
     const form = document.getElementById(`dropdown-unfriend-form-${userId}`) as HTMLFormElement;
     if (form) form.requestSubmit();
+  };
+
+  const handleBlockClick = () => {
+    setBlockByPhone(false);
+    setShowBlockConfirm(true);
+    setOpen(false);
+  };
+
+  const handleConfirmBlock = () => {
+    setShowBlockConfirm(false);
+    const form = document.getElementById(`dropdown-block-form-${userId}`) as HTMLFormElement;
+    if (form) form.requestSubmit();
+  };
+
+  const handleReportClick = () => {
+    setShowReportModal(true);
+    setOpen(false);
   };
 
   const itemClass = "flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-50";
@@ -279,6 +306,33 @@ export function ProfileActionsDropdown({
               </form>
             </>
           )}
+
+          <div className="border-t border-zinc-100 dark:border-zinc-700" />
+
+          {/* Report */}
+          <button type="button" onClick={handleReportClick} className={itemClass}>
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5" />
+            </svg>
+            Report
+          </button>
+
+          {/* Block / Unblock */}
+          <form id={`dropdown-block-form-${userId}`} action={blockAction} className="hidden">
+            <input type="hidden" name="userId" value={userId} />
+            <input type="hidden" name="blockByPhone" value={blockByPhone ? "true" : "false"} />
+          </form>
+          <button
+            type="button"
+            onClick={handleBlockClick}
+            disabled={blockPending}
+            className={`${itemClass} ${isBlocked ? "text-red-600 dark:text-red-400" : ""}`}
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+            {blockPending ? "..." : isBlocked ? "Unblock" : "Block"}
+          </button>
         </div>
       )}
 
@@ -302,6 +356,38 @@ export function ProfileActionsDropdown({
         variant="danger"
         onConfirm={handleConfirmUnfriend}
         onCancel={() => setShowUnfriendConfirm(false)}
+      />
+
+      <ConfirmDialog
+        open={showBlockConfirm}
+        title={isBlocked ? "Unblock this user?" : "Block this user?"}
+        message={isBlocked
+          ? "Are you sure you want to unblock this user? They will be able to see your profile and interact with your posts."
+          : "Are you sure you want to block this user? They won't be able to see your profile or interact with your posts."}
+        confirmLabel={isBlocked ? "Unblock" : "Block"}
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={handleConfirmBlock}
+        onCancel={() => setShowBlockConfirm(false)}
+      >
+        {hasVerifiedPhone && !isBlocked && (
+          <label className="mt-3 flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+            <input
+              type="checkbox"
+              checked={blockByPhone}
+              onChange={(e) => setBlockByPhone(e.target.checked)}
+              className="rounded border-zinc-300 dark:border-zinc-600"
+            />
+            Also block by phone number
+          </label>
+        )}
+      </ConfirmDialog>
+
+      <ReportModal
+        contentType="profile"
+        contentId={userId}
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface ListTab {
   id: string;
@@ -25,7 +26,37 @@ export function FeedTabs({ lists, activeListId, activeListInfo, hasCustomTheme =
   activeListInfo?: ListTab | null;
   hasCustomTheme?: boolean;
 }) {
-  const baseClass = "shrink-0 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all";
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateScrollState = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 2);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    updateScrollState();
+    el.addEventListener("scroll", updateScrollState, { passive: true });
+    const ro = new ResizeObserver(updateScrollState);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", updateScrollState);
+      ro.disconnect();
+    };
+  }, [updateScrollState]);
+
+  const scroll = (direction: "left" | "right") => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: direction === "left" ? -120 : 120, behavior: "smooth" });
+  };
+
+  const baseClass = "shrink-0 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap";
 
   // If the active list isn't in the tabs (viewing someone else's unsubscribed list), show it
   const showActiveAsExtra = activeListId && activeListInfo && !lists.some((l) => l.id === activeListId);
@@ -37,8 +68,30 @@ export function FeedTabs({ lists, activeListId, activeListInfo, hasCustomTheme =
     return list.name;
   }
 
+  const arrowClass =
+    "absolute top-0 bottom-0 z-10 flex w-7 items-center justify-center";
+
   return (
-    <div className={`mb-4 flex gap-2 overflow-x-auto${hasCustomTheme ? " profile-tabs-bar" : ""}`}>
+    <div className={`relative mb-4 rounded-xl p-2${hasCustomTheme ? " profile-tabs-bar" : " bg-zinc-100 dark:bg-zinc-800"}`}>
+      {canScrollLeft && (
+        <button
+          type="button"
+          onClick={() => scroll("left")}
+          className={`${arrowClass} left-0 rounded-l-lg`}
+          style={{ color: "var(--profile-text, #18181b)" }}
+          aria-label="Scroll tabs left"
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
+        </button>
+      )}
+
+      <div
+        ref={scrollRef}
+        className="flex gap-2 overflow-x-auto scrollbar-none"
+        style={{ scrollbarWidth: "none" }}
+      >
       <Link
         href="/feed"
         prefetch={false}
@@ -142,6 +195,21 @@ export function FeedTabs({ lists, activeListId, activeListInfo, hasCustomTheme =
       >
         +
       </Link>
+      </div>
+
+      {canScrollRight && (
+        <button
+          type="button"
+          onClick={() => scroll("right")}
+          className={`${arrowClass} right-0 rounded-r-lg`}
+          style={{ color: "var(--profile-text, #18181b)" }}
+          aria-label="Scroll tabs right"
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }

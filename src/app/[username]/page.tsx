@@ -14,8 +14,6 @@ import { FramedAvatar } from "@/components/framed-avatar";
 import { BioContent } from "@/components/bio-content";
 import { ProfileTabs } from "@/components/profile-tabs";
 import { RepostCard } from "@/components/repost-card";
-import { ReportButton } from "@/components/report-button";
-import { BlockButton } from "@/components/block-button";
 import { getChatRequestStatus, type ChatRequestStatus } from "@/app/chat/actions";
 import { deriveBlockStatus } from "@/app/feed/block-actions";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
@@ -655,14 +653,6 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
 
         {/* Profile header */}
         <div className={`relative rounded-2xl p-6 shadow-lg ${hasCustomTheme && !isBlocked ? "profile-container" : "bg-white dark:bg-zinc-900"}`}>
-          {/* Block & Report flags — top-right corner, icon only */}
-          {currentUserId && !isOwnProfile && blockStatus !== "blocked_by_them" && (
-            <div className="absolute top-3 right-3 flex items-center gap-1">
-              <BlockButton userId={user.id} isBlocked={blockStatus === "blocked_by_me"} hasVerifiedPhone={!!user.phoneVerified} />
-              <ReportButton contentType="profile" contentId={user.id} label="" />
-            </div>
-          )}
-
           {/* Avatar + name row */}
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start sm:gap-4">
             <FramedAvatar
@@ -721,6 +711,61 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                       </a>
                     )}
                   </div>}
+                  {/* Counts — below @name */}
+                  {blockStatus === "none" && <div className="mt-1 flex flex-wrap gap-3 text-sm">
+                    <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                      <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                        {user._count.posts}
+                      </span>{" "}
+                      posts
+                    </span>
+                    {currentUserId ? (
+                      <Link href={`/${user.username}/followers`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
+                        <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                          {user._count.followers}
+                        </span>{" "}
+                        followers
+                      </Link>
+                    ) : (
+                      <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                        <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                          {user._count.followers}
+                        </span>{" "}
+                        followers
+                      </span>
+                    )}
+                    {isOwnProfile && (
+                      <Link href={`/${user.username}/following`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
+                        <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                          {user._count.following}
+                        </span>{" "}
+                        following
+                      </Link>
+                    )}
+                    {currentUserId ? (
+                      <Link href={`/${user.username}/friends`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
+                        <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                          {friendsCount}
+                        </span>{" "}
+                        friends
+                      </Link>
+                    ) : (
+                      <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                        <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                          {friendsCount}
+                        </span>{" "}
+                        friends
+                      </span>
+                    )}
+                    {user._count.userLists > 0 && (
+                      <Link href={`/${user.username}/lists`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
+                        <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                          {user._count.userLists}
+                        </span>{" "}
+                        {user._count.userLists === 1 ? "list" : "lists"}
+                      </Link>
+                    )}
+                  </div>}
                 </div>
                 {isOwnProfile && (
                   <div className="flex shrink-0 items-center gap-2">
@@ -745,7 +790,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                     <ProfileShareButton username={user.username!} hasCustomTheme={hasCustomTheme} />
                   </div>
                 )}
-                {currentUserId && !isOwnProfile && blockStatus === "none" && (
+                {currentUserId && !isOwnProfile && blockStatus !== "blocked_by_them" && (
                   <div className="flex shrink-0 items-center gap-2">
                     <ProfileActionsDropdown
                       userId={user.id}
@@ -756,8 +801,10 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                       isFriend={isFriend}
                       isCloseFriend={viewerIsCloseFriend}
                       chatRequestStatus={chatRequestStatus}
+                      isBlocked={blockStatus === "blocked_by_me"}
+                      hasVerifiedPhone={!!user.phoneVerified}
                     />
-                    <AddToListButton targetUserId={user.id} lists={listMemberships} />
+                    {blockStatus === "none" && <AddToListButton targetUserId={user.id} lists={listMemberships} />}
                     <ProfileShareButton username={user.username!} hasCustomTheme={hasCustomTheme} />
                   </div>
                 )}
@@ -780,62 +827,6 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
               )}
             </div>
           </div>
-
-          {/* Counts — below actions */}
-          {blockStatus === "none" && <div className="mt-3 flex flex-wrap gap-4 text-sm">
-            <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
-              <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
-                {user._count.posts}
-              </span>{" "}
-              posts
-            </span>
-            {currentUserId ? (
-              <Link href={`/${user.username}/followers`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
-                <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
-                  {user._count.followers}
-                </span>{" "}
-                followers
-              </Link>
-            ) : (
-              <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
-                <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
-                  {user._count.followers}
-                </span>{" "}
-                followers
-              </span>
-            )}
-            {isOwnProfile && (
-              <Link href={`/${user.username}/following`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
-                <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
-                  {user._count.following}
-                </span>{" "}
-                following
-              </Link>
-            )}
-            {currentUserId ? (
-              <Link href={`/${user.username}/friends`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
-                <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
-                  {friendsCount}
-                </span>{" "}
-                friends
-              </Link>
-            ) : (
-              <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
-                <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
-                  {friendsCount}
-                </span>{" "}
-                friends
-              </span>
-            )}
-            {user._count.userLists > 0 && (
-              <Link href={`/${user.username}/lists`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
-                <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
-                  {user._count.userLists}
-                </span>{" "}
-                {user._count.userLists === 1 ? "list" : "lists"}
-              </Link>
-            )}
-          </div>}
 
           {/* Bio — full width below counts */}
           {blockStatus === "none" && user.bio && (
