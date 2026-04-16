@@ -75,12 +75,19 @@ export function CommunitiesViewToggle({ activeView }: CommunitiesViewToggleProps
     [router]
   );
 
-  const baseClass = "px-3 py-1.5 rounded-md text-sm font-medium transition-colors";
-  const activeClass = "bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-zinc-100";
-  const inactiveClass = "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300";
+  const baseClass = "px-5 py-2.5 rounded-lg text-sm font-semibold transition-all";
+  const activeTabStyle: React.CSSProperties = {
+    color: "var(--profile-bg, #fff)",
+    backgroundColor: "var(--profile-text, #18181b)",
+    boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+  };
+  const inactiveTabStyle: React.CSSProperties = {
+    color: "var(--profile-text, #18181b)",
+    backgroundColor: "color-mix(in srgb, var(--profile-secondary, #71717a) 15%, transparent)",
+  };
 
   const arrowClass =
-    "absolute top-0 bottom-0 z-10 flex w-7 items-center justify-center text-zinc-500 dark:text-zinc-400";
+    "absolute top-0 bottom-0 z-10 flex w-7 items-center justify-center";
 
   return (
     <div className="relative mb-4">
@@ -88,7 +95,8 @@ export function CommunitiesViewToggle({ activeView }: CommunitiesViewToggleProps
         <button
           type="button"
           onClick={() => scroll("left")}
-          className={`${arrowClass} left-0 rounded-l-lg bg-gradient-to-r from-zinc-100 via-zinc-100 to-transparent dark:from-zinc-800 dark:via-zinc-800`}
+          className={`${arrowClass} left-0 rounded-l-lg`}
+          style={{ color: "var(--profile-text, #18181b)" }}
           aria-label="Scroll tabs left"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
@@ -99,7 +107,7 @@ export function CommunitiesViewToggle({ activeView }: CommunitiesViewToggleProps
 
       <div
         ref={scrollRef}
-        className="flex gap-1 overflow-x-auto rounded-lg bg-zinc-100 p-1 scrollbar-none dark:bg-zinc-800"
+        className="flex gap-2 overflow-x-auto scrollbar-none"
         role="tablist"
         aria-label="Communities view"
         style={{ scrollbarWidth: "none" }}
@@ -111,7 +119,8 @@ export function CommunitiesViewToggle({ activeView }: CommunitiesViewToggleProps
               href={VIEW_ROUTES[view]}
               role="tab"
               aria-selected={isActive(view)}
-              className={`${baseClass} ${isActive(view) ? activeClass : inactiveClass} whitespace-nowrap`}
+              className={`${baseClass} whitespace-nowrap`}
+              style={isActive(view) ? activeTabStyle : inactiveTabStyle}
               data-testid={testId}
             >
               {label}
@@ -122,7 +131,8 @@ export function CommunitiesViewToggle({ activeView }: CommunitiesViewToggleProps
               type="button"
               role="tab"
               aria-selected={isActive(view)}
-              className={`${baseClass} ${isActive(view) ? activeClass : inactiveClass} whitespace-nowrap`}
+              className={`${baseClass} whitespace-nowrap`}
+              style={isActive(view) ? activeTabStyle : inactiveTabStyle}
               onClick={() => handleViewChange(view)}
               data-testid={testId}
             >
@@ -136,7 +146,8 @@ export function CommunitiesViewToggle({ activeView }: CommunitiesViewToggleProps
         <button
           type="button"
           onClick={() => scroll("right")}
-          className={`${arrowClass} right-0 rounded-r-lg bg-gradient-to-l from-zinc-100 via-zinc-100 to-transparent dark:from-zinc-800 dark:via-zinc-800`}
+          className={`${arrowClass} right-0 rounded-r-lg`}
+          style={{ color: "var(--profile-text, #18181b)" }}
           aria-label="Scroll tabs right"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">

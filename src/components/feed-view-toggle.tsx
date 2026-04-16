@@ -7,10 +7,19 @@ interface FeedViewToggleProps {
   onViewChange: (view: FeedView) => void;
 }
 
+const activeStyle: React.CSSProperties = {
+  color: "var(--profile-bg, #fff)",
+  backgroundColor: "var(--profile-text, #18181b)",
+  boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+};
+
+const inactiveStyle: React.CSSProperties = {
+  color: "var(--profile-text, #18181b)",
+  backgroundColor: "color-mix(in srgb, var(--profile-secondary, #71717a) 15%, transparent)",
+};
+
 export function FeedViewToggle({ activeView, onViewChange }: FeedViewToggleProps) {
   const baseClass = "flex-1 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all text-center";
-  const activeClass = "bg-fuchsia-600 text-white shadow-md dark:bg-fuchsia-500";
-  const inactiveClass = "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-800 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-200";
 
   return (
     <div
@@ -22,7 +31,8 @@ export function FeedViewToggle({ activeView, onViewChange }: FeedViewToggleProps
         type="button"
         role="tab"
         aria-selected={activeView === "posts"}
-        className={`${baseClass} ${activeView === "posts" ? activeClass : inactiveClass}`}
+        className={baseClass}
+        style={activeView === "posts" ? activeStyle : inactiveStyle}
         onClick={() => onViewChange("posts")}
         data-testid="feed-view-posts"
       >
@@ -37,7 +47,8 @@ export function FeedViewToggle({ activeView, onViewChange }: FeedViewToggleProps
         type="button"
         role="tab"
         aria-selected={activeView === "media"}
-        className={`${baseClass} ${activeView === "media" ? activeClass : inactiveClass}`}
+        className={baseClass}
+        style={activeView === "media" ? activeStyle : inactiveStyle}
         onClick={() => onViewChange("media")}
         data-testid="feed-view-media"
       >

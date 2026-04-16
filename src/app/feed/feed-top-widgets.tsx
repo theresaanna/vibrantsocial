@@ -46,7 +46,7 @@ export async function FeedTopWidgets({ userId }: { userId: string }) {
                 href="/communities/chatrooms"
                 className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
               >
-                <span className="text-fuchsia-500">#</span>
+                <span style={{ color: "var(--profile-link, #2563eb)" }}>#</span>
                 General Chat
               </Link>
             </li>

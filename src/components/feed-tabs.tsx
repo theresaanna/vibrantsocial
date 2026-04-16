@@ -8,6 +8,17 @@ interface ListTab {
   ownerUsername?: string | null;
 }
 
+const activeStyle: React.CSSProperties = {
+  color: "var(--profile-bg, #fff)",
+  backgroundColor: "var(--profile-text, #18181b)",
+  boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+};
+
+const inactiveStyle: React.CSSProperties = {
+  color: "var(--profile-text, #18181b)",
+  backgroundColor: "color-mix(in srgb, var(--profile-secondary, #71717a) 15%, transparent)",
+};
+
 export function FeedTabs({ lists, activeListId, activeListInfo, hasCustomTheme = false }: {
   lists: ListTab[];
   activeListId?: string;
@@ -15,28 +26,6 @@ export function FeedTabs({ lists, activeListId, activeListInfo, hasCustomTheme =
   hasCustomTheme?: boolean;
 }) {
   const baseClass = "shrink-0 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all";
-
-  const activeClass = hasCustomTheme
-    ? ""
-    : "bg-fuchsia-600 text-white shadow-md dark:bg-fuchsia-500";
-
-  const inactiveClass = hasCustomTheme
-    ? "opacity-60 hover:opacity-100"
-    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-800 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-200";
-
-  const tabStyle = (isActive: boolean): React.CSSProperties | undefined => {
-    if (!hasCustomTheme) return undefined;
-    return isActive
-      ? {
-          color: "var(--profile-bg, #fff)",
-          backgroundColor: "var(--profile-text, #18181b)",
-          boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
-        }
-      : {
-          color: "var(--profile-text)",
-          backgroundColor: "color-mix(in srgb, var(--profile-secondary) 15%, transparent)",
-        };
-  };
 
   // If the active list isn't in the tabs (viewing someone else's unsubscribed list), show it
   const showActiveAsExtra = activeListId && activeListInfo && !lists.some((l) => l.id === activeListId);
@@ -53,8 +42,8 @@ export function FeedTabs({ lists, activeListId, activeListInfo, hasCustomTheme =
       <Link
         href="/feed"
         prefetch={false}
-        className={`${baseClass} ${!activeListId ? activeClass : inactiveClass}`}
-        style={tabStyle(!activeListId)}
+        className={baseClass}
+        style={!activeListId ? activeStyle : inactiveStyle}
       >
         <span className="inline-flex items-center gap-1.5">
           <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -66,8 +55,8 @@ export function FeedTabs({ lists, activeListId, activeListInfo, hasCustomTheme =
       <Link
         href="/feed?list=for-you"
         prefetch={false}
-        className={`${baseClass} ${activeListId === "for-you" ? activeClass : inactiveClass}`}
-        style={tabStyle(activeListId === "for-you")}
+        className={baseClass}
+        style={activeListId === "for-you" ? activeStyle : inactiveStyle}
       >
         <span className="inline-flex items-center gap-1.5">
           <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -79,8 +68,8 @@ export function FeedTabs({ lists, activeListId, activeListInfo, hasCustomTheme =
       <Link
         href="/feed?list=close-friends"
         prefetch={false}
-        className={`${baseClass} ${activeListId === "close-friends" ? activeClass : inactiveClass}`}
-        style={tabStyle(activeListId === "close-friends")}
+        className={baseClass}
+        style={activeListId === "close-friends" ? activeStyle : inactiveStyle}
       >
         <span className="inline-flex items-center gap-1.5">
           <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -92,8 +81,8 @@ export function FeedTabs({ lists, activeListId, activeListInfo, hasCustomTheme =
       <Link
         href="/feed?list=likes"
         prefetch={false}
-        className={`${baseClass} ${activeListId === "likes" ? activeClass : inactiveClass}`}
-        style={tabStyle(activeListId === "likes")}
+        className={baseClass}
+        style={activeListId === "likes" ? activeStyle : inactiveStyle}
       >
         <span className="inline-flex items-center gap-1.5">
           <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -105,8 +94,8 @@ export function FeedTabs({ lists, activeListId, activeListInfo, hasCustomTheme =
       <Link
         href="/feed?list=bookmarks"
         prefetch={false}
-        className={`${baseClass} ${activeListId === "bookmarks" ? activeClass : inactiveClass}`}
-        style={tabStyle(activeListId === "bookmarks")}
+        className={baseClass}
+        style={activeListId === "bookmarks" ? activeStyle : inactiveStyle}
       >
         <span className="inline-flex items-center gap-1.5">
           <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -120,8 +109,8 @@ export function FeedTabs({ lists, activeListId, activeListInfo, hasCustomTheme =
           key={list.id}
           href={`/feed?list=${list.id}`}
           prefetch={false}
-          className={`${baseClass} ${activeListId === list.id ? activeClass : inactiveClass}`}
-          style={tabStyle(activeListId === list.id)}
+          className={baseClass}
+          style={activeListId === list.id ? activeStyle : inactiveStyle}
         >
           <span className="inline-flex items-center gap-1.5">
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -134,8 +123,8 @@ export function FeedTabs({ lists, activeListId, activeListInfo, hasCustomTheme =
       {showActiveAsExtra && (
         <Link
           href={`/feed?list=${activeListInfo.id}`}
-          className={`${baseClass} ${activeClass}`}
-          style={tabStyle(true)}
+          className={baseClass}
+          style={activeStyle}
         >
           <span className="inline-flex items-center gap-1.5">
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -147,8 +136,8 @@ export function FeedTabs({ lists, activeListId, activeListInfo, hasCustomTheme =
       )}
       <Link
         href="/lists"
-        className={`${baseClass} ${inactiveClass}`}
-        style={tabStyle(false)}
+        className={baseClass}
+        style={inactiveStyle}
         title="Manage lists"
       >
         +
