@@ -47,7 +47,7 @@ export default async function ChatRoomPage() {
           </div>
         </div>
 
-        <CommunitiesViewToggle activeView="chatrooms" />
+        <CommunitiesViewToggle activeView="chatrooms" hasCustomTheme={profileTheme.hasCustomTheme} />
 
         <div className="flex min-h-0 flex-1 flex-col">
           <ChatRoomClient
