@@ -111,6 +111,7 @@ interface PostCardProps {
   };
   commentSubscribed?: boolean;
   commentEmailEnabled?: boolean;
+  embedded?: boolean;
 }
 
 export const PostCard = memo(function PostCard({
@@ -136,6 +137,7 @@ export const PostCard = memo(function PostCard({
   digitalFileData,
   commentSubscribed: initialCommentSubscribed = false,
   commentEmailEnabled: initialCommentEmailEnabled = true,
+  embedded = false,
 }: PostCardProps) {
   const [showComments, setShowComments] = useState(defaultShowComments);
   const [commentCount, setCommentCount] = useCommentCount(post.id, post._count.comments);
@@ -236,7 +238,7 @@ export const PostCard = memo(function PostCard({
 
   if (post.isAuthorDeleted) {
     return (
-      <div className="rounded-2xl bg-white shadow-lg dark:bg-zinc-900" data-testid="deleted-user-post">
+      <div className={embedded ? "" : "rounded-2xl bg-white shadow-lg dark:bg-zinc-900"} data-testid="deleted-user-post">
         <div className="flex items-center justify-center px-4 py-8">
           <p className="text-sm text-zinc-400 dark:text-zinc-500">
             This post is from a user who deleted their account
@@ -318,7 +320,7 @@ export const PostCard = memo(function PostCard({
   }
 
   return (
-    <div className={`rounded-2xl bg-white shadow-lg dark:bg-zinc-900${showMenu ? " relative z-[100] overflow-visible" : ""}`} data-testid="post-card">
+    <div className={`${embedded ? "" : "rounded-2xl bg-white shadow-lg dark:bg-zinc-900"}${showMenu ? " relative z-[100] overflow-visible" : ""}`} data-testid="post-card">
       {/* Pinned indicator */}
       {isPinned && showPinnedIndicator && (
         <div
