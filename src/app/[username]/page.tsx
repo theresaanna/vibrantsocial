@@ -629,14 +629,14 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             className={`mb-4 rounded-xl border p-3 ${hasCustomTheme ? "profile-container" : "border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900"}`}
           >
             <div className="flex items-center justify-between">
-              <span className={`text-xs font-medium ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500 dark:text-zinc-400"}`}>
+              <span className={`text-sm font-medium ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500 dark:text-zinc-400"}`}>
                 Recent status
               </span>
-              <span className={`text-[10px] ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-400 dark:text-zinc-500"}`}>
+              <span className={`text-xs ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-400 dark:text-zinc-500"}`}>
                 {timeAgo(latestStatus.createdAt)}
               </span>
             </div>
-            <p className={`mt-1 text-sm ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+            <p className={`mt-1 text-base ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
               {latestStatus.content}
             </p>
           </div>

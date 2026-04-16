@@ -626,7 +626,7 @@ function ChatRoomClientInner({
                 onClick={isMod ? () => { setEditingStatus(true); setStatusDraft(roomStatus || ""); } : undefined}
                 title={isMod ? "Click to edit status" : undefined}
               >
-                {roomStatus || "Public lobby \u2014 everyone can chat here"}
+                {roomStatus || "Public lounge \u2014 everyone can chat here"}
                 {isMod && !roomStatus && (
                   <span className="ml-1 text-zinc-400">(click to set status)</span>
                 )}

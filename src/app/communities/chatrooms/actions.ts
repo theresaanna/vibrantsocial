@@ -82,7 +82,7 @@ async function getOrCreateRoom(slug: string) {
     });
     if (!owner) throw new Error("Default room owner (theresa) not found");
     room = await prisma.chatRoom.create({
-      data: { slug, name: slug === "lobby" ? "Lobby" : slug, ownerId: owner.id },
+      data: { slug, name: slug === "lobby" ? "Lounge" : slug, ownerId: owner.id },
     });
   }
   return room;

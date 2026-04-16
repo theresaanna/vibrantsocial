@@ -88,7 +88,7 @@ import {
 const mockAuth = vi.mocked(auth);
 const mockPrisma = vi.mocked(prisma);
 
-const ROOM = { id: "room1", slug: "lobby", name: "Lobby", status: null, ownerId: "owner1", createdAt: new Date(), updatedAt: new Date() };
+const ROOM = { id: "room1", slug: "lobby", name: "Lounge", status: null, ownerId: "owner1", createdAt: new Date(), updatedAt: new Date() };
 const SENDER = { id: "u1", username: "alice", displayName: "Alice", name: null, avatar: null, image: null, profileFrameId: null, usernameFont: null };
 
 function setupRoom() {
