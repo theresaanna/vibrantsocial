@@ -17,7 +17,7 @@ const VIEW_ROUTES: Record<CommunitiesView, string> = {
   discussions: "/communities?view=discussions",
   newcomers: "/communities?view=newcomers",
   spotlight: "/communities?view=spotlight",
-  "user-lists": "/communities?view=user-lists",
+  "user-lists": "/lists?view=everyone",
   chatrooms: "/communities/chatrooms",
 };
 
@@ -112,7 +112,7 @@ export function CommunitiesViewToggle({ activeView, hasCustomTheme }: Communitie
         style={{ scrollbarWidth: "none" }}
       >
         {TABS.map(({ view, label, testId }) =>
-          view === "chatrooms" ? (
+          view === "chatrooms" || view === "user-lists" ? (
             <Link
               key={view}
               href={VIEW_ROUTES[view]}
