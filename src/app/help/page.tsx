@@ -41,6 +41,24 @@ export default async function HelpPage() {
         to get in touch with the team.
       </p>
 
+      <p className="mt-4 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+        You can also message{" "}
+        <Link
+          href="/theresa"
+          className="font-medium text-purple-600 underline underline-offset-2 hover:text-purple-500 dark:text-purple-400 dark:hover:text-purple-300"
+        >
+          @theresa
+        </Link>{" "}
+        for assistance, or e-mail{" "}
+        <a
+          href="mailto:support@vibrantsocial.app"
+          className="font-medium text-purple-600 underline underline-offset-2 hover:text-purple-500 dark:text-purple-400 dark:hover:text-purple-300"
+        >
+          support@vibrantsocial.app
+        </a>{" "}
+        directly.
+      </p>
+
       <h2 className="mt-10 text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
         Policies
       </h2>
