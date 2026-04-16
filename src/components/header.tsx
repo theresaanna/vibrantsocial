@@ -28,7 +28,7 @@ function HeaderAuthSkeleton() {
 export function Header() {
   return (
     <header className="relative z-50 border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
-      <nav className="mx-auto flex max-w-3xl items-center gap-2 px-2 py-3 sm:px-4">
+      <nav className="mx-auto flex max-w-3xl flex-wrap items-center gap-2 px-2 py-3 sm:flex-nowrap sm:px-4">
         {/* Logo — heart icon on mobile, full wordmark on sm+ */}
         <Link href="/" className="shrink-0">
           <Image

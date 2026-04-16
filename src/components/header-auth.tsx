@@ -49,7 +49,7 @@ export async function HeaderAuth() {
   ]);
 
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-1 sm:flex-nowrap">
+    <div className="contents sm:flex sm:shrink-0 sm:items-center sm:gap-1">
       {/* Nav links — renders two groups with a mobile line-break between them */}
       <NavLinks username={session.user.username} />
 
