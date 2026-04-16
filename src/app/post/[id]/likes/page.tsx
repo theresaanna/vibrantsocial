@@ -34,6 +34,7 @@ const USER_SELECT = {
   image: true,
   profileFrameId: true,
   usernameFont: true,
+  ageVerified: true,
 };
 
 export default async function PostLikesPage({ params }: Props) {
