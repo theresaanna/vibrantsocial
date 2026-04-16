@@ -61,7 +61,7 @@ export default async function CommunitiesPage({ searchParams }: CommunitiesPageP
         </div>
       </div>
 
-      <CommunitiesViewToggle activeView={activeView} />
+      <CommunitiesViewToggle activeView={activeView} hasCustomTheme={theme.hasCustomTheme} />
 
       {activeView === "media" ? (
         <Suspense

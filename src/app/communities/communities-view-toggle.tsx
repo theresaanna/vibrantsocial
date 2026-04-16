@@ -8,6 +8,7 @@ export type CommunitiesView = "tags" | "media" | "discussions" | "newcomers" | "
 
 interface CommunitiesViewToggleProps {
   activeView: CommunitiesView;
+  hasCustomTheme?: boolean;
 }
 
 const VIEW_ROUTES: Record<CommunitiesView, string> = {
@@ -28,7 +29,7 @@ const TABS: { view: CommunitiesView; label: string; testId: string }[] = [
   { view: "chatrooms", label: "Chat Rooms", testId: "communities-view-chatrooms" },
 ];
 
-export function CommunitiesViewToggle({ activeView }: CommunitiesViewToggleProps) {
+export function CommunitiesViewToggle({ activeView, hasCustomTheme }: CommunitiesViewToggleProps) {
   const router = useRouter();
   const pathname = usePathname();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -88,7 +89,7 @@ export function CommunitiesViewToggle({ activeView }: CommunitiesViewToggleProps
     "absolute top-0 bottom-0 z-10 flex w-7 items-center justify-center";
 
   return (
-    <div className="relative mb-4 rounded-xl bg-zinc-100 p-2 dark:bg-zinc-800">
+    <div className={`relative mb-4 rounded-xl p-2 ${hasCustomTheme ? "profile-tabs-bar" : "bg-zinc-100 dark:bg-zinc-800"}`}>
       {canScrollLeft && (
         <button
           type="button"
