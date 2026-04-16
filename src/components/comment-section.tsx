@@ -526,9 +526,10 @@ function CommentItem({
     <div
       className={`group/comment flex gap-2 ${
         isHighlighted
-          ? "-mx-2 rounded-lg bg-blue-50 px-2 py-1.5 dark:bg-blue-950/30"
+          ? "-mx-2 rounded-lg px-2 py-1.5"
           : ""
       }`}
+      style={isHighlighted ? { backgroundColor: "color-mix(in srgb, var(--profile-link, #2563eb) 12%, transparent)" } : undefined}
     >
       <FramedAvatar src={avatarSrc} initial={authorName[0].toUpperCase()} size={30} frameId={comment.author.profileFrameId} referrerPolicy="no-referrer" />
       <div className="min-w-0 flex-1">
