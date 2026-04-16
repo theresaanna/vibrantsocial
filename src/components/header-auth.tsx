@@ -53,8 +53,8 @@ export async function HeaderAuth() {
       {/* Nav links — renders two groups with a mobile line-break between them */}
       <NavLinks username={session.user.username} />
 
-      {/* Action icons — order-1 keeps them on row 1 with the first nav group on mobile */}
-      <div className="order-1 flex items-center gap-1 sm:order-none">
+      {/* Action icons — default order keeps them on row 1 before the nav line-break */}
+      <div className="flex items-center gap-1">
         <DynamicFavicon
           initialNotifCount={unreadNotifications}
           initialChatCount={conversations.reduce(
