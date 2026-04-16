@@ -746,6 +746,22 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                     <ProfileShareButton username={user.username!} hasCustomTheme={hasCustomTheme} />
                   </div>
                 )}
+                {currentUserId && !isOwnProfile && blockStatus === "none" && (
+                  <div className="flex shrink-0 items-center gap-2">
+                    <ProfileActionsDropdown
+                      userId={user.id}
+                      isFollowing={isFollowing}
+                      friendshipStatus={friendshipStatus}
+                      friendRequestId={friendRequestId}
+                      isSubscribed={isSubscribed}
+                      isFriend={isFriend}
+                      isCloseFriend={viewerIsCloseFriend}
+                      chatRequestStatus={chatRequestStatus}
+                    />
+                    <AddToListButton targetUserId={user.id} lists={listMemberships} />
+                    <ProfileShareButton username={user.username!} hasCustomTheme={hasCustomTheme} />
+                  </div>
+                )}
               </div>
 
               {blockStatus === "blocked_by_me" && (
@@ -765,24 +781,6 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
               )}
             </div>
           </div>
-
-          {/* Actions row — dropdown + add to list + share (other users only) */}
-          {currentUserId && !isOwnProfile && blockStatus === "none" && (
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <ProfileActionsDropdown
-                userId={user.id}
-                isFollowing={isFollowing}
-                friendshipStatus={friendshipStatus}
-                friendRequestId={friendRequestId}
-                isSubscribed={isSubscribed}
-                isFriend={isFriend}
-                isCloseFriend={viewerIsCloseFriend}
-                chatRequestStatus={chatRequestStatus}
-              />
-              <AddToListButton targetUserId={user.id} lists={listMemberships} />
-              <ProfileShareButton username={user.username!} hasCustomTheme={hasCustomTheme} />
-            </div>
-          )}
 
           {/* Counts — below actions */}
           {blockStatus === "none" && <div className="mt-3 flex flex-wrap gap-4 text-sm">
