@@ -88,7 +88,7 @@ export function CommunitiesViewToggle({ activeView }: CommunitiesViewToggleProps
     "absolute top-0 bottom-0 z-10 flex w-7 items-center justify-center";
 
   return (
-    <div className="relative mb-4">
+    <div className="relative mb-4 rounded-xl bg-zinc-100 p-2 dark:bg-zinc-800">
       {canScrollLeft && (
         <button
           type="button"
