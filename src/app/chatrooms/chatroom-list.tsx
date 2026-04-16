@@ -11,26 +11,9 @@ export async function ChatRoomList() {
 
   const rooms = await listChatRooms(prefs?.showNsfwContent ?? false);
 
-  /* Always show Lounge, even if it hasn't been created in the DB yet */
-  const hasLounge = rooms.some((r) => r.slug === "lounge");
-  const displayed = hasLounge
-    ? rooms
-    : [
-        {
-          id: "default-lounge",
-          slug: "lounge",
-          name: "Lounge",
-          status: null,
-          isNsfw: false,
-          messageCount: 0,
-          lastMessageAt: null,
-        },
-        ...rooms,
-      ];
-
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      {displayed.map((room) => (
+      {rooms.map((room) => (
         <Link
           key={room.id}
           href={`/chatrooms/${room.slug}`}
@@ -122,7 +105,7 @@ export async function ChatRoomList() {
         </Link>
       ))}
 
-      {displayed.length === 0 && (
+      {rooms.length === 0 && (
         <p className="col-span-full py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
           No chat rooms yet. Check back soon!
         </p>
