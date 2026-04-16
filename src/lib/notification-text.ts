@@ -27,7 +27,7 @@ export function getNotificationText(type: NotificationType): string {
     case "TAG_POST":
       return "posted in a tag you follow";
     case "CONTENT_MODERATION":
-      return "Your post was flagged for unmarked adult content. A strike has been recorded.";
+      return "Please be sure to mark your posts NSFW or Explicit/Graphic if needed. We have put a content warning on one of your posts. Please help us keep our community safe for all. Thank you";
     case "REFERRAL_SIGNUP":
       return "joined using your referral link! You earned 50 stars.";
     case "STARS_MILESTONE":

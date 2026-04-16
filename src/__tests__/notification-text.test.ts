@@ -19,7 +19,7 @@ const NOTIFICATION_CASES: [string, string][] = [
   ["FRIEND_REQUEST_ACCEPTED", "accepted your friend request"],
   ["NEW_POST", "published a new post"],
   ["TAG_POST", "posted in a tag you follow"],
-  ["CONTENT_MODERATION", "Your post was flagged for unmarked adult content. A strike has been recorded."],
+  ["CONTENT_MODERATION", "Please be sure to mark your posts NSFW or Explicit/Graphic if needed. We have put a content warning on one of your posts. Please help us keep our community safe for all. Thank you"],
   ["REFERRAL_SIGNUP", "joined using your referral link! You earned 50 stars."],
   ["STARS_MILESTONE", "You have 500+ stars! Redeem them for a free month of premium."],
   ["LIST_ADD", "added you to a list"],
@@ -67,8 +67,7 @@ describe("getNotificationText", () => {
   describe("system notification types", () => {
     it("returns descriptive text for moderation", () => {
       const text = getNotificationText("CONTENT_MODERATION" as any);
-      expect(text).toContain("flagged");
-      expect(text).toContain("strike");
+      expect(text).toContain("content warning");
     });
 
     it("returns descriptive text for referral signup", () => {
