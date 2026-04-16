@@ -5,9 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { cached, cacheKeys } from "@/lib/cache";
 import Link from "next/link";
 import { PostCard } from "@/components/post-card";
-import { FollowButton } from "@/components/follow-button";
-import { FriendButton } from "@/components/friend-button";
-import { SubscribeButton } from "@/components/subscribe-button";
+import { ProfileActionsDropdown } from "@/components/profile-actions-dropdown";
 import { getFriendshipStatus, getFriendsCount } from "@/app/feed/friend-actions";
 import type { FriendshipStatus } from "@/app/feed/friend-actions";
 import { isSubscribedToUser } from "@/app/feed/subscription-actions";
@@ -18,8 +16,6 @@ import { ProfileTabs } from "@/components/profile-tabs";
 import { RepostCard } from "@/components/repost-card";
 import { ReportButton } from "@/components/report-button";
 import { BlockButton } from "@/components/block-button";
-import { MessageButton } from "@/components/message-button";
-import { ChatRequestButton } from "@/components/chat-request-button";
 import { getChatRequestStatus, type ChatRequestStatus } from "@/app/chat/actions";
 import { deriveBlockStatus } from "@/app/feed/block-actions";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
@@ -41,7 +37,6 @@ import { getUserPrefs } from "@/lib/user-prefs";
 import { getUserStatusHistory } from "@/app/feed/status-actions";
 import { timeAgo } from "@/lib/time";
 import { isCloseFriend as checkIsCloseFriend } from "@/app/feed/close-friends-actions";
-import { CloseFriendButton } from "@/components/close-friend-button";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
@@ -650,9 +645,12 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
           </div>
         )}
 
-        {currentUserId && isFriend && !isOwnProfile && blockStatus === "none" && (
-          <div className="mb-4 flex justify-end">
-            <CloseFriendButton userId={user.id} isCloseFriend={viewerIsCloseFriend} hasCustomTheme={hasCustomTheme} />
+        {blockStatus === "none" && userHasBirthday && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg bg-gradient-to-r from-pink-50 to-purple-50 px-3 py-2 dark:from-pink-950/30 dark:to-purple-950/30" data-testid="birthday-banner">
+            <span className="text-lg">🎂</span>
+            <p className="text-sm font-medium text-pink-700 dark:text-pink-300">
+              Happy birthday, {displayName}!
+            </p>
           </div>
         )}
 
@@ -666,6 +664,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             </div>
           )}
 
+          {/* Avatar + name row */}
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start sm:gap-4">
             <FramedAvatar
               src={blockStatus === "none" ? avatarSrc : undefined}
@@ -677,78 +676,76 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
             />
 
             <div className="min-w-0 w-full sm:flex-1">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <h1
-                      className={`text-xl font-bold ${hasCustomTheme && blockStatus === "none" ? "" : "text-zinc-900 dark:text-zinc-100"}`}
-                      data-testid="profile-display-name"
-                    >
-                      {blockStatus === "none" ? (
-                        <span className="inline-flex items-center gap-1.5">
-                          <StyledName fontId={user.usernameFont}>{displayName}</StyledName>
-                          {user.tier === "premium" && (
-                            <Link href="/premium" title="Premium member" className="relative inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 shadow-sm">
-                              <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round">
-                                <path d="M12 5v14M5 12h14" />
-                              </svg>
-                            </Link>
-                          )}
-                        </span>
-                      ) : (
-                        <span className="text-zinc-400 dark:text-zinc-500">@{user.username}</span>
-                      )}
-                    </h1>
-                    {blockStatus === "none" && <div className="flex items-center gap-2">
-                      <p className={`text-sm ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
-                        @{user.username}
-                      </p>
-                      {user.linksPageEnabled && blockStatus === "none" && (
-                        <a
-                          href={`https://links.vibrantsocial.app/${user.username}`}
-                          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors ${
-                            hasCustomTheme
-                              ? "profile-text-secondary"
-                              : "border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:text-zinc-700 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-zinc-300"
-                          }`}
-                          style={
-                            hasCustomTheme
-                              ? ({ borderColor: "var(--profile-secondary)" } as React.CSSProperties)
-                              : undefined
-                          }
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3">
-                            <path fillRule="evenodd" d="M8.914 6.025a.75.75 0 0 1 1.06 0 3.5 3.5 0 0 1 0 4.95l-2 2a3.5 3.5 0 0 1-5.396-4.402.75.75 0 0 1 1.251.827 2 2 0 0 0 2.632 2.989l.07-.036.039-.02 2-2a2 2 0 0 0 0-2.828.75.75 0 0 1-.656-1.48Zm-1.828 3.95a.75.75 0 0 1-1.06 0 3.5 3.5 0 0 1 0-4.95l2-2a3.5 3.5 0 0 1 5.396 4.402.75.75 0 0 1-1.251-.827 2 2 0 0 0-2.632-2.989l-.07.036-.039.02-2 2a2 2 0 0 0 0 2.828.75.75 0 0 1 .656 1.48Z" clipRule="evenodd" />
-                          </svg>
-                          Links
-                        </a>
-                      )}
-                    </div>}
-                  </div>
-                  {isOwnProfile && (
-                    <div className="flex shrink-0 items-center gap-2">
-                      <Link
-                        href="/profile"
-                        className={`rounded-full border px-4 py-1.5 text-sm font-semibold whitespace-nowrap transition-all ${
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h1
+                    className={`text-xl font-bold ${hasCustomTheme && blockStatus === "none" ? "" : "text-zinc-900 dark:text-zinc-100"}`}
+                    data-testid="profile-display-name"
+                  >
+                    {blockStatus === "none" ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <StyledName fontId={user.usernameFont}>{displayName}</StyledName>
+                        {user.tier === "premium" && (
+                          <Link href="/premium" title="Premium member" className="relative inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 shadow-sm">
+                            <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round">
+                              <path d="M12 5v14M5 12h14" />
+                            </svg>
+                          </Link>
+                        )}
+                      </span>
+                    ) : (
+                      <span className="text-zinc-400 dark:text-zinc-500">@{user.username}</span>
+                    )}
+                  </h1>
+                  {blockStatus === "none" && <div className="flex items-center gap-2">
+                    <p className={`text-sm ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
+                      @{user.username}
+                    </p>
+                    {user.linksPageEnabled && (
+                      <a
+                        href={`https://links.vibrantsocial.app/${user.username}`}
+                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors ${
                           hasCustomTheme
-                            ? "profile-share-btn"
-                            : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-600 dark:bg-transparent dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-200"
+                            ? "profile-text-secondary"
+                            : "border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:text-zinc-700 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-zinc-300"
                         }`}
                         style={
                           hasCustomTheme
-                            ? ({
-                                borderColor: "var(--profile-secondary)",
-                                color: "var(--profile-text)",
-                              } as React.CSSProperties)
+                            ? ({ borderColor: "var(--profile-secondary)" } as React.CSSProperties)
                             : undefined
                         }
                       >
-                        Edit Profile
-                      </Link>
-                      <ProfileShareButton username={user.username!} hasCustomTheme={hasCustomTheme} />
-                    </div>
-                  )}
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3">
+                          <path fillRule="evenodd" d="M8.914 6.025a.75.75 0 0 1 1.06 0 3.5 3.5 0 0 1 0 4.95l-2 2a3.5 3.5 0 0 1-5.396-4.402.75.75 0 0 1 1.251.827 2 2 0 0 0 2.632 2.989l.07-.036.039-.02 2-2a2 2 0 0 0 0-2.828.75.75 0 0 1-.656-1.48Zm-1.828 3.95a.75.75 0 0 1-1.06 0 3.5 3.5 0 0 1 0-4.95l2-2a3.5 3.5 0 0 1 5.396 4.402.75.75 0 0 1-1.251-.827 2 2 0 0 0-2.632-2.989l-.07.036-.039.02-2 2a2 2 0 0 0 0 2.828.75.75 0 0 1 .656 1.48Z" clipRule="evenodd" />
+                        </svg>
+                        Links
+                      </a>
+                    )}
+                  </div>}
                 </div>
+                {isOwnProfile && (
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Link
+                      href="/profile"
+                      className={`rounded-full border px-4 py-1.5 text-sm font-semibold whitespace-nowrap transition-all ${
+                        hasCustomTheme
+                          ? "profile-share-btn"
+                          : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-600 dark:bg-transparent dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-200"
+                      }`}
+                      style={
+                        hasCustomTheme
+                          ? ({
+                              borderColor: "var(--profile-secondary)",
+                              color: "var(--profile-text)",
+                            } as React.CSSProperties)
+                          : undefined
+                      }
+                    >
+                      Edit Profile
+                    </Link>
+                    <ProfileShareButton username={user.username!} hasCustomTheme={hasCustomTheme} />
+                  </div>
+                )}
               </div>
 
               {blockStatus === "blocked_by_me" && (
@@ -766,91 +763,90 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                   </p>
                 </div>
               )}
-
-              {blockStatus === "none" && user.bio && (
-                <div className="mt-2">
-                  <BioContent content={user.bio} />
-                </div>
-              )}
-
-              {blockStatus === "none" && userHasBirthday && (
-                <div className="mt-3 flex items-center gap-2 rounded-lg bg-gradient-to-r from-pink-50 to-purple-50 px-3 py-2 dark:from-pink-950/30 dark:to-purple-950/30" data-testid="birthday-banner">
-                  <span className="text-lg">🎂</span>
-                  <p className="text-sm font-medium text-pink-700 dark:text-pink-300">
-                    Happy birthday, {displayName}!
-                  </p>
-                </div>
-              )}
-
-              {blockStatus === "none" && <div className="mt-3 flex gap-4 text-sm">
-                <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
-                  <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
-                    {user._count.posts}
-                  </span>{" "}
-                  posts
-                </span>
-                {currentUserId ? (
-                  <Link href={`/${user.username}/followers`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
-                    <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
-                      {user._count.followers}
-                    </span>{" "}
-                    followers
-                  </Link>
-                ) : (
-                  <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
-                    <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
-                      {user._count.followers}
-                    </span>{" "}
-                    followers
-                  </span>
-                )}
-                {isOwnProfile && (
-                  <Link href={`/${user.username}/following`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
-                    <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
-                      {user._count.following}
-                    </span>{" "}
-                    following
-                  </Link>
-                )}
-                {currentUserId ? (
-                  <Link href={`/${user.username}/friends`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
-                    <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
-                      {friendsCount}
-                    </span>{" "}
-                    friends
-                  </Link>
-                ) : (
-                  <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
-                    <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
-                      {friendsCount}
-                    </span>{" "}
-                    friends
-                  </span>
-                )}
-                {user._count.userLists > 0 && (
-                  <Link href={`/${user.username}/lists`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
-                    <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
-                      {user._count.userLists}
-                    </span>{" "}
-                    {user._count.userLists === 1 ? "list" : "lists"}
-                  </Link>
-                )}
-              </div>}
             </div>
           </div>
 
-          {/* Action buttons — below bio, right-aligned (other users only) */}
+          {/* Actions row — dropdown + add to list + share (other users only) */}
           {currentUserId && !isOwnProfile && blockStatus === "none" && (
-            <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
-              <FollowButton userId={user.id} isFollowing={isFollowing} />
-              <FriendButton userId={user.id} friendshipStatus={friendshipStatus} requestId={friendRequestId} />
-              {isFriend && <MessageButton userId={user.id} hasCustomTheme={hasCustomTheme} />}
-              {!isFriend && <ChatRequestButton userId={user.id} initialStatus={chatRequestStatus} hasCustomTheme={hasCustomTheme} />}
-              <SubscribeButton userId={user.id} isSubscribed={isSubscribed} />
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <ProfileActionsDropdown
+                userId={user.id}
+                isFollowing={isFollowing}
+                friendshipStatus={friendshipStatus}
+                friendRequestId={friendRequestId}
+                isSubscribed={isSubscribed}
+                isFriend={isFriend}
+                isCloseFriend={viewerIsCloseFriend}
+                chatRequestStatus={chatRequestStatus}
+              />
               <AddToListButton targetUserId={user.id} lists={listMemberships} />
               <ProfileShareButton username={user.username!} hasCustomTheme={hasCustomTheme} />
             </div>
           )}
+
+          {/* Counts — below actions */}
+          {blockStatus === "none" && <div className="mt-3 flex flex-wrap gap-4 text-sm">
+            <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+              <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                {user._count.posts}
+              </span>{" "}
+              posts
+            </span>
+            {currentUserId ? (
+              <Link href={`/${user.username}/followers`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
+                <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                  {user._count.followers}
+                </span>{" "}
+                followers
+              </Link>
+            ) : (
+              <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                  {user._count.followers}
+                </span>{" "}
+                followers
+              </span>
+            )}
+            {isOwnProfile && (
+              <Link href={`/${user.username}/following`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
+                <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                  {user._count.following}
+                </span>{" "}
+                following
+              </Link>
+            )}
+            {currentUserId ? (
+              <Link href={`/${user.username}/friends`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
+                <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                  {friendsCount}
+                </span>{" "}
+                friends
+              </Link>
+            ) : (
+              <span className={hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}>
+                <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                  {friendsCount}
+                </span>{" "}
+                friends
+              </span>
+            )}
+            {user._count.userLists > 0 && (
+              <Link href={`/${user.username}/lists`} className={`hover:underline ${hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
+                <span className={`font-semibold ${hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
+                  {user._count.userLists}
+                </span>{" "}
+                {user._count.userLists === 1 ? "list" : "lists"}
+              </Link>
+            )}
+          </div>}
+
+          {/* Bio — full width below counts */}
+          {blockStatus === "none" && user.bio && (
+            <div className="mt-3">
+              <BioContent content={user.bio} />
+            </div>
+          )}
+
         </div>
 
         {blockStatus === "none" && (
