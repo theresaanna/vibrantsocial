@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import type { InboundMessage } from "ably";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { usePresence, usePresenceListener } from "ably/react";
+import { ChannelProvider, usePresence, usePresenceListener } from "ably/react";
 import { getAblyRealtimeClient } from "@/lib/ably";
 import { useAblyReady } from "@/app/providers";
 import { FramedAvatar } from "@/components/framed-avatar";
@@ -90,7 +90,16 @@ function ModIcon() {
 // Component
 // ---------------------------------------------------------------------------
 
-export function ChatRoomClient({
+export function ChatRoomClient(props: ChatRoomClientProps) {
+  const presenceChannel = roomPresenceChannel(props.room);
+  return (
+    <ChannelProvider channelName={presenceChannel}>
+      <ChatRoomClientInner {...props} />
+    </ChannelProvider>
+  );
+}
+
+function ChatRoomClientInner({
   initialMessages,
   currentUserId,
   room,
