@@ -12,11 +12,11 @@ interface CommunitiesViewToggleProps {
 }
 
 const VIEW_ROUTES: Record<CommunitiesView, string> = {
-  tags: "/communities",
-  media: "/communities?view=media",
-  discussions: "/communities?view=discussions",
-  newcomers: "/communities?view=newcomers",
-  spotlight: "/communities?view=spotlight",
+  tags: "/explore",
+  media: "/explore?view=media",
+  discussions: "/explore?view=discussions",
+  newcomers: "/explore?view=newcomers",
+  spotlight: "/explore?view=spotlight",
   "user-lists": "/lists?view=everyone",
   chatrooms: "/chatrooms",
 };
@@ -63,7 +63,7 @@ export function CommunitiesViewToggle({ activeView, hasCustomTheme }: Communitie
   };
 
   const isActive = (view: CommunitiesView) => {
-    if (view === "chatrooms") return pathname.startsWith("/communities/chatrooms");
+    if (view === "chatrooms") return pathname.startsWith("/explore/chatrooms");
     return activeView === view;
   };
 

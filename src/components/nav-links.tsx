@@ -100,8 +100,8 @@ export function NavLinks({ username }: { username?: string | null }) {
       ),
     },
     {
-      href: "/communities",
-      label: "Communities",
+      href: "/explore",
+      label: "Explore",
       matchPrefix: true,
       color: "hover:bg-fuchsia-50 hover:text-fuchsia-500 dark:hover:bg-fuchsia-900/20 dark:hover:text-fuchsia-500",
       activeColor: "bg-fuchsia-50 text-fuchsia-500 dark:bg-fuchsia-900/20 dark:text-fuchsia-500",
@@ -150,8 +150,8 @@ export function NavLinks({ username }: { username?: string | null }) {
   function isActive(link: NavLink) {
     if (link.matchPrefix) {
       if (pathname.startsWith(link.href)) return true;
-      // /tag/* pages should highlight the Communities nav link
-      if (link.href === "/communities" && pathname.startsWith("/tag/")) return true;
+      // /tag/* pages should highlight the Explore nav link
+      if (link.href === "/explore" && pathname.startsWith("/tag/")) return true;
       // /username/marketplace/* pages should highlight the Marketplace nav link
       if (link.href === "/marketplace" && pathname.includes("/marketplace/")) return true;
     }

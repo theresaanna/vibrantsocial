@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { FeedContent } from "./feed-content";
 import { ListFeedContent } from "./list-feed-content";
 import { CloseFriendsFeedContent } from "./close-friends-feed-content";
-import { ForYouFeedContent } from "./for-you-feed-content";
+
 import { LikesFeedContent } from "./likes-feed-content";
 import { BookmarksFeedContent } from "./bookmarks-feed-content";
 import { FeedSkeleton } from "@/components/feed-skeleton";
@@ -34,6 +34,10 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
   if (profileRedirect) redirect(profileRedirect);
 
   const { list: activeListId, view } = await searchParams;
+
+  // Random moved to /explore
+  if (activeListId === "for-you") redirect("/explore?view=random");
+
   const activeView = view === "media" ? "media" : "posts";
   const [ownedLists, subscribedLists, themeUser] = await Promise.all([
     getUserLists(),
@@ -61,7 +65,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
 
   // If viewing a list not in owned or subscribed, fetch its info for the tab
   const knownIds = new Set(allTabs.map((t) => t.id));
-  const isCustomList = activeListId && activeListId !== "for-you" && activeListId !== "close-friends" && activeListId !== "likes" && activeListId !== "bookmarks";
+  const isCustomList = activeListId && activeListId !== "close-friends" && activeListId !== "likes" && activeListId !== "bookmarks";
   const activeListInfo = isCustomList && !knownIds.has(activeListId)
     ? await getListInfo(activeListId)
     : null;
@@ -89,9 +93,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
         hasCustomTheme={theme?.hasCustomTheme ?? false}
       />
       <Suspense key={`${activeListId ?? "main-feed"}-${activeView}`} fallback={<FeedSkeleton />}>
-        {activeListId === "for-you" ? (
-          <ForYouFeedContent userId={session.user.id} />
-        ) : activeListId === "close-friends" ? (
+        {activeListId === "close-friends" ? (
           <CloseFriendsFeedContent userId={session.user.id} />
         ) : activeListId === "likes" ? (
           <LikesFeedContent userId={session.user.id} />

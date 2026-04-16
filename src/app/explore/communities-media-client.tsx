@@ -1,0 +1,40 @@
+"use client";
+
+import { useEffect, useState, useTransition, useCallback } from "react";
+import { MediaGrid, type MediaPost } from "@/components/media-grid";
+import { rpc } from "@/lib/rpc";
+
+export function CommunitiesMediaClient() {
+  const [posts, setPosts] = useState<MediaPost[] | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    startTransition(async () => {
+      const result = await rpc<{ posts: MediaPost[]; hasMore: boolean }>("fetchCommunitiesMediaPage");
+      setPosts(result.posts);
+      setHasMore(result.hasMore);
+    });
+  }, []);
+
+  const fetchPage = useCallback(
+    (cursor?: string) => rpc<{ posts: MediaPost[]; hasMore: boolean }>("fetchCommunitiesMediaPage", cursor),
+    [],
+  );
+
+  if (posts === null || isPending) {
+    return (
+      <div className="mt-6 flex justify-center py-8">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-600 dark:border-t-zinc-100" />
+      </div>
+    );
+  }
+
+  return (
+    <MediaGrid
+      initialPosts={posts}
+      initialHasMore={hasMore}
+      fetchPage={fetchPage}
+    />
+  );
+}

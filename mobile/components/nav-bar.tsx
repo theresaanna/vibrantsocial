@@ -127,7 +127,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: "bookmarks",    route: "/(stack)/bookmarks", label: "Bookmarks",    icon: BookmarkIcon,     activeColor: "#eab308", activeBg: "#eab30811" },
   { key: "lists",        route: "/(stack)/lists",     label: "Lists",        icon: ListIcon,         activeColor: "#6366f1", activeBg: "#6366f111", matchPrefix: true },
   { key: "marketplace",  route: "/(stack)/marketplace", label: "Market",    icon: MarketplaceIcon,  activeColor: "#ec4899", activeBg: "#ec489911", matchPrefix: true },
-  { key: "communities",  route: "/(stack)/communities", label: "Community", icon: CommunitiesIcon,  activeColor: "#d946ef", activeBg: "#d946ef11", matchPrefix: true },
+  { key: "explore",  route: "/(stack)/explore", label: "Explore", icon: CommunitiesIcon,  activeColor: "#d946ef", activeBg: "#d946ef11", matchPrefix: true },
   { key: "theme",        route: "/(stack)/theme",     label: "Theme",        icon: ThemeIcon,        activeColor: "#ec4899", activeBg: "#ec489911" },
   { key: "profile",      route: "/(tabs)/profile",    label: "Profile",      icon: ProfileIcon,      activeColor: "#f97316", activeBg: "#f9731611" },
 ];
