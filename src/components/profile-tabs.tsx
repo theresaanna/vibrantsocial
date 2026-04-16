@@ -14,46 +14,35 @@ interface ProfileTabsProps {
   showMarketplaceTab: boolean;
 }
 
+const activeTabStyle: React.CSSProperties = {
+  color: "var(--profile-bg, #fff)",
+  backgroundColor: "var(--profile-text, #18181b)",
+  boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+};
+
+const inactiveTabStyle: React.CSSProperties = {
+  color: "var(--profile-text, #18181b)",
+  backgroundColor: "color-mix(in srgb, var(--profile-secondary, #71717a) 15%, transparent)",
+};
+
 export function ProfileTabs({ username, activeTab, hasCustomTheme, showMediaTab, showWallTab, showSensitiveTab, showNsfwTab, showGraphicTab, showMarketplaceTab }: ProfileTabsProps) {
   const baseClass = "shrink-0 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all";
-
-  const activeClass = hasCustomTheme
-    ? ""
-    : "bg-fuchsia-600 text-white shadow-md dark:bg-fuchsia-500";
-
-  const inactiveClass = hasCustomTheme
-    ? "opacity-60 hover:opacity-100"
-    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-800 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-200";
-
-  const tabStyle = (isActive: boolean): React.CSSProperties | undefined => {
-    if (!hasCustomTheme) return undefined;
-    return isActive
-      ? {
-          color: "var(--profile-bg, #fff)",
-          backgroundColor: "var(--profile-text, #18181b)",
-          boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
-        }
-      : {
-          color: "var(--profile-text)",
-          backgroundColor: "color-mix(in srgb, var(--profile-secondary) 15%, transparent)",
-        };
-  };
 
   return (
     <div className="mt-6">
       <div className={`flex gap-2 overflow-x-auto${hasCustomTheme ? " profile-tabs-bar" : ""}`}>
         <Link
           href={`/${username}`}
-          className={`${baseClass} ${activeTab === "posts" ? activeClass : inactiveClass}`}
-          style={tabStyle(activeTab === "posts")}
+          className={baseClass}
+          style={activeTab === "posts" ? activeTabStyle : inactiveTabStyle}
         >
           Posts
         </Link>
         {showMediaTab && (
           <Link
             href={`/${username}?tab=media`}
-            className={`${baseClass} ${activeTab === "media" ? activeClass : inactiveClass}`}
-            style={tabStyle(activeTab === "media")}
+            className={baseClass}
+            style={activeTab === "media" ? activeTabStyle : inactiveTabStyle}
           >
             <span className="inline-flex items-center gap-1.5">
               <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -66,8 +55,8 @@ export function ProfileTabs({ username, activeTab, hasCustomTheme, showMediaTab,
         {showWallTab && (
           <Link
             href={`/${username}?tab=wall`}
-            className={`${baseClass} ${activeTab === "wall" ? activeClass : inactiveClass}`}
-            style={tabStyle(activeTab === "wall")}
+            className={baseClass}
+            style={activeTab === "wall" ? activeTabStyle : inactiveTabStyle}
           >
             Wall
           </Link>
@@ -75,8 +64,8 @@ export function ProfileTabs({ username, activeTab, hasCustomTheme, showMediaTab,
         {showSensitiveTab && (
           <Link
             href={`/${username}?tab=sensitive`}
-            className={`${baseClass} ${activeTab === "sensitive" ? activeClass : inactiveClass}`}
-            style={tabStyle(activeTab === "sensitive")}
+            className={baseClass}
+            style={activeTab === "sensitive" ? activeTabStyle : inactiveTabStyle}
           >
             Sensitive
           </Link>
@@ -84,8 +73,8 @@ export function ProfileTabs({ username, activeTab, hasCustomTheme, showMediaTab,
         {showNsfwTab && (
           <Link
             href={`/${username}?tab=nsfw`}
-            className={`${baseClass} ${activeTab === "nsfw" ? activeClass : inactiveClass}`}
-            style={tabStyle(activeTab === "nsfw")}
+            className={baseClass}
+            style={activeTab === "nsfw" ? activeTabStyle : inactiveTabStyle}
           >
             NSFW
           </Link>
@@ -93,8 +82,8 @@ export function ProfileTabs({ username, activeTab, hasCustomTheme, showMediaTab,
         {showGraphicTab && (
           <Link
             href={`/${username}?tab=graphic`}
-            className={`${baseClass} ${activeTab === "graphic" ? activeClass : inactiveClass}`}
-            style={tabStyle(activeTab === "graphic")}
+            className={baseClass}
+            style={activeTab === "graphic" ? activeTabStyle : inactiveTabStyle}
           >
             Graphic/Explicit
           </Link>
@@ -102,8 +91,8 @@ export function ProfileTabs({ username, activeTab, hasCustomTheme, showMediaTab,
         {showMarketplaceTab && (
           <Link
             href={`/${username}?tab=marketplace`}
-            className={`${baseClass} ${activeTab === "marketplace" ? activeClass : inactiveClass}`}
-            style={tabStyle(activeTab === "marketplace")}
+            className={baseClass}
+            style={activeTab === "marketplace" ? activeTabStyle : inactiveTabStyle}
             data-testid="profile-marketplace-tab"
           >
             <span className="inline-flex items-center gap-1.5">

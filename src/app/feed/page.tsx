@@ -15,6 +15,7 @@ import { getUserLists, getSubscribedLists, getListInfo } from "@/app/lists/actio
 import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
 import { ThemedPage } from "@/components/themed-page";
 import { checkProfileCompletion } from "@/lib/require-profile";
+import { FeedTopWidgets } from "./feed-top-widgets";
 
 export const metadata: Metadata = {
   title: "Feed",
@@ -72,6 +73,11 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
 
   return (
     <ThemedPage {...(theme ?? NO_THEME)}>
+      {!activeListId && (
+        <Suspense fallback={null}>
+          <FeedTopWidgets userId={session.user.id} />
+        </Suspense>
+      )}
       <FeedTabs
         lists={allTabs}
         activeListId={activeListId}
