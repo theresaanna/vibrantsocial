@@ -482,6 +482,13 @@ function ContentWarningsTab() {
   const [results, setResults] = useState<SearchedPost[]>([]);
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [acting, setActing] = useState<string | null>(null);
+
+  const refreshResults = async () => {
+    if (!query.trim()) return;
+    const posts = await searchPostsForWarning(query);
+    setResults(posts);
+  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -493,6 +500,24 @@ function ContentWarningsTab() {
       setSearched(true);
     } finally {
       setSearching(false);
+    }
+  };
+
+  const handleToggleWarning = async (postId: string, warningType: string, isSet: boolean) => {
+    const key = `${postId}-${warningType}`;
+    setActing(key);
+    try {
+      const fd = new FormData();
+      fd.set("postId", postId);
+      fd.set("warningType", warningType);
+      if (isSet) {
+        await removeContentWarning(fd);
+      } else {
+        await applyContentWarning(fd);
+      }
+      await refreshResults();
+    } finally {
+      setActing(null);
     }
   };
 
@@ -577,21 +602,20 @@ function ContentWarningsTab() {
                   <div className="flex flex-wrap gap-2">
                     {warningTypes.map((wt) => {
                       const isSet = post[wt.key as keyof SearchedPost] === true;
+                      const key = `${post.id}-${wt.key}`;
                       return (
-                        <form key={wt.key} action={isSet ? removeContentWarning : applyContentWarning}>
-                          <input type="hidden" name="postId" value={post.id} />
-                          <input type="hidden" name="warningType" value={wt.key} />
-                          <button
-                            type="submit"
-                            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                              isSet
-                                ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
-                                : "bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
-                            }`}
-                          >
-                            {isSet ? `Remove ${wt.label}` : `Apply ${wt.label}`}
-                          </button>
-                        </form>
+                        <button
+                          key={wt.key}
+                          onClick={() => handleToggleWarning(post.id, wt.key, isSet)}
+                          disabled={acting === key}
+                          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+                            isSet
+                              ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
+                              : "bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
+                          }`}
+                        >
+                          {acting === key ? "..." : isSet ? `Remove ${wt.label}` : `Apply ${wt.label}`}
+                        </button>
                       );
                     })}
                   </div>
