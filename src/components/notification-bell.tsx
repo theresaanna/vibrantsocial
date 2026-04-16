@@ -30,6 +30,7 @@ interface NotificationActor {
   avatar: string | null;
   profileFrameId: string | null;
   usernameFont: string | null;
+  ageVerified?: Date | null;
 }
 
 interface NotificationItem {
@@ -294,7 +295,7 @@ export function NotificationBell({
                     >
                       <p className="text-xs text-zinc-700 dark:text-zinc-300">
                         <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                          <StyledName fontId={notification.actor.usernameFont}>{name}</StyledName>
+                          <StyledName fontId={notification.actor.usernameFont} ageVerified={!!notification.actor.ageVerified}>{name}</StyledName>
                         </span>{" "}
                         {text}
                       </p>

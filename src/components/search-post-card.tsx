@@ -27,6 +27,7 @@ interface SearchPostCardProps {
       image: string | null;
       profileFrameId: string | null;
       usernameFont?: string | null;
+      ageVerified?: Date | null;
     };
     _count: {
       likes: number;
@@ -70,7 +71,7 @@ export function SearchPostCard({ post }: SearchPostCardProps) {
         <FramedAvatar src={avatarSrc} alt={displayName} initial={displayName[0]?.toUpperCase()} size={40} frameId={post.author.profileFrameId} />
         <div className="flex items-baseline gap-1.5 text-sm">
           <span className="font-medium text-zinc-900 dark:text-zinc-100">
-            <StyledName fontId={post.author.usernameFont}>{displayName}</StyledName>
+            <StyledName fontId={post.author.usernameFont} ageVerified={!!post.author.ageVerified}>{displayName}</StyledName>
           </span>
           {post.author.username && (
             <span className="text-zinc-500">@{post.author.username}</span>

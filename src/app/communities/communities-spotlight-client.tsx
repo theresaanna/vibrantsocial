@@ -62,7 +62,7 @@ function SpotlightCard({ user }: { user: SpotlightUser }) {
             />
             <div className="min-w-0 flex-1">
               <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                <StyledName fontId={user.usernameFont}>
+                <StyledName fontId={user.usernameFont} ageVerified={!!user.ageVerified}>
                   {displayName}
                 </StyledName>
               </h3>

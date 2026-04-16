@@ -36,6 +36,7 @@ interface PostAuthor {
   avatar: string | null;
   profileFrameId: string | null;
   usernameFont?: string | null;
+  ageVerified?: Date | null;
 }
 
 interface CommentData {
@@ -345,7 +346,7 @@ export const PostCard = memo(function PostCard({
           <span className="font-medium text-indigo-700 dark:text-indigo-300">
             {post.author?.username ? (
               <Link href={`/${post.author.username}`} className="hover:underline">
-                <StyledName fontId={post.author?.usernameFont}>{post.author.displayName || post.author.name || post.author.username}</StyledName>
+                <StyledName fontId={post.author?.usernameFont} ageVerified={!!post.author?.ageVerified}>{post.author.displayName || post.author.name || post.author.username}</StyledName>
               </Link>
             ) : (
               "Someone"
@@ -377,10 +378,10 @@ export const PostCard = memo(function PostCard({
                   href={`/${post.author.username}`}
                   className="hover:underline"
                 >
-                  <StyledName fontId={post.author?.usernameFont}>{authorName}</StyledName>
+                  <StyledName fontId={post.author?.usernameFont} ageVerified={!!post.author?.ageVerified}>{authorName}</StyledName>
                 </Link>
               ) : (
-                <StyledName fontId={post.author?.usernameFont}>{authorName}</StyledName>
+                <StyledName fontId={post.author?.usernameFont} ageVerified={!!post.author?.ageVerified}>{authorName}</StyledName>
               )}
             </span>
             {post.author?.username && (

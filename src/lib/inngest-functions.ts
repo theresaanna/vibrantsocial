@@ -604,6 +604,52 @@ export const scanPostContentFn = inngest.createFunction(
       }
     }
 
+    // Handle under-labeled posts: graphic/explicit content marked only as NSFW
+    if (nsfwDetected && nsfwScore >= 0.85 && post.isNsfw && !post.isGraphicNudity) {
+      // Non-age-verified users cannot have graphic/explicit posts — decline it
+      if (!user.ageVerified) {
+        await prisma.post.delete({ where: { id: postId } });
+
+        await prisma.notification.create({
+          data: {
+            type: "CONTENT_MODERATION",
+            actorId: user.id,
+            targetUserId: user.id,
+          },
+        });
+
+        if (user.email) {
+          await sendPostDeclinedEmail({ toEmail: user.email });
+        }
+
+        return { postId, nsfwDetected, postDeclined: true };
+      }
+
+      // Upgrade from NSFW to graphic/explicit
+      await prisma.post.update({
+        where: { id: postId },
+        data: { isGraphicNudity: true },
+      });
+
+      await prisma.notification.create({
+        data: {
+          type: "CONTENT_MODERATION",
+          actorId: user.id,
+          targetUserId: user.id,
+          postId,
+        },
+      });
+
+      if (user.email) {
+        await sendContentNoticeEmail({
+          toEmail: user.email,
+          postId,
+          markingLabel: "graphic/explicit",
+          warningCount: 0,
+        });
+      }
+    }
+
     // Handle hate speech / bullying: notify admin for human review
     if (hateSpeechDetected || bullyingDetected) {
       await prisma.contentViolation.create({

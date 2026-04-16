@@ -15,6 +15,7 @@ interface BlockedUser {
   image: string | null;
   profileFrameId: string | null;
   usernameFont: string | null;
+  ageVerified?: Date | null;
 }
 
 function UnblockButton({ userId }: { userId: string }) {
@@ -77,7 +78,7 @@ export function BlockedUsersList({ users }: { users: BlockedUser[] }) {
                 href={`/${user.username}`}
                 className="block truncate font-medium text-zinc-900 hover:underline dark:text-zinc-100"
               >
-                <StyledName fontId={user.usernameFont}>{displayName}</StyledName>
+                <StyledName fontId={user.usernameFont} ageVerified={!!user.ageVerified}>{displayName}</StyledName>
               </Link>
               <p className="truncate text-sm text-zinc-500 dark:text-zinc-400">
                 @{user.username}

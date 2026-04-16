@@ -51,7 +51,7 @@ export function UserList({ users, currentUserId, emptyMessage, friendshipStatuse
                 href={`/${user.username}`}
                 className="block truncate text-sm font-semibold text-zinc-900 hover:underline dark:text-zinc-100"
               >
-                <StyledName fontId={user.usernameFont}>{displayName}</StyledName>
+                <StyledName fontId={user.usernameFont} ageVerified={!!user.ageVerified}>{displayName}</StyledName>
               </Link>
               {user.username && (
                 <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">

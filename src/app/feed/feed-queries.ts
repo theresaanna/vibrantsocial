@@ -15,6 +15,7 @@ export function getPostInclude(userId: string) {
         avatar: true,
         profileFrameId: true,
         usernameFont: true,
+        ageVerified: true,
         tier: true,
         // Theme colors for post theming
         profileBgColor: true,
@@ -126,6 +127,7 @@ export const repostUserSelect = {
   avatar: true,
   profileFrameId: true,
   usernameFont: true,
+  ageVerified: true,
 } as const;
 
 export function getRepostInclude(userId: string) {

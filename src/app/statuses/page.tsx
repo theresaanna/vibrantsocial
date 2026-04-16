@@ -78,7 +78,7 @@ export default async function StatusesPage() {
                       href={`/statuses/${status.user.username}`}
                       className="truncate text-sm font-medium text-zinc-900 hover:underline dark:text-zinc-100"
                     >
-                      <StyledName fontId={status.user.usernameFont}>
+                      <StyledName fontId={status.user.usernameFont} ageVerified={!!status.user.ageVerified}>
                         {status.user.displayName || status.user.name || status.user.username}
                       </StyledName>
                     </Link>

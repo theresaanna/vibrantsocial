@@ -38,13 +38,7 @@ export function ContentFlagsInfoModal({ onClose }: ContentFlagsInfoModalProps) {
           <div>
             <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">NSFW</h3>
             <p>
-              Content dealing with or depicting adult topics but not outright
-              graphic adult discussion or material, or sexualized nudity, that
-              you feel too sensitive for a general adult audience. Remember that
-              VibrantSocial is an 18+ platform, so all users must be adults.
-              However, if you&apos;ve checked &ldquo;Public Profile&rdquo; in your settings,
-              posts without a content warning can be seen by users anywhere with
-              a link.
+              Talk of sexual topics and non-genital nudity.
             </p>
           </div>
 
@@ -52,17 +46,14 @@ export function ContentFlagsInfoModal({ onClose }: ContentFlagsInfoModalProps) {
             <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">Sensitive</h3>
             <p>
               Content with detailed or graphic mentions of suicide or self harm,
-              drug or substance use, violence, media depicting bodily harm, or
-              anything you suspect of being harmful to a wider audience.
+              drug or substance use, violence, media depicting bodily harm.
             </p>
           </div>
 
           <div>
             <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">Graphic/Explicit</h3>
             <p>
-              Graphic descriptions of adult topics, media containing sexual acts,
-              extreme violence, anything that is of great importance to be kept
-              from minor or unwilling eyes.
+              Genital nudity and sex acts.
             </p>
           </div>
 
@@ -70,31 +61,28 @@ export function ContentFlagsInfoModal({ onClose }: ContentFlagsInfoModalProps) {
 
           <div className="text-xs text-zinc-500 dark:text-zinc-400">
             <p>
-              Only users who age verify can see posts marked
-              Sensitive and Graphic/Explicit. All users can opt into NSFW content,
-              but it will not be shown publicly to users who are not logged into
-              the platform. This is for the safety of everyone, including minors
-              who must not see adult content.
+              Only users who age verify can see posts marked Sensitive and
+              Graphic/Explicit. All users can opt into NSFW content, but it will
+              not be shown publicly to users who are not logged into the platform.
             </p>
             <p className="mt-2 font-medium text-red-600 dark:text-red-400">
               No illegal media or hate speech is allowed under any
               circumstances.
             </p>
-            <p className="mt-2 font-medium text-red-600 dark:text-red-400">
-              Three failures to mark material Sensitive or
-              Graphic/Explicit according to the guidelines above will result in
-              deactivation of your account.
+            <p className="mt-2">
+              We reserve the right to mark your media and even suspend your
+              account if you are an egregious repeat offender who doesn&apos;t
+              appear to be making an effort to keep the community safe.
             </p>
             <p className="mt-2">
               Please contact{" "}
               <a
-                href="mailto:vibrantsocial@proton.me"
+                href="mailto:support@vibrantsocial.app"
                 className="text-zinc-700 underline dark:text-zinc-300"
               >
-                vibrantsocial@proton.me
+                support@vibrantsocial.app
               </a>{" "}
-              with any questions. Thank you for your cooperation in keeping our
-              community safe.
+              with any questions. Thank you for your cooperation.
             </p>
           </div>
         </div>

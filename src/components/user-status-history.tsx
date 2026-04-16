@@ -68,7 +68,7 @@ export function UserStatusHistory({
           href={`/${username}`}
           className="text-base font-semibold text-zinc-900 hover:underline dark:text-zinc-100"
         >
-          <StyledName fontId={user.usernameFont}>
+          <StyledName fontId={user.usernameFont} ageVerified={!!user.ageVerified}>
             {user.displayName || user.name || user.username}
           </StyledName>
         </Link>

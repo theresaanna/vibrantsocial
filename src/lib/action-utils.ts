@@ -29,6 +29,7 @@ export const USER_PROFILE_SELECT = {
   image: true,
   profileFrameId: true,
   usernameFont: true,
+  ageVerified: true,
 } as const;
 
 // ---------------------------------------------------------------------------

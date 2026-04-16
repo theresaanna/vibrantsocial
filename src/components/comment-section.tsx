@@ -540,10 +540,10 @@ function CommentItem({
                 href={`/${comment.author.username}`}
                 className="hover:underline"
               >
-                <StyledName fontId={comment.author.usernameFont}>{authorName}</StyledName>
+                <StyledName fontId={comment.author.usernameFont} ageVerified={!!comment.author.ageVerified}>{authorName}</StyledName>
               </Link>
             ) : (
-              <StyledName fontId={comment.author.usernameFont}>{authorName}</StyledName>
+              <StyledName fontId={comment.author.usernameFont} ageVerified={!!comment.author.ageVerified}>{authorName}</StyledName>
             )}
           </span>
           <span className="text-xs text-zinc-400">

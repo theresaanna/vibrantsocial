@@ -59,6 +59,7 @@ interface MentionResult {
   image: string | null;
   profileFrameId: string | null;
   usernameFont: string | null;
+  ageVerified?: Date | null;
 }
 
 // Shield icon for owner
@@ -723,7 +724,7 @@ export function ChatRoomClient({
                             href={`/${msg.sender.username}`}
                             className="text-sm font-semibold text-zinc-900 hover:underline dark:text-zinc-100"
                           >
-                            <StyledName fontId={msg.sender.usernameFont}>
+                            <StyledName fontId={msg.sender.usernameFont} ageVerified={!!msg.sender.ageVerified}>
                               {senderName}
                             </StyledName>
                           </Link>
@@ -1135,7 +1136,7 @@ export function ChatRoomClient({
                     />
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium text-zinc-900 dark:text-zinc-100">
-                        <StyledName fontId={user.usernameFont}>
+                        <StyledName fontId={user.usernameFont} ageVerified={!!user.ageVerified}>
                           {user.displayName || user.name || user.username}
                         </StyledName>
                       </p>
@@ -1298,7 +1299,7 @@ export function ChatRoomClient({
                     </div>
                   </div>
                   <span className="min-w-0 flex-1 truncate text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                    <StyledName fontId={user.usernameFont}>
+                    <StyledName fontId={user.usernameFont} ageVerified={!!user.ageVerified}>
                       {name}
                     </StyledName>
                   </span>

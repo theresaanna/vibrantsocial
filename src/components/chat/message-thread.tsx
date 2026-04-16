@@ -399,7 +399,7 @@ export function MessageThread({
             {!isGroup && otherUser?.username ? (
               <Link href={`/${otherUser.username}`} className="hover:underline">
                 <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                  <StyledName fontId={otherUser.usernameFont}>{displayName}</StyledName>
+                  <StyledName fontId={otherUser.usernameFont} ageVerified={!!otherUser.ageVerified}>{displayName}</StyledName>
                 </h3>
               </Link>
             ) : (

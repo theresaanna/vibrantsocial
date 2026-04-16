@@ -14,6 +14,7 @@ interface SearchUserCardProps {
     image: string | null;
     profileFrameId: string | null;
     usernameFont?: string | null;
+    ageVerified?: Date | null;
     bio: string | null;
     _count: { followers: number; posts: number };
   };
@@ -33,7 +34,7 @@ export function SearchUserCard({ user }: SearchUserCardProps) {
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
           <span className="truncate font-medium text-zinc-900 dark:text-zinc-100">
-            <StyledName fontId={user.usernameFont}>{displayName}</StyledName>
+            <StyledName fontId={user.usernameFont} ageVerified={!!user.ageVerified}>{displayName}</StyledName>
           </span>
           {user.username && (
             <span className="truncate text-sm text-zinc-500">

@@ -254,7 +254,7 @@ function ChatPaneItem({
                 : "font-medium text-zinc-700 dark:text-zinc-300"
             }`}
           >
-            <StyledName fontId={!isGroup ? participants[0]?.usernameFont : undefined}>{displayName}</StyledName>
+            <StyledName fontId={!isGroup ? participants[0]?.usernameFont : undefined} ageVerified={!isGroup && !!participants[0]?.ageVerified}>{displayName}</StyledName>
           </span>
           {lastMessage && (
             <span className="ml-2 flex-shrink-0 text-[10px] text-zinc-400">

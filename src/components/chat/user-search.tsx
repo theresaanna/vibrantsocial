@@ -98,7 +98,7 @@ export function UserSearch({
                   />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                      <StyledName fontId={user.usernameFont}>{name}</StyledName>
+                      <StyledName fontId={user.usernameFont} ageVerified={!!user.ageVerified}>{name}</StyledName>
                     </p>
                     {user.username && (
                       <p className="truncate text-xs text-zinc-500">@{user.username}</p>

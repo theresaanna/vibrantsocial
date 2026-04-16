@@ -78,7 +78,7 @@ export function TypeaheadDropdown({
               />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-medium text-zinc-900 dark:text-zinc-100">
-                  <StyledName fontId={user.usernameFont}>{displayName}</StyledName>
+                  <StyledName fontId={user.usernameFont} ageVerified={!!user.ageVerified}>{displayName}</StyledName>
                 </div>
                 {user.username && (
                   <div className="truncate text-xs text-zinc-500 dark:text-zinc-400">
