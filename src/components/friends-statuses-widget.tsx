@@ -36,7 +36,7 @@ function StatusCard({
             href={`/${status.user.username}`}
             className="block truncate text-xs font-medium text-zinc-900 hover:underline dark:text-zinc-100"
           >
-            <StyledName fontId={status.user.usernameFont}>
+            <StyledName fontId={status.user.usernameFont} ageVerified={!!status.user.ageVerified}>
               {status.user.displayName || status.user.name || status.user.username}
             </StyledName>
           </Link>

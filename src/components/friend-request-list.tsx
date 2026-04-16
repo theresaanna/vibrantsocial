@@ -19,6 +19,7 @@ interface FriendRequest {
     avatar: string | null;
     profileFrameId: string | null;
     usernameFont?: string | null;
+    ageVerified?: Date | null;
     image: string | null;
   };
 }
@@ -67,7 +68,7 @@ function FriendRequestCard({ request }: { request: FriendRequest }) {
           href={`/${sender.username}`}
           className="block truncate text-sm font-semibold text-zinc-900 hover:underline dark:text-zinc-100"
         >
-          <StyledName fontId={sender.usernameFont}>{displayName}</StyledName>
+          <StyledName fontId={sender.usernameFont} ageVerified={!!sender.ageVerified}>{displayName}</StyledName>
         </Link>
         {sender.username && (
           <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">

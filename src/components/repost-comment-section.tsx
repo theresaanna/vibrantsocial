@@ -20,6 +20,7 @@ interface CommentAuthor {
   avatar: string | null;
   profileFrameId: string | null;
   usernameFont?: string | null;
+  ageVerified?: Date | null;
 }
 
 interface ReactionGroup {
@@ -415,10 +416,10 @@ function RepostCommentItem({
           <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
             {comment.author.username ? (
               <Link href={`/${comment.author.username}`} className="hover:underline">
-                <StyledName fontId={comment.author.usernameFont}>{authorName}</StyledName>
+                <StyledName fontId={comment.author.usernameFont} ageVerified={!!comment.author.ageVerified}>{authorName}</StyledName>
               </Link>
             ) : (
-              <StyledName fontId={comment.author.usernameFont}>{authorName}</StyledName>
+              <StyledName fontId={comment.author.usernameFont} ageVerified={!!comment.author.ageVerified}>{authorName}</StyledName>
             )}
           </span>
           <span className="text-xs text-zinc-400">

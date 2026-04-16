@@ -86,7 +86,7 @@ export function ChatFriendsList({ friends, onlineUserIds = new Set() }: ChatFrie
                   )}
                 </div>
                 <span className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                  {isLoading ? "Opening..." : <StyledName fontId={friend.usernameFont}>{displayName}</StyledName>}
+                  {isLoading ? "Opening..." : <StyledName fontId={friend.usernameFont} ageVerified={!!friend.ageVerified}>{displayName}</StyledName>}
                 </span>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 flex-shrink-0 text-zinc-400">
                   <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />

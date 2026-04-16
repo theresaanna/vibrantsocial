@@ -76,7 +76,7 @@ export function MessageRequestCard({
       />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
-          <StyledName fontId={sender.usernameFont}>{displayName}</StyledName>
+          <StyledName fontId={sender.usernameFont} ageVerified={!!sender.ageVerified}>{displayName}</StyledName>
         </p>
         {sender.username && (
           <p className="text-xs text-zinc-500">@{sender.username}</p>

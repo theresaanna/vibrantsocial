@@ -34,6 +34,7 @@ export interface FriendStatusData {
     image: string | null;
     profileFrameId: string | null;
     usernameFont: string | null;
+    ageVerified?: Date | null;
   };
 }
 

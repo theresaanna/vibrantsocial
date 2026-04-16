@@ -14,6 +14,7 @@ interface CommentAuthor {
   avatar: string | null;
   profileFrameId: string | null;
   usernameFont?: string | null;
+  ageVerified?: Date | null;
 }
 
 export interface ReactionGroup {

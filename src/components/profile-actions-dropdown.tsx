@@ -176,7 +176,7 @@ export function ProfileActionsDropdown({
       </button>
 
       {open && (
-        <div className="absolute left-0 z-50 mt-1 w-56 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+        <div className="absolute left-0 z-50 mt-1 w-56 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800" style={{ "--profile-container-alpha": "100%" } as React.CSSProperties}>
           {/* Message / Chat Request */}
           {effectiveIsFriend ? (
             <button

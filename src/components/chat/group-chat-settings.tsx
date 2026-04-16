@@ -190,7 +190,7 @@ export function GroupChatSettings({
 
               const nameEl = (
                 <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                  <StyledName fontId={user.usernameFont}>{name}</StyledName>
+                  <StyledName fontId={user.usernameFont} ageVerified={!!user.ageVerified}>{name}</StyledName>
                   {isMe && (
                     <span className="ml-1 text-xs text-zinc-400">(you)</span>
                   )}

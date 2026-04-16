@@ -241,7 +241,7 @@ export function MessageBubble({
               className="mb-0.5 px-3 text-xs font-medium text-zinc-500 dark:text-zinc-400"
               style={themeColors?.linkColor ? { color: "var(--chat-link-color)" } : undefined}
             >
-              <StyledName fontId={senderProfile.usernameFont}>{displayName}</StyledName>
+              <StyledName fontId={senderProfile.usernameFont} ageVerified={!!senderProfile.ageVerified}>{displayName}</StyledName>
             </span>
           )}
 

@@ -121,7 +121,7 @@ export async function fetchFeedPage(cursor?: string) {
           include: {
             post: { include: postInclude },
             wallOwner: {
-              select: { username: true, displayName: true, usernameFont: true },
+              select: { username: true, displayName: true, usernameFont: true, ageVerified: true },
             },
           },
         })
@@ -367,7 +367,7 @@ export async function fetchNewFeedItems(sinceDate: string) {
           include: {
             post: { include: postInclude },
             wallOwner: {
-              select: { username: true, displayName: true, usernameFont: true },
+              select: { username: true, displayName: true, usernameFont: true, ageVerified: true },
             },
           },
         })

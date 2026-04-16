@@ -74,6 +74,7 @@ const profileSelect = {
   birthdayMonth: true,
   birthdayDay: true,
   phoneVerified: true,
+  ageVerified: true,
   isProfilePublic: true,
   hideWallFromFeed: true,
   linksPageEnabled: true,
@@ -673,7 +674,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
                   >
                     {blockStatus === "none" ? (
                       <span className="inline-flex items-center gap-1.5">
-                        <StyledName fontId={user.usernameFont}>{displayName}</StyledName>
+                        <StyledName fontId={user.usernameFont} ageVerified={!!user.ageVerified}>{displayName}</StyledName>
                         {user.tier === "premium" && (
                           <Link href="/premium" title="Premium member" className="relative inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 shadow-sm">
                             <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round">

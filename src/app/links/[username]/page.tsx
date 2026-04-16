@@ -45,6 +45,7 @@ export default async function LinksPage({ params }: Props) {
       image: true,
       profileFrameId: true,
       usernameFont: true,
+      ageVerified: true,
       linksPageEnabled: true,
       linksPageBio: true,
       linksPageSensitiveLinks: true,
@@ -73,7 +74,7 @@ export default async function LinksPage({ params }: Props) {
               frameId={user.profileFrameId}
             />
             <h1 className="text-xl font-semibold profile-text">
-              <StyledName fontId={user.usernameFont}>{displayName}</StyledName>
+              <StyledName fontId={user.usernameFont} ageVerified={!!user.ageVerified}>{displayName}</StyledName>
             </h1>
           </div>
 

@@ -42,6 +42,7 @@ export interface ChatRoomMessageData {
     image: string | null;
     profileFrameId: string | null;
     usernameFont: string | null;
+    ageVerified?: Date | null;
   };
   replyTo: {
     id: string;

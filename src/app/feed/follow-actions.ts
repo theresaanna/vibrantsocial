@@ -22,6 +22,7 @@ export interface FollowUser {
   image: string | null;
   profileFrameId: string | null;
   usernameFont: string | null;
+  ageVerified: Date | null;
   isFollowing: boolean;
 }
 

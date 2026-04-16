@@ -23,6 +23,7 @@ export interface MediaPost {
     avatar: string | null;
     profileFrameId: string | null;
     usernameFont: string | null;
+    ageVerified?: Date | null;
   } | null;
 }
 
@@ -228,7 +229,7 @@ export function MediaGrid({ initialPosts, initialHasMore, fetchPage = defaultFet
                       frameId={item.post.author.profileFrameId}
                     />
                     <span className="truncate text-xs font-medium text-white">
-                      <StyledName fontId={item.post.author.usernameFont}>{item.post.author.displayName ?? item.post.author.username}</StyledName>
+                      <StyledName fontId={item.post.author.usernameFont} ageVerified={!!item.post.author.ageVerified}>{item.post.author.displayName ?? item.post.author.username}</StyledName>
                     </span>
                   </>
                 )}

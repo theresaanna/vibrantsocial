@@ -27,6 +27,7 @@ interface RepostUser {
   avatar: string | null;
   profileFrameId: string | null;
   usernameFont?: string | null;
+  ageVerified?: Date | null;
 }
 
 interface MarketplacePostData {
@@ -338,7 +339,7 @@ export function RepostCard({
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3" />
             </svg>
             <Link href={`/${repost.user.username}`} className="font-medium hover:underline">
-              <StyledName fontId={repost.user.usernameFont}>{reposterName}</StyledName>
+              <StyledName fontId={repost.user.usernameFont} ageVerified={!!repost.user.ageVerified}>{reposterName}</StyledName>
             </Link>
             <span>quoted</span>
             <Link href={`/quote/${repost.id}`} className="text-zinc-400 hover:underline dark:text-zinc-500">
@@ -654,7 +655,7 @@ export function RepostCard({
                     </div>
                   )}
                   <Link href={`/${repost.quotedRepost.user.username}`} className="text-sm font-semibold text-zinc-900 hover:underline dark:text-zinc-100">
-                    <StyledName fontId={repost.quotedRepost.user.usernameFont}>
+                    <StyledName fontId={repost.quotedRepost.user.usernameFont} ageVerified={!!repost.quotedRepost.user.ageVerified}>
                       {repost.quotedRepost.user.displayName || repost.quotedRepost.user.name || repost.quotedRepost.user.username}
                     </StyledName>
                   </Link>
@@ -714,7 +715,7 @@ export function RepostCard({
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3" />
             </svg>
             <Link href={`/${repost.user.username}`} className="font-medium hover:underline">
-              <StyledName fontId={repost.user.usernameFont}>{reposterName}</StyledName>
+              <StyledName fontId={repost.user.usernameFont} ageVerified={!!repost.user.ageVerified}>{reposterName}</StyledName>
             </Link>
             <span>reposted</span>
             <span className="text-zinc-400 dark:text-zinc-500">{timeAgo(repost.createdAt)}</span>

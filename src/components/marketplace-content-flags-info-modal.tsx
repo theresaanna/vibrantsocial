@@ -27,7 +27,7 @@ export function MarketplaceContentFlagsInfoModal({ onClose }: MarketplaceContent
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-            Marketplace Content Settings
+            Adult and Sensitive Content Settings
           </h2>
           <button
             type="button"
@@ -44,20 +44,22 @@ export function MarketplaceContentFlagsInfoModal({ onClose }: MarketplaceContent
           <div>
             <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">NSFW</h3>
             <p>
-              For listings with adult themes and nudity. Users must have NSFW
-              content enabled in their settings to see these listings. This
-              includes items like artistic nudity, lingerie, adult-themed
-              artwork, and similar products.
+              Talk of sexual topics and non-genital nudity.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">Sensitive</h3>
+            <p>
+              Content with detailed or graphic mentions of suicide or self harm,
+              drug or substance use, violence, media depicting bodily harm.
             </p>
           </div>
 
           <div>
             <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">Graphic/Explicit</h3>
             <p>
-              For listings depicting sex acts, graphic depictions, or explicit
-              adult content. Users must be age-verified to see these listings.
-              This includes items like explicit artwork, adult toys, and similar
-              products.
+              Genital nudity and sex acts.
             </p>
           </div>
 
@@ -65,26 +67,28 @@ export function MarketplaceContentFlagsInfoModal({ onClose }: MarketplaceContent
 
           <div className="text-xs text-zinc-500 dark:text-zinc-400">
             <p>
-              Users must have NSFW content enabled in their settings to see NSFW
-              marketplace listings. Users must be age-verified to see
-              Graphic/Explicit marketplace listings.
+              Only users who age verify can see posts marked Sensitive and
+              Graphic/Explicit. All users can opt into NSFW content, but it will
+              not be shown publicly to users who are not logged into the platform.
             </p>
             <p className="mt-2 font-medium text-red-600 dark:text-red-400">
-              No illegal items or materials are allowed under any circumstances.
+              No illegal media or hate speech is allowed under any
+              circumstances.
             </p>
-            <p className="mt-2 font-medium text-red-600 dark:text-red-400">
-              Failure to mark adult material appropriately will result in removal
-              of your listing and may lead to account suspension.
+            <p className="mt-2">
+              We reserve the right to mark your media and even suspend your
+              account if you are an egregious repeat offender who doesn&apos;t
+              appear to be making an effort to keep the community safe.
             </p>
             <p className="mt-2">
               Please contact{" "}
               <a
-                href="mailto:vibrantsocial@proton.me"
+                href="mailto:support@vibrantsocial.app"
                 className="text-zinc-700 underline dark:text-zinc-300"
               >
-                vibrantsocial@proton.me
+                support@vibrantsocial.app
               </a>{" "}
-              with any questions.
+              with any questions. Thank you for your cooperation.
             </p>
           </div>
         </div>

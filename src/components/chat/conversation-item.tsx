@@ -63,7 +63,7 @@ export function ConversationItem({
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between">
           <span className={`truncate text-sm ${unreadCount > 0 ? "font-semibold text-zinc-900 dark:text-zinc-100" : "font-medium text-zinc-700 dark:text-zinc-300"}`}>
-            <StyledName fontId={!isGroup ? participants[0]?.usernameFont : undefined}>{displayName}</StyledName>
+            <StyledName fontId={!isGroup ? participants[0]?.usernameFont : undefined} ageVerified={!isGroup && !!participants[0]?.ageVerified}>{displayName}</StyledName>
           </span>
           {lastMessage && (
             <span className="ml-2 flex-shrink-0 text-[10px] text-zinc-400">

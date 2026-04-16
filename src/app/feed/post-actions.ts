@@ -45,6 +45,7 @@ interface CommentActionState extends ActionState {
       avatar: string | null;
       profileFrameId: string | null;
       usernameFont: string | null;
+      ageVerified: Date | null;
     };
     reactions: { emoji: string; userIds: string[] }[];
   };

@@ -13,6 +13,7 @@ export type SpotlightUser = {
   image: string | null;
   profileFrameId: string | null;
   usernameFont: string | null;
+  ageVerified?: Date | null;
   bio: string | null;
   profileBgColor: string | null;
   profileTextColor: string | null;
@@ -39,6 +40,7 @@ export async function fetchSpotlightUsers(): Promise<SpotlightUser[]> {
       image: true,
       profileFrameId: true,
       usernameFont: true,
+      ageVerified: true,
       bio: true,
       profileBgColor: true,
       profileTextColor: true,
