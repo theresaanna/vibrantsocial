@@ -6,6 +6,7 @@ import { getConversations, getMessageRequests, getFriendsForChat } from "./actio
 import { ChatPageClient } from "./chat-page-client";
 import { isProfileIncomplete } from "@/lib/require-profile";
 import { userThemeSelect, buildUserTheme } from "@/lib/user-theme";
+import { isLightBackground } from "@/lib/profile-themes";
 import { ThemedPage } from "@/components/themed-page";
 
 export const metadata: Metadata = {
@@ -50,13 +51,15 @@ export default async function ChatPage() {
     secondaryColor: user.profileSecondaryColor ?? null,
   };
 
+  const linkColor = user.profileLinkColor ?? "#2563eb";
   const themeStyle = hasCustomTheme
     ? ({
         "--chat-bubble-bg": user.profileBgColor ?? "#ffffff",
         "--chat-bubble-text": user.profileTextColor ?? "#18181b",
         "--chat-active-bg": user.profileContainerColor ?? "#f4f4f5",
         "--chat-active-text": user.profileSecondaryColor ?? "#71717a",
-        "--chat-link-color": user.profileLinkColor ?? "#2563eb",
+        "--chat-link-color": linkColor,
+        "--chat-btn-text": isLightBackground(linkColor) ? "#000000" : "#ffffff",
       } as React.CSSProperties)
     : undefined;
 
