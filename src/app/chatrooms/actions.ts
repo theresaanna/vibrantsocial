@@ -63,6 +63,7 @@ export interface ChatRoomMeta {
   slug: string;
   name: string;
   status: string | null;
+  isNsfw: boolean;
   ownerId: string;
   moderatorIds: string[];
   mutes: { userId: string; expiresAt: Date | null }[];
@@ -229,6 +230,7 @@ export async function getChatRoomMeta(roomSlug: string = "lobby"): Promise<ChatR
     slug: room.slug,
     name: room.name,
     status: room.status,
+    isNsfw: room.isNsfw,
     ownerId: room.ownerId,
     moderatorIds: moderators.map((m) => m.userId),
     mutes: mutes.map((m) => ({ userId: m.userId, expiresAt: m.expiresAt })),
@@ -691,4 +693,51 @@ export async function getUserProfiles(
   });
 
   return users;
+}
+
+// ---------------------------------------------------------------------------
+// List all chat rooms
+// ---------------------------------------------------------------------------
+
+export interface ChatRoomListItem {
+  id: string;
+  slug: string;
+  name: string;
+  status: string | null;
+  isNsfw: boolean;
+  messageCount: number;
+  lastMessageAt: string | null;
+}
+
+/**
+ * List chat rooms. NSFW rooms are excluded unless `showNsfw` is true.
+ */
+export async function listChatRooms(showNsfw = false): Promise<ChatRoomListItem[]> {
+  const rooms = await prisma.chatRoom.findMany({
+    where: showNsfw ? {} : { isNsfw: false },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      status: true,
+      isNsfw: true,
+      _count: { select: { messages: true } },
+      messages: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { createdAt: true },
+      },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return rooms.map((r) => ({
+    id: r.id,
+    slug: r.slug,
+    name: r.name,
+    status: r.status,
+    isNsfw: r.isNsfw,
+    messageCount: r._count.messages,
+    lastMessageAt: r.messages[0]?.createdAt?.toISOString() ?? null,
+  }));
 }

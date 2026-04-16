@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function ChatRoomRedirect() {
-  redirect("/chatrooms");
+  redirect("/chatrooms/lounge");
 }

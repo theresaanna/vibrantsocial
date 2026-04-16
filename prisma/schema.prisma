@@ -846,6 +846,7 @@ model ChatRoom {
   slug      String   @unique @default("lobby")
   name      String   @default("Lobby")
   status    String?
+  isNsfw    Boolean  @default(false)
   ownerId   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

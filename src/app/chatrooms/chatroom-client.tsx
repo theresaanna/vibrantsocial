@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import type { InboundMessage } from "ably";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { usePresenceListener } from "ably/react";
+import { usePresence, usePresenceListener } from "ably/react";
 import { getAblyRealtimeClient } from "@/lib/ably";
 import { useAblyReady } from "@/app/providers";
 import { FramedAvatar } from "@/components/framed-avatar";
@@ -37,7 +37,10 @@ const GifSearchModal = dynamic(
 
 const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
-const PRESENCE_CHANNEL = "presence:global";
+/** Per-room presence channel so "Online" only shows users in this room. */
+function roomPresenceChannel(room: string) {
+  return `presence:chatroom:${room}`;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -140,9 +143,11 @@ export function ChatRoomClient({
   const isMuted = mutedUserIds.includes(currentUserId);
 
   // -------------------------------------------------------------------------
-  // Online users via Ably presence
+  // Online users via per-room Ably presence
   // -------------------------------------------------------------------------
-  const { presenceData } = usePresenceListener(PRESENCE_CHANNEL);
+  const roomPresence = roomPresenceChannel(room);
+  usePresence(roomPresence, { status: "active" });
+  const { presenceData } = usePresenceListener(roomPresence);
 
   const onlineUserIds = useMemo(
     () => new Set(presenceData.map((m) => m.clientId)),

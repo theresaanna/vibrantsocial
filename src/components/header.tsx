@@ -27,15 +27,24 @@ function HeaderAuthSkeleton() {
 
 export function Header() {
   return (
-    <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
+    <header className="relative z-50 border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
       <nav className="mx-auto flex max-w-3xl items-center gap-2 overflow-x-auto px-2 py-3 scrollbar-none sm:px-4" style={{ scrollbarWidth: "none" }}>
-        {/* Logo */}
+        {/* Logo — heart icon on mobile, full wordmark on sm+ */}
         <Link href="/" className="shrink-0">
+          <Image
+            src="/icon-512.png"
+            alt="VibrantSocial"
+            width={32}
+            height={32}
+            className="sm:hidden"
+            priority
+          />
           <Image
             src="/vibrantsocial-logo.png"
             alt="VibrantSocial"
             width={160}
             height={40}
+            className="hidden sm:block"
             priority
           />
         </Link>
