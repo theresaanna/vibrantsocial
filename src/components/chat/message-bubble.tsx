@@ -234,7 +234,7 @@ export function MessageBubble({
           </div>
         )}
 
-        <div className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}>
+        <div className={`flex min-w-0 flex-col ${isOwn ? "items-end" : "items-start"}`}>
           {/* Sender name in group */}
           {isGroup && !isOwn && (
             <span
@@ -269,7 +269,7 @@ export function MessageBubble({
                 {message.replyTo.deletedAt ? (
                   <span className="text-xs italic text-zinc-400">This message was deleted</span>
                 ) : (
-                  <span className="block truncate text-xs text-zinc-500 dark:text-zinc-400">
+                  <span className="block break-words text-xs text-zinc-500 dark:text-zinc-400">
                     {message.replyTo.mediaType && !message.replyTo.content
                       ? `[${message.replyTo.mediaType}]`
                       : <LinkifyText
@@ -285,7 +285,7 @@ export function MessageBubble({
           )}
 
           {/* Message content */}
-          <div className="relative">
+          <div className="relative min-w-0 max-w-full">
             {isEditing ? (
               <div className="flex flex-col gap-1">
                 <textarea
