@@ -181,9 +181,9 @@ export function NotificationList({
           if ((isCommentType || isMentionWithComment) && notification.postId && notification.commentId) {
             href = `/post/${notification.postId}?commentId=${notification.commentId}`;
           } else if (notification.type === "CHAT_ABUSE" && notification.message) {
-            href = `/chat/${notification.message.conversationId}`;
+            href = `/messages/${notification.message.conversationId}`;
           } else if (notification.type === "REACTION" && notification.message) {
-            href = `/chat/${notification.message.conversationId}`;
+            href = `/messages/${notification.message.conversationId}`;
           } else if (notification.type === "FRIEND_REQUEST" || notification.type === "FRIEND_REQUEST_ACCEPTED" || notification.type === "CHAT_REQUEST") {
             href = `/${notification.actor.username}`;
           } else if (

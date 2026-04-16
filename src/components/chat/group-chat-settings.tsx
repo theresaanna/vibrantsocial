@@ -9,7 +9,7 @@ import {
   updateGroupName,
   addGroupMembers,
   removeGroupMember,
-} from "@/app/chat/actions";
+} from "@/app/messages/actions";
 import type { ConversationWithParticipants } from "@/types/chat";
 
 interface GroupChatSettingsProps {

@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 
 const mockBulkDeclineMessageRequests = vi.fn();
 
-vi.mock("@/app/chat/actions", () => ({
+vi.mock("@/app/messages/actions", () => ({
   bulkDeclineMessageRequests: (...args: unknown[]) =>
     mockBulkDeclineMessageRequests(...args),
 }));

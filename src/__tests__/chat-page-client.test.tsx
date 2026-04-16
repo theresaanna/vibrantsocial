@@ -39,7 +39,7 @@ vi.mock("@/components/chat/message-request-list", () => ({
   ),
 }));
 
-import { ChatPageClient } from "@/app/chat/chat-page-client";
+import { ChatPageClient } from "@/app/messages/chat-page-client";
 import { useAblyReady } from "@/app/providers";
 
 const mockConversations = [

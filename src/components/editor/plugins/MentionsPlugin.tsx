@@ -16,7 +16,7 @@ import {
   type TextNode,
 } from "lexical";
 import { createPortal } from "react-dom";
-import { searchUsers } from "@/app/chat/actions";
+import { searchUsers } from "@/app/messages/actions";
 import { FramedAvatar } from "@/components/framed-avatar";
 import type { ChatUserProfile } from "@/types/chat";
 import { $createMentionNode } from "../nodes/MentionNode";

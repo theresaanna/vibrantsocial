@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { searchUsers } from "@/app/chat/actions";
+import { searchUsers } from "@/app/messages/actions";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { StyledName } from "@/components/styled-name";
 import type { ChatUserProfile } from "@/types/chat";

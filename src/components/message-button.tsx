@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { startConversation } from "@/app/chat/actions";
+import { startConversation } from "@/app/messages/actions";
 
 interface MessageButtonProps {
   userId: string;
@@ -18,7 +18,7 @@ export function MessageButton({ userId, hasCustomTheme }: MessageButtonProps) {
     try {
       const result = await startConversation(userId);
       if (result.success && result.conversationId) {
-        router.push(`/chat/${result.conversationId}`);
+        router.push(`/messages/${result.conversationId}`);
       }
     } finally {
       setIsPending(false);

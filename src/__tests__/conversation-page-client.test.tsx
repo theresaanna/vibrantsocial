@@ -61,11 +61,11 @@ vi.mock("@/components/chat/message-thread", () => ({
   ),
 }));
 
-vi.mock("@/app/chat/actions", () => ({
+vi.mock("@/app/messages/actions", () => ({
   getConversations: vi.fn().mockResolvedValue([]),
 }));
 
-import { ConversationPageClient } from "@/app/chat/[conversationId]/conversation-page-client";
+import { ConversationPageClient } from "@/app/messages/[conversationId]/conversation-page-client";
 import { useAblyReady } from "@/app/providers";
 
 const mockConversations = [

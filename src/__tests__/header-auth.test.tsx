@@ -6,7 +6,7 @@ vi.mock("@/auth", () => ({
   auth: vi.fn(),
 }));
 
-vi.mock("@/app/chat/actions", () => ({
+vi.mock("@/app/messages/actions", () => ({
   getConversations: vi.fn().mockResolvedValue([]),
 }));
 

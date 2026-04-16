@@ -7,7 +7,7 @@ vi.mock("@/lib/time", () => ({
   timeAgo: vi.fn().mockReturnValue("2m ago"),
 }));
 
-vi.mock("@/app/chat/actions", () => ({
+vi.mock("@/app/messages/actions", () => ({
   startConversation: vi.fn(),
   createGroupConversation: vi.fn(),
   searchUsers: vi.fn().mockResolvedValue([]),

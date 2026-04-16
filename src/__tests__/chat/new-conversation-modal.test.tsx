@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 const mockStartConversation = vi.fn();
 const mockCreateGroupConversation = vi.fn();
 
-vi.mock("@/app/chat/actions", () => ({
+vi.mock("@/app/messages/actions", () => ({
   startConversation: (...args: unknown[]) => mockStartConversation(...args),
   createGroupConversation: (...args: unknown[]) =>
     mockCreateGroupConversation(...args),
@@ -144,7 +144,7 @@ describe("NewConversationModal", () => {
     });
 
     expect(mockStartConversation).toHaveBeenCalledWith("alice-id");
-    expect(mockRouter.push).toHaveBeenCalledWith("/chat/conv-new");
+    expect(mockRouter.push).toHaveBeenCalledWith("/messages/conv-new");
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -303,7 +303,7 @@ describe("NewConversationModal", () => {
       name: "Team",
       participantIds: ["alice-id", "bob-id"],
     });
-    expect(mockRouter.push).toHaveBeenCalledWith("/chat/group-new");
+    expect(mockRouter.push).toHaveBeenCalledWith("/messages/group-new");
     expect(onClose).toHaveBeenCalled();
   });
 

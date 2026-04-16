@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { searchUsers } from "@/app/chat/actions";
+import { searchUsers } from "@/app/messages/actions";
 import { searchTags } from "@/app/tags/actions";
 import type { ChatUserProfile } from "@/types/chat";
 

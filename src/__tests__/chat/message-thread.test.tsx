@@ -15,7 +15,7 @@ vi.mock("ably/react", () => ({
   usePresenceListener: vi.fn().mockReturnValue({ presenceData: [] }),
 }));
 
-vi.mock("@/app/chat/actions", () => ({
+vi.mock("@/app/messages/actions", () => ({
   sendMessage: vi.fn().mockResolvedValue({ success: true, messageId: "new-msg" }),
   editMessage: vi.fn().mockResolvedValue({ success: true }),
   deleteMessage: vi.fn().mockResolvedValue({ success: true }),

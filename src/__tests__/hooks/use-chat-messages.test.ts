@@ -29,7 +29,7 @@ vi.mock("@/lib/ably", () => ({
 
 const mockGetMessages = vi.fn(() => Promise.resolve({ messages: [] as MessageData[], nextCursor: null }));
 
-vi.mock("@/app/chat/actions", () => ({
+vi.mock("@/app/messages/actions", () => ({
   getMessages: (...args: unknown[]) => mockGetMessages(...args),
 }));
 

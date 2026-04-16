@@ -11,8 +11,8 @@ import {
 } from "@/app/feed/friend-actions";
 import { togglePostSubscription } from "@/app/feed/subscription-actions";
 import { addCloseFriend, removeCloseFriend } from "@/app/feed/close-friends-actions";
-import { startConversation } from "@/app/chat/actions";
-import { sendChatRequest, cancelChatRequest, type ChatRequestStatus } from "@/app/chat/actions";
+import { startConversation } from "@/app/messages/actions";
+import { sendChatRequest, cancelChatRequest, type ChatRequestStatus } from "@/app/messages/actions";
 import { toggleBlock } from "@/app/feed/block-actions";
 import { useRouter } from "next/navigation";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -92,7 +92,7 @@ export function ProfileActionsDropdown({
     try {
       const result = await startConversation(userId);
       if (result.success && result.conversationId) {
-        router.push(`/chat/${result.conversationId}`);
+        router.push(`/messages/${result.conversationId}`);
       }
     } finally {
       setMessagePending(false);

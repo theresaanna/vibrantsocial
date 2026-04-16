@@ -87,7 +87,7 @@ describe("sendNewChatEmail", () => {
     expect(call.to).toBe("bob@example.com");
     expect(call.subject).toBe("You got a new message!");
     expect(call.html).toContain("Carol");
-    expect(call.html).toContain("/chat/conv-456");
+    expect(call.html).toContain("/messages/conv-456");
     expect(call.html).toContain("Hey, friend!");
   });
 

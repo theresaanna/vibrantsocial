@@ -37,7 +37,7 @@ import {
   markConversationRead,
   acceptMessageRequest,
   declineMessageRequest,
-} from "@/app/chat/actions";
+} from "@/app/messages/actions";
 import { getUnreadNotificationCount, getRecentNotifications } from "@/app/notifications/actions";
 import { fetchNewcomers } from "@/app/communities/newcomer-actions";
 import { fetchTopDiscussedPosts } from "@/app/communities/discussion-actions";

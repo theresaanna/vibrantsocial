@@ -38,7 +38,7 @@ vi.mock("@/hooks/use-read-receipts", () => ({
   })),
 }));
 
-vi.mock("@/app/chat/actions", () => ({
+vi.mock("@/app/messages/actions", () => ({
   sendMessage: vi.fn(),
   editMessage: vi.fn(),
   deleteMessage: vi.fn(),
@@ -73,7 +73,7 @@ vi.mock("@/lib/time", () => ({
 }));
 
 import { MessageThread } from "@/components/chat/message-thread";
-import { leaveConversation } from "@/app/chat/actions";
+import { leaveConversation } from "@/app/messages/actions";
 import type { ConversationWithParticipants } from "@/types/chat";
 
 const baseConversation: ConversationWithParticipants = {

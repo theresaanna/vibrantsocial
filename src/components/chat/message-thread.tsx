@@ -26,7 +26,7 @@ import {
   getMessages,
   toggleReaction,
   leaveConversation,
-} from "@/app/chat/actions";
+} from "@/app/messages/actions";
 import type {
   MessageData,
   MediaType,
@@ -367,7 +367,7 @@ export function MessageThread({
   const handleDeleteConfirm = async () => {
     setShowDeleteConfirm(false);
     await leaveConversation(conversationId);
-    router.push("/chat");
+    router.push("/messages");
   };
 
   return (
@@ -376,7 +376,7 @@ export function MessageThread({
       <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
         <div className="flex items-center gap-3">
           <Link
-            href="/chat"
+            href="/messages"
             className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 md:hidden dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
             aria-label="Back to conversations"
           >

@@ -84,7 +84,7 @@ export async function sendNewChatEmail(params: {
   conversationId: string;
 }) {
   const { toEmail, senderName, conversationId } = params;
-  const chatUrl = `${getBaseUrl()}/chat/${conversationId}`;
+  const chatUrl = `${getBaseUrl()}/messages/${conversationId}`;
 
   await getResend().emails.send({
     from: FROM_EMAIL,

@@ -6,12 +6,12 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-vi.mock("@/app/chat/actions", () => ({
+vi.mock("@/app/messages/actions", () => ({
   startConversation: vi.fn(),
 }));
 
 import { MessageButton } from "@/components/message-button";
-import { startConversation } from "@/app/chat/actions";
+import { startConversation } from "@/app/messages/actions";
 
 const mockStartConversation = vi.mocked(startConversation);
 
@@ -39,7 +39,7 @@ describe("MessageButton", () => {
 
     await waitFor(() => {
       expect(mockStartConversation).toHaveBeenCalledWith("user-123");
-      expect(mockPush).toHaveBeenCalledWith("/chat/conv-456");
+      expect(mockPush).toHaveBeenCalledWith("/messages/conv-456");
     });
   });
 

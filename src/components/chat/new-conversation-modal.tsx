@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { UserSearch } from "./user-search";
-import { startConversation, createGroupConversation } from "@/app/chat/actions";
+import { startConversation, createGroupConversation } from "@/app/messages/actions";
 import type { ChatUserProfile } from "@/types/chat";
 
 interface NewConversationModalProps {
@@ -25,7 +25,7 @@ export function NewConversationModal({ onClose }: NewConversationModalProps) {
     setStatus("");
     const result = await startConversation(user.id);
     if (result.success && result.conversationId) {
-      router.push(`/chat/${result.conversationId}`);
+      router.push(`/messages/${result.conversationId}`);
       onClose();
     } else {
       setStatus(result.message);
@@ -42,7 +42,7 @@ export function NewConversationModal({ onClose }: NewConversationModalProps) {
       participantIds: selectedUsers.map((u) => u.id),
     });
     if (result.success && result.conversationId) {
-      router.push(`/chat/${result.conversationId}`);
+      router.push(`/messages/${result.conversationId}`);
       onClose();
     } else {
       setStatus(result.message);

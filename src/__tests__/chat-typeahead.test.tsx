@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
 import userEvent from "@testing-library/user-event";
 
 // Mock server actions before imports
-vi.mock("@/app/chat/actions", () => ({
+vi.mock("@/app/messages/actions", () => ({
   searchUsers: vi.fn(),
 }));
 
@@ -22,7 +22,7 @@ vi.mock("@vercel/blob/client", () => ({
   upload: vi.fn(),
 }));
 
-import { searchUsers } from "@/app/chat/actions";
+import { searchUsers } from "@/app/messages/actions";
 import { searchTags } from "@/app/tags/actions";
 import { MessageInput } from "@/components/chat/message-input";
 

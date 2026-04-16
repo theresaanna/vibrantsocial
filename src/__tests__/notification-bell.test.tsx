@@ -319,7 +319,7 @@ describe("NotificationBell", () => {
     );
     fireEvent.click(screen.getByLabelText("Notifications"));
     const link = screen.getByText("reacted to your message").closest("a");
-    expect(link).toHaveAttribute("href", "/chat/conv1");
+    expect(link).toHaveAttribute("href", "/messages/conv1");
   });
 
   it("generates correct href for notification with repostId fallback", () => {
