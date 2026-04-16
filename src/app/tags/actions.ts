@@ -269,6 +269,93 @@ export async function getPostsByTag(
   };
 }
 
+const MEDIA_PAGE_SIZE = 30;
+
+interface MediaPost {
+  id: string;
+  slug: string | null;
+  content: string;
+  createdAt: string;
+  author: {
+    id: string;
+    username: string | null;
+    displayName: string | null;
+    name: string | null;
+    image: string | null;
+    avatar: string | null;
+    profileFrameId: string | null;
+    usernameFont: string | null;
+  } | null;
+}
+
+/**
+ * Fetch media posts for a specific tag (images, videos, YouTube embeds).
+ */
+export async function fetchMediaByTag(
+  tagName: string,
+  includeNsfw?: boolean,
+  cursor?: string
+): Promise<{ posts: MediaPost[]; hasMore: boolean }> {
+  const session = await auth();
+  const isLoggedIn = !!session?.user?.id;
+
+  const normalized = normalizeTag(tagName);
+  if (!normalized) return { posts: [], hasMore: false };
+
+  const authorFilter = isLoggedIn ? {} : { author: { isProfilePublic: true } };
+  const nsfwFilter = includeNsfw
+    ? { isSensitive: false, isGraphicNudity: false }
+    : { isSensitive: false, isNsfw: false, isGraphicNudity: false };
+
+  const dateFilter = cursor ? { lt: new Date(cursor) } : undefined;
+
+  const posts = await prisma.post.findMany({
+    where: {
+      ...nsfwFilter,
+      ...authorFilter,
+      marketplacePost: null,
+      tags: { some: { tag: { name: normalized } } },
+      ...(dateFilter ? { createdAt: dateFilter } : {}),
+      OR: [
+        { content: { contains: '"type":"image"' } },
+        { content: { contains: '"type":"video"' } },
+        { content: { contains: '"type":"youtube"' } },
+      ],
+    },
+    orderBy: { createdAt: "desc" },
+    take: MEDIA_PAGE_SIZE + 1,
+    select: {
+      id: true,
+      slug: true,
+      content: true,
+      createdAt: true,
+      author: {
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          name: true,
+          image: true,
+          avatar: true,
+          profileFrameId: true,
+          usernameFont: true,
+        },
+      },
+    },
+  });
+
+  const hasMore = posts.length > MEDIA_PAGE_SIZE;
+  const mediaPosts: MediaPost[] = posts.slice(0, MEDIA_PAGE_SIZE).map((post) => ({
+    id: post.id,
+    slug: post.slug,
+    content: post.content,
+    createdAt: post.createdAt.toISOString(),
+    author: post.author,
+  }));
+
+  return { posts: mediaPosts, hasMore };
+}
+
 /**
  * Toggle the isNsfw flag on a tag. Admin only.
  */

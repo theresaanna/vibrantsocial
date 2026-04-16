@@ -2,7 +2,9 @@
 
 import { useState, useRef, useEffect, useCallback, useTransition } from "react";
 import { PostCard } from "@/components/post-card";
-import { getPostsByTag } from "@/app/tags/actions";
+import { getPostsByTag, fetchMediaByTag } from "@/app/tags/actions";
+import { FeedViewToggle, type FeedView } from "@/components/feed-view-toggle";
+import { MediaGrid, type MediaPost } from "@/components/media-grid";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 interface TagPostListProps {
@@ -31,6 +33,7 @@ export function TagPostList({
   hideNsfwOverlay,
   showNsfwContent,
 }: TagPostListProps) {
+  const [activeView, setActiveView] = useState<FeedView>("posts");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [posts, setPosts] = useState<any[]>(initialPosts);
   const [hasMore, setHasMore] = useState(initialHasMore);
@@ -84,47 +87,86 @@ export function TagPostList({
     return () => observer.disconnect();
   }, [loadMore]);
 
-  if (posts.length === 0) {
+  const mediaFetchPage = useCallback(
+    (cursor?: string) => fetchMediaByTag(tagName, showNsfwContent, cursor),
+    [tagName, showNsfwContent]
+  );
+
+  return (
+    <>
+      <FeedViewToggle activeView={activeView} onViewChange={setActiveView} />
+
+      {activeView === "media" ? (
+        <TagMediaContent tagName={tagName} showNsfwContent={showNsfwContent} fetchPage={mediaFetchPage} />
+      ) : posts.length === 0 ? (
+        <div className="py-8 text-center">
+          <p className="text-sm text-zinc-500">No posts with this tag yet.</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {posts.map((post) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              currentUserId={currentUserId}
+              phoneVerified={phoneVerified}
+              ageVerified={ageVerified}
+              showGraphicByDefault={showGraphicByDefault}
+              showNsfwContent={showNsfwContent}
+              hideSensitiveOverlay={hideSensitiveOverlay}
+              hideNsfwOverlay={hideNsfwOverlay}
+              {...(post.wallPost && {
+                wallOwner: {
+                  username: post.wallPost.wallOwner.username,
+                  displayName: post.wallPost.wallOwner.displayName,
+                  usernameFont: post.wallPost.wallOwner.usernameFont,
+                },
+                wallPostId: post.wallPost.id,
+                wallPostStatus: post.wallPost.status,
+              })}
+            />
+          ))}
+
+          {/* Sentinel element for infinite scroll */}
+          <div ref={sentinelRef} aria-hidden="true" />
+
+          {isPending && (
+            <div className="flex justify-center py-4">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-600 dark:border-t-zinc-100" />
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
+function TagMediaContent({
+  tagName,
+  showNsfwContent,
+  fetchPage,
+}: {
+  tagName: string;
+  showNsfwContent: boolean;
+  fetchPage: (cursor?: string) => Promise<{ posts: MediaPost[]; hasMore: boolean }>;
+}) {
+  const [data, setData] = useState<{ posts: MediaPost[]; hasMore: boolean } | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    startTransition(async () => {
+      const result = await fetchMediaByTag(tagName, showNsfwContent);
+      setData(result);
+    });
+  }, [tagName, showNsfwContent]);
+
+  if (!data || isPending) {
     return (
-      <div className="py-8 text-center">
-        <p className="text-sm text-zinc-500">No posts with this tag yet.</p>
+      <div className="mt-6 flex justify-center py-8">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-600 dark:border-t-zinc-100" />
       </div>
     );
   }
 
-  return (
-    <div className="flex flex-col gap-4">
-      {posts.map((post) => (
-        <PostCard
-          key={post.id}
-          post={post}
-          currentUserId={currentUserId}
-          phoneVerified={phoneVerified}
-          ageVerified={ageVerified}
-          showGraphicByDefault={showGraphicByDefault}
-          showNsfwContent={showNsfwContent}
-          hideSensitiveOverlay={hideSensitiveOverlay}
-          hideNsfwOverlay={hideNsfwOverlay}
-          {...(post.wallPost && {
-            wallOwner: {
-              username: post.wallPost.wallOwner.username,
-              displayName: post.wallPost.wallOwner.displayName,
-              usernameFont: post.wallPost.wallOwner.usernameFont,
-            },
-            wallPostId: post.wallPost.id,
-            wallPostStatus: post.wallPost.status,
-          })}
-        />
-      ))}
-
-      {/* Sentinel element for infinite scroll */}
-      <div ref={sentinelRef} aria-hidden="true" />
-
-      {isPending && (
-        <div className="flex justify-center py-4">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-600 dark:border-t-zinc-100" />
-        </div>
-      )}
-    </div>
-  );
+  return <MediaGrid initialPosts={data.posts} initialHasMore={data.hasMore} fetchPage={fetchPage} />;
 }
