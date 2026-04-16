@@ -1,10 +1,11 @@
-"use client";
+import Link from "next/link";
 
 export type FeedView = "posts" | "media";
 
 interface FeedViewToggleProps {
   activeView: FeedView;
-  onViewChange: (view: FeedView) => void;
+  postsHref: string;
+  mediaHref: string;
 }
 
 const activeStyle: React.CSSProperties = {
@@ -18,7 +19,7 @@ const inactiveStyle: React.CSSProperties = {
   backgroundColor: "color-mix(in srgb, var(--profile-secondary, #71717a) 15%, transparent)",
 };
 
-export function FeedViewToggle({ activeView, onViewChange }: FeedViewToggleProps) {
+export function FeedViewToggle({ activeView, postsHref, mediaHref }: FeedViewToggleProps) {
   const baseClass = "flex-1 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all text-center";
 
   return (
@@ -27,13 +28,12 @@ export function FeedViewToggle({ activeView, onViewChange }: FeedViewToggleProps
       role="tablist"
       aria-label="Feed view"
     >
-      <button
-        type="button"
+      <Link
+        href={postsHref}
         role="tab"
         aria-selected={activeView === "posts"}
         className={baseClass}
         style={activeView === "posts" ? activeStyle : inactiveStyle}
-        onClick={() => onViewChange("posts")}
         data-testid="feed-view-posts"
       >
         <span className="inline-flex items-center justify-center gap-1.5">
@@ -42,14 +42,13 @@ export function FeedViewToggle({ activeView, onViewChange }: FeedViewToggleProps
           </svg>
           Full Post View
         </span>
-      </button>
-      <button
-        type="button"
+      </Link>
+      <Link
+        href={mediaHref}
         role="tab"
         aria-selected={activeView === "media"}
         className={baseClass}
         style={activeView === "media" ? activeStyle : inactiveStyle}
-        onClick={() => onViewChange("media")}
         data-testid="feed-view-media"
       >
         <span className="inline-flex items-center justify-center gap-1.5">
@@ -58,7 +57,7 @@ export function FeedViewToggle({ activeView, onViewChange }: FeedViewToggleProps
           </svg>
           Media View
         </span>
-      </button>
+      </Link>
     </div>
   );
 }

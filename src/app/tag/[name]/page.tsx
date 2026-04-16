@@ -13,6 +13,7 @@ import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
 
 interface TagPageProps {
   params: Promise<{ name: string }>;
+  searchParams: Promise<{ view?: string }>;
 }
 
 export async function generateMetadata({ params }: TagPageProps): Promise<Metadata> {
@@ -33,8 +34,10 @@ export async function generateMetadata({ params }: TagPageProps): Promise<Metada
   });
 }
 
-export default async function TagPage({ params }: TagPageProps) {
+export default async function TagPage({ params, searchParams }: TagPageProps) {
   const { name } = await params;
+  const { view } = await searchParams;
+  const activeView = view === "media" ? "media" as const : "posts" as const;
   const decodedName = decodeURIComponent(name).toLowerCase();
 
   const tag = await prisma.tag.findUnique({
@@ -95,10 +98,10 @@ export default async function TagPage({ params }: TagPageProps) {
 
   return (
     <ThemedPage {...(theme ?? NO_THEME)}>
-      <div className="mb-6">
+      <div className={`mb-6 rounded-2xl p-6 shadow-lg ${theme?.hasCustomTheme ? "profile-container" : "bg-white dark:bg-zinc-900"}`}>
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="flex items-center gap-2 text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+            <h1 className={`flex items-center gap-2 text-2xl font-bold ${theme?.hasCustomTheme ? "" : "text-zinc-900 dark:text-zinc-100"}`}>
               #{decodedName}
               {tag.isNsfw && (
                 <span className="rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
@@ -106,7 +109,7 @@ export default async function TagPage({ params }: TagPageProps) {
                 </span>
               )}
             </h1>
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className={`mt-1 text-sm ${theme?.hasCustomTheme ? "profile-text-secondary" : "text-zinc-500"}`}>
               {initialData.totalCount}{" "}
               {initialData.totalCount === 1 ? "post" : "posts"}
             </p>
@@ -130,6 +133,7 @@ export default async function TagPage({ params }: TagPageProps) {
 
       <TagPostList
         tagName={decodedName}
+        activeView={activeView}
         initialPosts={initialData.posts}
         initialHasMore={initialData.hasMore}
         currentUserId={currentUserId}

@@ -9,6 +9,7 @@ import { MediaGrid, type MediaPost } from "@/components/media-grid";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 interface TagPostListProps {
   tagName: string;
+  activeView: FeedView;
   initialPosts: any[];
   initialHasMore: boolean;
   currentUserId?: string;
@@ -23,6 +24,7 @@ interface TagPostListProps {
 
 export function TagPostList({
   tagName,
+  activeView,
   initialPosts,
   initialHasMore,
   currentUserId,
@@ -33,7 +35,6 @@ export function TagPostList({
   hideNsfwOverlay,
   showNsfwContent,
 }: TagPostListProps) {
-  const [activeView, setActiveView] = useState<FeedView>("posts");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [posts, setPosts] = useState<any[]>(initialPosts);
   const [hasMore, setHasMore] = useState(initialHasMore);
@@ -94,7 +95,11 @@ export function TagPostList({
 
   return (
     <>
-      <FeedViewToggle activeView={activeView} onViewChange={setActiveView} />
+      <FeedViewToggle
+        activeView={activeView}
+        postsHref={`/tag/${encodeURIComponent(tagName)}`}
+        mediaHref={`/tag/${encodeURIComponent(tagName)}?view=media`}
+      />
 
       {activeView === "media" ? (
         <TagMediaContent tagName={tagName} showNsfwContent={showNsfwContent} fetchPage={mediaFetchPage} />
