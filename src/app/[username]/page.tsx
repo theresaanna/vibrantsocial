@@ -29,6 +29,7 @@ import { MediaGrid } from "@/components/media-grid";
 import { WallPostComposer } from "@/components/wall-post-composer";
 import { getUserListMemberships } from "@/app/lists/actions";
 import { AddToListButton } from "@/components/add-to-list-button";
+import { ProfileViewToggle } from "@/components/profile-view-toggle";
 import { PremiumCrown } from "@/components/premium-crown";
 import { ProfileSparklefall } from "@/components/profile-sparklefall";
 import { isBirthday, getBirthdaySparkleConfig } from "@/lib/birthday";
@@ -40,7 +41,7 @@ import { isCloseFriend as checkIsCloseFriend } from "@/app/feed/close-friends-ac
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; view?: string }>;
 }
 
 const profileSelect = {
@@ -119,7 +120,8 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
 
 export default async function PublicProfilePage({ params, searchParams }: ProfilePageProps) {
   const { username } = await params;
-  const { tab } = await searchParams;
+  const { tab, view } = await searchParams;
+  const activeView = view === "media" ? "media" as const : "posts" as const;
   const activeTab = tab === "media" ? "media" as const
     : tab === "wall" ? "wall" as const
     : tab === "sensitive" ? "sensitive" as const
@@ -168,9 +170,6 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
     120
   );
   const { hasSensitive: hasSensitivePosts, hasNsfw: hasNsfwPosts, hasGraphic: hasGraphicPosts, hasMarketplace: hasMarketplacePosts } = tabFlags;
-
-  // Always show media tab — user has posts with images/videos
-  const hasMediaPosts = user._count.posts > 0;
 
   const session = await auth();
   const currentUserId = session?.user?.id;
@@ -849,10 +848,16 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
 
         {blockStatus === "none" && (
           <>
-        <ProfileTabs username={user.username!} activeTab={activeTab} hasCustomTheme={hasCustomTheme} showMediaTab={hasMediaPosts} showWallTab={showWallInSeparateTab && canSeeWall} showSensitiveTab={hasSensitivePosts} showNsfwTab={hasNsfwPosts} showGraphicTab={hasGraphicPosts} showMarketplaceTab={hasMarketplacePosts} />
+        <ProfileTabs username={user.username!} activeTab={activeTab} hasCustomTheme={hasCustomTheme} showWallTab={showWallInSeparateTab && canSeeWall} showSensitiveTab={hasSensitivePosts} showNsfwTab={hasNsfwPosts} showGraphicTab={hasGraphicPosts} showMarketplaceTab={hasMarketplacePosts} />
+
+        <div className="mt-4">
+          <ProfileViewToggle username={user.username!} activeView={activeView} />
+        </div>
 
         {/* Tab content */}
-        {activeTab === "posts" ? (
+        {activeView === "media" && activeTab === "posts" ? (
+          <ProfileMediaTab userId={user.id} />
+        ) : activeTab === "posts" ? (
           <div className="mt-6 space-y-4">
             {/* Wall post composer — always shown to friends on posts tab */}
             {currentUserId && isFriend && !isOwnProfile && (
@@ -961,8 +966,6 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
               ))}
             </div>
           )
-        ) : activeTab === "media" ? (
-          <ProfileMediaTab userId={user.id} />
         ) : activeTab === "marketplace" ? (
           <ProfileMarketplaceTab userId={user.id} />
         ) : null}

@@ -651,8 +651,10 @@ export function ChatRoomClient({
           </div>
         </div>
 
+        {/* Chat container */}
+        <div className="flex min-h-0 flex-1 flex-col rounded-2xl bg-white p-2 shadow-sm md:p-4 dark:bg-zinc-900">
         {/* Messages area */}
-        <div className="min-h-0 flex-1 overflow-y-auto rounded-xl bg-white p-2 shadow-sm md:p-4 dark:bg-zinc-900">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           {messages.length === 0 ? (
             <div className="flex h-full items-center justify-center">
               <p className="text-sm text-zinc-400 dark:text-zinc-500">
@@ -1250,6 +1252,7 @@ export function ChatRoomClient({
             </div>
           </div>
         )}
+        </div>
 
         {/* GIF picker modal */}
         {showGifPicker && (
