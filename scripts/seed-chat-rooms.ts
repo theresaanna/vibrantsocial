@@ -1,6 +1,6 @@
 /**
- * Seeds NSFW chat rooms owned by `theresa`. Idempotent.
- * Run: npx tsx scripts/create-nsfw-rooms.ts (from repo root)
+ * Seeds chat rooms owned by `theresa`. Idempotent — edit ROOMS and re-run.
+ * Run: npx tsx scripts/seed-chat-rooms.ts (from repo root)
  */
 import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client";
@@ -13,6 +13,8 @@ const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) })
 const ROOMS = [
   { slug: "findom", name: "Findom", isNsfw: true },
   { slug: "spicy-vibrant", name: "Spicy Vibrant", isNsfw: true },
+  { slug: "music-chat", name: "Music Chat", isNsfw: false },
+  { slug: "nerd-talk", name: "Nerd Talk", isNsfw: false },
 ];
 
 async function main() {
