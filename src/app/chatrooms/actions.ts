@@ -748,3 +748,36 @@ export async function listChatRooms(showNsfw = false): Promise<ChatRoomListItem[
     lastMessageAt: r.messages[0]?.createdAt?.toISOString() ?? null,
   }));
 }
+
+/**
+ * Return the rooms with the most messages in the last 7 days.
+ * NSFW rooms are excluded unless `showNsfw` is true.
+ */
+export async function listTopActiveChatRooms(
+  limit = 5,
+  showNsfw = false,
+): Promise<{ id: string; slug: string; name: string; isNsfw: boolean; recentMessageCount: number }[]> {
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  const rooms = await prisma.chatRoom.findMany({
+    where: showNsfw ? {} : { isNsfw: false },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      isNsfw: true,
+      _count: { select: { messages: { where: { createdAt: { gte: since }, deletedAt: null } } } },
+    },
+  });
+
+  return rooms
+    .map((r) => ({
+      id: r.id,
+      slug: r.slug,
+      name: r.name,
+      isNsfw: r.isNsfw,
+      recentMessageCount: r._count.messages,
+    }))
+    .sort((a, b) => b.recentMessageCount - a.recentMessageCount)
+    .slice(0, limit);
+}

@@ -4,6 +4,8 @@ import { FriendsStatusesWidget } from "@/components/friends-statuses-widget";
 import { FeedSummaryBanner } from "@/components/feed-summary-banner";
 import { pollStatuses } from "@/app/feed/status-actions";
 import { fetchFeedSummary } from "@/app/feed/summary-actions";
+import { listTopActiveChatRooms } from "@/app/chatrooms/actions";
+import { getUserPrefs } from "@/lib/user-prefs";
 
 /**
  * Async server component that renders the status widget, chatroom box,
@@ -18,10 +20,13 @@ export async function FeedTopWidgets({ userId }: { userId: string }) {
 
   const lastSeenFeedAt = currentUser?.lastSeenFeedAt?.toISOString() ?? null;
 
-  const [statusData, feedSummaryData] = await Promise.all([
+  const [statusData, feedSummaryData, prefs] = await Promise.all([
     pollStatuses(10),
     lastSeenFeedAt ? fetchFeedSummary(lastSeenFeedAt) : Promise.resolve(null),
+    getUserPrefs(userId),
   ]);
+
+  const topRooms = await listTopActiveChatRooms(5, prefs.showNsfwContent);
 
   return (
     <>
@@ -41,15 +46,28 @@ export async function FeedTopWidgets({ userId }: { userId: string }) {
             Most Active Chatrooms
           </h3>
           <ul className="mt-2 space-y-1">
-            <li>
-              <Link
-                href="/chatrooms"
-                className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
-              >
-                <span style={{ color: "var(--profile-link, #2563eb)" }}>#</span>
-                General Chat
-              </Link>
-            </li>
+            {topRooms.length === 0 ? (
+              <li>
+                <Link
+                  href="/chatrooms"
+                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-zinc-500 italic transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-700"
+                >
+                  Browse chatrooms
+                </Link>
+              </li>
+            ) : (
+              topRooms.map((room) => (
+                <li key={room.id}>
+                  <Link
+                    href={`/chatrooms/${room.slug}`}
+                    className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  >
+                    <span style={{ color: "var(--profile-link, #2563eb)" }}>#</span>
+                    <span className="truncate">{room.name}</span>
+                  </Link>
+                </li>
+              ))
+            )}
           </ul>
         </div>
       </div>
