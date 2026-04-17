@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { getAblyRestClient } from "@/lib/ably";
 import { createNotification } from "@/lib/notifications";
 import { inngest } from "@/lib/inngest";
+import { cached, cacheKeys, cacheTags } from "@/lib/cache";
+import { unstable_cache } from "next/cache";
 import {
   requireAuthWithRateLimit,
   isActionError,
@@ -15,6 +17,7 @@ import type { ActionState } from "@/lib/action-utils";
 const MAX_CONTENT_LENGTH = 2000;
 const MAX_STATUS_LENGTH = 200;
 const PAGE_SIZE = 40;
+const ACTIVE_CHATROOMS_TTL_SECONDS = 60;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -758,9 +761,9 @@ export async function listChatRooms(showNsfw = false): Promise<ChatRoomListItem[
  * Return the rooms with the most messages in the last 7 days.
  * NSFW rooms are excluded unless `showNsfw` is true.
  */
-export async function listTopActiveChatRooms(
-  limit = 5,
-  showNsfw = false,
+async function queryTopActiveChatRooms(
+  limit: number,
+  showNsfw: boolean,
 ): Promise<{ id: string; slug: string; name: string; isNsfw: boolean; recentMessageCount: number }[]> {
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
@@ -785,4 +788,16 @@ export async function listTopActiveChatRooms(
     }))
     .sort((a, b) => b.recentMessageCount - a.recentMessageCount)
     .slice(0, limit);
+}
+
+export async function listTopActiveChatRooms(
+  limit = 5,
+  showNsfw = false,
+): Promise<{ id: string; slug: string; name: string; isNsfw: boolean; recentMessageCount: number }[]> {
+  const key = cacheKeys.activeChatRooms(limit, showNsfw);
+  return unstable_cache(
+    () => cached(key, () => queryTopActiveChatRooms(limit, showNsfw), ACTIVE_CHATROOMS_TTL_SECONDS),
+    [key],
+    { revalidate: ACTIVE_CHATROOMS_TTL_SECONDS, tags: [cacheTags.activeChatrooms] },
+  )();
 }

@@ -2,8 +2,8 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { cached, cacheKeys, invalidate } from "@/lib/cache";
-import { revalidatePath } from "next/cache";
+import { cached, cacheKeys, cacheTags, invalidate } from "@/lib/cache";
+import { revalidatePath, updateTag, unstable_cache } from "next/cache";
 import {
   requireAuthWithRateLimit,
   isActionError,
@@ -14,6 +14,7 @@ import type { ActionState } from "@/lib/action-utils";
 
 const MAX_STATUS_LENGTH = 100;
 const STATUS_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 2 weeks
+const STATUS_LIST_TTL_SECONDS = 30;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -58,6 +59,7 @@ export async function setStatus(
 
   await prisma.userStatus.create({ data: { userId, content } });
   await invalidate(cacheKeys.friendStatuses(userId));
+  updateTag(cacheTags.statusFeed);
   revalidatePath("/feed");
   revalidatePath("/statuses");
 
@@ -84,6 +86,7 @@ export async function setStatusAndReturn(
   });
 
   await invalidate(cacheKeys.friendStatuses(userId));
+  updateTag(cacheTags.statusFeed);
   revalidatePath("/feed");
   revalidatePath("/statuses");
 
@@ -123,6 +126,8 @@ export async function deleteStatus(
 
   await prisma.userStatus.delete({ where: { id: statusId } });
   await invalidate(cacheKeys.friendStatuses(userId));
+  updateTag(cacheTags.statusFeed);
+  revalidatePath("/feed");
   revalidatePath("/statuses");
 
   return { success: true, message: "Status deleted." };
@@ -153,6 +158,7 @@ export async function toggleStatusLike(
     await prisma.statusLike.create({ data: { statusId, userId } });
   }
 
+  updateTag(cacheTags.statusFeed);
   revalidatePath("/feed");
   revalidatePath("/statuses");
 
@@ -192,14 +198,10 @@ function toStatusData(s: StatusRow): FriendStatusData {
   };
 }
 
-export async function getFriendStatuses(
-  limit = 10,
+async function queryFriendStatuses(
+  userId: string,
+  limit: number,
 ): Promise<FriendStatusData[]> {
-  const session = await auth();
-  if (!session?.user?.id) return [];
-  const userId = session.user.id;
-
-  // Get accepted friend IDs (cached)
   const friendIds = await cached(
     cacheKeys.friendStatuses(userId) + ":ids",
     async () => {
@@ -231,6 +233,26 @@ export async function getFriendStatuses(
   });
 
   return statuses.map((s: StatusRow) => toStatusData(s));
+}
+
+export async function getFriendStatuses(
+  limit = 10,
+): Promise<FriendStatusData[]> {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+  const userId = session.user.id;
+
+  // Redis (cross-instance) wrapped in unstable_cache (per-render dedup + tag invalidation)
+  return unstable_cache(
+    () =>
+      cached(
+        cacheKeys.friendStatusList(userId, limit),
+        () => queryFriendStatuses(userId, limit),
+        STATUS_LIST_TTL_SECONDS,
+      ),
+    [cacheKeys.friendStatusList(userId, limit)],
+    { revalidate: STATUS_LIST_TTL_SECONDS, tags: [cacheTags.statusFeed] },
+  )();
 }
 
 // ---------------------------------------------------------------------------

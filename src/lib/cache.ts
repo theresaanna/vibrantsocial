@@ -63,6 +63,13 @@ export async function invalidateMany(keys: string[]) {
   await redis.del(...keys);
 }
 
+// Cache tags for unstable_cache / updateTag / revalidateTag
+export const cacheTags = {
+  statusFeed: "status-feed",
+  marketplaceFeed: "marketplace-feed",
+  activeChatrooms: "active-chatrooms",
+} as const;
+
 // Cache key builders
 export const cacheKeys = {
   userFollowing: (userId: string) => `user:${userId}:following`,
@@ -104,4 +111,9 @@ export const cacheKeys = {
   linkedAccountNotifCounts: (userId: string) => `user:${userId}:linked-notif-counts`,
   linkedAccounts: (userId: string) => `user:${userId}:linked-accounts`,
   friendStatuses: (userId: string) => `user:${userId}:friend-statuses`,
+  friendStatusList: (userId: string, limit: number) => `user:${userId}:friend-status-list:${limit}`,
+  marketplacePage: (cursor: string | undefined, showNsfw: boolean, ageVerified: boolean, isLoggedIn: boolean) =>
+    `marketplace:page:${cursor ?? "_"}:${showNsfw ? 1 : 0}:${ageVerified ? 1 : 0}:${isLoggedIn ? 1 : 0}`,
+  activeChatRooms: (limit: number, showNsfw: boolean) =>
+    `chatrooms:active:${limit}:${showNsfw ? 1 : 0}`,
 } as const;
