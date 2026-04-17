@@ -197,14 +197,14 @@ describe("useChatMessages", () => {
         data: {
           messageId: "m1",
           reactions: JSON.stringify([
-            { emoji: "\u{1F44D}", userIds: ["user1", "user2"] },
+            { emoji: "\u{1F44D}", userIds: ["user1", "user2"], userNames: ["User 1", "User 2"] },
           ]),
         },
       });
     });
 
     expect(result.current.messages[0].reactions).toEqual([
-      { emoji: "\u{1F44D}", userIds: ["user1", "user2"] },
+      { emoji: "\u{1F44D}", userIds: ["user1", "user2"], userNames: ["User 1", "User 2"] },
     ]);
   });
 
@@ -218,7 +218,7 @@ describe("useChatMessages", () => {
         data: {
           messageId: "m1",
           reactions: JSON.stringify([
-            { emoji: "\u{2764}\u{FE0F}", userIds: ["user1"] },
+            { emoji: "\u{2764}\u{FE0F}", userIds: ["user1"], userNames: ["User 1"] },
           ]),
         },
       });
@@ -308,7 +308,7 @@ describe("useChatMessages", () => {
     const initial = [makeMessage("m1")];
     const updatedMsg = {
       ...makeMessage("m1"),
-      reactions: [{ emoji: "\u{1F44D}", userIds: ["user1"] }],
+      reactions: [{ emoji: "\u{1F44D}", userIds: ["user1"], userNames: ["User 1"] }],
     };
     mockGetMessages.mockResolvedValueOnce({ messages: [updatedMsg], nextCursor: null });
 

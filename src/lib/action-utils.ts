@@ -117,18 +117,19 @@ export async function areFriends(
 // ---------------------------------------------------------------------------
 
 /**
- * Groups flat reaction rows into { emoji, userIds[] } arrays.
+ * Groups flat reaction rows into { emoji, userIds[], userNames[] } arrays.
  */
 export function groupReactions(
-  reactions: { emoji: string; userId: string }[]
-): { emoji: string; userIds: string[] }[] {
-  const map = new Map<string, string[]>();
+  reactions: { emoji: string; userId: string; user?: { displayName: string | null; username: string | null } }[]
+): { emoji: string; userIds: string[]; userNames: string[] }[] {
+  const map = new Map<string, { userIds: string[]; userNames: string[] }>();
   for (const r of reactions) {
-    const list = map.get(r.emoji) ?? [];
-    list.push(r.userId);
-    map.set(r.emoji, list);
+    const group = map.get(r.emoji) ?? { userIds: [], userNames: [] };
+    group.userIds.push(r.userId);
+    group.userNames.push(r.user?.displayName ?? r.user?.username ?? "Someone");
+    map.set(r.emoji, group);
   }
-  return Array.from(map, ([emoji, userIds]) => ({ emoji, userIds }));
+  return Array.from(map, ([emoji, { userIds, userNames }]) => ({ emoji, userIds, userNames }));
 }
 
 // ---------------------------------------------------------------------------

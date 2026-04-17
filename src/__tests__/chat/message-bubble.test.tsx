@@ -170,8 +170,8 @@ describe("MessageBubble", () => {
     const messageWithReactions: MessageData = {
       ...baseMessage,
       reactions: [
-        { emoji: "\u{1F44D}", userIds: ["user1", "user2"] },
-        { emoji: "\u{2764}\u{FE0F}", userIds: ["user1"] },
+        { emoji: "\u{1F44D}", userIds: ["user1", "user2"], userNames: ["User 1", "User 2"] },
+        { emoji: "\u{2764}\u{FE0F}", userIds: ["user1"], userNames: ["User 1"] },
       ],
     };
     render(
@@ -193,7 +193,7 @@ describe("MessageBubble", () => {
   it("highlights reaction badge when current user has reacted", () => {
     const messageWithReactions: MessageData = {
       ...baseMessage,
-      reactions: [{ emoji: "\u{1F44D}", userIds: ["currentUser"] }],
+      reactions: [{ emoji: "\u{1F44D}", userIds: ["currentUser"], userNames: ["Current User"] }],
     };
     render(
       <MessageBubble
@@ -212,7 +212,7 @@ describe("MessageBubble", () => {
   it("does not highlight reaction badge when current user has not reacted", () => {
     const messageWithReactions: MessageData = {
       ...baseMessage,
-      reactions: [{ emoji: "\u{1F44D}", userIds: ["otherUser"] }],
+      reactions: [{ emoji: "\u{1F44D}", userIds: ["otherUser"], userNames: ["Other User"] }],
     };
     render(
       <MessageBubble
@@ -233,7 +233,7 @@ describe("MessageBubble", () => {
     const onReaction = vi.fn();
     const messageWithReactions: MessageData = {
       ...baseMessage,
-      reactions: [{ emoji: "\u{1F44D}", userIds: ["otherUser"] }],
+      reactions: [{ emoji: "\u{1F44D}", userIds: ["otherUser"], userNames: ["Other User"] }],
     };
     render(
       <MessageBubble

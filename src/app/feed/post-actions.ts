@@ -47,19 +47,19 @@ interface CommentActionState extends ActionState {
       usernameFont: string | null;
       ageVerified: Date | null;
     };
-    reactions: { emoji: string; userIds: string[] }[];
+    reactions: { emoji: string; userIds: string[]; userNames: string[] }[];
   };
 }
 
 const commentReactionSelect = {
-  reactions: { select: { emoji: true, userId: true } },
+  reactions: { select: { emoji: true, userId: true, user: { select: { displayName: true, username: true } } } },
 } as const;
 
 function transformCommentsWithReactions(
   comments: Array<Record<string, unknown>>
 ): Array<Record<string, unknown>> {
   return comments.map((c) => {
-    const reactions = c.reactions as { emoji: string; userId: string }[] | undefined;
+    const reactions = c.reactions as { emoji: string; userId: string; user: { displayName: string | null; username: string | null } }[] | undefined;
     const replies = c.replies as Array<Record<string, unknown>> | undefined;
     return {
       ...c,
@@ -691,7 +691,7 @@ export async function fetchRepostComments(repostId: string) {
     orderBy: { createdAt: "asc" },
     include: {
       author: { select: USER_PROFILE_SELECT },
-      reactions: { select: { emoji: true, userId: true } },
+      reactions: { select: { emoji: true, userId: true, user: { select: { displayName: true, username: true } } } },
     },
   });
 
@@ -1040,7 +1040,7 @@ export async function toggleCommentReaction(data: {
   // Fetch updated reactions for this comment
   const reactions = await prisma.commentReaction.findMany({
     where: { commentId },
-    select: { emoji: true, userId: true },
+    select: { emoji: true, userId: true, user: { select: { displayName: true, username: true } } },
   });
 
   // Publish to Ably for real-time updates

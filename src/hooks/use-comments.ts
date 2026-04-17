@@ -20,6 +20,7 @@ interface CommentAuthor {
 export interface ReactionGroup {
   emoji: string;
   userIds: string[];
+  userNames: string[];
 }
 
 export interface CommentData {

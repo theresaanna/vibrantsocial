@@ -219,18 +219,18 @@ describe("areFriends", () => {
 // ---------------------------------------------------------------------------
 
 describe("groupReactions", () => {
-  it("groups reactions by emoji", () => {
+  it("groups reactions by emoji with user names", () => {
     const reactions = [
-      { emoji: "👍", userId: "u1" },
-      { emoji: "👍", userId: "u2" },
-      { emoji: "❤️", userId: "u1" },
+      { emoji: "👍", userId: "u1", user: { displayName: "Alice", username: "alice" } },
+      { emoji: "👍", userId: "u2", user: { displayName: "Bob", username: "bob" } },
+      { emoji: "❤️", userId: "u1", user: { displayName: "Alice", username: "alice" } },
     ];
 
     const result = groupReactions(reactions);
 
     expect(result).toEqual([
-      { emoji: "👍", userIds: ["u1", "u2"] },
-      { emoji: "❤️", userIds: ["u1"] },
+      { emoji: "👍", userIds: ["u1", "u2"], userNames: ["Alice", "Bob"] },
+      { emoji: "❤️", userIds: ["u1"], userNames: ["Alice"] },
     ]);
   });
 
@@ -239,21 +239,37 @@ describe("groupReactions", () => {
   });
 
   it("handles single reaction", () => {
-    const result = groupReactions([{ emoji: "🎉", userId: "u1" }]);
-    expect(result).toEqual([{ emoji: "🎉", userIds: ["u1"] }]);
+    const result = groupReactions([{ emoji: "🎉", userId: "u1", user: { displayName: "Alice", username: "alice" } }]);
+    expect(result).toEqual([{ emoji: "🎉", userIds: ["u1"], userNames: ["Alice"] }]);
   });
 
   it("preserves insertion order of emojis", () => {
     const reactions = [
-      { emoji: "❤️", userId: "u1" },
-      { emoji: "👍", userId: "u2" },
-      { emoji: "❤️", userId: "u3" },
+      { emoji: "❤️", userId: "u1", user: { displayName: "Alice", username: "alice" } },
+      { emoji: "👍", userId: "u2", user: { displayName: "Bob", username: "bob" } },
+      { emoji: "❤️", userId: "u3", user: { displayName: "Charlie", username: "charlie" } },
     ];
 
     const result = groupReactions(reactions);
 
     expect(result[0].emoji).toBe("❤️");
     expect(result[1].emoji).toBe("👍");
+  });
+
+  it("falls back to username when displayName is null", () => {
+    const reactions = [
+      { emoji: "👍", userId: "u1", user: { displayName: null, username: "alice" } },
+    ];
+    const result = groupReactions(reactions);
+    expect(result[0].userNames).toEqual(["alice"]);
+  });
+
+  it("falls back to Someone when no user data", () => {
+    const reactions = [
+      { emoji: "👍", userId: "u1" },
+    ];
+    const result = groupReactions(reactions);
+    expect(result[0].userNames).toEqual(["Someone"]);
   });
 });
 

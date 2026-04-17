@@ -13,6 +13,7 @@ import { FramedAvatar } from "@/components/framed-avatar";
 import { ReportModal } from "@/components/report-modal";
 import { StyledName } from "@/components/styled-name";
 import { MentionInput, type MentionInputHandle } from "@/components/mention-input";
+import { ReactionBadge } from "@/components/reaction-badge";
 
 const LazyEmojiPicker = lazy(() => import("emoji-picker-react"));
 
@@ -413,25 +414,27 @@ function applyReactionOptimistic(
   const group = reactions.find((r) => r.emoji === emoji);
   if (group) {
     if (group.userIds.includes(userId)) {
-      const filtered = group.userIds.filter((id) => id !== userId);
-      if (filtered.length === 0) {
+      const idx = group.userIds.indexOf(userId);
+      const filteredIds = group.userIds.filter((id) => id !== userId);
+      const filteredNames = group.userNames.filter((_, i) => i !== idx);
+      if (filteredIds.length === 0) {
         return { ...comment, reactions: reactions.filter((r) => r.emoji !== emoji) };
       }
       return {
         ...comment,
         reactions: reactions.map((r) =>
-          r.emoji === emoji ? { ...r, userIds: filtered } : r
+          r.emoji === emoji ? { ...r, userIds: filteredIds, userNames: filteredNames } : r
         ),
       };
     }
     return {
       ...comment,
       reactions: reactions.map((r) =>
-        r.emoji === emoji ? { ...r, userIds: [...r.userIds, userId] } : r
+        r.emoji === emoji ? { ...r, userIds: [...r.userIds, userId], userNames: [...r.userNames, "You"] } : r
       ),
     };
   }
-  return { ...comment, reactions: [...reactions, { emoji, userIds: [userId] }] };
+  return { ...comment, reactions: [...reactions, { emoji, userIds: [userId], userNames: ["You"] }] };
 }
 
 function CommentItem({
@@ -622,25 +625,20 @@ function CommentItem({
         {/* Reactions display */}
         {reactions.length > 0 && (
           <div className="mt-1 flex flex-wrap gap-1">
-            {reactions.map((reaction: ReactionGroup) => {
-              const isReacted = currentUserId ? reaction.userIds.includes(currentUserId) : false;
-              return (
-                <button
-                  key={reaction.emoji}
-                  onClick={() => onReaction?.(comment.id, reaction.emoji)}
-                  className={`flex items-center gap-0.5 rounded-full border px-1.5 py-0 text-xs transition-colors ${
-                    isReacted
-                      ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-300"
-                      : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-600"
-                  }`}
-                  aria-label={`${reaction.emoji} ${reaction.userIds.length}`}
-                  data-testid="comment-reaction-badge"
-                >
-                  <span>{reaction.emoji}</span>
-                  <span>{reaction.userIds.length}</span>
-                </button>
-              );
-            })}
+            {reactions.map((reaction: ReactionGroup) => (
+              <ReactionBadge
+                key={reaction.emoji}
+                emoji={reaction.emoji}
+                userIds={reaction.userIds}
+                userNames={reaction.userNames}
+                currentUserId={currentUserId}
+                isReacted={currentUserId ? reaction.userIds.includes(currentUserId) : false}
+                onClick={() => onReaction?.(comment.id, reaction.emoji)}
+                activeClassName="flex items-center gap-0.5 rounded-full border px-1.5 py-0 text-xs transition-colors border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-300"
+                inactiveClassName="flex items-center gap-0.5 rounded-full border px-1.5 py-0 text-xs transition-colors border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-600"
+                data-testid="comment-reaction-badge"
+              />
+            ))}
           </div>
         )}
 

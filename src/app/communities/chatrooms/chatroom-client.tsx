@@ -10,6 +10,7 @@ import { useAblyReady } from "@/app/providers";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { PresenceIndicator } from "@/components/chat/presence-indicator";
 import { StyledName } from "@/components/styled-name";
+import { ReactionBadge } from "@/components/reaction-badge";
 import { ContentFlagsInfoModal } from "@/components/content-flags-info-modal";
 import { timeAgo } from "@/lib/time";
 import {
@@ -846,18 +847,17 @@ export function ChatRoomClient({
                             {msg.reactions.length > 0 && (
                               <div className="mt-1.5 flex flex-wrap gap-1">
                                 {msg.reactions.map((r) => (
-                                  <button
+                                  <ReactionBadge
                                     key={r.emoji}
+                                    emoji={r.emoji}
+                                    userIds={r.userIds}
+                                    userNames={r.userNames}
+                                    currentUserId={currentUserId}
+                                    isReacted={r.userIds.includes(currentUserId)}
                                     onClick={() => handleReaction(msg.id, r.emoji)}
-                                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors ${
-                                      r.userIds.includes(currentUserId)
-                                        ? "border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
-                                        : "border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400"
-                                    }`}
-                                  >
-                                    <span>{r.emoji}</span>
-                                    <span>{r.userIds.length}</span>
-                                  </button>
+                                    activeClassName="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
+                                    inactiveClassName="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400"
+                                  />
                                 ))}
                               </div>
                             )}

@@ -192,7 +192,7 @@ export async function getMessages(
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     include: {
       sender: { select: USER_PROFILE_SELECT },
-      reactions: { select: { emoji: true, userId: true } },
+      reactions: { select: { emoji: true, userId: true, user: { select: { displayName: true, username: true } } } },
       replyTo: replyToInclude,
     },
   });
@@ -1033,7 +1033,7 @@ export async function toggleReaction(data: {
   // Fetch updated reactions for this message
   const reactions = await prisma.messageReaction.findMany({
     where: { messageId },
-    select: { emoji: true, userId: true },
+    select: { emoji: true, userId: true, user: { select: { displayName: true, username: true } } },
   });
 
   // Publish to Ably
