@@ -12,6 +12,7 @@ import type { MessageData, ChatUserProfile, MediaType, ChatThemeColors } from "@
 import { LinkifyText, extractFirstUrlFromText, isImageUrl } from "./linkify-text";
 import { LinkPreviewCard } from "@/components/link-preview-card";
 import { StyledName } from "@/components/styled-name";
+import { ReactionBadge } from "@/components/reaction-badge";
 
 const LazyEmojiPicker = lazy(() => import("emoji-picker-react"));
 
@@ -506,26 +507,23 @@ export function MessageBubble({
           {/* Reactions display */}
           {reactions.length > 0 && (
             <div className={`flex flex-wrap gap-1 px-1 pt-1 ${isOwn ? "justify-end" : "justify-start"}`}>
-              {reactions.map((reaction) => {
-                const isReacted = currentUserId ? reaction.userIds.includes(currentUserId) : false;
-                return (
-                  <button
-                    key={reaction.emoji}
-                    onClick={() => onReaction?.(message.id, reaction.emoji)}
-                    className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors ${
-                      isReacted
-                        ? themeColors?.linkColor
-                          ? "chat-reaction-active"
-                          : "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-300"
-                        : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-600"
-                    }`}
-                    aria-label={`${reaction.emoji} ${reaction.userIds.length}`}
-                  >
-                    <span>{reaction.emoji}</span>
-                    <span>{reaction.userIds.length}</span>
-                  </button>
-                );
-              })}
+              {reactions.map((reaction) => (
+                <ReactionBadge
+                  key={reaction.emoji}
+                  emoji={reaction.emoji}
+                  userIds={reaction.userIds}
+                  userNames={reaction.userNames}
+                  currentUserId={currentUserId}
+                  isReacted={currentUserId ? reaction.userIds.includes(currentUserId) : false}
+                  onClick={() => onReaction?.(message.id, reaction.emoji)}
+                  activeClassName={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors ${
+                    themeColors?.linkColor
+                      ? "chat-reaction-active"
+                      : "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-300"
+                  }`}
+                  inactiveClassName="flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-600"
+                />
+              ))}
             </div>
           )}
 

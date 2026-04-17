@@ -178,19 +178,19 @@ describe("useComments", () => {
     act(() => {
       messageHandler!({
         name: "reaction",
-        data: { commentId: "c2", reactions: JSON.stringify([{ emoji: "👍", userIds: ["u1"] }]) },
+        data: { commentId: "c2", reactions: JSON.stringify([{ emoji: "👍", userIds: ["u1"], userNames: ["Alice"] }]) },
       });
     });
-    expect(result.current.comments[1].reactions).toEqual([{ emoji: "👍", userIds: ["u1"] }]);
+    expect(result.current.comments[1].reactions).toEqual([{ emoji: "👍", userIds: ["u1"], userNames: ["Alice"] }]);
 
     // Reaction on reply
     act(() => {
       messageHandler!({
         name: "reaction",
-        data: { commentId: "r1", reactions: JSON.stringify([{ emoji: "❤️", userIds: ["u2"] }]) },
+        data: { commentId: "r1", reactions: JSON.stringify([{ emoji: "❤️", userIds: ["u2"], userNames: ["Bob"] }]) },
       });
     });
-    expect(result.current.comments[0].replies![0].reactions).toEqual([{ emoji: "❤️", userIds: ["u2"] }]);
+    expect(result.current.comments[0].replies![0].reactions).toEqual([{ emoji: "❤️", userIds: ["u2"], userNames: ["Bob"] }]);
 
     // Delete reply
     act(() => {

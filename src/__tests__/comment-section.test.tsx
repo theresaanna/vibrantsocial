@@ -65,7 +65,7 @@ const otherAuthor = {
 const makeComment = (
   id: string,
   content: string,
-  opts?: { replies?: CommentData[]; author?: typeof baseAuthor; editedAt?: Date; reactions?: { emoji: string; userIds: string[] }[] }
+  opts?: { replies?: CommentData[]; author?: typeof baseAuthor; editedAt?: Date; reactions?: { emoji: string; userIds: string[]; userNames: string[] }[] }
 ): CommentData => ({
   id,
   content,
@@ -340,8 +340,8 @@ describe("CommentSection", () => {
         comments={[
           makeComment("c1", "With reactions", {
             reactions: [
-              { emoji: "👍", userIds: ["user1", "user2"] },
-              { emoji: "❤️", userIds: ["user3"] },
+              { emoji: "👍", userIds: ["user1", "user2"], userNames: ["User 1", "User 2"] },
+              { emoji: "❤️", userIds: ["user3"], userNames: ["User 3"] },
             ],
           }),
         ]}
@@ -363,7 +363,7 @@ describe("CommentSection", () => {
         postId="post1"
         comments={[
           makeComment("c1", "With my reaction", {
-            reactions: [{ emoji: "👍", userIds: ["user1"] }],
+            reactions: [{ emoji: "👍", userIds: ["user1"], userNames: ["Test User"] }],
           }),
         ]}
         phoneVerified={true}
@@ -380,7 +380,7 @@ describe("CommentSection", () => {
         postId="post1"
         comments={[
           makeComment("c1", "Not my reaction", {
-            reactions: [{ emoji: "👍", userIds: ["user2"] }],
+            reactions: [{ emoji: "👍", userIds: ["user2"], userNames: ["Other User"] }],
           }),
         ]}
         phoneVerified={true}

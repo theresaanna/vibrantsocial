@@ -283,16 +283,19 @@ export function MessageThread({
         const group = reactions.find((r) => r.emoji === emoji);
         if (group) {
           if (group.userIds.includes(currentUserId)) {
+            const idx = group.userIds.indexOf(currentUserId);
             group.userIds = group.userIds.filter((id) => id !== currentUserId);
+            group.userNames = group.userNames.filter((_, i) => i !== idx);
             if (group.userIds.length === 0) {
               return { ...m, reactions: reactions.filter((r) => r.emoji !== emoji) };
             }
           } else {
             group.userIds = [...group.userIds, currentUserId];
+            group.userNames = [...group.userNames, "You"];
           }
           return { ...m, reactions: [...reactions] };
         }
-        return { ...m, reactions: [...reactions, { emoji, userIds: [currentUserId] }] };
+        return { ...m, reactions: [...reactions, { emoji, userIds: [currentUserId], userNames: ["You"] }] };
       })
     );
     await toggleReaction({ messageId, emoji });

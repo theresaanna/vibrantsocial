@@ -30,6 +30,7 @@ export interface ConversationListItem {
 export interface ReactionGroup {
   emoji: string;
   userIds: string[];
+  userNames: string[];
 }
 
 export interface MessageReplyTo {

@@ -92,7 +92,7 @@ export async function fetchTopDiscussedPosts() {
               usernameFont: true,
             },
           },
-          reactions: { select: { emoji: true, userId: true } },
+          reactions: { select: { emoji: true, userId: true, user: { select: { displayName: true, username: true } } } },
         },
       },
     },
@@ -123,21 +123,22 @@ export async function fetchTopDiscussedPosts() {
 // --- Comment tree utilities (mirrors post-actions.ts) ---
 
 function groupReactions(
-  reactions: { emoji: string; userId: string }[]
-): { emoji: string; userIds: string[] }[] {
-  const map = new Map<string, string[]>();
+  reactions: { emoji: string; userId: string; user?: { displayName: string | null; username: string | null } }[]
+): { emoji: string; userIds: string[]; userNames: string[] }[] {
+  const map = new Map<string, { userIds: string[]; userNames: string[] }>();
   for (const r of reactions) {
-    const list = map.get(r.emoji) ?? [];
-    list.push(r.userId);
-    map.set(r.emoji, list);
+    const group = map.get(r.emoji) ?? { userIds: [], userNames: [] };
+    group.userIds.push(r.userId);
+    group.userNames.push(r.user?.displayName ?? r.user?.username ?? "Someone");
+    map.set(r.emoji, group);
   }
-  return Array.from(map, ([emoji, userIds]) => ({ emoji, userIds }));
+  return Array.from(map, ([emoji, { userIds, userNames }]) => ({ emoji, userIds, userNames }));
 }
 
 type RawComment = {
   id: string;
   parentId: string | null;
-  reactions: { emoji: string; userId: string }[];
+  reactions: { emoji: string; userId: string; user: { displayName: string | null; username: string | null } }[];
   [key: string]: unknown;
 };
 

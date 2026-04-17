@@ -56,7 +56,7 @@ export interface ChatRoomMessageData {
       name: string | null;
     };
   } | null;
-  reactions: { emoji: string; userIds: string[] }[];
+  reactions: { emoji: string; userIds: string[]; userNames: string[] }[];
 }
 
 export interface ChatRoomMeta {
@@ -124,15 +124,16 @@ function extractMentions(text: string): string[] {
 }
 
 function groupReactions(
-  reactions: { emoji: string; userId: string }[]
-): { emoji: string; userIds: string[] }[] {
-  const map = new Map<string, string[]>();
+  reactions: { emoji: string; userId: string; user?: { displayName: string | null; username: string | null } }[]
+): { emoji: string; userIds: string[]; userNames: string[] }[] {
+  const map = new Map<string, { userIds: string[]; userNames: string[] }>();
   for (const r of reactions) {
-    const arr = map.get(r.emoji) || [];
-    arr.push(r.userId);
-    map.set(r.emoji, arr);
+    const group = map.get(r.emoji) ?? { userIds: [], userNames: [] };
+    group.userIds.push(r.userId);
+    group.userNames.push(r.user?.displayName ?? r.user?.username ?? "Someone");
+    map.set(r.emoji, group);
   }
-  return Array.from(map.entries()).map(([emoji, userIds]) => ({ emoji, userIds }));
+  return Array.from(map, ([emoji, { userIds, userNames }]) => ({ emoji, userIds, userNames }));
 }
 
 // ---------------------------------------------------------------------------
@@ -164,7 +165,7 @@ export async function getChatRoomMessages(
           sender: { select: { id: true, username: true, displayName: true, name: true } },
         },
       },
-      reactions: { select: { emoji: true, userId: true } },
+      reactions: { select: { emoji: true, userId: true, user: { select: { displayName: true, username: true } } } },
     },
     orderBy: { createdAt: "desc" },
     take: PAGE_SIZE + 1,
@@ -297,7 +298,7 @@ export async function sendChatRoomMessage(
           sender: { select: { id: true, username: true, displayName: true, name: true } },
         },
       },
-      reactions: { select: { emoji: true, userId: true } },
+      reactions: { select: { emoji: true, userId: true, user: { select: { displayName: true, username: true } } } },
     },
   });
 
@@ -495,7 +496,7 @@ export async function toggleReaction(
   // Fetch updated reactions for this message
   const reactions = await prisma.chatRoomMessageReaction.findMany({
     where: { messageId },
-    select: { emoji: true, userId: true },
+    select: { emoji: true, userId: true, user: { select: { displayName: true, username: true } } },
   });
 
   try {
