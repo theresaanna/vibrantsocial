@@ -39,11 +39,14 @@ vi.mock("@/lib/cache", () => ({
   cached: vi.fn((_key: string, fn: () => Promise<unknown>) => fn()),
   cacheKeys: {
     friendStatuses: (id: string) => `user:${id}:friend-statuses`,
+    friendStatusList: (id: string, limit: number) => `user:${id}:friend-status-list:${limit}`,
   },
 }));
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
+  updateTag: vi.fn(),
+  unstable_cache: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
 }));
 
 import {

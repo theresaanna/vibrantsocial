@@ -2,9 +2,13 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { cached, cacheKeys } from "@/lib/cache";
+import { unstable_cache } from "next/cache";
 import { publishedOnly } from "@/app/feed/feed-queries";
 
 const MARKETPLACE_PAGE_SIZE = 30;
+export const MARKETPLACE_FEED_TAG = "marketplace-feed";
+const MARKETPLACE_TTL_SECONDS = 30;
 
 export interface MarketplaceMediaPost {
   id: string;
@@ -36,24 +40,12 @@ export interface MarketplaceMediaPost {
   } | null;
 }
 
-export async function fetchMarketplacePage(
-  cursor?: string
+async function queryMarketplacePage(
+  cursor: string | undefined,
+  showNsfwContent: boolean,
+  ageVerified: boolean,
+  isLoggedIn: boolean,
 ): Promise<{ posts: MarketplaceMediaPost[]; hasMore: boolean }> {
-  const session = await auth();
-  const isLoggedIn = !!session?.user?.id;
-
-  let showNsfwContent = false;
-  let ageVerified = false;
-
-  if (session?.user?.id) {
-    const currentUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { showNsfwContent: true, ageVerified: true },
-    });
-    showNsfwContent = currentUser?.showNsfwContent ?? false;
-    ageVerified = !!currentUser?.ageVerified;
-  }
-
   const dateFilter = cursor ? { lt: new Date(cursor) } : undefined;
 
   const fetchCount = MARKETPLACE_PAGE_SIZE + 1;
@@ -133,6 +125,37 @@ export async function fetchMarketplacePage(
     posts: resultPosts.slice(0, MARKETPLACE_PAGE_SIZE),
     hasMore,
   };
+}
+
+export async function fetchMarketplacePage(
+  cursor?: string
+): Promise<{ posts: MarketplaceMediaPost[]; hasMore: boolean }> {
+  const session = await auth();
+  const isLoggedIn = !!session?.user?.id;
+
+  let showNsfwContent = false;
+  let ageVerified = false;
+
+  if (session?.user?.id) {
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { showNsfwContent: true, ageVerified: true },
+    });
+    showNsfwContent = currentUser?.showNsfwContent ?? false;
+    ageVerified = !!currentUser?.ageVerified;
+  }
+
+  const key = cacheKeys.marketplacePage(cursor, showNsfwContent, ageVerified, isLoggedIn);
+  return unstable_cache(
+    () =>
+      cached(
+        key,
+        () => queryMarketplacePage(cursor, showNsfwContent, ageVerified, isLoggedIn),
+        MARKETPLACE_TTL_SECONDS,
+      ),
+    [key],
+    { revalidate: MARKETPLACE_TTL_SECONDS, tags: [MARKETPLACE_FEED_TAG] },
+  )();
 }
 
 export async function fetchSingleMarketplacePost(

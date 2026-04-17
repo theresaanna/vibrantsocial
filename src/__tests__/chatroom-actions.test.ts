@@ -65,6 +65,17 @@ vi.mock("@/lib/inngest", () => ({
   inngest: { send: vi.fn() },
 }));
 
+vi.mock("@/lib/cache", () => ({
+  cached: <T>(_key: string, fn: () => Promise<T>) => fn(),
+  cacheKeys: {
+    activeChatRooms: (limit: number, nsfw: boolean) => `chatrooms:active:${limit}:${nsfw ? 1 : 0}`,
+  },
+}));
+
+vi.mock("next/cache", () => ({
+  unstable_cache: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
+}));
+
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isRateLimited } from "@/lib/rate-limit";

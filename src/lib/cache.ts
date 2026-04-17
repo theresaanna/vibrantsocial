@@ -104,4 +104,9 @@ export const cacheKeys = {
   linkedAccountNotifCounts: (userId: string) => `user:${userId}:linked-notif-counts`,
   linkedAccounts: (userId: string) => `user:${userId}:linked-accounts`,
   friendStatuses: (userId: string) => `user:${userId}:friend-statuses`,
+  friendStatusList: (userId: string, limit: number) => `user:${userId}:friend-status-list:${limit}`,
+  marketplacePage: (cursor: string | undefined, showNsfw: boolean, ageVerified: boolean, isLoggedIn: boolean) =>
+    `marketplace:page:${cursor ?? "_"}:${showNsfw ? 1 : 0}:${ageVerified ? 1 : 0}:${isLoggedIn ? 1 : 0}`,
+  activeChatRooms: (limit: number, showNsfw: boolean) =>
+    `chatrooms:active:${limit}:${showNsfw ? 1 : 0}`,
 } as const;

@@ -6,7 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { requirePhoneVerification } from "@/lib/phone-gate";
 import { requireMinimumAge } from "@/lib/age-gate";
 import { requireNotSuspended } from "@/lib/suspension-gate";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
+import { MARKETPLACE_FEED_TAG } from "./media-actions";
 import {
   extractMentionsFromLexicalJson,
   createMentionNotifications,
@@ -276,6 +277,7 @@ export async function createMarketplacePost(
     await channel.publish("new-post", { postId: post.id });
   }
 
+  updateTag(MARKETPLACE_FEED_TAG);
   revalidatePath("/marketplace");
   return { success: true, message: "Marketplace post created", postId: post.id, slug: post.slug ?? undefined };
 }
@@ -304,6 +306,7 @@ export async function promoteToFeed(postId: string): Promise<MarketplacePostStat
     data: { promotedToFeed: !post.marketplacePost.promotedToFeed },
   });
 
+  updateTag(MARKETPLACE_FEED_TAG);
   revalidatePath("/feed");
   revalidatePath("/marketplace");
   return {
@@ -349,6 +352,7 @@ export async function deleteMarketplacePost(
     );
   }
 
+  updateTag(MARKETPLACE_FEED_TAG);
   revalidatePath("/marketplace");
   return { success: true, message: "Post deleted" };
 }
