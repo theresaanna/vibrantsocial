@@ -596,45 +596,37 @@ function ChatRoomClientInner({
     <div className="flex min-h-0 flex-1 flex-col md:flex-row md:gap-4">
       {/* Main chat area */}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        {/* Header */}
-        <div className="mb-1 flex items-center gap-2 md:mb-3 md:gap-3">
-          <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full md:flex" style={{ backgroundColor: "var(--profile-link, #d946ef)" }}>
-            <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{initialMeta.name}</h1>
-            {editingStatus ? (
-              <div className="flex items-center gap-2">
-                <input
-                  value={statusDraft}
-                  onChange={(e) => setStatusDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleSetStatus();
-                    if (e.key === "Escape") setEditingStatus(false);
-                  }}
-                  placeholder="Set a status..."
-                  maxLength={200}
-                  className="w-full max-w-xs rounded border border-zinc-300 bg-white px-2 py-0.5 text-xs text-zinc-900 outline-none focus:border-indigo-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
-                  autoFocus
-                />
-                <button onClick={handleSetStatus} className="text-xs font-medium text-indigo-600 hover:text-indigo-500">Save</button>
-                <button onClick={() => setEditingStatus(false)} className="text-xs text-zinc-400 hover:text-zinc-600">Cancel</button>
-              </div>
-            ) : (
-              <p
-                className={`text-xs ${isMod ? "cursor-pointer hover:text-zinc-600 dark:hover:text-zinc-300" : ""} text-zinc-500 dark:text-zinc-400`}
-                onClick={isMod ? () => { setEditingStatus(true); setStatusDraft(roomStatus || ""); } : undefined}
-                title={isMod ? "Click to edit status" : undefined}
-              >
-                {roomStatus || "Public lounge \u2014 everyone can chat here"}
-                {isMod && !roomStatus && (
-                  <span className="ml-1 text-zinc-400">(click to set status)</span>
-                )}
-              </p>
-            )}
-          </div>
+        {/* Status (editable by mods) */}
+        <div className="mb-1 md:mb-3">
+          {editingStatus ? (
+            <div className="flex items-center gap-2">
+              <input
+                value={statusDraft}
+                onChange={(e) => setStatusDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSetStatus();
+                  if (e.key === "Escape") setEditingStatus(false);
+                }}
+                placeholder="Set a status..."
+                maxLength={200}
+                className="w-full max-w-md rounded border border-zinc-300 bg-white px-3 py-1.5 text-base text-zinc-900 outline-none focus:border-indigo-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+                autoFocus
+              />
+              <button onClick={handleSetStatus} className="text-sm font-medium text-indigo-600 hover:text-indigo-500">Save</button>
+              <button onClick={() => setEditingStatus(false)} className="text-sm text-zinc-400 hover:text-zinc-600">Cancel</button>
+            </div>
+          ) : (
+            <p
+              className={`text-base ${isMod ? "cursor-pointer hover:text-zinc-700 dark:hover:text-zinc-200" : ""} text-zinc-600 dark:text-zinc-300`}
+              onClick={isMod ? () => { setEditingStatus(true); setStatusDraft(roomStatus || ""); } : undefined}
+              title={isMod ? "Click to edit status" : undefined}
+            >
+              {roomStatus || "Public lounge \u2014 everyone can chat here"}
+              {isMod && !roomStatus && (
+                <span className="ml-1 text-sm text-zinc-400">(click to set status)</span>
+              )}
+            </p>
+          )}
         </div>
 
         {/* Mobile online users — horizontal strip */}
