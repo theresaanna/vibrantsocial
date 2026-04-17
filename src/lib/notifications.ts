@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getAblyRestClient } from "@/lib/ably";
 import { sendPushNotification } from "@/lib/web-push";
-import { sendExpoPushNotification } from "@/lib/expo-push";
 import type { NotificationType } from "@/generated/prisma/client";
 import { invalidateMany, cacheKeys } from "@/lib/cache";
 
@@ -103,7 +102,7 @@ export async function createNotification(params: CreateNotificationParams) {
     // Non-critical — DB write succeeded
   }
 
-  // Build push notification body (shared between web and Expo push)
+  // Build push notification body
   const actorName =
     notification.actor.displayName ||
     notification.actor.username ||
@@ -148,22 +147,6 @@ export async function createNotification(params: CreateNotificationParams) {
     });
   } catch {
     // Non-critical — DB write and Ably succeeded
-  }
-
-  // Send Expo push notification (mobile app)
-  try {
-    await sendExpoPushNotification(targetUserId, {
-      title: "VibrantSocial",
-      body: pushBody,
-      data: {
-        type,
-        postId: postId ?? null,
-        commentId: commentId ?? null,
-        actorId,
-      },
-    });
-  } catch {
-    // Non-critical
   }
 
   return notification;
