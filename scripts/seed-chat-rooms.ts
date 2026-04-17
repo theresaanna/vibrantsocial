@@ -16,6 +16,7 @@ const ROOMS = [
   { slug: "music-chat", name: "Music Chat", isNsfw: false },
   { slug: "nerd-talk", name: "Nerd Talk", isNsfw: false },
   { slug: "theme-show-and-tell", name: "Theme Show and Tell", isNsfw: false },
+  { slug: "420-lounge", name: "420 Lounge", isNsfw: true },
 ];
 
 async function main() {
