@@ -30,6 +30,7 @@ export interface ChatRoomMessageData {
   mediaFileName: string | null;
   mediaFileSize: number | null;
   mediaThumbUrl: string | null;
+  mediaAlt: string | null;
   isNsfw: boolean;
   editedAt: Date | null;
   deletedAt: Date | null;
@@ -188,6 +189,7 @@ export async function getChatRoomMessages(
     mediaFileName: msg.mediaFileName,
     mediaFileSize: msg.mediaFileSize,
     mediaThumbUrl: msg.mediaThumbUrl,
+    mediaAlt: msg.mediaAlt,
     isNsfw: msg.isNsfw,
     editedAt: msg.editedAt,
     deletedAt: msg.deletedAt,
@@ -254,6 +256,7 @@ export async function sendChatRoomMessage(
     mediaFileName?: string;
     mediaFileSize?: number;
     mediaThumbUrl?: string | null;
+    mediaAlt?: string | null;
     isNsfw?: boolean;
     replyToId?: string;
   }
@@ -288,6 +291,7 @@ export async function sendChatRoomMessage(
       mediaFileName: options?.mediaFileName ?? null,
       mediaFileSize: options?.mediaFileSize ?? null,
       mediaThumbUrl: options?.mediaThumbUrl ?? null,
+      mediaAlt: options?.mediaAlt?.trim() || null,
       isNsfw: options?.isNsfw ?? false,
       replyToId: options?.replyToId ?? null,
     },
@@ -320,6 +324,7 @@ export async function sendChatRoomMessage(
       mediaFileName: message.mediaFileName,
       mediaFileSize: message.mediaFileSize,
       mediaThumbUrl: message.mediaThumbUrl,
+      mediaAlt: message.mediaAlt,
       isNsfw: message.isNsfw,
       sender: message.sender,
       replyTo: message.replyTo

@@ -13,6 +13,12 @@ import { PresenceIndicator } from "@/components/chat/presence-indicator";
 import { StyledName } from "@/components/styled-name";
 import { ReactionBadge } from "@/components/reaction-badge";
 import { ContentFlagsInfoModal } from "@/components/content-flags-info-modal";
+import {
+  LinkifyText,
+  extractFirstUrlFromText,
+  isImageUrl,
+} from "@/components/chat/linkify-text";
+import { LinkPreviewCard } from "@/components/link-preview-card";
 import { timeAgo } from "@/lib/time";
 import {
   sendChatRoomMessage,
@@ -137,6 +143,7 @@ function ChatRoomClientInner({
     thumbUrl?: string | null;
   } | null>(null);
   const [uploadIsNsfw, setUploadIsNsfw] = useState(false);
+  const [uploadAlt, setUploadAlt] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // @mention state
@@ -418,8 +425,10 @@ function ChatRoomClientInner({
     setReplyingTo(null);
     const media = uploadPreview;
     const nsfw = uploadIsNsfw;
+    const alt = uploadAlt;
     setUploadPreview(null);
     setUploadIsNsfw(false);
+    setUploadAlt("");
 
     const result = await sendChatRoomMessage(trimmed, room, {
       replyToId: reply?.id,
@@ -428,6 +437,7 @@ function ChatRoomClientInner({
       mediaFileName: media?.fileName,
       mediaFileSize: media?.fileSize,
       mediaThumbUrl: media?.thumbUrl ?? null,
+      mediaAlt: alt,
       isNsfw: nsfw,
     });
     if (!result.success) {
@@ -435,6 +445,7 @@ function ChatRoomClientInner({
       setReplyingTo(reply);
       setUploadPreview(media);
       setUploadIsNsfw(nsfw);
+      setUploadAlt(alt);
     }
     setIsSending(false);
     textareaRef.current?.focus();
@@ -529,6 +540,7 @@ function ChatRoomClientInner({
         setUploadPreview({ url, fileType, fileName, fileSize });
       }
       setUploadIsNsfw(false);
+      setUploadAlt("");
     } catch {
       // Could show toast
     }
@@ -598,26 +610,6 @@ function ChatRoomClientInner({
     }
   }, []);
 
-  // Render mention-highlighted text
-  const renderContent = useMemo(
-    () => (text: string) => {
-      const parts = text.split(/(@[a-zA-Z0-9_]{3,30})/g);
-      return parts.map((part, i) =>
-        part.startsWith("@") ? (
-          <Link
-            key={i}
-            href={`/${part.slice(1)}`}
-            className="font-semibold text-blue-600 hover:underline dark:text-blue-400"
-          >
-            {part}
-          </Link>
-        ) : (
-          <span key={i}>{part}</span>
-        )
-      );
-    },
-    []
-  );
 
   // -------------------------------------------------------------------------
   // Render
@@ -811,9 +803,12 @@ function ChatRoomClientInner({
                           <>
                             {/* Message content */}
                             {msg.content && (
-                              <p className="whitespace-pre-wrap break-words text-sm text-zinc-700 dark:text-zinc-300">
-                                {renderContent(msg.content)}
-                              </p>
+                              <>
+                                <p className="whitespace-pre-wrap break-words text-sm text-zinc-700 dark:text-zinc-300">
+                                  <LinkifyText text={msg.content} />
+                                </p>
+                                <LinkPreview content={msg.content} />
+                              </>
                             )}
 
                             {/* Media */}
@@ -836,7 +831,7 @@ function ChatRoomClientInner({
                                       >
                                         <img
                                           src={msg.mediaUrl}
-                                          alt={msg.mediaFileName || "Image"}
+                                          alt={msg.mediaAlt || msg.mediaFileName || "Image"}
                                           className="max-h-64 max-w-xs rounded-lg blur-2xl brightness-75"
                                           loading="lazy"
                                         />
@@ -852,7 +847,8 @@ function ChatRoomClientInner({
                                     ) : (
                                       <img
                                         src={msg.mediaUrl}
-                                        alt={msg.mediaFileName || "Image"}
+                                        alt={msg.mediaAlt || msg.mediaFileName || "Image"}
+                                        title={msg.mediaAlt || undefined}
                                         className="max-h-64 max-w-xs rounded-lg"
                                         loading="lazy"
                                       />
@@ -1105,7 +1101,20 @@ function ChatRoomClientInner({
                 </p>
                 {(uploadPreview.fileType === "image" || uploadPreview.fileType === "gif") && (
                   <div className="mt-2">
-                    <label className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+                    <label className="block">
+                      <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                        Alt text <span className="font-normal text-zinc-400">(describe the image for screen readers)</span>
+                      </span>
+                      <input
+                        type="text"
+                        value={uploadAlt}
+                        onChange={(e) => setUploadAlt(e.target.value)}
+                        maxLength={500}
+                        placeholder="e.g. a golden retriever puppy sleeping on a couch"
+                        className="mt-1 block w-full rounded border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
+                      />
+                    </label>
+                    <label className="mt-2 flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
                       <input
                         type="checkbox"
                         checked={uploadIsNsfw}
@@ -1130,7 +1139,7 @@ function ChatRoomClientInner({
                 )}
               </div>
               <button
-                onClick={() => { setUploadPreview(null); setUploadIsNsfw(false); }}
+                onClick={() => { setUploadPreview(null); setUploadIsNsfw(false); setUploadAlt(""); }}
                 className="shrink-0 rounded p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -1354,6 +1363,63 @@ function ChatRoomClientInner({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function LinkPreview({ content }: { content: string }) {
+  const url = useMemo(() => extractFirstUrlFromText(content), [content]);
+  const [status, setStatus] = useState<"loading" | "loaded" | "empty">("loading");
+  const [dismissed, setDismissed] = useState(false);
+
+  if (!url || dismissed) return null;
+
+  if (isImageUrl(url)) {
+    return (
+      <div className="relative mt-2 max-w-xs" data-testid="chat-link-preview">
+        <a href={url} target="_blank" rel="noopener noreferrer">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={url}
+            alt=""
+            className="max-h-64 max-w-full rounded-lg"
+            loading="lazy"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = "none";
+            }}
+          />
+        </a>
+        <button
+          type="button"
+          onClick={() => setDismissed(true)}
+          className="absolute right-1 top-1 rounded-full bg-white/80 p-0.5 text-zinc-400 hover:bg-white hover:text-zinc-600 dark:bg-zinc-800/80 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+          aria-label="Dismiss link preview"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+            <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+          </svg>
+        </button>
+      </div>
+    );
+  }
+
+  if (status === "empty") return null;
+
+  return (
+    <div className="relative max-w-md" data-testid="chat-link-preview">
+      <LinkPreviewCard url={url} onLoadChange={setStatus} />
+      {status === "loaded" && (
+        <button
+          type="button"
+          onClick={() => setDismissed(true)}
+          className="absolute right-1 top-4 rounded-full bg-white/80 p-0.5 text-zinc-400 hover:bg-white hover:text-zinc-600 dark:bg-zinc-800/80 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+          aria-label="Dismiss link preview"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+            <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }

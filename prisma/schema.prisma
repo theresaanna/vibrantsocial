@@ -898,6 +898,7 @@ model ChatRoomMessage {
   mediaFileName String?
   mediaFileSize Int?
   mediaThumbUrl String?
+  mediaAlt      String?   @db.Text
   isNsfw        Boolean   @default(false)
   replyToId     String?
   editedAt      DateTime?
