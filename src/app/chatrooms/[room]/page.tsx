@@ -77,9 +77,11 @@ export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
             <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
               {displayName}
             </h1>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              Chat room
-            </p>
+            {roomMeta.status && (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                {roomMeta.status}
+              </p>
+            )}
           </div>
         </div>
 
