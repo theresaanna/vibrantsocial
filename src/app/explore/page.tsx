@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { getTagCloudData, getAllTagCloudData } from "@/app/tags/actions";
+import { getTagCloudPage } from "@/app/tags/actions";
 import { TagCloud } from "./tag-cloud";
 import { ExploreViewToggle } from "./explore-view-toggle";
 import { ExploreRandomContent } from "./explore-random-content";
@@ -84,11 +84,9 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
 }
 
 async function TagsContent({ showNsfwContent }: { showNsfwContent: boolean }) {
-  const tagData = showNsfwContent
-    ? await getAllTagCloudData()
-    : await getTagCloudData();
+  const { tags, hasMore } = await getTagCloudPage(0, showNsfwContent);
 
-  if (tagData.length === 0) {
+  if (tags.length === 0) {
     return (
       <div className="rounded-2xl bg-white p-8 text-center shadow-lg dark:bg-zinc-900">
         <p className="text-sm text-zinc-500">
@@ -100,7 +98,11 @@ async function TagsContent({ showNsfwContent }: { showNsfwContent: boolean }) {
 
   return (
     <div className="rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-900">
-      <TagCloud tags={tagData} />
+      <TagCloud
+        initialTags={tags}
+        initialHasMore={hasMore}
+        showNsfwContent={showNsfwContent}
+      />
     </div>
   );
 }

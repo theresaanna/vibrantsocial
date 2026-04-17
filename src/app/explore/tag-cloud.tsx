@@ -1,4 +1,8 @@
+"use client";
+
+import { useState, useTransition } from "react";
 import Link from "next/link";
+import { getTagCloudPage } from "@/app/tags/actions";
 
 interface TagData {
   name: string;
@@ -6,7 +10,9 @@ interface TagData {
 }
 
 interface TagCloudProps {
-  tags: TagData[];
+  initialTags: TagData[];
+  initialHasMore: boolean;
+  showNsfwContent: boolean;
 }
 
 /**
@@ -16,10 +22,22 @@ interface TagCloudProps {
  */
 const OPACITY_STEPS = [0.12, 0.16, 0.20, 0.24, 0.28, 0.10, 0.18];
 
-export function TagCloud({ tags }: TagCloudProps) {
+export function TagCloud({ initialTags, initialHasMore, showNsfwContent }: TagCloudProps) {
+  const [tags, setTags] = useState<TagData[]>(initialTags);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [isPending, startTransition] = useTransition();
+
   const maxCount = Math.max(...tags.map((t) => t.count), 1);
   const minCount = Math.min(...tags.map((t) => t.count), 1);
   const range = maxCount - minCount || 1;
+
+  const handleLoadMore = () => {
+    startTransition(async () => {
+      const result = await getTagCloudPage(tags.length, showNsfwContent);
+      setTags((prev) => [...prev, ...result.tags]);
+      setHasMore(result.hasMore);
+    });
+  };
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2" data-testid="tag-cloud">
@@ -54,6 +72,21 @@ export function TagCloud({ tags }: TagCloudProps) {
           </Link>
         );
       })}
+      {hasMore && (
+        <button
+          type="button"
+          onClick={handleLoadMore}
+          disabled={isPending}
+          data-testid="tag-cloud-load-more"
+          className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-all hover:scale-105 hover:shadow-sm disabled:opacity-50"
+          style={{
+            backgroundColor: `color-mix(in srgb, var(--profile-link, #6366f1) 20%, transparent)`,
+            color: "var(--profile-text, #18181b)",
+          }}
+        >
+          {isPending ? "Loading…" : "Show more"}
+        </button>
+      )}
     </div>
   );
 }

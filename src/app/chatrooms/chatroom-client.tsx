@@ -604,7 +604,7 @@ function ChatRoomClientInner({
             </svg>
           </div>
           <div className="flex-1">
-            <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Chat Room</h1>
+            <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{initialMeta.name}</h1>
             {editingStatus ? (
               <div className="flex items-center gap-2">
                 <input

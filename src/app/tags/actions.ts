@@ -17,12 +17,13 @@ interface TagWithCount {
   _count: { posts: number };
 }
 
+const TAG_CLOUD_PAGE_SIZE = 50;
+
 function toSortedTagCloud(tags: TagWithCount[]): TagCloudEntry[] {
   return tags
     .filter((t) => t._count.posts >= 5)
     .map((t) => ({ name: t.name, count: t._count.posts }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 50);
+    .sort((a, b) => b.count - a.count);
 }
 
 /**
@@ -80,8 +81,11 @@ export async function searchTags(query: string, includeNsfw?: boolean) {
  * Get tag cloud data: tag names with their post counts,
  * excluding NSFW/sensitive/graphic posts and posts from private profiles.
  */
-export async function getTagCloudData() {
-  return cached(
+export async function getTagCloudData(
+  limit: number = TAG_CLOUD_PAGE_SIZE,
+  offset: number = 0
+) {
+  const all = await cached(
     cacheKeys.tagCloud(),
     async () => {
       const tags = await prisma.tag.findMany({
@@ -111,14 +115,18 @@ export async function getTagCloudData() {
     },
     300 // cache for 5 minutes
   );
+  return all.slice(offset, offset + limit);
 }
 
 /**
  * Get NSFW tag cloud data: tags marked NSFW or with NSFW posts.
  * Only for opted-in users. Only counts posts from public profiles.
  */
-export async function getNsfwTagCloudData() {
-  return cached(
+export async function getNsfwTagCloudData(
+  limit: number = TAG_CLOUD_PAGE_SIZE,
+  offset: number = 0
+) {
+  const all = await cached(
     cacheKeys.nsfwTagCloud(),
     async () => {
       const tags = await prisma.tag.findMany({
@@ -164,14 +172,18 @@ export async function getNsfwTagCloudData() {
     },
     300 // cache for 5 minutes
   );
+  return all.slice(offset, offset + limit);
 }
 
 /**
  * Get all tag cloud data (SFW + NSFW combined) for users who opted into NSFW.
  * Excludes sensitive/graphic posts. Only counts posts from public profiles.
  */
-export async function getAllTagCloudData() {
-  return cached(
+export async function getAllTagCloudData(
+  limit: number = TAG_CLOUD_PAGE_SIZE,
+  offset: number = 0
+) {
+  const all = await cached(
     cacheKeys.allTagCloud(),
     async () => {
       const tags = await prisma.tag.findMany({
@@ -199,6 +211,21 @@ export async function getAllTagCloudData() {
     },
     300 // cache for 5 minutes
   );
+  return all.slice(offset, offset + limit);
+}
+
+/**
+ * Load a page of tag cloud data for the explore view.
+ * Returns the next 50 tags starting at `offset`, plus a hasMore flag.
+ */
+export async function getTagCloudPage(
+  offset: number,
+  showNsfwContent: boolean
+): Promise<{ tags: TagCloudEntry[]; hasMore: boolean }> {
+  const fetcher = showNsfwContent ? getAllTagCloudData : getTagCloudData;
+  const page = await fetcher(TAG_CLOUD_PAGE_SIZE + 1, offset);
+  const hasMore = page.length > TAG_CLOUD_PAGE_SIZE;
+  return { tags: page.slice(0, TAG_CLOUD_PAGE_SIZE), hasMore };
 }
 
 /**
