@@ -122,6 +122,7 @@ export function ChatRoomClient({
     fileType: string;
     fileName: string;
     fileSize: number;
+    thumbUrl?: string | null;
   } | null>(null);
   const [uploadIsNsfw, setUploadIsNsfw] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -412,6 +413,7 @@ export function ChatRoomClient({
       mediaType: media?.fileType,
       mediaFileName: media?.fileName,
       mediaFileSize: media?.fileSize,
+      mediaThumbUrl: media?.thumbUrl ?? null,
       isNsfw: nsfw,
     });
     if (!result.success) {
@@ -487,18 +489,22 @@ export function ChatRoomClient({
           clientPayload: "video",
         });
         // CSAM scan — server extracts frames and scans each. If it rejects,
-        // the blob is deleted server-side before this returns.
+        // the blob is deleted server-side before this returns. On success it
+        // also returns a thumbUrl (the middle frame) so the async NSFW scan
+        // can target an image instead of a video.
         const scanRes = await fetch("/api/upload/scan-video", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url: blob.url }),
         });
         if (!scanRes.ok) throw new Error("Upload rejected");
+        const scanData = (await scanRes.json().catch(() => ({}))) as { thumbUrl?: string | null };
         setUploadPreview({
           url: blob.url,
           fileType: "video",
           fileName: file.name,
           fileSize: file.size,
+          thumbUrl: scanData.thumbUrl ?? null,
         });
       } else {
         const formData = new FormData();
@@ -849,6 +855,8 @@ export function ChatRoomClient({
                                 ) : msg.mediaType === "video" ? (
                                   <video
                                     src={msg.mediaUrl}
+                                    poster={msg.mediaThumbUrl ?? undefined}
+                                    preload="metadata"
                                     controls
                                     className="max-h-64 max-w-xs rounded-lg"
                                   />

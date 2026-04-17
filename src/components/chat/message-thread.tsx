@@ -218,6 +218,7 @@ export function MessageThread({
           mediaType: attachment.type,
           mediaFileName: attachment.fileName,
           mediaFileSize: attachment.fileSize,
+          mediaThumbUrl: attachment.thumbUrl ?? null,
         }),
         // Reply only on the first message
         ...(i === 0 && currentReply && { replyToId: currentReply.id }),
@@ -233,6 +234,7 @@ export function MessageThread({
         mediaType: (attachment?.type as MediaType) ?? null,
         mediaFileName: attachment?.fileName ?? null,
         mediaFileSize: attachment?.fileSize ?? null,
+        mediaThumbUrl: attachment?.thumbUrl ?? null,
         isNsfw: false,
         editedAt: null,
         deletedAt: null,

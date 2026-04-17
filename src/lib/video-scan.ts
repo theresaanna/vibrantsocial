@@ -51,12 +51,18 @@ async function extractFrames(videoBuffer: Buffer, count: number): Promise<Buffer
   }
 }
 
+export interface VideoScanResult extends ScanResult {
+  /** A middle-ish frame suitable for use as a poster / NSFW scan target. */
+  thumbnail?: Buffer;
+}
+
 /**
  * Scans a video buffer for CSAM by extracting evenly-spaced frames and running
  * each through Arachnid Shield. Returns the first flagged frame's result, or
- * { safe: true } if all frames pass (or scanning is not configured).
+ * { safe: true, thumbnail } if all frames pass. When scanning is not
+ * configured, frames still come back so we can use one as a thumbnail.
  */
-export async function scanVideoForCSAM(videoBuffer: Buffer): Promise<ScanResult> {
+export async function scanVideoForCSAM(videoBuffer: Buffer): Promise<VideoScanResult> {
   const frames = await extractFrames(videoBuffer, DEFAULT_FRAME_COUNT);
   if (frames.length === 0) {
     // No frames extracted — could not validate the video. Treat as unsafe
@@ -67,5 +73,7 @@ export async function scanVideoForCSAM(videoBuffer: Buffer): Promise<ScanResult>
     const result = await scanImageBuffer(frame, "image/png");
     if (!result.safe) return result;
   }
-  return { safe: true };
+  // Pick the middle frame as the thumbnail so it's representative.
+  const thumbnail = frames[Math.floor(frames.length / 2)];
+  return { safe: true, thumbnail };
 }

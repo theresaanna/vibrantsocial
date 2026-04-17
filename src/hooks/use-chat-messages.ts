@@ -67,6 +67,7 @@ export function useChatMessages(
           mediaType: (data.mediaType as MediaType) ?? null,
           mediaFileName: (data.mediaFileName as string) ?? null,
           mediaFileSize: data.mediaFileSize ? parseInt(data.mediaFileSize as string, 10) : null,
+          mediaThumbUrl: (data.mediaThumbUrl as string) ?? null,
           isNsfw: false,
           sender: JSON.parse(data.sender as string),
           editedAt: data.editedAt ? new Date(data.editedAt) : null,

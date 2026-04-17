@@ -340,6 +340,7 @@ export function MessageBubble({
                       mediaType={message.mediaType as MediaType}
                       mediaFileName={message.mediaFileName}
                       mediaFileSize={message.mediaFileSize}
+                      mediaThumbUrl={message.mediaThumbUrl}
                       isOwn={isOwn}
                       isNsfw={message.isNsfw}
                     />

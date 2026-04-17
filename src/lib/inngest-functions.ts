@@ -705,7 +705,7 @@ export const scanChatMessageFn = inngest.createFunction(
 
     const message = await prisma.message.findUnique({
       where: { id: messageId },
-      select: { id: true, content: true, mediaUrl: true, mediaType: true, deletedAt: true },
+      select: { id: true, content: true, mediaUrl: true, mediaType: true, mediaThumbUrl: true, deletedAt: true },
     });
 
     if (!message || message.deletedAt) {
@@ -717,16 +717,21 @@ export const scanChatMessageFn = inngest.createFunction(
       "X-API-Key": MODERATION_API_KEY,
     };
 
+    // For videos, scan the poster thumbnail (an image) rather than the video
+    // URL — the Python service only decodes images.
+    const scanUrl =
+      message.mediaType === "video" ? message.mediaThumbUrl : message.mediaUrl;
+
     // Scan media for NSFW content (images and video thumbnails)
     let nsfwDetected = false;
     let nsfwScore = 0;
 
-    if (message.mediaUrl && (message.mediaType === "image" || message.mediaType === "video")) {
+    if (scanUrl && (message.mediaType === "image" || message.mediaType === "video")) {
       try {
         const resp = await fetch(`${MODERATION_API_URL}/scan/image`, {
           method: "POST",
           headers,
-          body: JSON.stringify({ url: message.mediaUrl }),
+          body: JSON.stringify({ url: scanUrl }),
         });
         if (resp.ok) {
           const result = await resp.json() as { nsfw: boolean; score: number };
@@ -898,7 +903,7 @@ export const scanChatRoomMessageFn = inngest.createFunction(
 
     const message = await prisma.chatRoomMessage.findUnique({
       where: { id: messageId },
-      select: { id: true, content: true, mediaUrl: true, mediaType: true, deletedAt: true, isNsfw: true },
+      select: { id: true, content: true, mediaUrl: true, mediaType: true, mediaThumbUrl: true, deletedAt: true, isNsfw: true },
     });
 
     if (!message || message.deletedAt) {
@@ -910,15 +915,20 @@ export const scanChatRoomMessageFn = inngest.createFunction(
       "X-API-Key": MODERATION_API_KEY,
     };
 
+    // For videos, scan the poster thumbnail (an image) rather than the video
+    // URL — the Python service only decodes images.
+    const scanUrl =
+      message.mediaType === "video" ? message.mediaThumbUrl : message.mediaUrl;
+
     // Scan media for NSFW content
     let nsfwDetected = false;
 
-    if (message.mediaUrl && (message.mediaType === "image" || message.mediaType === "video")) {
+    if (scanUrl && (message.mediaType === "image" || message.mediaType === "video")) {
       try {
         const resp = await fetch(`${MODERATION_API_URL}/scan/image`, {
           method: "POST",
           headers,
-          body: JSON.stringify({ url: message.mediaUrl }),
+          body: JSON.stringify({ url: scanUrl }),
         });
         if (resp.ok) {
           const result = await resp.json() as { nsfw: boolean; score: number };

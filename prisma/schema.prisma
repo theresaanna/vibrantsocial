@@ -781,6 +781,7 @@ model Message {
   mediaType      String?
   mediaFileName  String?
   mediaFileSize  Int?
+  mediaThumbUrl  String?
   replyToId      String?
   editedAt       DateTime?
   deletedAt      DateTime?
@@ -899,6 +900,7 @@ model ChatRoomMessage {
   mediaType     String?
   mediaFileName String?
   mediaFileSize Int?
+  mediaThumbUrl String?
   isNsfw        Boolean   @default(false)
   replyToId     String?
   editedAt      DateTime?

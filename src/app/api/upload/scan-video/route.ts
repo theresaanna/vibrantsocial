@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { del } from "@vercel/blob";
+import { put, del } from "@vercel/blob";
 import { getSessionFromRequest } from "@/lib/mobile-auth";
 import { handleCorsPreflightRequest, withCors } from "@/lib/cors";
 import { uploadLimiter, checkRateLimit } from "@/lib/rate-limit";
@@ -74,5 +74,21 @@ export async function POST(req: Request) {
     return withCors(req, NextResponse.json({ error: "Upload rejected" }, { status: 400 }));
   }
 
-  return withCors(req, NextResponse.json({ safe: true }));
+  // Upload the middle frame as a thumbnail. Also serves as the NSFW scan
+  // target so the Python moderation service never sees video bytes.
+  let thumbUrl: string | null = null;
+  if (result.thumbnail) {
+    try {
+      const thumbBlob = await put(
+        `uploads/${session.user.id}-${Date.now()}-thumb.png`,
+        result.thumbnail,
+        { access: "public", addRandomSuffix: true, contentType: "image/png" }
+      );
+      thumbUrl = thumbBlob.url;
+    } catch {
+      // Non-fatal — video still goes through, NSFW scan will just no-op.
+    }
+  }
+
+  return withCors(req, NextResponse.json({ safe: true, thumbUrl }));
 }

@@ -16,6 +16,7 @@ export interface MediaAttachment {
   type: string;
   fileName: string;
   fileSize: number;
+  thumbUrl?: string | null;
 }
 
 interface MessageInputProps {
@@ -156,14 +157,19 @@ export function MessageInput({
                 });
                 // CSAM scan — server extracts frames and scans each. If it
                 // rejects, the blob is deleted server-side before this returns.
+                // On success it also returns a thumbUrl for the poster + async
+                // NSFW scan.
                 const scanRes = await fetch("/api/upload/scan-video", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ url: blob.url }),
                 });
+                const scanData = (await scanRes.json().catch(() => ({}))) as {
+                  error?: string;
+                  thumbUrl?: string | null;
+                };
                 if (!scanRes.ok) {
-                  const err = await scanRes.json().catch(() => ({}));
-                  setUploadError(err.error ?? `Upload rejected for ${file.name}`);
+                  setUploadError(scanData.error ?? `Upload rejected for ${file.name}`);
                   return;
                 }
                 mediaList.push({
@@ -171,6 +177,7 @@ export function MessageInput({
                   type: "video",
                   fileName: file.name,
                   fileSize: file.size,
+                  thumbUrl: scanData.thumbUrl ?? null,
                 });
               } catch (err) {
                 setUploadError(

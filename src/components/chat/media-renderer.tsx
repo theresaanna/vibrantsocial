@@ -8,6 +8,7 @@ interface MediaRendererProps {
   mediaType: MediaType;
   mediaFileName: string | null;
   mediaFileSize: number | null;
+  mediaThumbUrl?: string | null;
   isOwn: boolean;
   isNsfw?: boolean;
 }
@@ -48,6 +49,7 @@ export function MediaRenderer({
   mediaType,
   mediaFileName,
   mediaFileSize,
+  mediaThumbUrl,
   isOwn,
   isNsfw = false,
 }: MediaRendererProps) {
@@ -76,6 +78,7 @@ export function MediaRenderer({
       <div className="max-w-[300px]" style={{ aspectRatio: "16/9" }}>
         <video
           src={mediaUrl}
+          poster={mediaThumbUrl ?? undefined}
           controls
           preload="metadata"
           className="h-full w-full rounded-xl object-contain"
