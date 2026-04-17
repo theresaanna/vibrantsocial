@@ -15,6 +15,7 @@ const ROOMS = [
   { slug: "spicy-vibrant", name: "Spicy Vibrant", isNsfw: true },
   { slug: "music-chat", name: "Music Chat", isNsfw: false },
   { slug: "nerd-talk", name: "Nerd Talk", isNsfw: false },
+  { slug: "theme-show-and-tell", name: "Theme Show and Tell", isNsfw: false },
 ];
 
 async function main() {
