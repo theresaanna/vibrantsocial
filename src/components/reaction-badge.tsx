@@ -73,7 +73,7 @@ export function ReactionBadge({
       {showTooltip && tooltip && (
         <div
           ref={tooltipRef}
-          className={`absolute bottom-full mb-1.5 whitespace-nowrap rounded-lg bg-zinc-800 px-2.5 py-1.5 text-xs font-medium text-white shadow-lg dark:bg-zinc-700 ${
+          className={`absolute bottom-full mb-1.5 whitespace-nowrap rounded-lg bg-zinc-900 px-2.5 py-1.5 text-xs font-medium text-white shadow-lg dark:bg-zinc-800 ${
             nudgeLeft ? "right-0" : "left-1/2 -translate-x-1/2"
           }`}
           style={{ pointerEvents: "none", zIndex: 50 }}
