@@ -6,6 +6,9 @@
     "app/api/upload/client/route.ts": {
       "maxDuration": 60
     },
+    "app/api/upload/scan-video/route.ts": {
+      "maxDuration": 300
+    },
     "app/api/avatar/route.ts": {
       "maxDuration": 60
     },
