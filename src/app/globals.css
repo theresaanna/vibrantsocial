@@ -372,6 +372,11 @@ h6 {
   padding: 0.75rem;
 }
 
+/* Theme-aware action button: uses profile link color, falls back to fuchsia */
+.themed-action-btn {
+  background-color: var(--profile-link, #c026d3);
+}
+
 /* Chat theme overrides — user's chosen colors applied directly */
 .chat-themed {}
 

@@ -1209,7 +1209,7 @@ export function ChatRoomClient({
                 <button
                   onClick={handleSend}
                   disabled={(!inputValue.trim() && !uploadPreview) || isSending}
-                  className="hidden rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:from-emerald-500 hover:to-cyan-500 disabled:opacity-50 md:block"
+                  className="themed-action-btn hidden rounded-xl px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50 md:block"
                 >
                   {isSending ? "..." : "Send"}
                 </button>
@@ -1245,7 +1245,7 @@ export function ChatRoomClient({
                 <button
                   onClick={handleSend}
                   disabled={(!inputValue.trim() && !uploadPreview) || isSending}
-                  className="rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:from-emerald-500 hover:to-cyan-500 disabled:opacity-50"
+                  className="themed-action-btn rounded-xl px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
                   {isSending ? "..." : "Send"}
                 </button>
