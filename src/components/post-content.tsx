@@ -61,7 +61,7 @@ export function PostContent({ content, truncate = true, allowChecklistToggle, on
             <button
               type="button"
               onClick={() => setExpanded(true)}
-              className="rounded-full bg-fuchsia-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-fuchsia-700 dark:bg-fuchsia-500 dark:hover:bg-fuchsia-600"
+              className="themed-action-btn rounded-full px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
               data-testid="show-more-button"
             >
               Show more
