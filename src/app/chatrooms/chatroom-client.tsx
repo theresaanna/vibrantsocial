@@ -861,8 +861,8 @@ function ChatRoomClientInner({
                                     currentUserId={currentUserId}
                                     isReacted={r.userIds.includes(currentUserId)}
                                     onClick={() => handleReaction(msg.id, r.emoji)}
-                                    activeClassName="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
-                                    inactiveClassName="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400"
+                                    activeClassName="reaction-themed-active inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors"
+                                    inactiveClassName="reaction-themed-inactive inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors"
                                   />
                                 ))}
                               </div>

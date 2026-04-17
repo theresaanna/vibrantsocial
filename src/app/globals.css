@@ -406,6 +406,23 @@ h6 {
   color: var(--chat-link-color);
 }
 
+/* Profile-themed reaction badges — used in chatrooms (ThemedPage). */
+.reaction-themed-active {
+  border-color: color-mix(in srgb, var(--profile-link, #6366f1) 60%, transparent);
+  background-color: color-mix(in srgb, var(--profile-link, #6366f1) 25%, transparent);
+  color: var(--profile-text, #18181b);
+  font-weight: 600;
+}
+.reaction-themed-inactive {
+  border-color: color-mix(in srgb, var(--profile-text, #71717a) 20%, transparent);
+  background-color: color-mix(in srgb, var(--profile-container, #ffffff) 70%, transparent);
+  color: color-mix(in srgb, var(--profile-text, #71717a) 75%, transparent);
+}
+.reaction-themed-inactive:hover {
+  border-color: color-mix(in srgb, var(--profile-link, #6366f1) 40%, transparent);
+  background-color: color-mix(in srgb, var(--profile-link, #6366f1) 10%, transparent);
+}
+
 /* Collapsible section delete button — show on hover */
 details:hover > .collapsible-delete-btn {
   opacity: 1;

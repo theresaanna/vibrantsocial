@@ -40,52 +40,56 @@ export function TagCloud({ initialTags, initialHasMore, showNsfwContent }: TagCl
   };
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2" data-testid="tag-cloud">
-      {tags.map((tag, i) => {
-        // Scale: smaller range than before — compact bubbles
-        const t = (tag.count - minCount) / range;
-        const fontSize = 11 + t * 5; // 11px – 16px
-        const opacity = OPACITY_STEPS[i % OPACITY_STEPS.length];
+    <div>
+      <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2" data-testid="tag-cloud">
+        {tags.map((tag, i) => {
+          // Scale: smaller range than before — compact bubbles
+          const t = (tag.count - minCount) / range;
+          const fontSize = 11 + t * 5; // 11px – 16px
+          const opacity = OPACITY_STEPS[i % OPACITY_STEPS.length];
 
-        return (
-          <Link
-            key={tag.name}
-            href={`/tag/${tag.name}`}
-            className="tag-bubble inline-flex items-center gap-1 rounded-full font-medium transition-all hover:scale-105 hover:shadow-sm"
+          return (
+            <Link
+              key={tag.name}
+              href={`/tag/${tag.name}`}
+              className="tag-bubble inline-flex items-center gap-1 rounded-full font-medium transition-all hover:scale-105 hover:shadow-sm"
+              style={{
+                fontSize: `${fontSize}px`,
+                padding: `${4 + t * 2}px ${8 + t * 4}px`,
+                backgroundColor: `color-mix(in srgb, var(--profile-link, #6366f1) ${Math.round(opacity * 100)}%, transparent)`,
+                color: "var(--profile-text, #18181b)",
+              }}
+            >
+              <span>#{tag.name}</span>
+              <span
+                className="tabular-nums"
+                style={{
+                  opacity: 0.5,
+                  fontSize: `${Math.max(fontSize - 2, 10)}px`,
+                }}
+              >
+                {tag.count}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+      {hasMore && (
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={handleLoadMore}
+            disabled={isPending}
+            data-testid="tag-cloud-load-more"
+            className="inline-flex items-center rounded-full px-6 py-3 text-base font-semibold shadow-md transition-all hover:scale-105 hover:shadow-lg disabled:opacity-50"
             style={{
-              fontSize: `${fontSize}px`,
-              padding: `${4 + t * 2}px ${8 + t * 4}px`,
-              backgroundColor: `color-mix(in srgb, var(--profile-link, #6366f1) ${Math.round(opacity * 100)}%, transparent)`,
+              backgroundColor: `color-mix(in srgb, var(--profile-link, #6366f1) 35%, transparent)`,
               color: "var(--profile-text, #18181b)",
             }}
           >
-            <span>#{tag.name}</span>
-            <span
-              className="tabular-nums"
-              style={{
-                opacity: 0.5,
-                fontSize: `${Math.max(fontSize - 2, 10)}px`,
-              }}
-            >
-              {tag.count}
-            </span>
-          </Link>
-        );
-      })}
-      {hasMore && (
-        <button
-          type="button"
-          onClick={handleLoadMore}
-          disabled={isPending}
-          data-testid="tag-cloud-load-more"
-          className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-all hover:scale-105 hover:shadow-sm disabled:opacity-50"
-          style={{
-            backgroundColor: `color-mix(in srgb, var(--profile-link, #6366f1) 20%, transparent)`,
-            color: "var(--profile-text, #18181b)",
-          }}
-        >
-          {isPending ? "Loading…" : "Show more"}
-        </button>
+            {isPending ? "Loading…" : "Show more"}
+          </button>
+        </div>
       )}
     </div>
   );
