@@ -5,6 +5,7 @@ import type { InboundMessage } from "ably";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { usePresenceListener } from "ably/react";
+import { upload as blobUpload } from "@vercel/blob/client";
 import { getAblyRealtimeClient } from "@/lib/ably";
 import { useAblyReady } from "@/app/providers";
 import { FramedAvatar } from "@/components/framed-avatar";
@@ -477,12 +478,36 @@ export function ChatRoomClient({
 
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      if (!res.ok) throw new Error("Upload failed");
-      const { url, fileType, fileName, fileSize } = await res.json();
-      setUploadPreview({ url, fileType, fileName, fileSize });
+      const isVideo = file.type.split(";")[0].trim().startsWith("video/");
+      if (isVideo) {
+        // Client-side Vercel Blob upload to bypass the 4.5 MB API body limit
+        const blob = await blobUpload(file.name, file, {
+          access: "public",
+          handleUploadUrl: "/api/upload/client",
+          clientPayload: "video",
+        });
+        // CSAM scan — server extracts frames and scans each. If it rejects,
+        // the blob is deleted server-side before this returns.
+        const scanRes = await fetch("/api/upload/scan-video", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: blob.url }),
+        });
+        if (!scanRes.ok) throw new Error("Upload rejected");
+        setUploadPreview({
+          url: blob.url,
+          fileType: "video",
+          fileName: file.name,
+          fileSize: file.size,
+        });
+      } else {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("/api/upload", { method: "POST", body: formData });
+        if (!res.ok) throw new Error("Upload failed");
+        const { url, fileType, fileName, fileSize } = await res.json();
+        setUploadPreview({ url, fileType, fileName, fileSize });
+      }
       setUploadIsNsfw(false);
     } catch {
       // Could show toast

@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  serverExternalPackages: ["@anthropic-ai/sdk"],
+  serverExternalPackages: ["@anthropic-ai/sdk", "fluent-ffmpeg", "ffmpeg-static"],
   experimental: {
     optimizePackageImports: ["@lexical/react", "@giphy/react-components", "lucide-react", "date-fns"],
   },

@@ -154,6 +154,18 @@ export function MessageInput({
                   handleUploadUrl: "/api/upload/client",
                   clientPayload: "video",
                 });
+                // CSAM scan — server extracts frames and scans each. If it
+                // rejects, the blob is deleted server-side before this returns.
+                const scanRes = await fetch("/api/upload/scan-video", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ url: blob.url }),
+                });
+                if (!scanRes.ok) {
+                  const err = await scanRes.json().catch(() => ({}));
+                  setUploadError(err.error ?? `Upload rejected for ${file.name}`);
+                  return;
+                }
                 mediaList.push({
                   url: blob.url,
                   type: "video",
