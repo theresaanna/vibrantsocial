@@ -51,6 +51,7 @@ export interface MessageData {
   mediaType: MediaType | null;
   mediaFileName: string | null;
   mediaFileSize: number | null;
+  mediaThumbUrl: string | null;
   isNsfw: boolean;
   editedAt: Date | null;
   deletedAt: Date | null;

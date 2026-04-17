@@ -502,6 +502,7 @@ export async function sendMessage(data: {
   mediaType?: string;
   mediaFileName?: string;
   mediaFileSize?: number;
+  mediaThumbUrl?: string | null;
   replyToId?: string;
 }): Promise<ActionState & { messageId?: string }> {
   const authResult = await requireAuthWithRateLimit("chat");
@@ -518,7 +519,7 @@ export async function sendMessage(data: {
     return { success: false, message: "Phone verification required to send messages" };
   }
 
-  const { conversationId, content, mediaUrl, mediaType, mediaFileName, mediaFileSize, replyToId } = data;
+  const { conversationId, content, mediaUrl, mediaType, mediaFileName, mediaFileSize, mediaThumbUrl, replyToId } = data;
   const trimmedContent = content.trim();
   const hasMedia = !!mediaUrl;
 
@@ -593,6 +594,7 @@ export async function sendMessage(data: {
         mediaType,
         mediaFileName: mediaFileName ?? null,
         mediaFileSize: mediaFileSize ?? null,
+        mediaThumbUrl: mediaThumbUrl ?? null,
       }),
     },
     include: { sender: { select: USER_PROFILE_SELECT } },
@@ -629,6 +631,7 @@ export async function sendMessage(data: {
       mediaType: message.mediaType ?? null,
       mediaFileName: message.mediaFileName ?? null,
       mediaFileSize: message.mediaFileSize?.toString() ?? null,
+      mediaThumbUrl: message.mediaThumbUrl ?? null,
       replyTo: replyToData ? JSON.stringify(replyToData) : null,
     });
 
