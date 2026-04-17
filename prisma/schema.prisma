@@ -244,9 +244,6 @@ model User {
   // Poll votes
   pollVotes PollVote[]
 
-  // Expo push tokens (mobile app)
-  expoPushTokens ExpoPushToken[]
-
   // IAP subscriptions (Apple, Google, Stripe)
   subscriptions Subscription[]
 
@@ -1420,20 +1417,7 @@ model CommentSubscription {
   @@index([userId])
 }
 
-// Expo push notification tokens for the mobile app
-
-model ExpoPushToken {
-  id        String   @id @default(cuid())
-  userId    String
-  token     String   @unique
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-}
-
-// Support requests from mobile app
+// Support requests
 
 model SupportRequest {
   id        String   @id @default(cuid())

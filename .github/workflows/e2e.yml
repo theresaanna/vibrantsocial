@@ -4,9 +4,7 @@ on:
   pull_request:
     branches: [main]
     paths-ignore:
-      - 'mobile/**'
       - 'packages/**'
-      - '.github/workflows/mobile-build.yml'
 
 permissions:
   contents: read
