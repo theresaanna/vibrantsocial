@@ -3,9 +3,11 @@ import path from "path";
 import fs from "fs/promises";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegStatic from "ffmpeg-static";
+import ffprobeInstaller from "@ffprobe-installer/ffprobe";
 import { scanImageBuffer, type ScanResult } from "@/lib/arachnid-shield";
 
 if (ffmpegStatic) ffmpeg.setFfmpegPath(ffmpegStatic);
+if (ffprobeInstaller?.path) ffmpeg.setFfprobePath(ffprobeInstaller.path);
 
 const DEFAULT_FRAME_COUNT = 5;
 const FRAME_SIZE = "640x?";
