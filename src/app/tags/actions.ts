@@ -21,7 +21,7 @@ const TAG_CLOUD_PAGE_SIZE = 50;
 
 function toSortedTagCloud(tags: TagWithCount[]): TagCloudEntry[] {
   return tags
-    .filter((t) => t._count.posts >= 5)
+    .filter((t) => t._count.posts > 0)
     .map((t) => ({ name: t.name, count: t._count.posts }))
     .sort((a, b) => b.count - a.count);
 }
