@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getAblyRestClient } from "@/lib/ably";
 import { createNotification } from "@/lib/notifications";
 import { inngest } from "@/lib/inngest";
-import { cached, cacheKeys } from "@/lib/cache";
+import { cached, cacheKeys, cacheTags } from "@/lib/cache";
 import { unstable_cache } from "next/cache";
 import {
   requireAuthWithRateLimit,
@@ -17,7 +17,6 @@ import type { ActionState } from "@/lib/action-utils";
 const MAX_CONTENT_LENGTH = 2000;
 const MAX_STATUS_LENGTH = 200;
 const PAGE_SIZE = 40;
-export const ACTIVE_CHATROOMS_TAG = "active-chatrooms";
 const ACTIVE_CHATROOMS_TTL_SECONDS = 60;
 
 // ---------------------------------------------------------------------------
@@ -799,6 +798,6 @@ export async function listTopActiveChatRooms(
   return unstable_cache(
     () => cached(key, () => queryTopActiveChatRooms(limit, showNsfw), ACTIVE_CHATROOMS_TTL_SECONDS),
     [key],
-    { revalidate: ACTIVE_CHATROOMS_TTL_SECONDS, tags: [ACTIVE_CHATROOMS_TAG] },
+    { revalidate: ACTIVE_CHATROOMS_TTL_SECONDS, tags: [cacheTags.activeChatrooms] },
   )();
 }

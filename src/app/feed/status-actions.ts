@@ -2,11 +2,8 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { cached, cacheKeys, invalidate } from "@/lib/cache";
+import { cached, cacheKeys, cacheTags, invalidate } from "@/lib/cache";
 import { revalidatePath, updateTag, unstable_cache } from "next/cache";
-
-const STATUS_FEED_TAG = "status-feed";
-const STATUS_LIST_TTL_SECONDS = 30;
 import {
   requireAuthWithRateLimit,
   isActionError,
@@ -17,6 +14,7 @@ import type { ActionState } from "@/lib/action-utils";
 
 const MAX_STATUS_LENGTH = 100;
 const STATUS_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 2 weeks
+const STATUS_LIST_TTL_SECONDS = 30;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -61,7 +59,7 @@ export async function setStatus(
 
   await prisma.userStatus.create({ data: { userId, content } });
   await invalidate(cacheKeys.friendStatuses(userId));
-  updateTag(STATUS_FEED_TAG);
+  updateTag(cacheTags.statusFeed);
   revalidatePath("/feed");
   revalidatePath("/statuses");
 
@@ -88,7 +86,7 @@ export async function setStatusAndReturn(
   });
 
   await invalidate(cacheKeys.friendStatuses(userId));
-  updateTag(STATUS_FEED_TAG);
+  updateTag(cacheTags.statusFeed);
   revalidatePath("/feed");
   revalidatePath("/statuses");
 
@@ -128,7 +126,7 @@ export async function deleteStatus(
 
   await prisma.userStatus.delete({ where: { id: statusId } });
   await invalidate(cacheKeys.friendStatuses(userId));
-  updateTag(STATUS_FEED_TAG);
+  updateTag(cacheTags.statusFeed);
   revalidatePath("/feed");
   revalidatePath("/statuses");
 
@@ -160,7 +158,7 @@ export async function toggleStatusLike(
     await prisma.statusLike.create({ data: { statusId, userId } });
   }
 
-  updateTag(STATUS_FEED_TAG);
+  updateTag(cacheTags.statusFeed);
   revalidatePath("/feed");
   revalidatePath("/statuses");
 
@@ -253,7 +251,7 @@ export async function getFriendStatuses(
         STATUS_LIST_TTL_SECONDS,
       ),
     [cacheKeys.friendStatusList(userId, limit)],
-    { revalidate: STATUS_LIST_TTL_SECONDS, tags: [STATUS_FEED_TAG] },
+    { revalidate: STATUS_LIST_TTL_SECONDS, tags: [cacheTags.statusFeed] },
   )();
 }
 

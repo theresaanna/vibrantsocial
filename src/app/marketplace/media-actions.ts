@@ -2,12 +2,11 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { cached, cacheKeys } from "@/lib/cache";
+import { cached, cacheKeys, cacheTags } from "@/lib/cache";
 import { unstable_cache } from "next/cache";
 import { publishedOnly } from "@/app/feed/feed-queries";
 
 const MARKETPLACE_PAGE_SIZE = 30;
-export const MARKETPLACE_FEED_TAG = "marketplace-feed";
 const MARKETPLACE_TTL_SECONDS = 30;
 
 export interface MarketplaceMediaPost {
@@ -154,7 +153,7 @@ export async function fetchMarketplacePage(
         MARKETPLACE_TTL_SECONDS,
       ),
     [key],
-    { revalidate: MARKETPLACE_TTL_SECONDS, tags: [MARKETPLACE_FEED_TAG] },
+    { revalidate: MARKETPLACE_TTL_SECONDS, tags: [cacheTags.marketplaceFeed] },
   )();
 }
 

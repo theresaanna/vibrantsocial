@@ -63,6 +63,13 @@ export async function invalidateMany(keys: string[]) {
   await redis.del(...keys);
 }
 
+// Cache tags for unstable_cache / updateTag / revalidateTag
+export const cacheTags = {
+  statusFeed: "status-feed",
+  marketplaceFeed: "marketplace-feed",
+  activeChatrooms: "active-chatrooms",
+} as const;
+
 // Cache key builders
 export const cacheKeys = {
   userFollowing: (userId: string) => `user:${userId}:following`,

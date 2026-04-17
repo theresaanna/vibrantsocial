@@ -7,13 +7,12 @@ import { requirePhoneVerification } from "@/lib/phone-gate";
 import { requireMinimumAge } from "@/lib/age-gate";
 import { requireNotSuspended } from "@/lib/suspension-gate";
 import { revalidatePath, updateTag } from "next/cache";
-import { MARKETPLACE_FEED_TAG } from "./media-actions";
 import {
   extractMentionsFromLexicalJson,
   createMentionNotifications,
 } from "@/lib/mentions";
 import { extractTagsFromNames } from "@/lib/tags";
-import { invalidate, cacheKeys } from "@/lib/cache";
+import { invalidate, cacheKeys, cacheTags } from "@/lib/cache";
 import { generateSlugFromContent, validateSlug } from "@/lib/slugs";
 import { inngest } from "@/lib/inngest";
 import { awardReferralFirstPostBonus, checkStarsMilestone } from "@/lib/referral";
@@ -277,7 +276,7 @@ export async function createMarketplacePost(
     await channel.publish("new-post", { postId: post.id });
   }
 
-  updateTag(MARKETPLACE_FEED_TAG);
+  updateTag(cacheTags.marketplaceFeed);
   revalidatePath("/marketplace");
   return { success: true, message: "Marketplace post created", postId: post.id, slug: post.slug ?? undefined };
 }
@@ -306,7 +305,7 @@ export async function promoteToFeed(postId: string): Promise<MarketplacePostStat
     data: { promotedToFeed: !post.marketplacePost.promotedToFeed },
   });
 
-  updateTag(MARKETPLACE_FEED_TAG);
+  updateTag(cacheTags.marketplaceFeed);
   revalidatePath("/feed");
   revalidatePath("/marketplace");
   return {
@@ -352,7 +351,7 @@ export async function deleteMarketplacePost(
     );
   }
 
-  updateTag(MARKETPLACE_FEED_TAG);
+  updateTag(cacheTags.marketplaceFeed);
   revalidatePath("/marketplace");
   return { success: true, message: "Post deleted" };
 }
