@@ -1,12 +1,13 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../controllers/message_requests_controller.dart';
 import '../models/chat.dart';
 import '../providers.dart';
+import '../widgets/framed_avatar.dart';
 import '../widgets/themed_background.dart';
 import '../widgets/themed_container.dart';
+import '../widgets/username_text.dart';
 import 'conversation_screen.dart';
 
 /// Inbox of pending incoming chat requests. Accept turns the request
@@ -149,25 +150,31 @@ class _RequestRowState extends ConsumerState<_RequestRow> {
   @override
   Widget build(BuildContext context) {
     final sender = widget.request.sender;
+    final framesAsync = ref.watch(avatarFramesProvider);
+    final frame = framesAsync.maybeWhen(
+      data: (frames) => sender.profileFrameId == null
+          ? null
+          : frames[sender.profileFrameId],
+      orElse: () => null,
+    );
     return ThemedContainer(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundImage: sender.avatar != null
-                ? CachedNetworkImageProvider(sender.avatar!)
-                : null,
-            child: sender.avatar == null ? const Icon(Icons.person) : null,
+          FramedAvatar(
+            avatarUrl: sender.avatar,
+            frame: frame,
+            size: 44,
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  sender.label,
+                UsernameText(
+                  text: sender.label,
+                  fontFamily: sender.usernameFont,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.w600),

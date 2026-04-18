@@ -10,8 +10,11 @@ import '../controllers/chat_message_controller.dart';
 import '../models/chat.dart';
 import '../models/resolved_theme.dart';
 import '../providers.dart';
+import '../screens/profile_screen.dart';
+import 'framed_avatar.dart';
 import 'link_preview_card.dart';
 import 'linkified_text.dart';
+import 'username_text.dart';
 
 /// Payload passed from the composer to the screen when sending.
 class ChatSendDraft {
@@ -278,7 +281,7 @@ class _ChatThreadViewState extends ConsumerState<ChatThreadView> {
   }
 }
 
-class _MessageBubble extends StatelessWidget {
+class _MessageBubble extends ConsumerWidget {
   const _MessageBubble({
     required this.message,
     required this.isMine,
@@ -451,7 +454,7 @@ class _MessageBubble extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colors = viewerTheme?.colors;
     final opacity = viewerTheme?.container.opacity ?? 100;
@@ -459,6 +462,22 @@ class _MessageBubble extends StatelessWidget {
         ? theme.colorScheme.surface
         : colors.containerColor.withValues(alpha: opacity.clamp(0, 100) / 100.0);
     final textColor = colors?.textColor ?? theme.colorScheme.onSurface;
+    // Resolve the sender's frame from the cached catalog (null while
+    // it loads or for users without a frame).
+    final framesAsync = ref.watch(avatarFramesProvider);
+    final senderFrame = framesAsync.maybeWhen(
+      data: (frames) => message.sender?.profileFrameId == null
+          ? null
+          : frames[message.sender!.profileFrameId],
+      orElse: () => null,
+    );
+    void openProfile() {
+      final username = message.sender?.username;
+      if (username == null || username.isEmpty) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => ProfileScreen(username: username)),
+      );
+    }
     // Mine bubbles get a subtle accent so they're distinguishable beyond
     // alignment alone. Falls back to the Material primary tone when no
     // theme is loaded yet.
@@ -556,14 +575,13 @@ class _MessageBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMine)
-            CircleAvatar(
-              radius: 14,
-              backgroundImage: sender?.avatar != null
-                  ? CachedNetworkImageProvider(sender!.avatar!)
-                  : null,
-              child: sender?.avatar == null
-                  ? const Icon(Icons.person, size: 16)
-                  : null,
+            GestureDetector(
+              onTap: openProfile,
+              child: FramedAvatar(
+                avatarUrl: sender?.avatar,
+                frame: senderFrame,
+                size: 32,
+              ),
             ),
           if (!isMine) const SizedBox(width: 8),
           Flexible(
@@ -572,12 +590,16 @@ class _MessageBubble extends StatelessWidget {
                   isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
                 if (showHeader)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4, bottom: 2),
-                    child: Text(
-                      sender.label,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: textColor.withValues(alpha: 0.7),
+                  GestureDetector(
+                    onTap: openProfile,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 2),
+                      child: UsernameText(
+                        text: sender.label,
+                        fontFamily: sender.usernameFont,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: textColor.withValues(alpha: 0.7),
+                        ),
                       ),
                     ),
                   ),
@@ -680,8 +702,9 @@ class _ReplyQuote extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            replyTo.senderName,
+          UsernameText(
+            text: replyTo.senderName,
+            fontFamily: replyTo.senderUsernameFont,
             style: TextStyle(
               color: linkColor,
               fontSize: 11,
@@ -1011,12 +1034,18 @@ class _ReplyStagedChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = target.sender?.label ?? 'message';
+    final senderLabel = target.sender?.label ?? 'message';
+    final senderFont = target.sender?.usernameFont;
     final preview = target.isDeleted
         ? '[deleted]'
         : target.content.isEmpty
             ? '[media]'
             : target.content;
+    final headerStyle = TextStyle(
+      color: textColor.withValues(alpha: 0.7),
+      fontSize: 11,
+      fontWeight: FontWeight.w600,
+    );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -1031,13 +1060,19 @@ class _ReplyStagedChip extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Replying to $name',
-                  style: TextStyle(
-                    color: textColor.withValues(alpha: 0.7),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
+                Row(
+                  children: [
+                    Text('Replying to ', style: headerStyle),
+                    Flexible(
+                      child: UsernameText(
+                        text: senderLabel,
+                        fontFamily: senderFont,
+                        style: headerStyle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
                 Text(
                   preview,

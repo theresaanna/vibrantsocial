@@ -37,7 +37,12 @@ const replyToInclude = {
     deletedAt: true,
     mediaType: true,
     sender: {
-      select: { displayName: true, username: true, name: true },
+      select: {
+        displayName: true,
+        username: true,
+        name: true,
+        usernameFont: true,
+      },
     },
   },
 } as const;
@@ -49,7 +54,12 @@ function formatReplyTo(
     senderId: string;
     deletedAt: Date | null;
     mediaType: string | null;
-    sender: { displayName: string | null; username: string | null; name: string | null };
+    sender: {
+      displayName: string | null;
+      username: string | null;
+      name: string | null;
+      usernameFont: string | null;
+    };
   } | null
 ): MessageReplyTo | null {
   if (!replyTo) return null;
@@ -59,6 +69,7 @@ function formatReplyTo(
     senderId: replyTo.senderId,
     senderName:
       replyTo.sender.displayName ?? replyTo.sender.username ?? replyTo.sender.name ?? "User",
+    senderUsernameFont: replyTo.sender.usernameFont,
     mediaType: (replyTo.mediaType ?? null) as MediaType | null,
     deletedAt: replyTo.deletedAt,
   };
@@ -566,7 +577,7 @@ export async function sendMessage(data: {
       where: { id: replyToId },
       include: {
         sender: {
-          select: { displayName: true, username: true, name: true },
+          select: { displayName: true, username: true, name: true, usernameFont: true },
         },
       },
     });

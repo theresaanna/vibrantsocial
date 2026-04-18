@@ -1467,6 +1467,22 @@ async function mobileFetchProfileMedia(username: string, cursor?: string) {
   };
 }
 
+/// Returns the full avatar-frame catalog with absolute image URLs so
+/// the Flutter client can look up `profileFrameId` -> `AvatarFrame`
+/// without baking the catalog into the app bundle.
+async function mobileGetAvatarFrames() {
+  const { PROFILE_FRAMES } = await import("@/lib/profile-frames");
+  const { resolveAvatarFrame } = await import("@/lib/profile-lists");
+  const { headers } = await import("next/headers");
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? "http";
+  const baseUrl = `${proto}://${host}`;
+  return PROFILE_FRAMES
+    .map((f) => resolveAvatarFrame(f.id, baseUrl))
+    .filter((f): f is NonNullable<typeof f> => f !== null);
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const ACTIONS: Record<string, (...args: any[]) => Promise<any>> = {
   searchUsers,
@@ -1605,6 +1621,7 @@ const ACTIONS: Record<string, (...args: any[]) => Promise<any>> = {
   toggleNsfwContent,
   fetchMediaFeed: mobileFetchMediaFeed,
   fetchProfileMedia: mobileFetchProfileMedia,
+  getAvatarFrames: mobileGetAvatarFrames,
 };
 /* eslint-enable @typescript-eslint/no-explicit-any */
 

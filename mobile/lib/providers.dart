@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'api/api_client.dart';
 import 'api/auth_api.dart';
+import 'api/avatar_frames_api.dart';
 import 'api/chatroom_api.dart';
 import 'api/interaction_api.dart';
 import 'api/link_preview_api.dart';
@@ -22,6 +23,7 @@ import 'controllers/message_requests_controller.dart';
 import 'controllers/nsfw_pref_controller.dart';
 import 'controllers/post_list_controller.dart';
 import 'controllers/profile_list_controller.dart';
+import 'models/avatar_frame.dart';
 import 'models/comment.dart';
 import 'models/link_preview.dart';
 import 'models/post.dart';
@@ -195,6 +197,17 @@ final linkPreviewApiProvider = Provider<LinkPreviewApi>(
 final prefsApiProvider = Provider<PrefsApi>(
   (ref) => PrefsApi(ref.watch(rpcClientProvider)),
 );
+
+final avatarFramesApiProvider = Provider<AvatarFramesApi>(
+  (ref) => AvatarFramesApi(ref.watch(rpcClientProvider)),
+);
+
+/// Catalog of all avatar frames keyed by id. Fetched once per session;
+/// chat bubbles and other surfaces look up the sender's frame here
+/// instead of carrying the geometry in every message payload.
+final avatarFramesProvider = FutureProvider<Map<String, AvatarFrame>>((ref) {
+  return ref.watch(avatarFramesApiProvider).fetchAll();
+});
 
 final mediaFeedApiProvider = Provider<MediaFeedApi>(
   (ref) => MediaFeedApi(ref.watch(rpcClientProvider)),

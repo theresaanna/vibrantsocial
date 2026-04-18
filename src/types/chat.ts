@@ -38,6 +38,8 @@ export interface MessageReplyTo {
   content: string;
   senderId: string;
   senderName: string;
+  /** The replied-to sender's chosen display font (premium feature). */
+  senderUsernameFont?: string | null;
   mediaType: MediaType | null;
   deletedAt: Date | null;
 }

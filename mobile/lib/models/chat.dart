@@ -50,6 +50,7 @@ class MessageReplyTo {
     required this.content,
     required this.senderId,
     required this.senderName,
+    required this.senderUsernameFont,
     required this.deletedAt,
   });
 
@@ -57,20 +58,25 @@ class MessageReplyTo {
   final String content;
   final String senderId;
   final String senderName;
+  final String? senderUsernameFont;
   final DateTime? deletedAt;
 
   factory MessageReplyTo.fromJson(Map<String, dynamic> json) {
-    // DM shape flattens sender to `senderName`; chatroom shape has a nested sender.
+    // DM shape flattens sender to `senderName` + `senderUsernameFont`;
+    // chatroom shape keeps the nested `sender` object.
     String? name = json['senderName'] as String?;
-    if (name == null && json['sender'] is Map) {
+    String? font = json['senderUsernameFont'] as String?;
+    if ((name == null || font == null) && json['sender'] is Map) {
       final s = (json['sender'] as Map).cast<String, dynamic>();
-      name = (s['displayName'] ?? s['username'] ?? s['name']) as String?;
+      name ??= (s['displayName'] ?? s['username'] ?? s['name']) as String?;
+      font ??= s['usernameFont'] as String?;
     }
     return MessageReplyTo(
       id: json['id'] as String,
       content: json['content'] as String? ?? '',
       senderId: json['senderId'] as String,
       senderName: name ?? 'User',
+      senderUsernameFont: font,
       deletedAt: _parseDate(json['deletedAt']),
     );
   }
