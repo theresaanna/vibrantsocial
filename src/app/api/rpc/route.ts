@@ -38,6 +38,17 @@ import {
   acceptMessageRequest,
   declineMessageRequest,
 } from "@/app/messages/actions";
+import {
+  listChatRooms,
+  listTopActiveChatRooms,
+  getChatRoomMessages,
+  getChatRoomMeta,
+  sendChatRoomMessage,
+  editChatRoomMessage,
+  deleteChatRoomMessage,
+  toggleReaction as toggleChatRoomReaction,
+} from "@/app/chatrooms/actions";
+import { fetchLinkPreview } from "@/app/feed/link-preview-action";
 import { getUnreadNotificationCount, getRecentNotifications } from "@/app/notifications/actions";
 import { fetchNewcomers } from "@/app/communities/newcomer-actions";
 import { fetchTopDiscussedPosts } from "@/app/communities/discussion-actions";
@@ -1393,6 +1404,16 @@ const ACTIONS: Record<string, (...args: any[]) => Promise<any>> = {
   markConversationRead,
   acceptMessageRequest,
   declineMessageRequest,
+  // Chatrooms
+  listChatRooms,
+  listTopActiveChatRooms,
+  getChatRoomMessages,
+  getChatRoomMeta,
+  sendChatRoomMessage,
+  editChatRoomMessage,
+  deleteChatRoomMessage,
+  toggleChatRoomReaction,
+  fetchLinkPreview,
   getUnreadNotificationCount,
   getRecentNotifications,
   fetchNewcomers,

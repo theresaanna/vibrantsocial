@@ -3,18 +3,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'api/api_client.dart';
 import 'api/auth_api.dart';
+import 'api/chatroom_api.dart';
 import 'api/interaction_api.dart';
+import 'api/link_preview_api.dart';
 import 'api/media_api.dart';
+import 'api/messaging_api.dart';
 import 'api/post_api.dart';
 import 'api/profile_api.dart';
+import 'api/rpc_client.dart';
 import 'api/theme_api.dart';
+import 'controllers/chat_message_controller.dart';
+import 'controllers/chatroom_list_controller.dart';
+import 'controllers/conversation_list_controller.dart';
 import 'controllers/post_list_controller.dart';
 import 'controllers/profile_list_controller.dart';
 import 'models/comment.dart';
+import 'models/link_preview.dart';
 import 'models/post.dart';
 import 'models/profile.dart';
 import 'models/resolved_theme.dart';
 import 'models/session.dart';
+import 'services/ably_service.dart';
 import 'services/native_oauth.dart';
 import 'services/token_store.dart';
 
@@ -156,3 +165,73 @@ final userThemeProvider =
     FutureProvider.autoDispose.family<ThemeResponse, String>((ref, username) {
   return ref.watch(themeApiProvider).fetch(username);
 });
+
+// ── Chat (DMs + chatrooms) ──────────────────────────────────────────
+
+final rpcClientProvider = Provider<RpcClient>(
+  (ref) => RpcClient(ref.watch(dioProvider)),
+);
+
+final messagingApiProvider = Provider<MessagingApi>(
+  (ref) => MessagingApi(ref.watch(rpcClientProvider)),
+);
+
+final chatroomApiProvider = Provider<ChatroomApi>(
+  (ref) => ChatroomApi(ref.watch(rpcClientProvider)),
+);
+
+final linkPreviewApiProvider = Provider<LinkPreviewApi>(
+  (ref) => LinkPreviewApi(ref.watch(rpcClientProvider)),
+);
+
+/// Server fetches OG metadata; cached in Redis for 7 days. Family keyed
+/// by URL — autoDispose so we drop the result when no message bubble is
+/// rendering it anymore. Cache hits stay essentially free.
+final linkPreviewProvider = FutureProvider.autoDispose
+    .family<LinkPreviewData?, String>((ref, url) {
+  return ref.watch(linkPreviewApiProvider).fetch(url);
+});
+
+final ablyServiceProvider = Provider<AblyService>((ref) {
+  final service = AblyService(ref.watch(dioProvider));
+  ref.onDispose(() async {
+    await service.dispose();
+  });
+  return service;
+});
+
+/// DM conversation list. One instance per session (not autoDispose) so
+/// the list survives tab switches on the home shell.
+final conversationListProvider = StateNotifierProvider<
+    ConversationListController, ConversationListState>((ref) {
+  return ConversationListController(ref.watch(messagingApiProvider));
+});
+
+/// Browsable public chatrooms.
+final chatroomListProvider = StateNotifierProvider<
+    ChatroomListController, ChatroomListState>((ref) {
+  return ChatroomListController(ref.watch(chatroomApiProvider));
+});
+
+/// Paginated messages for a DM conversation. Keyed by conversationId so
+/// switching between threads yields separate state.
+final conversationMessagesProvider = StateNotifierProvider.autoDispose
+    .family<ChatMessageListController, ChatMessageListState, String>(
+  (ref, conversationId) {
+    final api = ref.watch(messagingApiProvider);
+    return ChatMessageListController(
+      (cursor) => api.getMessages(conversationId, cursor: cursor),
+    );
+  },
+);
+
+/// Paginated messages for a chatroom. Keyed by slug.
+final chatroomMessagesProvider = StateNotifierProvider.autoDispose
+    .family<ChatMessageListController, ChatMessageListState, String>(
+  (ref, slug) {
+    final api = ref.watch(chatroomApiProvider);
+    return ChatMessageListController(
+      (cursor) => api.getMessages(slug: slug, cursor: cursor),
+    );
+  },
+);

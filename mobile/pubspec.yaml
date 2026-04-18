@@ -63,6 +63,11 @@ dependencies:
   # per-user username fonts selected via theme settings on the web.
   google_fonts: ^6.2.1
 
+  # Realtime transport for DMs and chatrooms. Token is issued by
+  # GET /api/ably-token; channels follow the server's naming convention
+  # (chat:{conversationId}, chatroom:{slug}).
+  ably_flutter: ^1.2.39
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
