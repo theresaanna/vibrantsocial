@@ -68,6 +68,9 @@ dependencies:
   # (chat:{conversationId}, chatroom:{slug}).
   ably_flutter: ^1.2.39
 
+  # Decode SVG avatar frames (cached_network_image only handles raster).
+  flutter_svg: ^2.0.10
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

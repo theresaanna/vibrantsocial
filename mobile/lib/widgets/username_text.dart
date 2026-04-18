@@ -28,6 +28,43 @@ const Set<String> _bundledUsernameFonts = {
   'Agbalumo',
 };
 
+/// Maps the slug stored on `User.usernameFont` (e.g. "manufacturing-consent")
+/// to the Google-fonts family name our bundled assets and `google_fonts`
+/// lookup expect (e.g. "Manufacturing Consent"). Mirror of
+/// `USERNAME_FONTS` in `src/lib/profile-fonts.ts` — keep in sync.
+const Map<String, String> _fontSlugToFamily = {
+  'sofadi-one': 'Sofadi One',
+  'jersey-10': 'Jersey 10',
+  'limelight': 'Limelight',
+  'unkempt': 'Unkempt',
+  'gugi': 'Gugi',
+  'turret-road': 'Turret Road',
+  'nova-mono': 'Nova Mono',
+  'ewert': 'Ewert',
+  'ballet': 'Ballet',
+  'manufacturing-consent': 'Manufacturing Consent',
+  'rubik-puddles': 'Rubik Puddles',
+  'hachi-maru-pop': 'Hachi Maru Pop',
+  'ms-madi': 'Ms Madi',
+  'jacquard-24': 'Jacquard 24',
+  'texturina': 'Texturina',
+  'great-vibes': 'Great Vibes',
+  'rye': 'Rye',
+  'bonbon': 'Bonbon',
+  'agu-display': 'Agu Display',
+  'agbalumo': 'Agbalumo',
+};
+
+/// Resolve a [fontFamily] argument that could be either a slug
+/// (server-stored on `User.usernameFont`) or a fully-qualified Google
+/// family name (already-resolved from `usernameFontFamily`). Returns
+/// the family name to feed into `google_fonts` / our bundled-asset
+/// fontFamily.
+String? _resolveFamily(String? raw) {
+  if (raw == null || raw.isEmpty) return null;
+  return _fontSlugToFamily[raw] ?? raw;
+}
+
 /// Renders a user's display name.
 ///
 /// The app-wide default is Lexend (w300 — see main.dart). When
@@ -55,7 +92,7 @@ class UsernameText extends StatelessWidget {
   Widget build(BuildContext context) {
     final base = style ??
         DefaultTextStyle.of(context).style.copyWith(fontWeight: FontWeight.w600);
-    final effective = _styleFor(fontFamily, base);
+    final effective = _styleFor(_resolveFamily(fontFamily), base);
     return Text(
       text,
       style: effective,

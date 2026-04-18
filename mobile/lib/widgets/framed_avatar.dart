@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../models/avatar_frame.dart';
 
@@ -62,18 +63,38 @@ class FramedAvatar extends StatelessWidget {
                 scaleY: frame!.scaleY * frame!.frameScale,
                 child: Transform.translate(
                   offset: Offset(frame!.offsetX, frame!.offsetY),
-                  child: CachedNetworkImage(
-                    imageUrl: frame!.imageUrl,
-                    width: overlaySize,
-                    height: overlaySize,
-                    fit: BoxFit.contain,
-                    errorWidget: (_, _, _) => const SizedBox.shrink(),
-                  ),
+                  child: _frameImage(frame!.imageUrl, overlaySize),
                 ),
               ),
             ),
         ],
       ),
+    );
+  }
+
+  /// Decode SVG and raster frames separately — `CachedNetworkImage` only
+  /// handles raster, but our frame catalog mixes PNG (whimsy/floral) and
+  /// SVG (spring/neon/decorative). Without this branch, SVG frames
+  /// silently fail their error widget and never render.
+  Widget _frameImage(String url, double overlaySize) {
+    final lower = url.toLowerCase();
+    final isSvg = lower.endsWith('.svg') ||
+        lower.contains('.svg?');
+    if (isSvg) {
+      return SvgPicture.network(
+        url,
+        width: overlaySize,
+        height: overlaySize,
+        fit: BoxFit.contain,
+        placeholderBuilder: (_) => const SizedBox.shrink(),
+      );
+    }
+    return CachedNetworkImage(
+      imageUrl: url,
+      width: overlaySize,
+      height: overlaySize,
+      fit: BoxFit.contain,
+      errorWidget: (_, _, _) => const SizedBox.shrink(),
     );
   }
 }
