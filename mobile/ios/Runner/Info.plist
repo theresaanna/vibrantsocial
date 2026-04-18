@@ -4,6 +4,25 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!--
+	  Google Sign-In — replace both IDs with the iOS OAuth client you create
+	  in Google Cloud Console (see mobile/README.md). `GIDClientID` is the
+	  iOS client ID as-is; the URL scheme below is the same string with the
+	  `apps.googleusercontent.com` prefix moved to the end, reversed.
+	-->
+	<key>GIDClientID</key>
+	<string>380367672536-5fqsmlq8tea0er8km7bfs9qrj7f9mgi7.apps.googleusercontent.com</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.380367672536-5fqsmlq8tea0er8km7bfs9qrj7f9mgi7</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSExceptionDomains</key>

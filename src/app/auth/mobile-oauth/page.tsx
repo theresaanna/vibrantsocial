@@ -4,7 +4,7 @@
  * This page is opened by the mobile app in an in-app browser.
  * It auto-submits the OAuth sign-in form to NextAuth, which handles
  * the full OAuth flow. After auth, NextAuth redirects to
- * /api/auth/mobile/oauth/complete, which generates a mobile JWT
+ * /api/v1/auth/oauth/complete, which generates a mobile JWT
  * and deep-links back to the app.
  *
  * Usage: /auth/mobile-oauth?provider=google
@@ -35,7 +35,7 @@ export default async function MobileOAuthPage({ searchParams }: Props) {
   async function startOAuth() {
     "use server";
     await signIn(provider!, {
-      redirectTo: "/api/auth/mobile/oauth/complete",
+      redirectTo: "/api/v1/auth/oauth/complete",
     });
   }
 

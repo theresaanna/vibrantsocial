@@ -12,4 +12,29 @@ class Env {
     'API_BASE_URL',
     defaultValue: 'http://localhost:3000',
   );
+
+  /// iOS OAuth 2.0 Client ID from Google Cloud Console. Pass via
+  /// `--dart-define=GOOGLE_IOS_CLIENT_ID=xxxxx.apps.googleusercontent.com`.
+  /// Also needs to be copied (reversed) into `ios/Runner/Info.plist` as a
+  /// URL scheme — see README for the setup checklist.
+  static const String googleIosClientId = String.fromEnvironment(
+    'GOOGLE_IOS_CLIENT_ID',
+  );
+
+  /// Android OAuth 2.0 Client ID (web or android type). Android uses the
+  /// google-services.json / package + signing cert; this is here for
+  /// completeness.
+  static const String googleServerClientId = String.fromEnvironment(
+    'GOOGLE_SERVER_CLIENT_ID',
+  );
+
+  /// True when the platform-appropriate Google config is in place. iOS needs
+  /// the iOS client id baked in (Info.plist + this constant); Android uses
+  /// the package + SHA-1 registered with Google Cloud plus the web server
+  /// client id for ID-token requests.
+  static bool googleConfiguredFor({required bool isIos}) {
+    return isIos
+        ? googleIosClientId.isNotEmpty
+        : googleServerClientId.isNotEmpty;
+  }
 }

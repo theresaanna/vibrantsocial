@@ -1,7 +1,7 @@
 /**
- * Mobile OAuth completion endpoint.
+ * Browser-flow OAuth completion endpoint for mobile JWT exchange.
  *
- * GET /api/auth/mobile/oauth/complete
+ * GET /api/v1/auth/oauth/complete
  *
  * After NextAuth finishes the OAuth flow, the user is redirected here
  * with a valid web session cookie. This endpoint:
@@ -19,9 +19,6 @@ const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_URL ?? "https://vibrantsocial.app
 
 /** Origins allowed to receive tokens via postMessage. */
 const ALLOWED_CALLER_ORIGINS = new Set([
-  "http://localhost:8081",
-  "http://127.0.0.1:8081",
-  "http://localhost:19006",
   "https://vibrantsocial.app",
   "https://www.vibrantsocial.app",
 ]);

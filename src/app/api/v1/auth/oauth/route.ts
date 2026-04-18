@@ -1,14 +1,15 @@
 /**
- * Mobile OAuth initiation endpoint.
+ * Browser-based OAuth initiation endpoint for mobile JWT exchange.
  *
- * GET /api/auth/mobile/oauth?provider=google|discord
+ * GET /api/v1/auth/oauth?provider=google|discord
  *
  * If the user already has a valid web session (cookie), skip OAuth entirely
  * and generate a mobile JWT immediately. Otherwise, initiate the OAuth flow.
+ * The completion route redirects to a deep link with the token.
  *
- * Supports two response modes via `Accept` header or `format` query param:
- * - format=json → returns { token } as JSON (for direct fetch from mobile web)
- * - default → returns HTML page with postMessage + deep link fallback
+ * Native sign-in (Sign in with Apple, Google Sign-In on Android/iOS) goes
+ * through a different endpoint that accepts a provider-issued ID token
+ * directly — see /api/v1/auth/oauth/native (when implemented).
  */
 import { cookies } from "next/headers";
 import { auth, signIn } from "@/auth";
@@ -21,9 +22,6 @@ const VALID_PROVIDERS = ["google", "discord"] as const;
 
 /** Origins allowed to receive tokens via postMessage. */
 const ALLOWED_CALLER_ORIGINS = new Set([
-  "http://localhost:8081",
-  "http://127.0.0.1:8081",
-  "http://localhost:19006",
   "https://vibrantsocial.app",
   "https://www.vibrantsocial.app",
 ]);
@@ -57,7 +55,7 @@ export async function GET(req: Request) {
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         maxAge: 600, // 10 minutes — enough for the OAuth flow
-        path: "/api/auth/mobile/oauth",
+        path: "/api/v1/auth/oauth",
       });
     }
 
@@ -85,7 +83,7 @@ export async function GET(req: Request) {
 
     // No session — start fresh OAuth flow.
     await signIn(provider, {
-      redirectTo: "/api/auth/mobile/oauth/complete",
+      redirectTo: "/api/v1/auth/oauth/complete",
     });
   } catch (error) {
     // signIn() throws a redirect (NEXT_REDIRECT) which must be re-thrown

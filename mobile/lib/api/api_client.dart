@@ -1,13 +1,19 @@
 import 'package:dio/dio.dart';
 
 import '../config/env.dart';
+import '../services/token_store.dart';
+import 'auth_interceptor.dart';
 
-/// Shared Dio instance configured against the VibrantSocial API.
+/// Builds the shared Dio instance, installing the auth interceptor so every
+/// request picks up the current JWT and reacts to 401s consistently.
 ///
-/// Kept minimal for now — interceptors for auth, tracing, and retries will
-/// layer on as we add those features. Callers should use this singleton via
-/// the riverpod `apiClientProvider` so tests can override it.
-Dio buildDio() {
+/// The interceptor's [AuthInterceptor.onUnauthorized] hook lets providers
+/// register a session-reset callback without a circular import — callers
+/// pass in whatever needs to happen when the server rejects the token.
+Dio buildDio({
+  required TokenStore tokenStore,
+  Future<void> Function()? onUnauthorized,
+}) {
   final dio = Dio(
     BaseOptions(
       baseUrl: Env.apiBaseUrl,
@@ -17,7 +23,13 @@ Dio buildDio() {
       headers: {
         'Accept': 'application/json',
       },
+      // Treat 4xx as exceptions so the interceptor sees 401s and callers
+      // get a DioException rather than having to branch on statusCode.
+      validateStatus: (status) => status != null && status >= 200 && status < 300,
     ),
+  );
+  dio.interceptors.add(
+    AuthInterceptor(tokenStore, onUnauthorized: onUnauthorized),
   );
   return dio;
 }

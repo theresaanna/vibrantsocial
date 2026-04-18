@@ -41,6 +41,14 @@ dependencies:
   # Reactive state management.
   flutter_riverpod: ^2.6.1
 
+  # Keychain-backed JWT storage (EncryptedSharedPreferences on Android).
+  flutter_secure_storage: ^9.2.4
+
+  # Native OAuth — we exchange the provider-issued ID token for a mobile
+  # JWT at /api/v1/auth/oauth/native.
+  google_sign_in: ^6.2.2
+  sign_in_with_apple: ^6.1.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

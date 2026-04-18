@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/resolved_theme.dart';
-import '../providers.dart';
+import '../providers.dart' show userThemeProvider, sessionProvider;
 
 /// Smoke-test screen: type a username, fetch the resolved theme from the
 /// VibrantSocial API, and render the pieces that land. Useful as a sanity
@@ -34,7 +34,16 @@ class _ThemePreviewScreenState extends ConsumerState<ThemePreviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Theme preview')),
+      appBar: AppBar(
+        title: const Text('Theme preview'),
+        actions: [
+          IconButton(
+            tooltip: 'Sign out',
+            icon: const Icon(Icons.logout),
+            onPressed: () => ref.read(sessionProvider.notifier).clear(),
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
