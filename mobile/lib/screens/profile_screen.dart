@@ -17,6 +17,7 @@ import '../widgets/post_card.dart';
 import '../widgets/themed_background.dart';
 import '../widgets/username_text.dart';
 import '../widgets/view_mode_toggle.dart';
+import 'conversation_screen.dart';
 import 'user_list_screen.dart';
 import 'user_posts_screen.dart';
 
@@ -150,6 +151,8 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                     const SizedBox(height: 16),
                     _RelationshipActions(
                       username: username,
+                      userId: profile.user.id,
+                      displayName: profile.user.displayNameOrUsername,
                       relationship: profile.relationship,
                       colors: colors,
                     ),
@@ -398,11 +401,15 @@ class _CountCell extends StatelessWidget {
 class _RelationshipActions extends ConsumerStatefulWidget {
   const _RelationshipActions({
     required this.username,
+    required this.userId,
+    required this.displayName,
     required this.relationship,
     required this.colors,
   });
 
   final String username;
+  final String userId;
+  final String displayName;
   final ProfileRelationship relationship;
   final ResolvedColors colors;
 
@@ -462,6 +469,44 @@ class _RelationshipActionsState extends ConsumerState<_RelationshipActions> {
     });
   }
 
+  Future<void> _startConversation() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final result =
+          await ref.read(messagingApiProvider).startConversation(widget.userId);
+      if (!mounted) return;
+      final convId = result.conversationId;
+      if (convId != null) {
+        // Refresh the conversation list so the new thread appears in
+        // the Messages tab the next time the viewer lands there.
+        ref.read(conversationListProvider.notifier).refresh();
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ConversationScreen(
+              conversationId: convId,
+              title: widget.displayName,
+            ),
+          ),
+        );
+      } else {
+        // No conversation yet (not friends) — server stored a request.
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result.message)),
+        );
+      }
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final msg = e.response?.data is Map
+          ? ((e.response!.data as Map)['error']?.toString() ??
+              'Could not start conversation.')
+          : 'Could not start conversation.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final r = relationship;
@@ -487,8 +532,7 @@ class _RelationshipActionsState extends ConsumerState<_RelationshipActions> {
         buttons.add(_secondary(context, 'Add friend', onTap: _friendAction));
       }
       if (r.canMessage) {
-        // Messaging lands with the chat slice — leave inert for now.
-        buttons.add(_secondary(context, 'Message', onTap: null));
+        buttons.add(_secondary(context, 'Message', onTap: _startConversation));
       }
     }
 

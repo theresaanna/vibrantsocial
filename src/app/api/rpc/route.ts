@@ -37,6 +37,8 @@ import {
   markConversationRead,
   acceptMessageRequest,
   declineMessageRequest,
+  toggleReaction as toggleMessageReaction,
+  editMessage,
 } from "@/app/messages/actions";
 import {
   listChatRooms,
@@ -1510,6 +1512,8 @@ const ACTIONS: Record<string, (...args: any[]) => Promise<any>> = {
   markConversationRead,
   acceptMessageRequest,
   declineMessageRequest,
+  toggleMessageReaction,
+  editMessage,
   // Chatrooms
   listChatRooms,
   listTopActiveChatRooms,

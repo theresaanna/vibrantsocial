@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/chat.dart';
+export '../models/chat.dart' show ReactionGroup;
 
 /// Fetches a page older than [cursor] (or the newest page if null).
 /// Returns messages in chronological order (oldest first).
@@ -121,6 +122,19 @@ class ChatMessageListController extends StateNotifier<ChatMessageListState> {
         if (m.id == id) (() {
           changed = true;
           return m.copyWith(deletedAt: deletedAt);
+        })() else m,
+    ];
+    if (changed) state = state.copyWith(messages: next);
+  }
+
+  /// Replace the reactions on a message in-place.
+  void applyReactions(String id, List<ReactionGroup> reactions) {
+    var changed = false;
+    final next = [
+      for (final m in state.messages)
+        if (m.id == id) (() {
+          changed = true;
+          return m.copyWith(reactions: reactions);
         })() else m,
     ];
     if (changed) state = state.copyWith(messages: next);

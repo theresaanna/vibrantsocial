@@ -32,6 +32,7 @@ class _ChatroomScreenState extends ConsumerState<ChatroomScreen> {
             onNew: ctrl.appendLive,
             onEdit: ctrl.applyEdit,
             onDelete: ctrl.applyDelete,
+            onReaction: ctrl.applyReactions,
           );
     });
   }
@@ -42,11 +43,16 @@ class _ChatroomScreenState extends ConsumerState<ChatroomScreen> {
     super.dispose();
   }
 
-  Future<bool> _send(String content) async {
+  Future<bool> _send(ChatSendDraft draft) async {
     try {
-      final result = await ref
-          .read(chatroomApiProvider)
-          .sendMessage(slug: widget.slug, content: content);
+      final result = await ref.read(chatroomApiProvider).sendMessage(
+            slug: widget.slug,
+            content: draft.content,
+            mediaUrl: draft.mediaUrl,
+            mediaType: draft.mediaType,
+            mediaFileName: draft.mediaFileName,
+            mediaFileSize: draft.mediaFileSize,
+          );
       if (!result.success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -82,6 +88,14 @@ class _ChatroomScreenState extends ConsumerState<ChatroomScreen> {
           viewerId: ref.watch(sessionProvider)?.user.id ?? '',
           provider: chatroomMessagesProvider(widget.slug),
           onSend: _send,
+          onReact: (id, emoji) => ref
+              .read(chatroomApiProvider)
+              .toggleReaction(messageId: id, emoji: emoji),
+          onEdit: (id, content) => ref
+              .read(chatroomApiProvider)
+              .editMessage(messageId: id, content: content),
+          onDelete: (id) =>
+              ref.read(chatroomApiProvider).deleteMessage(id),
         ),
       ),
     );

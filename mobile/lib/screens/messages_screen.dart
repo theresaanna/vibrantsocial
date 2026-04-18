@@ -7,6 +7,7 @@ import '../models/chat.dart';
 import '../providers.dart';
 import '../widgets/themed_container.dart';
 import 'conversation_screen.dart';
+import 'message_requests_screen.dart';
 
 /// List of the viewer's DM conversations. Tap a row to open the thread.
 class MessagesScreen extends ConsumerWidget {
@@ -29,6 +30,13 @@ class MessagesScreen extends ConsumerWidget {
     ConversationListState state,
     String viewerId,
   ) {
+    final requestCount = ref.watch(
+      messageRequestsProvider.select((s) => s.requests.length),
+    );
+    final header = requestCount > 0
+        ? _RequestsHeader(count: requestCount)
+        : null;
+
     if (state.conversations.isEmpty) {
       if (state.isLoading) {
         return const Center(child: CircularProgressIndicator());
@@ -41,9 +49,10 @@ class MessagesScreen extends ConsumerWidget {
       }
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        children: const [
-          SizedBox(height: 120),
-          Center(
+        children: [
+          ?header,
+          const SizedBox(height: 120),
+          const Center(
             child: Padding(
               padding: EdgeInsets.all(24),
               child: Text(
@@ -55,13 +64,49 @@ class MessagesScreen extends ConsumerWidget {
         ],
       );
     }
+    final tiles = state.conversations.length + (header != null ? 1 : 0);
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      itemCount: state.conversations.length,
+      itemCount: tiles,
       itemBuilder: (context, index) {
-        final c = state.conversations[index];
+        if (header != null && index == 0) return header;
+        final i = index - (header != null ? 1 : 0);
+        final c = state.conversations[i];
         return _ConversationTile(conversation: c, viewerId: viewerId);
       },
+    );
+  }
+}
+
+class _RequestsHeader extends StatelessWidget {
+  const _RequestsHeader({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return ThemedContainer(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const MessageRequestsScreen()),
+      ),
+      child: Row(
+        children: [
+          const CircleAvatar(
+            radius: 18,
+            child: Icon(Icons.mark_email_unread_outlined, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '$count message request${count == 1 ? '' : 's'}',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          const Icon(Icons.chevron_right),
+        ],
+      ),
     );
   }
 }

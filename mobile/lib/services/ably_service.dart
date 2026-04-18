@@ -46,6 +46,7 @@ class AblyService {
     required void Function(ChatMessage message) onNew,
     void Function(String id, String content, DateTime editedAt)? onEdit,
     void Function(String id, DateTime deletedAt)? onDelete,
+    void Function(String id, List<ReactionGroup> reactions)? onReaction,
   }) {
     final channel = _ensureClient().channels.get('chat:$conversationId');
     return _subscribeChannel(
@@ -53,6 +54,7 @@ class AblyService {
       onNew: onNew,
       onEdit: onEdit,
       onDelete: onDelete,
+      onReaction: onReaction,
     );
   }
 
@@ -63,6 +65,7 @@ class AblyService {
     required void Function(ChatMessage message) onNew,
     void Function(String id, String content, DateTime editedAt)? onEdit,
     void Function(String id, DateTime deletedAt)? onDelete,
+    void Function(String id, List<ReactionGroup> reactions)? onReaction,
   }) {
     final channel = _ensureClient().channels.get('chatroom:$slug');
     return _subscribeChannel(
@@ -70,7 +73,21 @@ class AblyService {
       onNew: onNew,
       onEdit: onEdit,
       onDelete: onDelete,
+      onReaction: onReaction,
     );
+  }
+
+  /// Subscribe to the viewer's `chat-notify:{userId}` channel. Server
+  /// publishes a ping whenever any DM the viewer participates in gets a
+  /// new message — handy for keeping unread badges in sync without
+  /// subscribing to every conversation channel individually.
+  ChatChannelSubscription subscribeNotify(
+    String userId, {
+    required void Function() onPing,
+  }) {
+    final channel = _ensureClient().channels.get('chat-notify:$userId');
+    final sub = channel.subscribe(name: 'new').listen((_) => onPing());
+    return ChatChannelSubscription._(channel, [sub]);
   }
 
   ChatChannelSubscription _subscribeChannel(
@@ -78,6 +95,7 @@ class AblyService {
     required void Function(ChatMessage message) onNew,
     void Function(String id, String content, DateTime editedAt)? onEdit,
     void Function(String id, DateTime deletedAt)? onDelete,
+    void Function(String id, List<ReactionGroup> reactions)? onReaction,
   }) {
     final subs = <StreamSubscription<dynamic>>[];
 
@@ -127,6 +145,37 @@ class AblyService {
           final deletedAt = _parseIsoDate(data['deletedAt']);
           if (id != null && deletedAt != null) {
             onDelete(id, deletedAt);
+          }
+        }),
+      );
+    }
+
+    if (onReaction != null) {
+      subs.add(
+        channel.subscribe(name: 'reaction').listen((msg) {
+          final data = _decode(msg.data);
+          if (data == null) return;
+          final id = data['messageId'] as String?;
+          if (id == null) return;
+          // Server stringifies the array — parse back to ReactionGroups.
+          final raw = data['reactions'];
+          dynamic parsed = raw;
+          if (raw is String) {
+            try {
+              parsed = jsonDecode(raw);
+            } catch (_) {
+              return;
+            }
+          }
+          if (parsed is! List) return;
+          try {
+            final reactions = parsed
+                .map((r) =>
+                    ReactionGroup.fromJson((r as Map).cast<String, dynamic>()))
+                .toList();
+            onReaction(id, reactions);
+          } catch (_) {
+            // Skip malformed payloads.
           }
         }),
       );

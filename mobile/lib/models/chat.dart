@@ -76,6 +76,29 @@ class MessageReplyTo {
   }
 }
 
+class ReactionGroup {
+  ReactionGroup({
+    required this.emoji,
+    required this.userIds,
+    required this.userNames,
+  });
+
+  final String emoji;
+  final List<String> userIds;
+  final List<String> userNames;
+
+  int get count => userIds.length;
+  bool reactedBy(String userId) => userIds.contains(userId);
+
+  factory ReactionGroup.fromJson(Map<String, dynamic> json) {
+    return ReactionGroup(
+      emoji: json['emoji'] as String,
+      userIds: (json['userIds'] as List? ?? const []).cast<String>(),
+      userNames: (json['userNames'] as List? ?? const []).cast<String>(),
+    );
+  }
+}
+
 class ChatMessage {
   ChatMessage({
     required this.id,
@@ -91,6 +114,7 @@ class ChatMessage {
     required this.createdAt,
     required this.sender,
     required this.replyTo,
+    required this.reactions,
   });
 
   final String id;
@@ -106,10 +130,16 @@ class ChatMessage {
   final DateTime createdAt;
   final ChatUser? sender;
   final MessageReplyTo? replyTo;
+  final List<ReactionGroup> reactions;
 
   bool get isDeleted => deletedAt != null;
 
-  ChatMessage copyWith({String? content, DateTime? editedAt, DateTime? deletedAt}) {
+  ChatMessage copyWith({
+    String? content,
+    DateTime? editedAt,
+    DateTime? deletedAt,
+    List<ReactionGroup>? reactions,
+  }) {
     return ChatMessage(
       id: id,
       conversationId: conversationId,
@@ -124,6 +154,7 @@ class ChatMessage {
       createdAt: createdAt,
       sender: sender,
       replyTo: replyTo,
+      reactions: reactions ?? this.reactions,
     );
   }
 
@@ -146,6 +177,9 @@ class ChatMessage {
       replyTo: json['replyTo'] is Map
           ? MessageReplyTo.fromJson((json['replyTo'] as Map).cast<String, dynamic>())
           : null,
+      reactions: (json['reactions'] as List? ?? const [])
+          .map((r) => ReactionGroup.fromJson((r as Map).cast<String, dynamic>()))
+          .toList(),
     );
   }
 }
@@ -251,6 +285,35 @@ class ConversationListItem {
             )
           : null,
       unreadCount: (json['unreadCount'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+/// Pending incoming chat request — sent by [sender], waiting on the
+/// viewer to accept or decline. Mirrors `MessageRequestData` in
+/// `src/types/chat.ts`.
+class MessageRequest {
+  MessageRequest({
+    required this.id,
+    required this.senderId,
+    required this.status,
+    required this.createdAt,
+    required this.sender,
+  });
+
+  final String id;
+  final String senderId;
+  final String status;
+  final DateTime createdAt;
+  final ChatUser sender;
+
+  factory MessageRequest.fromJson(Map<String, dynamic> json) {
+    return MessageRequest(
+      id: json['id'] as String,
+      senderId: json['senderId'] as String,
+      status: json['status'] as String? ?? 'PENDING',
+      createdAt: _parseDate(json['createdAt']) ?? DateTime.now(),
+      sender: ChatUser.fromJson((json['sender'] as Map).cast<String, dynamic>()),
     );
   }
 }

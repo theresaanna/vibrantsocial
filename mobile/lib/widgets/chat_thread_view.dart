@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../controllers/chat_message_controller.dart';
@@ -9,6 +12,31 @@ import '../models/resolved_theme.dart';
 import '../providers.dart';
 import 'link_preview_card.dart';
 import 'linkified_text.dart';
+
+/// Payload passed from the composer to the screen when sending.
+class ChatSendDraft {
+  ChatSendDraft({
+    required this.content,
+    this.mediaUrl,
+    this.mediaType,
+    this.mediaFileName,
+    this.mediaFileSize,
+    this.replyToId,
+  });
+
+  final String content;
+  final String? mediaUrl;
+  final String? mediaType;
+  final String? mediaFileName;
+  final int? mediaFileSize;
+  final String? replyToId;
+}
+
+/// Quick-reaction emoji set offered when the viewer long-presses a
+/// message. Matches the web's chat-reactions toolbar.
+const List<String> kQuickReactions = [
+  '❤️', '😂', '😮', '😢', '👍', '🔥',
+];
 
 /// Shared thread UI used by both DM and chatroom screens. Shows messages
 /// oldest→newest in a reversed ListView (so the newest is pinned to the
@@ -19,6 +47,9 @@ class ChatThreadView extends ConsumerStatefulWidget {
     required this.viewerId,
     required this.provider,
     required this.onSend,
+    this.onReact,
+    this.onEdit,
+    this.onDelete,
   });
 
   final String viewerId;
@@ -26,8 +57,18 @@ class ChatThreadView extends ConsumerStatefulWidget {
       provider;
 
   /// Returns true on success, false on failure. The thread view clears
-  /// the input only when true.
-  final Future<bool> Function(String content) onSend;
+  /// the input + dropped attachment only when true.
+  final Future<bool> Function(ChatSendDraft draft) onSend;
+
+  /// Toggle a reaction on a message. Optional — DM and chatroom screens
+  /// both wire this up via the messaging / chatroom API.
+  final Future<void> Function(String messageId, String emoji)? onReact;
+
+  /// Edit own message. Required for the Edit menu item to appear.
+  final Future<void> Function(String messageId, String content)? onEdit;
+
+  /// Soft-delete own message.
+  final Future<void> Function(String messageId)? onDelete;
 
   @override
   ConsumerState<ChatThreadView> createState() => _ChatThreadViewState();
@@ -36,7 +77,11 @@ class ChatThreadView extends ConsumerStatefulWidget {
 class _ChatThreadViewState extends ConsumerState<ChatThreadView> {
   late final ScrollController _scrollCtrl;
   late final TextEditingController _inputCtrl;
+  final ImagePicker _picker = ImagePicker();
   bool _sending = false;
+  XFile? _attachment;
+  bool _uploading = false;
+  ChatMessage? _replyTarget;
 
   @override
   void initState() {
@@ -63,15 +108,86 @@ class _ChatThreadViewState extends ConsumerState<ChatThreadView> {
     }
   }
 
+  Future<void> _pickImage() async {
+    if (_uploading || _sending) return;
+    try {
+      final picked = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 90,
+      );
+      if (picked == null || !mounted) return;
+      setState(() => _attachment = picked);
+    } catch (err) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not pick image: $err')),
+      );
+    }
+  }
+
+  void _clearAttachment() {
+    setState(() => _attachment = null);
+  }
+
+  void _stageReply(ChatMessage target) {
+    setState(() => _replyTarget = target);
+  }
+
+  void _clearReply() {
+    setState(() => _replyTarget = null);
+  }
+
   Future<void> _handleSend() async {
     final text = _inputCtrl.text.trim();
-    if (text.isEmpty || _sending) return;
+    final attachment = _attachment;
+    if ((text.isEmpty && attachment == null) || _sending) return;
     setState(() => _sending = true);
-    final ok = await widget.onSend(text);
+
+    String? mediaUrl;
+    String? mediaType;
+    String? mediaFileName;
+    int? mediaFileSize;
+    if (attachment != null) {
+      try {
+        setState(() => _uploading = true);
+        final upload = await ref
+            .read(mediaApiProvider)
+            .uploadImage(attachment.path, fileName: attachment.name);
+        mediaUrl = upload.url;
+        mediaType = 'image';
+        mediaFileName = upload.fileName;
+        mediaFileSize = upload.fileSize;
+      } catch (err) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Upload failed: $err')),
+        );
+        setState(() {
+          _sending = false;
+          _uploading = false;
+        });
+        return;
+      } finally {
+        if (mounted) setState(() => _uploading = false);
+      }
+    }
+
+    final ok = await widget.onSend(ChatSendDraft(
+      content: text,
+      mediaUrl: mediaUrl,
+      mediaType: mediaType,
+      mediaFileName: mediaFileName,
+      mediaFileSize: mediaFileSize,
+      replyToId: _replyTarget?.id,
+    ));
     if (!mounted) return;
     setState(() => _sending = false);
     if (ok) {
       _inputCtrl.clear();
+      setState(() {
+        _attachment = null;
+        _replyTarget = null;
+      });
     }
   }
 
@@ -84,8 +200,13 @@ class _ChatThreadViewState extends ConsumerState<ChatThreadView> {
         Expanded(child: _buildList(state, viewerTheme)),
         _Composer(
           controller: _inputCtrl,
-          enabled: !_sending,
-          sending: _sending,
+          enabled: !_sending && !_uploading,
+          sending: _sending || _uploading,
+          attachment: _attachment,
+          replyTarget: _replyTarget,
+          onPickImage: _pickImage,
+          onClearAttachment: _clearAttachment,
+          onClearReply: _clearReply,
           onSend: _handleSend,
           viewerTheme: viewerTheme,
         ),
@@ -135,10 +256,22 @@ class _ChatThreadViewState extends ConsumerState<ChatThreadView> {
           );
         }
         final msg = reversed[index];
+        final mine = msg.senderId == widget.viewerId;
         return _MessageBubble(
           message: msg,
-          isMine: msg.senderId == widget.viewerId,
+          isMine: mine,
+          viewerId: widget.viewerId,
           viewerTheme: viewerTheme,
+          onReact: widget.onReact == null
+              ? null
+              : (emoji) => widget.onReact!(msg.id, emoji),
+          onReply: () => _stageReply(msg),
+          onEdit: mine && widget.onEdit != null
+              ? (content) => widget.onEdit!(msg.id, content)
+              : null,
+          onDelete: mine && widget.onDelete != null
+              ? () => widget.onDelete!(msg.id)
+              : null,
         );
       },
     );
@@ -149,12 +282,173 @@ class _MessageBubble extends StatelessWidget {
   const _MessageBubble({
     required this.message,
     required this.isMine,
+    required this.viewerId,
     required this.viewerTheme,
+    required this.onReact,
+    required this.onReply,
+    required this.onEdit,
+    required this.onDelete,
   });
 
   final ChatMessage message;
   final bool isMine;
+  final String viewerId;
   final ResolvedTheme? viewerTheme;
+  final Future<void> Function(String emoji)? onReact;
+  final VoidCallback onReply;
+  final Future<void> Function(String content)? onEdit;
+  final Future<void> Function()? onDelete;
+
+  Future<void> _showActionSheet(BuildContext context) async {
+    if (message.isDeleted) return;
+    final picked = await showModalBottomSheet<_BubbleAction>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (onReact != null)
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 4,
+                  children: [
+                    for (final emoji in kQuickReactions)
+                      IconButton(
+                        iconSize: 28,
+                        onPressed: () =>
+                            Navigator.of(context).pop(_BubbleAction.react(emoji)),
+                        icon:
+                            Text(emoji, style: const TextStyle(fontSize: 28)),
+                      ),
+                  ],
+                ),
+              const Divider(height: 16),
+              ListTile(
+                leading: const Icon(Icons.reply),
+                title: const Text('Reply'),
+                onTap: () =>
+                    Navigator.of(context).pop(_BubbleAction.reply()),
+              ),
+              if (onEdit != null)
+                ListTile(
+                  leading: const Icon(Icons.edit_outlined),
+                  title: const Text('Edit'),
+                  onTap: () =>
+                      Navigator.of(context).pop(_BubbleAction.edit()),
+                ),
+              if (onDelete != null)
+                ListTile(
+                  leading: const Icon(Icons.delete_outline,
+                      color: Colors.redAccent),
+                  title: const Text('Delete',
+                      style: TextStyle(color: Colors.redAccent)),
+                  onTap: () =>
+                      Navigator.of(context).pop(_BubbleAction.delete()),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (picked == null || !context.mounted) return;
+    switch (picked.kind) {
+      case _BubbleActionKind.reply:
+        onReply();
+        return;
+      case _BubbleActionKind.react:
+        if (onReact == null) return;
+        try {
+          await onReact!(picked.emoji!);
+        } catch (err) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Could not react: $err')),
+            );
+          }
+        }
+        return;
+      case _BubbleActionKind.edit:
+        if (onEdit == null) return;
+        await _runEdit(context);
+        return;
+      case _BubbleActionKind.delete:
+        if (onDelete == null) return;
+        await _runDelete(context);
+        return;
+    }
+  }
+
+  Future<void> _runEdit(BuildContext context) async {
+    final controller = TextEditingController(text: message.content);
+    final updated = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit message'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: null,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (updated == null || updated.isEmpty || updated == message.content) {
+      return;
+    }
+    try {
+      await onEdit!(updated);
+    } catch (err) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not edit: $err')),
+        );
+      }
+    }
+  }
+
+  Future<void> _runDelete(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete message?'),
+        content: const Text('Other participants will see "[message deleted]".'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      await onDelete!();
+    } catch (err) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not delete: $err')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -287,25 +581,212 @@ class _MessageBubble extends StatelessWidget {
                       ),
                     ),
                   ),
-                Material(
-                  color: bubbleColor,
-                  borderRadius: BorderRadius.circular(16),
-                  clipBehavior: Clip.antiAlias,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: MediaQuery.of(context).size.width * 0.72,
+                GestureDetector(
+                  onLongPress: () => _showActionSheet(context),
+                  child: Material(
+                    color: bubbleColor,
+                    borderRadius: BorderRadius.circular(16),
+                    clipBehavior: Clip.antiAlias,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.of(context).size.width * 0.72,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (message.replyTo != null)
+                              _ReplyQuote(
+                                replyTo: message.replyTo!,
+                                textColor: textColor,
+                                linkColor: linkColor,
+                              ),
+                            if (message.replyTo != null)
+                              const SizedBox(height: 6),
+                            body,
+                          ],
+                        ),
                       ),
-                      child: body,
                     ),
                   ),
                 ),
+                if (message.reactions.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: _ReactionRow(
+                      reactions: message.reactions,
+                      viewerId: viewerId,
+                      linkColor: linkColor,
+                      onTap: onReact,
+                    ),
+                  ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Discriminated union for bottom-sheet actions.
+enum _BubbleActionKind { react, reply, edit, delete }
+
+class _BubbleAction {
+  _BubbleAction._(this.kind, this.emoji);
+  factory _BubbleAction.react(String emoji) =>
+      _BubbleAction._(_BubbleActionKind.react, emoji);
+  factory _BubbleAction.reply() => _BubbleAction._(_BubbleActionKind.reply, null);
+  factory _BubbleAction.edit() => _BubbleAction._(_BubbleActionKind.edit, null);
+  factory _BubbleAction.delete() =>
+      _BubbleAction._(_BubbleActionKind.delete, null);
+
+  final _BubbleActionKind kind;
+  final String? emoji;
+}
+
+/// "Replying to {name}: {content}" quote rendered inside a bubble whose
+/// underlying message has a `replyTo`.
+class _ReplyQuote extends StatelessWidget {
+  const _ReplyQuote({
+    required this.replyTo,
+    required this.textColor,
+    required this.linkColor,
+  });
+
+  final MessageReplyTo replyTo;
+  final Color textColor;
+  final Color linkColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = replyTo.deletedAt != null
+        ? '[deleted]'
+        : (replyTo.content.isEmpty ? '[media]' : replyTo.content);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        border: Border(left: BorderSide(color: linkColor, width: 3)),
+        color: linkColor.withValues(alpha: 0.06),
+        borderRadius: const BorderRadius.only(
+          topRight: Radius.circular(6),
+          bottomRight: Radius.circular(6),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            replyTo.senderName,
+            style: TextStyle(
+              color: linkColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Text(
+            preview,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: textColor.withValues(alpha: 0.8),
+              fontSize: 12,
+              fontStyle: replyTo.deletedAt != null
+                  ? FontStyle.italic
+                  : FontStyle.normal,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Strip of reaction chips below a bubble. Tapping a chip toggles the
+/// viewer's own reaction with that emoji.
+class _ReactionRow extends StatelessWidget {
+  const _ReactionRow({
+    required this.reactions,
+    required this.viewerId,
+    required this.linkColor,
+    required this.onTap,
+  });
+
+  final List<ReactionGroup> reactions;
+  final String viewerId;
+  final Color linkColor;
+  final Future<void> Function(String emoji)? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: [
+        for (final r in reactions)
+          _ReactionChip(
+            emoji: r.emoji,
+            count: r.count,
+            mine: r.reactedBy(viewerId),
+            linkColor: linkColor,
+            onTap: onTap == null ? null : () => onTap!(r.emoji),
+          ),
+      ],
+    );
+  }
+}
+
+class _ReactionChip extends StatelessWidget {
+  const _ReactionChip({
+    required this.emoji,
+    required this.count,
+    required this.mine,
+    required this.linkColor,
+    required this.onTap,
+  });
+
+  final String emoji;
+  final int count;
+  final bool mine;
+  final Color linkColor;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = mine
+        ? linkColor.withValues(alpha: 0.18)
+        : Colors.black12.withValues(alpha: 0.08);
+    final border = mine ? linkColor.withValues(alpha: 0.55) : Colors.transparent;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: border, width: 1),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 13)),
+            if (count > 1) ...[
+              const SizedBox(width: 4),
+              Text(
+                '$count',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -411,6 +892,11 @@ class _Composer extends StatelessWidget {
     required this.controller,
     required this.enabled,
     required this.sending,
+    required this.attachment,
+    required this.replyTarget,
+    required this.onPickImage,
+    required this.onClearAttachment,
+    required this.onClearReply,
     required this.onSend,
     required this.viewerTheme,
   });
@@ -418,6 +904,11 @@ class _Composer extends StatelessWidget {
   final TextEditingController controller;
   final bool enabled;
   final bool sending;
+  final XFile? attachment;
+  final ChatMessage? replyTarget;
+  final VoidCallback onPickImage;
+  final VoidCallback onClearAttachment;
+  final VoidCallback onClearReply;
   final VoidCallback onSend;
   final ResolvedTheme? viewerTheme;
 
@@ -437,41 +928,184 @@ class _Composer extends StatelessWidget {
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  minLines: 1,
-                  maxLines: 5,
-                  enabled: enabled,
-                  style: TextStyle(color: textColor),
-                  textInputAction: TextInputAction.newline,
-                  decoration: InputDecoration(
-                    hintText: 'Message',
-                    hintStyle:
-                        TextStyle(color: textColor.withValues(alpha: 0.5)),
-                    border: const OutlineInputBorder(),
-                    isDense: true,
+              if (replyTarget != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, right: 4, bottom: 6),
+                  child: _ReplyStagedChip(
+                    target: replyTarget!,
+                    textColor: textColor,
+                    onClear: onClearReply,
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              IconButton.filled(
-                onPressed: sending ? null : onSend,
-                icon: sending
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.send),
+              if (attachment != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 6, top: 2),
+                  child: _AttachmentPreview(
+                    file: attachment!,
+                    onRemove: sending ? null : onClearAttachment,
+                  ),
+                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  IconButton(
+                    tooltip: 'Attach image',
+                    onPressed: enabled ? onPickImage : null,
+                    icon: const Icon(Icons.image_outlined),
+                    color: textColor,
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
+                      minLines: 1,
+                      maxLines: 5,
+                      enabled: enabled,
+                      style: TextStyle(color: textColor),
+                      textInputAction: TextInputAction.newline,
+                      decoration: InputDecoration(
+                        hintText: 'Message',
+                        hintStyle:
+                            TextStyle(color: textColor.withValues(alpha: 0.5)),
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filled(
+                    onPressed: sending ? null : onSend,
+                    icon: sending
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.send),
+                  ),
+                ],
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// "Replying to {name}: {preview}" chip rendered above the composer
+/// while a reply is staged. The X clears the reply target without
+/// sending.
+class _ReplyStagedChip extends StatelessWidget {
+  const _ReplyStagedChip({
+    required this.target,
+    required this.textColor,
+    required this.onClear,
+  });
+
+  final ChatMessage target;
+  final Color textColor;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = target.sender?.label ?? 'message';
+    final preview = target.isDeleted
+        ? '[deleted]'
+        : target.content.isEmpty
+            ? '[media]'
+            : target.content;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: textColor.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.reply, size: 14, color: textColor.withValues(alpha: 0.7)),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Replying to $name',
+                  style: TextStyle(
+                    color: textColor.withValues(alpha: 0.7),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  preview,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: textColor.withValues(alpha: 0.85),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          InkWell(
+            onTap: onClear,
+            customBorder: const CircleBorder(),
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Icon(Icons.close,
+                  size: 16, color: textColor.withValues(alpha: 0.7)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Inline preview chip for the picked-but-not-yet-sent image. The X
+/// button drops the attachment without sending.
+class _AttachmentPreview extends StatelessWidget {
+  const _AttachmentPreview({required this.file, required this.onRemove});
+
+  final XFile file;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.file(
+            File(file.path),
+            width: 80,
+            height: 80,
+            fit: BoxFit.cover,
+          ),
+        ),
+        if (onRemove != null)
+          Positioned(
+            top: -6,
+            right: -6,
+            child: Material(
+              color: Colors.black87,
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: onRemove,
+                child: const Padding(
+                  padding: EdgeInsets.all(2),
+                  child: Icon(Icons.close, size: 14, color: Colors.white),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

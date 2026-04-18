@@ -18,6 +18,7 @@ import 'controllers/chat_message_controller.dart';
 import 'controllers/chatroom_list_controller.dart';
 import 'controllers/conversation_list_controller.dart';
 import 'controllers/media_list_controller.dart';
+import 'controllers/message_requests_controller.dart';
 import 'controllers/nsfw_pref_controller.dart';
 import 'controllers/post_list_controller.dart';
 import 'controllers/profile_list_controller.dart';
@@ -247,6 +248,23 @@ final ablyServiceProvider = Provider<AblyService>((ref) {
 final conversationListProvider = StateNotifierProvider<
     ConversationListController, ConversationListState>((ref) {
   return ConversationListController(ref.watch(messagingApiProvider));
+});
+
+/// Pending incoming message requests inbox.
+final messageRequestsProvider = StateNotifierProvider<
+    MessageRequestsController, MessageRequestsState>((ref) {
+  return MessageRequestsController(ref.watch(messagingApiProvider));
+});
+
+/// Total unread DM count across all conversations. Watched by the
+/// Messages tab to render a badge.
+final unreadDmCountProvider = Provider<int>((ref) {
+  final convs = ref.watch(conversationListProvider).conversations;
+  var total = 0;
+  for (final c in convs) {
+    total += c.unreadCount;
+  }
+  return total;
 });
 
 /// Browsable public chatrooms. Rebuilds when the NSFW pref flips so the

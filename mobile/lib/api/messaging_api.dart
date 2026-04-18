@@ -54,12 +54,20 @@ class MessagingApi {
     required String conversationId,
     required String content,
     String? replyToId,
+    String? mediaUrl,
+    String? mediaType,
+    String? mediaFileName,
+    int? mediaFileSize,
   }) async {
     final data = await _rpc.callMap('sendMessage', [
       {
         'conversationId': conversationId,
         'content': content,
         'replyToId': ?replyToId,
+        'mediaUrl': ?mediaUrl,
+        'mediaType': ?mediaType,
+        'mediaFileName': ?mediaFileName,
+        'mediaFileSize': ?mediaFileSize,
       },
     ]);
     return SendMessageResult.fromJson(data);
@@ -72,5 +80,44 @@ class MessagingApi {
   Future<StartConversationResult> startConversation(String targetUserId) async {
     final data = await _rpc.callMap('startConversation', [targetUserId]);
     return StartConversationResult.fromJson(data);
+  }
+
+  Future<void> toggleReaction({
+    required String messageId,
+    required String emoji,
+  }) async {
+    await _rpc.call('toggleMessageReaction', [
+      {'messageId': messageId, 'emoji': emoji},
+    ]);
+  }
+
+  Future<void> deleteMessage(String messageId) async {
+    await _rpc.call('deleteMessage', [messageId]);
+  }
+
+  Future<void> editMessage({
+    required String messageId,
+    required String content,
+  }) async {
+    await _rpc.call('editMessage', [
+      {'messageId': messageId, 'content': content},
+    ]);
+  }
+
+  Future<List<MessageRequest>> getMessageRequests() async {
+    final list = await _rpc.callList('getMessageRequests', const []);
+    return list
+        .map((r) => MessageRequest.fromJson((r as Map).cast<String, dynamic>()))
+        .toList();
+  }
+
+  /// Returns the new conversation id when the request is accepted.
+  Future<StartConversationResult> acceptMessageRequest(String requestId) async {
+    final data = await _rpc.callMap('acceptMessageRequest', [requestId]);
+    return StartConversationResult.fromJson(data);
+  }
+
+  Future<void> declineMessageRequest(String requestId) async {
+    await _rpc.call('declineMessageRequest', [requestId]);
   }
 }

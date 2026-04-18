@@ -39,6 +39,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
             onNew: ctrl.appendLive,
             onEdit: ctrl.applyEdit,
             onDelete: ctrl.applyDelete,
+            onReaction: ctrl.applyReactions,
           );
       // Mark read asynchronously — we don't block the UI on it.
       ref.read(messagingApiProvider).markConversationRead(widget.conversationId);
@@ -51,12 +52,16 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     super.dispose();
   }
 
-  Future<bool> _send(String content) async {
+  Future<bool> _send(ChatSendDraft draft) async {
     final api = ref.read(messagingApiProvider);
     try {
       final result = await api.sendMessage(
         conversationId: widget.conversationId,
-        content: content,
+        content: draft.content,
+        mediaUrl: draft.mediaUrl,
+        mediaType: draft.mediaType,
+        mediaFileName: draft.mediaFileName,
+        mediaFileSize: draft.mediaFileSize,
       );
       if (!result.success) {
         if (mounted) {
@@ -93,6 +98,14 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           viewerId: ref.watch(sessionProvider)?.user.id ?? '',
           provider: conversationMessagesProvider(widget.conversationId),
           onSend: _send,
+          onReact: (id, emoji) => ref
+              .read(messagingApiProvider)
+              .toggleReaction(messageId: id, emoji: emoji),
+          onEdit: (id, content) => ref
+              .read(messagingApiProvider)
+              .editMessage(messageId: id, content: content),
+          onDelete: (id) =>
+              ref.read(messagingApiProvider).deleteMessage(id),
         ),
       ),
     );

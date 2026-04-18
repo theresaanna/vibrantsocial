@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers.dart';
+import '../services/ably_service.dart';
 import '../widgets/nsfw_toggle.dart';
 import '../widgets/themed_background.dart';
 import 'chatrooms_screen.dart';
@@ -20,14 +21,48 @@ class HomeShell extends ConsumerStatefulWidget {
 
 class _HomeShellState extends ConsumerState<HomeShell> {
   int _tab = 0;
+  ChatChannelSubscription? _notifySub;
+  String? _notifySubUserId;
 
   static const _titles = ['Feed', 'Messages', 'Chatrooms', 'Me'];
+
+  @override
+  void dispose() {
+    _notifySub?.close();
+    super.dispose();
+  }
+
+  /// Wire the chat-notify Ably channel for the current viewer once they
+  /// land in the shell. Pings refresh the conversation list so the
+  /// Messages-tab badge stays accurate.
+  void _ensureNotifySubscription(String userId) {
+    if (_notifySubUserId == userId && _notifySub != null) return;
+    _notifySub?.close();
+    _notifySubUserId = userId;
+    _notifySub = ref.read(ablyServiceProvider).subscribeNotify(
+          userId,
+          onPing: () {
+            if (!mounted) return;
+            ref.read(conversationListProvider.notifier).refresh();
+          },
+        );
+  }
 
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(sessionProvider);
     final username = session?.user.username;
     final viewerTheme = ref.watch(viewerThemeProvider);
+    final unreadDms = ref.watch(unreadDmCountProvider);
+
+    final viewerId = session?.user.id;
+    if (viewerId != null) {
+      // initState can't see the session yet on first paint, so wire the
+      // notify subscription here once the viewer is known.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _ensureNotifySubscription(viewerId);
+      });
+    }
 
     // The Me tab composes its own AppBar with the profile-specific chrome,
     // so we suppress the shell's AppBar on that tab.
@@ -84,23 +119,29 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           backgroundColor: Colors.transparent,
           selectedIndex: _tab,
           onDestinationSelected: (i) => setState(() => _tab = i),
-          destinations: const [
-            NavigationDestination(
+          destinations: [
+            const NavigationDestination(
               icon: Icon(Icons.home_outlined),
               selectedIcon: Icon(Icons.home),
               label: 'Feed',
             ),
             NavigationDestination(
-              icon: Icon(Icons.chat_bubble_outline),
-              selectedIcon: Icon(Icons.chat_bubble),
+              icon: _BadgedIcon(
+                icon: Icons.chat_bubble_outline,
+                count: unreadDms,
+              ),
+              selectedIcon: _BadgedIcon(
+                icon: Icons.chat_bubble,
+                count: unreadDms,
+              ),
               label: 'Messages',
             ),
-            NavigationDestination(
+            const NavigationDestination(
               icon: Icon(Icons.forum_outlined),
               selectedIcon: Icon(Icons.forum),
               label: 'Rooms',
             ),
-            NavigationDestination(
+            const NavigationDestination(
               icon: Icon(Icons.person_outline),
               selectedIcon: Icon(Icons.person),
               label: 'Me',
@@ -108,6 +149,48 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Nav-bar icon with a small red unread-count badge in the top-right
+/// corner. Hides itself when [count] is zero.
+class _BadgedIcon extends StatelessWidget {
+  const _BadgedIcon({required this.icon, required this.count});
+
+  final IconData icon;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    if (count <= 0) return Icon(icon);
+    final label = count > 99 ? '99+' : '$count';
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(icon),
+        Positioned(
+          right: -8,
+          top: -4,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+            decoration: BoxDecoration(
+              color: Colors.redAccent,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

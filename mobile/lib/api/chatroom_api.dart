@@ -28,13 +28,49 @@ class ChatroomApi {
     required String slug,
     required String content,
     String? replyToId,
+    String? mediaUrl,
+    String? mediaType,
+    String? mediaFileName,
+    int? mediaFileSize,
   }) async {
+    final hasOptions = replyToId != null ||
+        mediaUrl != null ||
+        mediaType != null ||
+        mediaFileName != null ||
+        mediaFileSize != null;
     final args = [
       content,
       slug,
-      if (replyToId != null) {'replyToId': replyToId} else null,
+      if (hasOptions)
+        {
+          'replyToId': ?replyToId,
+          'mediaUrl': ?mediaUrl,
+          'mediaType': ?mediaType,
+          'mediaFileName': ?mediaFileName,
+          'mediaFileSize': ?mediaFileSize,
+        }
+      else
+        null,
     ];
     final data = await _rpc.callMap('sendChatRoomMessage', args);
     return SendMessageResult.fromJson(data);
+  }
+
+  Future<void> toggleReaction({
+    required String messageId,
+    required String emoji,
+  }) async {
+    await _rpc.call('toggleChatRoomReaction', [messageId, emoji]);
+  }
+
+  Future<void> deleteMessage(String messageId) async {
+    await _rpc.call('deleteChatRoomMessage', [messageId]);
+  }
+
+  Future<void> editMessage({
+    required String messageId,
+    required String content,
+  }) async {
+    await _rpc.call('editChatRoomMessage', [messageId, content]);
   }
 }
