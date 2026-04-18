@@ -64,12 +64,14 @@ class ChatMessageListController extends StateNotifier<ChatMessageListState> {
   bool _initialLoaded = false;
 
   Future<void> loadMore() async {
+    if (!mounted) return;
     if (state.isLoadingMore) return;
     if (_initialLoaded && !state.hasMore) return;
 
     state = state.copyWith(isLoadingMore: true, clearError: true);
     try {
       final page = await _fetch(state.nextCursor);
+      if (!mounted) return;
       _initialLoaded = true;
       // Older messages from the server are chronological within the page;
       // prepend them to the existing list.
@@ -80,6 +82,7 @@ class ChatMessageListController extends StateNotifier<ChatMessageListState> {
         isLoadingMore: false,
       );
     } catch (err) {
+      if (!mounted) return;
       state = state.copyWith(isLoadingMore: false, error: err);
     }
   }

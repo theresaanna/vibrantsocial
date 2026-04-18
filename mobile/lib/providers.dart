@@ -7,14 +7,18 @@ import 'api/chatroom_api.dart';
 import 'api/interaction_api.dart';
 import 'api/link_preview_api.dart';
 import 'api/media_api.dart';
+import 'api/media_feed_api.dart';
 import 'api/messaging_api.dart';
 import 'api/post_api.dart';
+import 'api/prefs_api.dart';
 import 'api/profile_api.dart';
 import 'api/rpc_client.dart';
 import 'api/theme_api.dart';
 import 'controllers/chat_message_controller.dart';
 import 'controllers/chatroom_list_controller.dart';
 import 'controllers/conversation_list_controller.dart';
+import 'controllers/media_list_controller.dart';
+import 'controllers/nsfw_pref_controller.dart';
 import 'controllers/post_list_controller.dart';
 import 'controllers/profile_list_controller.dart';
 import 'models/comment.dart';
@@ -94,11 +98,14 @@ final mediaApiProvider = Provider<MediaApi>(
   (ref) => MediaApi(ref.watch(dioProvider)),
 );
 
-/// Home feed controller. One instance per session — kept alive so
-/// scroll position and loaded pages survive navigation.
+/// Home feed controller. Watches the NSFW pref so flipping the toggle
+/// in the header reissues the feed query (server-side filter).
 final feedProvider =
     StateNotifierProvider<PostListController, PostListState>((ref) {
   final api = ref.watch(postApiProvider);
+  // Establish a dependency without using the value directly — the
+  // server reads the pref from the user record on each request.
+  ref.watch(nsfwPrefProvider);
   return PostListController((cursor) => api.fetchFeed(cursor: cursor));
 });
 
@@ -184,6 +191,41 @@ final linkPreviewApiProvider = Provider<LinkPreviewApi>(
   (ref) => LinkPreviewApi(ref.watch(rpcClientProvider)),
 );
 
+final prefsApiProvider = Provider<PrefsApi>(
+  (ref) => PrefsApi(ref.watch(rpcClientProvider)),
+);
+
+final mediaFeedApiProvider = Provider<MediaFeedApi>(
+  (ref) => MediaFeedApi(ref.watch(rpcClientProvider)),
+);
+
+/// Media-only home feed (posts containing images/videos/YouTube).
+/// Watches NSFW pref so flipping the toggle reissues with new filter.
+final mediaFeedProvider =
+    StateNotifierProvider<MediaListController, MediaListState>((ref) {
+  final api = ref.watch(mediaFeedApiProvider);
+  ref.watch(nsfwPrefProvider);
+  return MediaListController((cursor) => api.fetchFeed(cursor: cursor));
+});
+
+/// Media grid for a specific user's profile. Family-keyed by username.
+final profileMediaProvider = StateNotifierProvider.autoDispose
+    .family<MediaListController, MediaListState, String>((ref, username) {
+  final api = ref.watch(mediaFeedApiProvider);
+  ref.watch(nsfwPrefProvider);
+  return MediaListController(
+    (cursor) => api.fetchProfile(username, cursor: cursor),
+  );
+});
+
+/// Viewer's NSFW visibility preference. Bootstraps from the server on
+/// first read; flipping it triggers refresh of feed + chatroom lists so
+/// they reflect the new filter.
+final nsfwPrefProvider =
+    StateNotifierProvider<NsfwPrefController, bool>((ref) {
+  return NsfwPrefController(ref.watch(prefsApiProvider));
+});
+
 /// Server fetches OG metadata; cached in Redis for 7 days. Family keyed
 /// by URL — autoDispose so we drop the result when no message bubble is
 /// rendering it anymore. Cache hits stay essentially free.
@@ -207,10 +249,15 @@ final conversationListProvider = StateNotifierProvider<
   return ConversationListController(ref.watch(messagingApiProvider));
 });
 
-/// Browsable public chatrooms.
+/// Browsable public chatrooms. Rebuilds when the NSFW pref flips so the
+/// query reissues with the right `showNsfw` flag.
 final chatroomListProvider = StateNotifierProvider<
     ChatroomListController, ChatroomListState>((ref) {
-  return ChatroomListController(ref.watch(chatroomApiProvider));
+  final showNsfw = ref.watch(nsfwPrefProvider);
+  return ChatroomListController(
+    ref.watch(chatroomApiProvider),
+    showNsfw: showNsfw,
+  );
 });
 
 /// Paginated messages for a DM conversation. Keyed by conversationId so

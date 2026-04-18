@@ -8,6 +8,7 @@ import {
   type SerializedPost,
 } from "@/lib/post-serializer";
 import { resolveAssetBaseUrl } from "@/lib/profile-lists";
+import { getUserPrefs } from "@/lib/user-prefs";
 
 const PAGE_SIZE = 20;
 
@@ -57,6 +58,9 @@ export async function GET(req: Request) {
     ...followingRows.map((f) => f.followingId).filter((id) => !blockedIds.has(id)),
   ];
 
+  const prefs = await getUserPrefs(viewerId);
+  const { showNsfwContent, ageVerified, hideSensitiveOverlay, showGraphicByDefault } = prefs;
+
   const rows = await prisma.post.findMany({
     where: {
       isAuthorDeleted: false,
@@ -64,6 +68,13 @@ export async function GET(req: Request) {
       isCloseFriendsOnly: false,
       hasCustomAudience: false,
       scheduledFor: null,
+      ...(!showNsfwContent ? { isNsfw: false } : {}),
+      ...(!showNsfwContent || !ageVerified || !hideSensitiveOverlay
+        ? { isSensitive: false }
+        : {}),
+      ...(!showNsfwContent || !ageVerified || !showGraphicByDefault
+        ? { isGraphicNudity: false }
+        : {}),
       ...(cursor ? { createdAt: { lt: cursor } } : {}),
     },
     orderBy: { createdAt: "desc" },

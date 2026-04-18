@@ -12,9 +12,11 @@ import '../models/resolved_theme.dart';
 import '../providers.dart';
 import '../widgets/block_renderer.dart';
 import '../widgets/framed_avatar.dart';
+import '../widgets/media_grid.dart';
 import '../widgets/post_card.dart';
 import '../widgets/themed_background.dart';
 import '../widgets/username_text.dart';
+import '../widgets/view_mode_toggle.dart';
 import 'user_list_screen.dart';
 import 'user_posts_screen.dart';
 
@@ -69,6 +71,7 @@ class _ProfileBody extends ConsumerStatefulWidget {
 
 class _ProfileBodyState extends ConsumerState<_ProfileBody> {
   late final ScrollController _scrollCtrl;
+  FeedViewMode _mode = FeedViewMode.posts;
 
   @override
   void initState() {
@@ -87,9 +90,12 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     if (!_scrollCtrl.hasClients) return;
     final pos = _scrollCtrl.position;
     if (pos.pixels > pos.maxScrollExtent - 600) {
-      ref
-          .read(profilePostsProvider(widget.profile.user.username ?? '').notifier)
-          .loadMore();
+      final username = widget.profile.user.username ?? '';
+      if (_mode == FeedViewMode.posts) {
+        ref.read(profilePostsProvider(username).notifier).loadMore();
+      } else {
+        ref.read(profileMediaProvider(username).notifier).loadMore();
+      }
     }
   }
 
@@ -170,7 +176,22 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             ),
           ),
           const SizedBox(height: 16),
-          if (postsState != null) ..._postTail(postsState),
+          if (username.isNotEmpty)
+            ViewModeToggle(
+              mode: _mode,
+              onChanged: (m) => setState(() => _mode = m),
+            ),
+          const SizedBox(height: 8),
+          if (username.isNotEmpty && _mode == FeedViewMode.media)
+            MediaGrid(
+              state: ref.watch(profileMediaProvider(username)),
+              loadMore: () =>
+                  ref.read(profileMediaProvider(username).notifier).loadMore(),
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+            )
+          else if (postsState != null)
+            ..._postTail(postsState),
           const SizedBox(height: 24),
         ],
       ),

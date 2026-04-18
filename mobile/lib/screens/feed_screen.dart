@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../controllers/post_list_controller.dart';
 import '../providers.dart';
+import '../widgets/media_grid.dart';
 import '../widgets/post_card.dart';
+import '../widgets/view_mode_toggle.dart';
 
-/// Authenticated home feed. Pulls from [feedProvider]; infinite-scrolls
-/// new pages as the user nears the bottom of the list.
+/// Authenticated home feed with a Posts ↔ Media view toggle pinned at
+/// the top. Posts mode infinite-scrolls the timeline; Media mode shows
+/// a 3-column grid of media-bearing posts (server-side filter).
 class FeedScreen extends ConsumerStatefulWidget {
   const FeedScreen({super.key});
 
@@ -15,39 +18,80 @@ class FeedScreen extends ConsumerStatefulWidget {
 }
 
 class _FeedScreenState extends ConsumerState<FeedScreen> {
-  late final ScrollController _scrollCtrl;
+  late final ScrollController _postsScrollCtrl;
+  late final ScrollController _mediaScrollCtrl;
+  FeedViewMode _mode = FeedViewMode.posts;
 
   @override
   void initState() {
     super.initState();
-    _scrollCtrl = ScrollController()..addListener(_onScroll);
+    _postsScrollCtrl = ScrollController()..addListener(_onPostsScroll);
+    _mediaScrollCtrl = ScrollController()..addListener(_onMediaScroll);
   }
 
   @override
   void dispose() {
-    _scrollCtrl.removeListener(_onScroll);
-    _scrollCtrl.dispose();
+    _postsScrollCtrl.removeListener(_onPostsScroll);
+    _postsScrollCtrl.dispose();
+    _mediaScrollCtrl.removeListener(_onMediaScroll);
+    _mediaScrollCtrl.dispose();
     super.dispose();
   }
 
-  void _onScroll() {
-    if (!_scrollCtrl.hasClients) return;
-    final pos = _scrollCtrl.position;
+  void _onPostsScroll() {
+    if (!_postsScrollCtrl.hasClients) return;
+    final pos = _postsScrollCtrl.position;
     if (pos.pixels > pos.maxScrollExtent - 600) {
       ref.read(feedProvider.notifier).loadMore();
     }
   }
 
+  void _onMediaScroll() {
+    if (!_mediaScrollCtrl.hasClients) return;
+    final pos = _mediaScrollCtrl.position;
+    if (pos.pixels > pos.maxScrollExtent - 600) {
+      ref.read(mediaFeedProvider.notifier).loadMore();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(feedProvider);
-    return RefreshIndicator(
-      onRefresh: () => ref.read(feedProvider.notifier).refresh(),
-      child: _body(state),
+    return Column(
+      children: [
+        ViewModeToggle(
+          mode: _mode,
+          onChanged: (m) => setState(() => _mode = m),
+        ),
+        Expanded(
+          child: _mode == FeedViewMode.posts
+              ? _buildPostsView()
+              : _buildMediaView(),
+        ),
+      ],
     );
   }
 
-  Widget _body(PostListState state) {
+  Widget _buildPostsView() {
+    final state = ref.watch(feedProvider);
+    return RefreshIndicator(
+      onRefresh: () => ref.read(feedProvider.notifier).refresh(),
+      child: _postsBody(state),
+    );
+  }
+
+  Widget _buildMediaView() {
+    final state = ref.watch(mediaFeedProvider);
+    return RefreshIndicator(
+      onRefresh: () => ref.read(mediaFeedProvider.notifier).refresh(),
+      child: MediaGrid(
+        state: state,
+        loadMore: () => ref.read(mediaFeedProvider.notifier).loadMore(),
+        scrollController: _mediaScrollCtrl,
+      ),
+    );
+  }
+
+  Widget _postsBody(PostListState state) {
     if (state.posts.isEmpty) {
       if (state.isLoadingMore) {
         return const Center(child: CircularProgressIndicator());
@@ -62,7 +106,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
     }
     final tail = state.isLoadingMore || state.error != null ? 1 : 0;
     return ListView.separated(
-      controller: _scrollCtrl,
+      controller: _postsScrollCtrl,
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: state.posts.length + tail,
       separatorBuilder: (_, _) => const SizedBox(height: 4),

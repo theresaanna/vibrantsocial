@@ -42,11 +42,14 @@ class ConversationListController extends StateNotifier<ConversationListState> {
   final MessagingApi _api;
 
   Future<void> refresh() async {
+    if (!mounted) return;
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final list = await _api.getConversations();
+      if (!mounted) return;
       state = state.copyWith(conversations: list, isLoading: false);
     } catch (err) {
+      if (!mounted) return;
       state = state.copyWith(isLoading: false, error: err);
     }
   }

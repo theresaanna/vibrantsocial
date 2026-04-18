@@ -55,12 +55,16 @@ class PostListController extends StateNotifier<PostListState> {
   bool _initialLoaded = false;
 
   Future<void> loadMore() async {
+    if (!mounted) return;
     if (state.isLoadingMore) return;
     if (_initialLoaded && !state.hasMore) return;
 
     state = state.copyWith(isLoadingMore: true, clearError: true);
     try {
       final page = await _fetch(state.nextCursor);
+      // Drop late results — the provider may have been rebuilt while
+      // this fetch was in flight (e.g. NSFW pref flip refreshes feed).
+      if (!mounted) return;
       _initialLoaded = true;
       state = state.copyWith(
         posts: [...state.posts, ...page.posts],
@@ -69,6 +73,7 @@ class PostListController extends StateNotifier<PostListState> {
         isLoadingMore: false,
       );
     } catch (err) {
+      if (!mounted) return;
       state = state.copyWith(isLoadingMore: false, error: err);
     }
   }

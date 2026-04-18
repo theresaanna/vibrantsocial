@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers.dart';
+import '../widgets/nsfw_toggle.dart';
 import '../widgets/themed_background.dart';
 import 'chatrooms_screen.dart';
 import 'compose_screen.dart';
@@ -42,6 +43,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 elevation: 0,
                 title: Text(_titles[_tab]),
                 actions: [
+                  // NSFW toggle is visible on Feed and Chatrooms tabs —
+                  // both surface NSFW-gated content (posts and rooms).
+                  if (_tab == 0 || _tab == 2) const NsfwToggle(),
                   if (_tab == 0)
                     IconButton(
                       tooltip: 'Sign out',
