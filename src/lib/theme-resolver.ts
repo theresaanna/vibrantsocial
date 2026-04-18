@@ -162,7 +162,7 @@ export interface ResolveThemeOptions {
 
 const DEFAULT_COLORS = PROFILE_THEME_PRESETS.default;
 
-function toAbsolute(assetPath: string, baseUrl: string | undefined): string {
+export function toAbsolute(assetPath: string, baseUrl: string | undefined): string {
   if (!baseUrl) return assetPath;
   if (/^https?:\/\//i.test(assetPath)) return assetPath;
   const base = baseUrl.replace(/\/+$/, "");

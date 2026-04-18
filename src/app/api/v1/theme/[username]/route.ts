@@ -5,6 +5,7 @@ import {
   resolveUserTheme,
   themeResolverUserSelect,
 } from "@/lib/theme-resolver";
+import { resolveAssetBaseUrl } from "@/lib/profile-lists";
 
 export async function OPTIONS(req: Request) {
   return handleCorsPreflightRequest(req);
@@ -21,8 +22,8 @@ export async function GET(
 ) {
   const { username } = await params;
 
-  const user = await prisma.user.findUnique({
-    where: { username: username.toLowerCase() },
+  const user = await prisma.user.findFirst({
+    where: { username: { equals: username, mode: "insensitive" } },
     select: { username: true, ...themeResolverUserSelect },
   });
 
@@ -33,7 +34,7 @@ export async function GET(
     );
   }
 
-  const assetBaseUrl = new URL(req.url).origin;
+  const assetBaseUrl = resolveAssetBaseUrl(req);
   const theme = resolveUserTheme(user, { assetBaseUrl });
 
   return NextResponse.json(
@@ -46,3 +47,4 @@ export async function GET(
     },
   );
 }
+

@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -237,7 +238,7 @@ class _BackgroundPreview extends StatelessWidget {
             border: Border.all(color: Colors.black26),
             borderRadius: BorderRadius.circular(8),
             image: DecorationImage(
-              image: NetworkImage(bg.imageUrl),
+              image: CachedNetworkImageProvider(bg.imageUrl),
               repeat: switch (bg.repeat) {
                 BgRepeat.repeat => ImageRepeat.repeat,
                 BgRepeat.repeatX => ImageRepeat.repeatX,
@@ -279,7 +280,7 @@ class _FramePreview extends StatelessWidget {
               ? const Center(
                   child: Text('SVG', style: TextStyle(color: Colors.black54)),
                 )
-              : Image.network(frame.imageUrl, fit: BoxFit.contain),
+              : CachedNetworkImage(imageUrl: frame.imageUrl, fit: BoxFit.contain),
         ),
         const SizedBox(width: 12),
         Expanded(

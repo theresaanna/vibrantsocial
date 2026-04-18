@@ -4,6 +4,10 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>VibrantSocial uses your photo library to attach images to your posts.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>VibrantSocial uses your camera to take photos for your posts.</string>
 	<!--
 	  Google Sign-In — replace both IDs with the iOS OAuth client you create
 	  in Google Cloud Console (see mobile/README.md). `GIDClientID` is the

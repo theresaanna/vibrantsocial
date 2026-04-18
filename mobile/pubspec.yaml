@@ -49,6 +49,20 @@ dependencies:
   google_sign_in: ^6.2.2
   sign_in_with_apple: ^6.1.4
 
+  # Open external URLs (bio links, profile links) in the platform browser.
+  url_launcher: ^6.3.2
+
+  # Network image widget with disk caching + broader format support
+  # (handles AVIF / HEIC / animated WebP the stock Android decoder can't).
+  cached_network_image: ^3.4.1
+
+  # System photo picker for composer attachments.
+  image_picker: ^1.1.2
+
+  # Lexend is the app-wide base font; google_fonts also lazy-loads the
+  # per-user username fonts selected via theme settings on the web.
+  google_fonts: ^6.2.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -70,6 +84,52 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Bundled display fonts offered to premium users as a username font on
+  # the web app. Keep in sync with `mobile/scripts/download-username-fonts.sh`
+  # and `src/lib/profile-fonts.ts`. Family names match how the web Google
+  # Fonts loader references them.
+  fonts:
+    - family: Sofadi One
+      fonts: [{ asset: assets/fonts/SofadiOne.ttf }]
+    - family: Jersey 10
+      fonts: [{ asset: assets/fonts/Jersey10.ttf }]
+    - family: Limelight
+      fonts: [{ asset: assets/fonts/Limelight.ttf }]
+    - family: Unkempt
+      fonts: [{ asset: assets/fonts/Unkempt.ttf }]
+    - family: Gugi
+      fonts: [{ asset: assets/fonts/Gugi.ttf }]
+    - family: Turret Road
+      fonts: [{ asset: assets/fonts/TurretRoad.ttf }]
+    - family: Nova Mono
+      fonts: [{ asset: assets/fonts/NovaMono.ttf }]
+    - family: Ewert
+      fonts: [{ asset: assets/fonts/Ewert.ttf }]
+    - family: Ballet
+      fonts: [{ asset: assets/fonts/Ballet.ttf }]
+    - family: Manufacturing Consent
+      fonts: [{ asset: assets/fonts/ManufacturingConsent.ttf }]
+    - family: Rubik Puddles
+      fonts: [{ asset: assets/fonts/RubikPuddles.ttf }]
+    - family: Hachi Maru Pop
+      fonts: [{ asset: assets/fonts/HachiMaruPop.ttf }]
+    - family: Ms Madi
+      fonts: [{ asset: assets/fonts/MsMadi.ttf }]
+    - family: Jacquard 24
+      fonts: [{ asset: assets/fonts/Jacquard24.ttf }]
+    - family: Texturina
+      fonts: [{ asset: assets/fonts/Texturina.ttf }]
+    - family: Great Vibes
+      fonts: [{ asset: assets/fonts/GreatVibes.ttf }]
+    - family: Rye
+      fonts: [{ asset: assets/fonts/Rye.ttf }]
+    - family: Bonbon
+      fonts: [{ asset: assets/fonts/Bonbon.ttf }]
+    - family: Agu Display
+      fonts: [{ asset: assets/fonts/AguDisplay.ttf }]
+    - family: Agbalumo
+      fonts: [{ asset: assets/fonts/Agbalumo.ttf }]
 
   # To add assets to your application, add an assets section, like this:
   # assets:
