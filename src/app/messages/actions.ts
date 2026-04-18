@@ -651,15 +651,21 @@ export async function sendMessage(data: {
     // Non-critical — message is saved, real-time delivery failed
   }
 
-  // Fire async moderation scan (non-blocking)
-  await inngest.send({
-    name: "moderation/scan-chat-message",
-    data: {
-      messageId: message.id,
-      senderId: session.user.id,
-      conversationId,
-    },
-  });
+  // Fire async moderation scan (non-blocking — must never fail the
+  // user's send if the queue is unreachable, e.g. local dev without
+  // an Inngest branch env).
+  try {
+    await inngest.send({
+      name: "moderation/scan-chat-message",
+      data: {
+        messageId: message.id,
+        senderId: session.user.id,
+        conversationId,
+      },
+    });
+  } catch (err) {
+    console.warn("[sendMessage] moderation enqueue failed:", err);
+  }
 
   return { success: true, message: "Message sent", messageId: message.id };
 }
@@ -713,15 +719,19 @@ export async function editMessage(data: {
     // Non-critical
   }
 
-  // Re-scan edited message content
-  await inngest.send({
-    name: "moderation/scan-chat-message",
-    data: {
-      messageId,
-      senderId: session.user.id,
-      conversationId: message.conversationId,
-    },
-  });
+  // Re-scan edited message content (non-blocking).
+  try {
+    await inngest.send({
+      name: "moderation/scan-chat-message",
+      data: {
+        messageId,
+        senderId: session.user.id,
+        conversationId: message.conversationId,
+      },
+    });
+  } catch (err) {
+    console.warn("[editMessage] moderation enqueue failed:", err);
+  }
 
   return { success: true, message: "Message edited" };
 }
