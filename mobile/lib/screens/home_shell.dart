@@ -7,7 +7,9 @@ import '../widgets/nsfw_toggle.dart';
 import '../widgets/themed_background.dart';
 import 'chatrooms_screen.dart';
 import 'compose_screen.dart';
+import 'curated_lists_screen.dart';
 import 'feed_screen.dart';
+import 'marketplace_screen.dart';
 import 'messages_screen.dart';
 import 'profile_screen.dart';
 
@@ -82,11 +84,53 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                   // both surface NSFW-gated content (posts and rooms).
                   if (_tab == 0 || _tab == 2) const NsfwToggle(),
                   if (_tab == 0)
-                    IconButton(
-                      tooltip: 'Sign out',
-                      icon: const Icon(Icons.logout),
-                      onPressed: () =>
-                          ref.read(sessionProvider.notifier).clear(),
+                    PopupMenuButton<String>(
+                      tooltip: 'More',
+                      icon: const Icon(Icons.more_vert),
+                      onSelected: (v) {
+                        switch (v) {
+                          case 'marketplace':
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => const MarketplaceScreen(),
+                            ));
+                            break;
+                          case 'lists':
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => const CuratedListsScreen(),
+                            ));
+                            break;
+                          case 'signout':
+                            ref.read(sessionProvider.notifier).clear();
+                            break;
+                        }
+                      },
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(
+                          value: 'marketplace',
+                          child: ListTile(
+                            leading: Icon(Icons.shopping_bag_outlined),
+                            title: Text('Marketplace'),
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'lists',
+                          child: ListTile(
+                            leading: Icon(Icons.playlist_play),
+                            title: Text('Lists'),
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                        PopupMenuDivider(),
+                        PopupMenuItem(
+                          value: 'signout',
+                          child: ListTile(
+                            leading: Icon(Icons.logout),
+                            title: Text('Sign out'),
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ],
                     ),
                 ],
               )
