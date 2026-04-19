@@ -151,15 +151,17 @@ class _SparklefallState extends ConsumerState<Sparklefall>
     ));
   }
 
-  Future<void> _onTap(TapDownDetails d) async {
-    // Find the topmost live sparkle under the tap.
+  Future<void> _onPointerDown(PointerDownEvent e) async {
+    // Find the topmost live sparkle under the pointer. If nothing's
+    // there, do nothing — the pointer event keeps bubbling through
+    // the Listener's translucent hit behavior to the UI underneath.
     _Sparkle? hit;
     for (final s in _sparkles.reversed) {
       if (s.popped) continue;
       final cx = s.x + s.size / 2;
       final cy = s.y + s.size / 2;
-      final dx = d.localPosition.dx - cx;
-      final dy = d.localPosition.dy - cy;
+      final dx = e.localPosition.dx - cx;
+      final dy = e.localPosition.dy - cy;
       // Generous hit radius — emoji glyphs are smaller than their box.
       if (dx * dx + dy * dy <= (s.size * 0.8) * (s.size * 0.8)) {
         hit = s;
@@ -211,15 +213,19 @@ class _SparklefallState extends ConsumerState<Sparklefall>
           children: [
             widget.child,
             if (widget.config.enabled)
-              // `IgnorePointer` wraps the whole layer by default so the
-              // underlying UI stays interactive; the inner GestureDetector
-              // re-enables pointer events on the sparkle hit area only.
-              GestureDetector(
+              // Listener (not GestureDetector) so taps that miss every
+              // sparkle keep bubbling to the UI beneath — GestureDetector
+              // would claim them via the gesture arena and lock out the
+              // rest of the app. The CustomPaint is wrapped in
+              // IgnorePointer because it's strictly visual.
+              Listener(
                 behavior: HitTestBehavior.translucent,
-                onTapDown: _onTap,
-                child: CustomPaint(
-                  painter: _SparklePainter(sparkles: _sparkles),
-                  size: Size.infinite,
+                onPointerDown: _onPointerDown,
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    painter: _SparklePainter(sparkles: _sparkles),
+                    size: Size.infinite,
+                  ),
                 ),
               ),
           ],
