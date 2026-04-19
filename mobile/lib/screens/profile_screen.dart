@@ -14,6 +14,7 @@ import '../widgets/block_renderer.dart';
 import '../widgets/framed_avatar.dart';
 import '../widgets/media_grid.dart';
 import '../widgets/post_card.dart';
+import '../widgets/sparklefall.dart';
 import '../widgets/themed_background.dart';
 import '../widgets/username_text.dart';
 import '../widgets/view_mode_toggle.dart';
@@ -115,9 +116,8 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       theme.container.opacity,
     );
 
-    return ThemedBackground(
-      theme: theme,
-      child: ListView(
+    final sparkle = theme.sparklefall;
+    final body = ListView(
         controller: _scrollCtrl,
         padding: EdgeInsets.zero,
         children: [
@@ -197,8 +197,15 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             ..._postTail(postsState),
           const SizedBox(height: 24),
         ],
-      ),
-    );
+      );
+
+    // Sparklefall overlay sits on top of the scroll view so taps on
+    // sparkles never block interactions with the profile beneath.
+    final withSparkle = sparkle != null && sparkle.enabled
+        ? Sparklefall(config: sparkle, child: body)
+        : body;
+
+    return ThemedBackground(theme: theme, child: withSparkle);
   }
 
   /// Build the profile's posts tail: section header, rendered post cards,

@@ -48,6 +48,14 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
   String? _secondaryColor;
   String? _containerColor;
 
+  bool _sparkleEnabled = false;
+  String? _sparklePreset;
+  int _sparkleInterval = 800;
+  double _sparkleWind = 0;
+  int _sparkleMaxSparkles = 50;
+  int _sparkleMinSize = 10;
+  int _sparkleMaxSize = 30;
+
   bool _dirty = false;
   bool _saving = false;
   bool _generating = false;
@@ -66,6 +74,19 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
     _linkColor = current['profileLinkColor'] as String?;
     _secondaryColor = current['profileSecondaryColor'] as String?;
     _containerColor = current['profileContainerColor'] as String?;
+
+    _sparkleEnabled = current['sparklefallEnabled'] as bool? ?? false;
+    _sparklePreset = current['sparklefallPreset'] as String? ?? 'default';
+    _sparkleInterval =
+        (current['sparklefallInterval'] as num?)?.toInt() ?? 800;
+    _sparkleWind =
+        (current['sparklefallWind'] as num?)?.toDouble() ?? 0;
+    _sparkleMaxSparkles =
+        (current['sparklefallMaxSparkles'] as num?)?.toInt() ?? 50;
+    _sparkleMinSize =
+        (current['sparklefallMinSize'] as num?)?.toInt() ?? 10;
+    _sparkleMaxSize =
+        (current['sparklefallMaxSize'] as num?)?.toInt() ?? 30;
   }
 
   void _markDirty() {
@@ -85,6 +106,13 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
         'profileLinkColor': _linkColor,
         'profileSecondaryColor': _secondaryColor,
         'profileContainerColor': _containerColor,
+        'sparklefallEnabled': _sparkleEnabled,
+        'sparklefallPreset': _sparklePreset,
+        'sparklefallInterval': _sparkleInterval,
+        'sparklefallWind': _sparkleWind,
+        'sparklefallMaxSparkles': _sparkleMaxSparkles,
+        'sparklefallMinSize': _sparkleMinSize,
+        'sparklefallMaxSize': _sparkleMaxSize,
       });
       // Bust the theme cache so ThemedBackground repaints on next frame.
       final username =
@@ -373,6 +401,7 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
         _presetsSection(opts, presets),
         _fontSection(opts),
         _opacitySection(),
+        _sparkleSection(opts),
       ],
     );
   }
@@ -738,6 +767,200 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _sparkleSection(ThemeOptions opts) {
+    final canCustomize = opts.viewerIsPremium;
+    return _Section(
+      title: 'Sparklefall',
+      trailing: Switch(
+        value: _sparkleEnabled,
+        onChanged: (v) {
+          setState(() {
+            _sparkleEnabled = v;
+            if (v && (_sparklePreset == null || _sparklePreset!.isEmpty)) {
+              _sparklePreset = 'default';
+            }
+          });
+          _markDirty();
+        },
+      ),
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: Text(
+            'Fall of sparkles on your profile. Visitors can tap them '
+            'to earn stars — up to 10 per day.',
+            style: TextStyle(fontSize: 12),
+          ),
+        ),
+        if (_sparkleEnabled) ...[
+          // Preset picker — visually the same for free (default-only)
+          // and premium users; free users just can't pick anything
+          // other than "default".
+          SizedBox(
+            height: 70,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: opts.sparklefallPresets.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (_, i) {
+                final p = opts.sparklefallPresets[i];
+                final selected = _sparklePreset == p.id;
+                final disabled = !canCustomize && p.id != 'default';
+                return Opacity(
+                  opacity: disabled ? 0.4 : 1,
+                  child: GestureDetector(
+                    onTap: disabled
+                        ? null
+                        : () {
+                            setState(() => _sparklePreset = p.id);
+                            _markDirty();
+                          },
+                    child: Container(
+                      width: 72,
+                      decoration: BoxDecoration(
+                        color: Colors.black12,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: selected
+                              ? const Color(0xFFD946EF)
+                              : Colors.transparent,
+                          width: selected ? 3 : 1,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(p.emoji,
+                              style: const TextStyle(fontSize: 24)),
+                          const SizedBox(height: 2),
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 4),
+                            child: Text(
+                              p.label,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          if (canCustomize) ...[
+            const SizedBox(height: 8),
+            _sliderRow(
+              'Rate',
+              '${_sparkleInterval}ms',
+              min: 100,
+              max: 3000,
+              divisions: 29,
+              value: _sparkleInterval.toDouble(),
+              onChanged: (v) {
+                setState(() => _sparkleInterval = v.round());
+                _markDirty();
+              },
+            ),
+            _sliderRow(
+              'Wind',
+              _sparkleWind.toStringAsFixed(1),
+              min: -1,
+              max: 1,
+              divisions: 20,
+              value: _sparkleWind,
+              onChanged: (v) {
+                setState(() => _sparkleWind = v);
+                _markDirty();
+              },
+            ),
+            _sliderRow(
+              'Max on screen',
+              '$_sparkleMaxSparkles',
+              min: 5,
+              max: 200,
+              divisions: 39,
+              value: _sparkleMaxSparkles.toDouble(),
+              onChanged: (v) {
+                setState(() => _sparkleMaxSparkles = v.round());
+                _markDirty();
+              },
+            ),
+            _sliderRow(
+              'Min size',
+              '$_sparkleMinSize px',
+              min: 5,
+              max: 100,
+              divisions: 19,
+              value: _sparkleMinSize.toDouble(),
+              onChanged: (v) {
+                setState(() => _sparkleMinSize = v.round());
+                _markDirty();
+              },
+            ),
+            _sliderRow(
+              'Max size',
+              '$_sparkleMaxSize px',
+              min: 5,
+              max: 100,
+              divisions: 19,
+              value: _sparkleMaxSize.toDouble(),
+              onChanged: (v) {
+                setState(() => _sparkleMaxSize = v.round());
+                _markDirty();
+              },
+            ),
+          ] else
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Text(
+                'Premium members can pick other presets and fine-tune '
+                'the fall.',
+                style: TextStyle(fontSize: 12),
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+
+  Widget _sliderRow(
+    String label,
+    String display, {
+    required double min,
+    required double max,
+    required int divisions,
+    required double value,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      child: Row(
+        children: [
+          SizedBox(width: 110, child: Text(label)),
+          Expanded(
+            child: Slider(
+              min: min,
+              max: max,
+              divisions: divisions,
+              value: value.clamp(min, max),
+              onChanged: onChanged,
+            ),
+          ),
+          SizedBox(
+            width: 60,
+            child: Text(display, textAlign: TextAlign.right),
+          ),
+        ],
+      ),
     );
   }
 

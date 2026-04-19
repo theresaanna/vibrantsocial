@@ -25,17 +25,28 @@ export async function claimSparkleReward(): Promise<SparkleRewardResult> {
   if (!session?.user?.id) {
     return { ok: false, error: "unauthorized" };
   }
+  return claimSparkleRewardForUser(session.user.id);
+}
 
+/**
+ * Core reward logic extracted so the Flutter-facing
+ * `/api/v1/sparkle/reward` route can call it with a Bearer-resolved
+ * user id (the cookie-based `claimSparkleReward` entry point stays
+ * untouched for the web).
+ */
+export async function claimSparkleRewardForUser(
+  userId: string,
+): Promise<SparkleRewardResult> {
   const limited = await isRateLimited(
     sparkleRewardLimiter,
-    `sparkle:${session.user.id}`
+    `sparkle:${userId}`,
   );
   if (limited) {
     return { ok: false, error: "rate_limited" };
   }
 
   const updated = await prisma.user.update({
-    where: { id: session.user.id },
+    where: { id: userId },
     data: { stars: { increment: STARS_PER_CLICK } },
     select: { stars: true },
   });
