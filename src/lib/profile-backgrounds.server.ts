@@ -132,31 +132,31 @@ export function getAllProfileBackgrounds(): BackgroundDefinition[] {
 }
 
 /**
- * Checks if a src path points to a file in the /backgrounds/ directory.
- * Works server-side by verifying the file exists on disk.
- *
- * Guards against path traversal: `startsWith("/backgrounds/")` alone
- * isn't enough — an input like `/backgrounds/../../etc/passwd`
- * matches the prefix but `path.join` will resolve it outside the
- * backgrounds directory. We resolve the candidate and verify it stays
- * inside the canonical backgrounds directory before touching disk.
+ * Allowlist of valid preset `src` values, built once at import time
+ * by scanning the backgrounds directories. Used by
+ * `isPresetBackgroundSrc` so the validator never passes user input
+ * to a path / filesystem API — it's a pure set-membership check.
+ */
+let _presetSrcAllowlist: Set<string> | null = null;
+function getPresetSrcAllowlist(): Set<string> {
+  if (_presetSrcAllowlist) return _presetSrcAllowlist;
+  const bgs = [
+    ...getProfileBackgrounds(),
+    ...getPremiumProfileBackgrounds(),
+  ];
+  _presetSrcAllowlist = new Set(bgs.map((b) => b.src));
+  return _presetSrcAllowlist;
+}
+
+/**
+ * Checks if a src path matches one of our known preset backgrounds.
+ * Pure allowlist lookup against a set materialized at boot from the
+ * backgrounds directories — `src` is never used to construct a file
+ * path, so we can't be tricked by traversal payloads like
+ * `/backgrounds/../../etc/passwd`.
  */
 export function isPresetBackgroundSrc(src: string): boolean {
-  if (!src.startsWith("/backgrounds/")) return false;
-  if (src.includes("\0")) return false;
-  try {
-    const publicDir = path.resolve(process.cwd(), "public");
-    const backgroundsDir = path.resolve(publicDir, "backgrounds");
-    // Strip the leading slash so path.resolve treats it as relative.
-    const resolved = path.resolve(publicDir, src.replace(/^\/+/, ""));
-    const withinBackgrounds =
-      resolved === backgroundsDir ||
-      resolved.startsWith(backgroundsDir + path.sep);
-    if (!withinBackgrounds) return false;
-    return fs.existsSync(resolved);
-  } catch {
-    return false;
-  }
+  return getPresetSrcAllowlist().has(src);
 }
 
 /**
