@@ -55,6 +55,26 @@ import { isValidPreset, parseJsonArray, clamp } from "@/lib/sparklefall-presets"
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { revalidatePath } from "next/cache";
 
+/**
+ * Verify that a URL string belongs to Vercel Blob (our CDN). Parses
+ * the URL properly and compares the hostname — a substring check on
+ * "blob.vercel-storage.com" would let attacker-controlled hosts like
+ * `https://evil.com/?x=blob.vercel-storage.com` slip through.
+ */
+function isVercelBlobUrl(raw: string): boolean {
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== "https:") return false;
+    const host = url.hostname;
+    return (
+      host === "blob.vercel-storage.com" ||
+      host.endsWith(".public.blob.vercel-storage.com")
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function OPTIONS(req: Request) {
   return handleCorsPreflightRequest(req);
 }
@@ -139,7 +159,7 @@ export async function POST(req: Request) {
     } else {
       const isPreset = isPresetBackgroundSrc(raw);
       const isPremiumPreset = isPremiumBackgroundSrc(raw);
-      const isBlobUrl = raw.includes("blob.vercel-storage.com");
+      const isBlobUrl = isVercelBlobUrl(raw);
       if (!isPreset && !isBlobUrl) {
         return corsJson(req, { error: "Invalid background" }, { status: 400 });
       }
