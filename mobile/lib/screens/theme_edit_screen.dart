@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -54,6 +55,8 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
   // guards us from clobbering a web-set null (custom sparkles) back
   // to "default" just because we had to prefill the UI somehow.
   bool _sparklePresetTouched = false;
+  bool _customSparklesTouched = false;
+  late TextEditingController _customSparklesCtrl;
   int _sparkleInterval = 800;
   double _sparkleWind = 0;
   int _sparkleMaxSparkles = 50;
@@ -65,6 +68,18 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
   bool _generating = false;
   bool _uploading = false;
   bool _primed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _customSparklesCtrl = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _customSparklesCtrl.dispose();
+    super.dispose();
+  }
 
   void _primeFromCurrent(Map<String, dynamic> current) {
     if (_primed) return;
@@ -96,6 +111,37 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
     _sparkleMaxSize =
         (current['sparklefallMaxSize'] as num?)?.toInt() ?? 30;
     _sparklePresetTouched = false;
+    // Pretty-print whatever raw sparkles the web set so the user
+    // sees their emoji separated by spaces, easy to edit.
+    final rawSparkles = current['sparklefallSparkles'] as String?;
+    _customSparklesCtrl.text = _decodeSparklesForUi(rawSparkles);
+    _customSparklesTouched = false;
+  }
+
+  /// Turn the JSON-array-of-strings the DB stores into a space-joined
+  /// glyph string for the text field. Returns "" on malformed input
+  /// so the field stays empty rather than showing JSON noise.
+  String _decodeSparklesForUi(String? raw) {
+    if (raw == null || raw.isEmpty) return '';
+    try {
+      final parsed = jsonDecode(raw);
+      if (parsed is List) {
+        return parsed.whereType<String>().join(' ');
+      }
+    } catch (_) {}
+    return '';
+  }
+
+  /// Parse the free-text glyph field back to the JSON shape the DB
+  /// wants. Returns null for an empty input so we can clear the field.
+  String? _encodeSparklesForApi(String input) {
+    final glyphs = input
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((s) => s.isNotEmpty)
+        .toList();
+    if (glyphs.isEmpty) return null;
+    return jsonEncode(glyphs);
   }
 
   void _markDirty() {
@@ -130,9 +176,15 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
         // The resolver prefers raw `sparklefallSparkles` over the
         // preset's glyphs, so a web user who previously set custom
         // sparkles would see those instead of the preset they just
-        // picked on mobile. Null them out so the preset actually
-        // renders.
-        patch['sparklefallSparkles'] = null;
+        // picked on mobile. Only clear them if the user didn't
+        // separately edit the custom-glyph field this session.
+        if (!_customSparklesTouched) {
+          patch['sparklefallSparkles'] = null;
+        }
+      }
+      if (_customSparklesTouched) {
+        patch['sparklefallSparkles'] =
+            _encodeSparklesForApi(_customSparklesCtrl.text);
       }
       await ref.read(themeEditApiProvider).update(patch);
       // Bust the theme cache so ThemedBackground repaints on next frame.
@@ -811,8 +863,7 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
         const Padding(
           padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: Text(
-            'Fall of sparkles on your profile. Visitors can tap them '
-            'to earn stars — up to 10 per day.',
+            'Fall of sparkles on your profile.',
             style: TextStyle(fontSize: 12),
           ),
         ),
@@ -881,7 +932,26 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
             ),
           ),
           if (canCustomize) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                controller: _customSparklesCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Custom sparkles',
+                  hintText: '✨ 💖 🌸 (space-separated)',
+                  helperText:
+                      'Overrides the preset above. Leave empty to use the preset.',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                onChanged: (_) {
+                  _customSparklesTouched = true;
+                  _markDirty();
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
             _sliderRow(
               'Rate',
               '${_sparkleInterval}ms',
