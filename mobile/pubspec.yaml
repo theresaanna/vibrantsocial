@@ -71,6 +71,12 @@ dependencies:
   # Decode SVG avatar frames (cached_network_image only handles raster).
   flutter_svg: ^2.0.10
 
+  # Display heads-up notifications when the app is foregrounded. Ably
+  # auto-renders background/killed pushes via its native plugin; for
+  # foreground deliveries we surface them with this package so the user
+  # still sees a toast.
+  flutter_local_notifications: ^17.2.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

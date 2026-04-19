@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "786095903022",
+    "project_id": "vibrantsocial-f04d6",
+    "storage_bucket": "vibrantsocial-f04d6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:786095903022:android:e0216c4b798dbee27caabf",
+        "android_client_info": {
+          "package_name": "app.vibrantsocial.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAPS2jbTTnATM1YVFDZHAhYy9FHkDYHniU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

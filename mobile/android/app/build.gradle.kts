@@ -3,6 +3,9 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    // Reads google-services.json and emits the google-services-derived
+    // resources the FCM SDK looks up at runtime.
+    id("com.google.gms.google-services")
 }
 
 android {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,6 +15,7 @@ import 'api/messaging_api.dart';
 import 'api/post_api.dart';
 import 'api/prefs_api.dart';
 import 'api/profile_api.dart';
+import 'api/push_api.dart';
 import 'api/rpc_client.dart';
 import 'api/theme_api.dart';
 import 'controllers/chat_message_controller.dart';
@@ -32,6 +35,7 @@ import 'models/resolved_theme.dart';
 import 'models/session.dart';
 import 'services/ably_service.dart';
 import 'services/native_oauth.dart';
+import 'services/push_service.dart';
 import 'services/token_store.dart';
 
 /// Global DI wiring. Providers that don't depend on runtime input live
@@ -148,6 +152,10 @@ class SessionController extends StateNotifier<Session?> {
     try {
       final user = await _ref.read(authApiProvider).me();
       state = Session(token: token, user: user);
+      // Fire-and-forget: register this device for native push. Any
+      // failure (Ably unconfigured, network, etc.) is swallowed so the
+      // app continues to boot normally.
+      unawaited(_ref.read(pushServiceProvider).activateForViewer());
     } on DioException {
       // Interceptor already cleared the token on 401; nothing else to do.
       state = null;
@@ -157,9 +165,17 @@ class SessionController extends StateNotifier<Session?> {
   Future<void> set(Session session) async {
     await _ref.read(tokenStoreProvider).write(session.token);
     state = session;
+    unawaited(_ref.read(pushServiceProvider).activateForViewer());
   }
 
   Future<void> clear() async {
+    // Unregister before dropping the token so the authenticated DELETE
+    // request still has credentials.
+    try {
+      await _ref.read(pushServiceProvider).deactivate();
+    } catch (_) {
+      // Non-critical.
+    }
     await _ref.read(tokenStoreProvider).clear();
     state = null;
   }
@@ -250,6 +266,24 @@ final linkPreviewProvider = FutureProvider.autoDispose
 
 final ablyServiceProvider = Provider<AblyService>((ref) {
   final service = AblyService(ref.watch(dioProvider));
+  ref.onDispose(() async {
+    await service.dispose();
+  });
+  return service;
+});
+
+final pushApiProvider = Provider<PushApi>(
+  (ref) => PushApi(ref.watch(dioProvider)),
+);
+
+/// Push notifications orchestrator — activates Ably Push and forwards
+/// the deviceId to the backend once the viewer is signed in. Lives at
+/// the global scope so background message streams survive tab swaps.
+final pushServiceProvider = Provider<PushService>((ref) {
+  final service = PushService(
+    ref.watch(pushApiProvider),
+    ref.watch(ablyServiceProvider),
+  );
   ref.onDispose(() async {
     await service.dispose();
   });
