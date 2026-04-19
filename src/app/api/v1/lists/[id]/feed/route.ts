@@ -14,7 +14,7 @@ import { corsJson, handleCorsPreflightRequest } from "@/lib/cors";
 import { requireViewer } from "@/lib/require-viewer";
 import { postSelect, serializePosts } from "@/lib/post-serializer";
 import { resolveAssetBaseUrl } from "@/lib/profile-lists";
-import { getUserPrefs } from "@/lib/user-prefs";
+import { mobileSafePostFilter } from "@/lib/mobile-safe-content";
 
 const PAGE_SIZE = 20;
 
@@ -84,21 +84,18 @@ export async function GET(
     return corsJson(req, { posts: [], nextCursor: null });
   }
 
-  const prefs = await getUserPrefs(userId);
-  const { showNsfwContent, ageVerified } = prefs;
-
   const cursorRaw = new URL(req.url).searchParams.get("cursor");
   const cursor = cursorRaw ? new Date(cursorRaw) : null;
 
+  // Mobile always hard-filters explicit content (Play policy).
   const rows = await prisma.post.findMany({
     where: {
+      ...mobileSafePostFilter,
       isAuthorDeleted: false,
       authorId: { in: memberIds },
       scheduledFor: null,
       isCloseFriendsOnly: false,
       hasCustomAudience: false,
-      ...(!showNsfwContent ? { isNsfw: false } : {}),
-      ...(!ageVerified ? { isGraphicNudity: false, isSensitive: false } : {}),
       ...(cursor ? { createdAt: { lt: cursor } } : {}),
     },
     orderBy: { createdAt: "desc" },

@@ -96,27 +96,13 @@ export async function POST(req: Request) {
     return corsJson(req, { error: "Post is too long." }, { status: 400 });
   }
 
-  const isNsfw = Boolean(body.isNsfw);
-  const isSensitive = Boolean(body.isSensitive);
-  const isGraphicNudity = Boolean(body.isGraphicNudity);
-
-  // Age verification required for sensitive/graphic content — mirrors web gate.
-  if (isSensitive || isGraphicNudity) {
-    const poster = await prisma.user.findUnique({
-      where: { id: viewer.userId },
-      select: { ageVerified: true },
-    });
-    if (!poster?.ageVerified) {
-      return corsJson(
-        req,
-        {
-          error:
-            "Age verification required to post sensitive or graphic content.",
-        },
-        { status: 403 },
-      );
-    }
-  }
+  // Play-policy: the Flutter client must never create NSFW / sensitive
+  // / graphic posts. We ignore any such flags in the request body and
+  // force them false server-side, so a mobile-authored post stays
+  // clean even if the compose form is tampered with.
+  const isNsfw = false;
+  const isSensitive = false;
+  const isGraphicNudity = false;
 
   // Build Lexical content: paragraphs with autolinks + optional YT / images / poll.
   const youtubeVideoId =

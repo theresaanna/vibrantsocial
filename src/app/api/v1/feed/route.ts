@@ -8,7 +8,7 @@ import {
   type SerializedPost,
 } from "@/lib/post-serializer";
 import { resolveAssetBaseUrl } from "@/lib/profile-lists";
-import { getUserPrefs } from "@/lib/user-prefs";
+import { mobileSafePostFilter } from "@/lib/mobile-safe-content";
 
 const PAGE_SIZE = 20;
 
@@ -58,23 +58,17 @@ export async function GET(req: Request) {
     ...followingRows.map((f) => f.followingId).filter((id) => !blockedIds.has(id)),
   ];
 
-  const prefs = await getUserPrefs(viewerId);
-  const { showNsfwContent, ageVerified, hideSensitiveOverlay, showGraphicByDefault } = prefs;
-
+  // Mobile never honors the viewer's NSFW / sensitive / graphic prefs —
+  // we hard-filter explicit content from every /api/v1 route so the
+  // Play-Store build stays within Google's sexual-content policy.
   const rows = await prisma.post.findMany({
     where: {
+      ...mobileSafePostFilter,
       isAuthorDeleted: false,
       authorId: { in: authorIds },
       isCloseFriendsOnly: false,
       hasCustomAudience: false,
       scheduledFor: null,
-      ...(!showNsfwContent ? { isNsfw: false } : {}),
-      ...(!showNsfwContent || !ageVerified || !hideSensitiveOverlay
-        ? { isSensitive: false }
-        : {}),
-      ...(!showNsfwContent || !ageVerified || !showGraphicByDefault
-        ? { isGraphicNudity: false }
-        : {}),
       ...(cursor ? { createdAt: { lt: cursor } } : {}),
     },
     orderBy: { createdAt: "desc" },

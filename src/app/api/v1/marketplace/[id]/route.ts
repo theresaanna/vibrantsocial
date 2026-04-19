@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { corsJson, handleCorsPreflightRequest } from "@/lib/cors";
 import { getSessionFromRequest } from "@/lib/mobile-auth";
 import { extractMediaFromLexicalJson } from "@/lib/lexical-text";
+import { isMobileSafePost } from "@/lib/mobile-safe-content";
 
 export async function OPTIONS(req: Request) {
   return handleCorsPreflightRequest(req);
@@ -62,6 +63,11 @@ export async function GET(
   });
 
   if (!post?.marketplacePost) {
+    return corsJson(req, { error: "Not found" }, { status: 404 });
+  }
+
+  // Play-policy: mobile never renders explicit listings.
+  if (!isMobileSafePost(post)) {
     return corsJson(req, { error: "Not found" }, { status: 404 });
   }
 
