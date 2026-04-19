@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../models/resolved_theme.dart';
+import 'sparklefall.dart';
 
 /// Paints the ambient theme (bg color + bg image, with the same tiling
 /// semantics as the web app) behind its [child]. Use this to wrap the
@@ -22,13 +23,23 @@ class ThemedBackground extends StatelessWidget {
     final t = theme;
     if (t == null) return child;
     final bg = t.background;
-    return DecoratedBox(
+    final sparkle = t.sparklefall;
+    // Sparklefall rides along with the theme — anywhere we paint the
+    // ambient background we also rain whatever sparkles the resolver
+    // decided to apply (user's own profile / viewer's own theme /
+    // birthday fallback). Keeps the feel consistent across every
+    // screen the theme decorates.
+    Widget painted = DecoratedBox(
       decoration: BoxDecoration(
         color: t.colors.bgColor,
         image: bg == null ? null : bgDecorationImage(bg),
       ),
       child: child,
     );
+    if (sparkle != null && sparkle.enabled) {
+      painted = Sparklefall(config: sparkle, child: painted);
+    }
+    return painted;
   }
 }
 
