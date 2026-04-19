@@ -1211,6 +1211,7 @@ model UserList {
   name      String
   ownerId   String
   isPrivate Boolean  @default(false)
+  isNsfw    Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -105,6 +105,7 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
           listId={list.id}
           listName={list.name}
           isPrivate={list.isPrivate}
+          isNsfw={list.isNsfw}
           members={JSON.parse(JSON.stringify(members))}
           isOwner={isOwner}
           canManageMembers={canManageMembers}

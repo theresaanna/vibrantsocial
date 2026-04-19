@@ -52,6 +52,8 @@ export async function createList(
     return { success: false, message: "List name must be between 1 and 50 characters" };
   }
 
+  const isNsfw = formData.get("isNsfw") === "on" || formData.get("isNsfw") === "true";
+
   const existing = await prisma.userList.findUnique({
     where: { ownerId_name: { ownerId: session.user.id, name } },
   });
@@ -60,7 +62,7 @@ export async function createList(
   }
 
   await prisma.userList.create({
-    data: { name, ownerId: session.user.id },
+    data: { name, ownerId: session.user.id, isNsfw },
   });
 
   await invalidate(cacheKeys.userLists(session.user.id));
@@ -161,6 +163,35 @@ export async function toggleListPrivacy(
   revalidatePath(`/lists/${listId}`);
 
   return { success: true, message: newPrivacy ? "List is now private" : "List is now public" };
+}
+
+export async function toggleListNsfw(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, message: "Not authenticated" };
+  }
+
+  const listId = formData.get("listId") as string;
+  if (!listId) {
+    return { success: false, message: "Missing list ID" };
+  }
+
+  const list = await prisma.userList.findUnique({ where: { id: listId } });
+  if (!list || list.ownerId !== session.user.id) {
+    return { success: false, message: "List not found or not owned by you" };
+  }
+
+  const newIsNsfw = !list.isNsfw;
+  await prisma.userList.update({ where: { id: listId }, data: { isNsfw: newIsNsfw } });
+
+  await invalidate(cacheKeys.userLists(session.user.id));
+  revalidatePath(`/lists/${listId}`);
+  revalidatePath("/lists");
+
+  return { success: true, message: newIsNsfw ? "List marked NSFW" : "List unmarked NSFW" };
 }
 
 export async function addMemberToList(
@@ -370,6 +401,7 @@ export async function getListMembers(listId: string) {
       name: true,
       ownerId: true,
       isPrivate: true,
+      isNsfw: true,
       owner: { select: { username: true, displayName: true, name: true, avatar: true, image: true, profileFrameId: true } },
     },
   });
@@ -410,8 +442,18 @@ export async function getListsForUser(userId: string) {
   const session = await auth();
   if (!session?.user?.id) return [];
 
+  const isOwner = session.user.id === userId;
+  let hideNsfw = false;
+  if (!isOwner) {
+    const prefs = await getUserPrefs(session.user.id);
+    hideNsfw = !prefs.showNsfwContent;
+  }
+
   return prisma.userList.findMany({
-    where: { ownerId: userId },
+    where: {
+      ownerId: userId,
+      ...(hideNsfw ? { isNsfw: false } : {}),
+    },
     include: { _count: { select: { members: true } } },
     orderBy: { createdAt: "asc" },
   });
