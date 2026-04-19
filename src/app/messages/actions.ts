@@ -37,7 +37,12 @@ const replyToInclude = {
     deletedAt: true,
     mediaType: true,
     sender: {
-      select: { displayName: true, username: true, name: true },
+      select: {
+        displayName: true,
+        username: true,
+        name: true,
+        usernameFont: true,
+      },
     },
   },
 } as const;
@@ -49,7 +54,12 @@ function formatReplyTo(
     senderId: string;
     deletedAt: Date | null;
     mediaType: string | null;
-    sender: { displayName: string | null; username: string | null; name: string | null };
+    sender: {
+      displayName: string | null;
+      username: string | null;
+      name: string | null;
+      usernameFont: string | null;
+    };
   } | null
 ): MessageReplyTo | null {
   if (!replyTo) return null;
@@ -59,6 +69,7 @@ function formatReplyTo(
     senderId: replyTo.senderId,
     senderName:
       replyTo.sender.displayName ?? replyTo.sender.username ?? replyTo.sender.name ?? "User",
+    senderUsernameFont: replyTo.sender.usernameFont,
     mediaType: (replyTo.mediaType ?? null) as MediaType | null,
     deletedAt: replyTo.deletedAt,
   };
@@ -566,7 +577,7 @@ export async function sendMessage(data: {
       where: { id: replyToId },
       include: {
         sender: {
-          select: { displayName: true, username: true, name: true },
+          select: { displayName: true, username: true, name: true, usernameFont: true },
         },
       },
     });
@@ -651,15 +662,21 @@ export async function sendMessage(data: {
     // Non-critical — message is saved, real-time delivery failed
   }
 
-  // Fire async moderation scan (non-blocking)
-  await inngest.send({
-    name: "moderation/scan-chat-message",
-    data: {
-      messageId: message.id,
-      senderId: session.user.id,
-      conversationId,
-    },
-  });
+  // Fire async moderation scan (non-blocking — must never fail the
+  // user's send if the queue is unreachable, e.g. local dev without
+  // an Inngest branch env).
+  try {
+    await inngest.send({
+      name: "moderation/scan-chat-message",
+      data: {
+        messageId: message.id,
+        senderId: session.user.id,
+        conversationId,
+      },
+    });
+  } catch (err) {
+    console.warn("[sendMessage] moderation enqueue failed:", err);
+  }
 
   return { success: true, message: "Message sent", messageId: message.id };
 }
@@ -713,15 +730,19 @@ export async function editMessage(data: {
     // Non-critical
   }
 
-  // Re-scan edited message content
-  await inngest.send({
-    name: "moderation/scan-chat-message",
-    data: {
-      messageId,
-      senderId: session.user.id,
-      conversationId: message.conversationId,
-    },
-  });
+  // Re-scan edited message content (non-blocking).
+  try {
+    await inngest.send({
+      name: "moderation/scan-chat-message",
+      data: {
+        messageId,
+        senderId: session.user.id,
+        conversationId: message.conversationId,
+      },
+    });
+  } catch (err) {
+    console.warn("[editMessage] moderation enqueue failed:", err);
+  }
 
   return { success: true, message: "Message edited" };
 }

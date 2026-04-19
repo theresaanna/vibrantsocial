@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
 
 /**
- * Allowed origins for mobile CORS requests.
- * In development, the Expo dev server runs on localhost:8081.
- * In production, only the app's own origin is allowed.
+ * Allowed origins for cross-origin requests. Native mobile clients do not
+ * send an Origin header so they are unaffected by this list; the list only
+ * gates browser-based callers (dev tools, preview environments, etc).
  */
 const ALLOWED_ORIGINS = new Set([
-  "http://localhost:8081",
-  "http://127.0.0.1:8081",
-  "http://localhost:19006",
   "https://vibrantsocial.app",
   "https://www.vibrantsocial.app",
 ]);

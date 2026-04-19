@@ -1,61 +1,17 @@
 import type React from "react";
-import { isBirthday, getBirthdaySparkleConfig } from "@/lib/birthday";
+import {
+  resolveUserTheme,
+  themeResolverUserSelect,
+  type ThemeResolverUser,
+} from "@/lib/theme-resolver";
 
 /**
- * Prisma select fragment for all user theme fields.
- * Spread into any `prisma.user.findUnique({ select: { ...userThemeSelect } })`.
+ * Prisma select fragment for all user theme fields. Re-exported from the
+ * resolver so callers only need one import.
  */
-export const userThemeSelect = {
-  id: true,
-  tier: true,
-  profileBgColor: true,
-  profileTextColor: true,
-  profileLinkColor: true,
-  profileSecondaryColor: true,
-  profileContainerColor: true,
-  profileContainerOpacity: true,
-  profileBgImage: true,
-  profileBgRepeat: true,
-  profileBgAttachment: true,
-  profileBgSize: true,
-  profileBgPosition: true,
-  sparklefallEnabled: true,
-  sparklefallSparkles: true,
-  sparklefallColors: true,
-  sparklefallInterval: true,
-  sparklefallWind: true,
-  sparklefallMaxSparkles: true,
-  sparklefallMinSize: true,
-  sparklefallMaxSize: true,
-  birthdayMonth: true,
-  birthdayDay: true,
-} as const;
+export const userThemeSelect = themeResolverUserSelect;
 
-export type UserThemeData = {
-  id: string;
-  tier: string | null;
-  profileBgColor: string | null;
-  profileTextColor: string | null;
-  profileLinkColor: string | null;
-  profileSecondaryColor: string | null;
-  profileContainerColor: string | null;
-  profileContainerOpacity: number | null;
-  profileBgImage: string | null;
-  profileBgRepeat: string | null;
-  profileBgAttachment: string | null;
-  profileBgSize: string | null;
-  profileBgPosition: string | null;
-  sparklefallEnabled: boolean;
-  sparklefallSparkles: string | null;
-  sparklefallColors: string | null;
-  sparklefallInterval: number | null;
-  sparklefallWind: number | null;
-  sparklefallMaxSparkles: number | null;
-  sparklefallMinSize: number | null;
-  sparklefallMaxSize: number | null;
-  birthdayMonth: number | null;
-  birthdayDay: number | null;
-};
+export type UserThemeData = ThemeResolverUser;
 
 export interface SparklefallProps {
   sparkles: string | null;
@@ -82,54 +38,53 @@ export const NO_THEME: UserThemeResult = {
 };
 
 /**
- * Build theme CSS variables, background image style, and sparklefall props.
- * Uses the user's chosen colors directly — no light/dark adaptation.
+ * Web adapter over the platform-agnostic theme resolver: produces CSS
+ * variables, background inline styles, and sparklefall props in the shape
+ * the existing React components expect.
  */
 export function buildUserTheme(user: UserThemeData): UserThemeResult {
-  const hasCustomTheme = !!(
-    user.profileBgColor ||
-    user.profileTextColor ||
-    user.profileLinkColor ||
-    user.profileSecondaryColor ||
-    user.profileContainerColor
-  );
+  const resolved = resolveUserTheme(user);
 
-  const themeStyle = hasCustomTheme
+  const themeStyle = resolved.hasCustomTheme
     ? ({
-        "--profile-bg": user.profileBgColor ?? "#ffffff",
-        "--profile-text": user.profileTextColor ?? "#18181b",
-        "--profile-link": user.profileLinkColor ?? "#2563eb",
-        "--profile-secondary": user.profileSecondaryColor ?? "#71717a",
-        "--profile-container": user.profileContainerColor ?? "#f4f4f5",
-        "--profile-container-alpha": `${user.profileContainerOpacity ?? 100}%`,
+        "--profile-bg": resolved.colors.bg,
+        "--profile-text": resolved.colors.text,
+        "--profile-link": resolved.colors.link,
+        "--profile-secondary": resolved.colors.secondary,
+        "--profile-container": resolved.colors.container,
+        "--profile-container-alpha": `${resolved.container.opacity}%`,
       } as React.CSSProperties)
     : undefined;
 
-  const bgImageStyle: React.CSSProperties | undefined = user.profileBgImage
+  const bgImageStyle: React.CSSProperties | undefined = resolved.background
     ? {
-        backgroundImage: `url(${user.profileBgImage})`,
-        backgroundRepeat: user.profileBgRepeat ?? "no-repeat",
-        backgroundAttachment: user.profileBgAttachment ?? "scroll",
-        backgroundSize: user.profileBgSize ?? "100% 100%",
-        backgroundPosition: user.profileBgPosition ?? "center",
+        backgroundImage: `url(${resolved.background.imageUrl})`,
+        backgroundRepeat: resolved.background.repeat,
+        backgroundAttachment: resolved.background.attachment,
+        backgroundSize: resolved.background.size,
+        backgroundPosition: resolved.background.position,
         minHeight: "calc(100vh - 57px)",
       }
     : undefined;
 
-  let sparklefallProps: SparklefallProps | null = null;
-  if (isBirthday(user.birthdayMonth, user.birthdayDay)) {
-    sparklefallProps = getBirthdaySparkleConfig();
-  } else if (user.sparklefallEnabled && user.tier === "premium") {
-    sparklefallProps = {
-      sparkles: user.sparklefallSparkles,
-      colors: user.sparklefallColors,
-      interval: user.sparklefallInterval,
-      wind: user.sparklefallWind,
-      maxSparkles: user.sparklefallMaxSparkles,
-      minSize: user.sparklefallMinSize,
-      maxSize: user.sparklefallMaxSize,
-    };
-  }
+  const sparklefallProps: SparklefallProps | null = resolved.sparklefall
+    ? {
+        sparkles: JSON.stringify(resolved.sparklefall.sparkles),
+        colors: resolved.sparklefall.colors.length
+          ? JSON.stringify(resolved.sparklefall.colors)
+          : null,
+        interval: resolved.sparklefall.interval,
+        wind: resolved.sparklefall.wind,
+        maxSparkles: resolved.sparklefall.maxSparkles,
+        minSize: resolved.sparklefall.minSize,
+        maxSize: resolved.sparklefall.maxSize,
+      }
+    : null;
 
-  return { hasCustomTheme, themeStyle, bgImageStyle, sparklefallProps };
+  return {
+    hasCustomTheme: resolved.hasCustomTheme,
+    themeStyle,
+    bgImageStyle,
+    sparklefallProps,
+  };
 }

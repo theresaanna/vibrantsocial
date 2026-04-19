@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Dev-only cleartext exception: let the app hit the Next.js dev server on
+  localhost and the Android emulator's host alias (10.0.2.2) without TLS.
+  Production traffic hits https://vibrantsocial.app, which uses TLS normally.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>

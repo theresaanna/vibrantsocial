@@ -37,7 +37,25 @@ import {
   markConversationRead,
   acceptMessageRequest,
   declineMessageRequest,
+  toggleReaction as toggleMessageReaction,
+  editMessage,
 } from "@/app/messages/actions";
+import {
+  listChatRooms,
+  listTopActiveChatRooms,
+  getChatRoomMessages,
+  getChatRoomMeta,
+  sendChatRoomMessage,
+  editChatRoomMessage,
+  deleteChatRoomMessage,
+  toggleReaction as toggleChatRoomReaction,
+} from "@/app/chatrooms/actions";
+import { fetchLinkPreview } from "@/app/feed/link-preview-action";
+import {
+  toggleNsfwContent,
+  getNsfwContentSetting,
+} from "@/app/profile/nsfw-actions";
+import { extractMediaFromLexicalJson } from "@/lib/lexical-text";
 import { getUnreadNotificationCount, getRecentNotifications } from "@/app/notifications/actions";
 import { fetchNewcomers } from "@/app/communities/newcomer-actions";
 import { fetchTopDiscussedPosts } from "@/app/communities/discussion-actions";
@@ -1348,6 +1366,123 @@ async function mobileGetProfilePosts(
   }));
 }
 
+/**
+ * Mobile media-feed wrapper: pre-extracts media items from each post's
+ * Lexical JSON content so the Flutter client doesn't need a Lexical
+ * parser. Output shape: `{ posts: [{ id, slug, createdAt, author,
+ * mediaItems }], hasMore }`.
+ */
+async function mobileFetchMediaFeed(cursor?: string) {
+  const page = await fetchMediaFeedPage(cursor);
+  const posts = page.posts.map((p) => ({
+    id: p.id,
+    slug: p.slug,
+    createdAt: p.createdAt,
+    author: p.author,
+    mediaItems: extractMediaFromLexicalJson(p.content),
+  }));
+  // Cursor is the last post's createdAt (matches fetchMediaFeedPage's
+  // own cursor format).
+  const nextCursor = page.hasMore && posts.length > 0
+    ? posts[posts.length - 1].createdAt
+    : null;
+  return { posts, hasMore: page.hasMore, nextCursor };
+}
+
+/**
+ * Mobile profile-media wrapper. Web's `fetchUserMediaPosts` filters
+ * posts client-side after a 3x overfetch, which is fine to mirror.
+ */
+async function mobileFetchProfileMedia(username: string, cursor?: string) {
+  const { prisma } = await import("@/lib/prisma");
+  const { auth } = await import("@/auth");
+  const session = await auth();
+  const viewerId = session?.user?.id;
+
+  const target = await prisma.user.findUnique({
+    where: { username },
+    select: { id: true },
+  });
+  if (!target) return { posts: [], hasMore: false, nextCursor: null };
+
+  const PAGE_SIZE = 30;
+  const dateFilter = cursor ? { createdAt: { lt: new Date(cursor) } } : {};
+
+  const rows = await prisma.post.findMany({
+    where: {
+      authorId: target.id,
+      scheduledFor: null,
+      isCloseFriendsOnly: false,
+      hasCustomAudience: false,
+      OR: [
+        { content: { contains: '"type":"image"' } },
+        { content: { contains: '"type":"video"' } },
+        { content: { contains: '"type":"youtube"' } },
+      ],
+      ...dateFilter,
+    },
+    orderBy: { createdAt: "desc" },
+    take: PAGE_SIZE * 3,
+    select: {
+      id: true,
+      slug: true,
+      content: true,
+      createdAt: true,
+      author: {
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          name: true,
+          image: true,
+          avatar: true,
+          profileFrameId: true,
+          usernameFont: true,
+        },
+      },
+    },
+  });
+
+  const withMedia = rows
+    .map((r) => ({ ...r, mediaItems: extractMediaFromLexicalJson(r.content) }))
+    .filter((r) => r.mediaItems.length > 0);
+
+  const page = withMedia.slice(0, PAGE_SIZE);
+  const hasMore = withMedia.length > PAGE_SIZE || rows.length === PAGE_SIZE * 3;
+  void viewerId; // currently no viewer-specific filtering beyond visibility
+
+  return {
+    posts: page.map((p) => ({
+      id: p.id,
+      slug: p.slug,
+      createdAt: p.createdAt.toISOString(),
+      author: p.author,
+      mediaItems: p.mediaItems,
+    })),
+    hasMore,
+    nextCursor:
+      hasMore && page.length > 0
+        ? page[page.length - 1].createdAt.toISOString()
+        : null,
+  };
+}
+
+/// Returns the full avatar-frame catalog with absolute image URLs so
+/// the Flutter client can look up `profileFrameId` -> `AvatarFrame`
+/// without baking the catalog into the app bundle.
+async function mobileGetAvatarFrames() {
+  const { PROFILE_FRAMES } = await import("@/lib/profile-frames");
+  const { resolveAvatarFrame } = await import("@/lib/profile-lists");
+  const { headers } = await import("next/headers");
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? "http";
+  const baseUrl = `${proto}://${host}`;
+  return PROFILE_FRAMES
+    .map((f) => resolveAvatarFrame(f.id, baseUrl))
+    .filter((f): f is NonNullable<typeof f> => f !== null);
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const ACTIONS: Record<string, (...args: any[]) => Promise<any>> = {
   searchUsers,
@@ -1393,6 +1528,18 @@ const ACTIONS: Record<string, (...args: any[]) => Promise<any>> = {
   markConversationRead,
   acceptMessageRequest,
   declineMessageRequest,
+  toggleMessageReaction,
+  editMessage,
+  // Chatrooms
+  listChatRooms,
+  listTopActiveChatRooms,
+  getChatRoomMessages,
+  getChatRoomMeta,
+  sendChatRoomMessage,
+  editChatRoomMessage,
+  deleteChatRoomMessage,
+  toggleChatRoomReaction,
+  fetchLinkPreview,
   getUnreadNotificationCount,
   getRecentNotifications,
   fetchNewcomers,
@@ -1469,6 +1616,12 @@ const ACTIONS: Record<string, (...args: any[]) => Promise<any>> = {
   // Profile Tabs
   getProfileTabFlags: mobileGetProfileTabFlags,
   getProfilePosts: mobileGetProfilePosts,
+  // NSFW + media view
+  getNsfwContentSetting,
+  toggleNsfwContent,
+  fetchMediaFeed: mobileFetchMediaFeed,
+  fetchProfileMedia: mobileFetchProfileMedia,
+  getAvatarFrames: mobileGetAvatarFrames,
 };
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
