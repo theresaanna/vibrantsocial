@@ -275,7 +275,7 @@ async function generateUniqueUsername(seed: string): Promise<string> {
       .toLowerCase()
       .split("@")[0]
       .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
+      .replace(/^-|-$/g, "")
       .slice(0, 20) || "user";
   for (let i = 0; i < 5; i++) {
     const suffix = randomBytes(3).toString("hex"); // 6 chars
