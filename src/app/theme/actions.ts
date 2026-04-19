@@ -11,6 +11,7 @@ import { checkAndExpirePremium } from "@/lib/premium";
 import { isValidBgRepeat, isValidBgAttachment, isValidBgSize, isValidBgPosition } from "@/lib/profile-backgrounds";
 import { isPresetBackgroundSrc, isPremiumBackgroundSrc } from "@/lib/profile-backgrounds.server";
 import { invalidate, cacheKeys } from "@/lib/cache";
+import { isVercelBlobUrl } from "@/lib/vercel-blob-url";
 
 interface ThemeState {
   success: boolean;
@@ -92,7 +93,7 @@ export async function updateTheme(
 
   if (rawBgImage) {
     const isPreset = isPresetBackgroundSrc(rawBgImage);
-    const isBlobUrl = rawBgImage.includes("blob.vercel-storage.com");
+    const isBlobUrl = isVercelBlobUrl(rawBgImage);
 
     if (!isPreset && !isBlobUrl) {
       return { success: false, message: "Invalid background image." };

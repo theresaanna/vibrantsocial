@@ -21,6 +21,7 @@ const BG_SIZE_OPTIONS = [
 ] as const;
 
 import { PremiumCrown } from "./premium-crown";
+import { isVercelBlobUrl } from "@/lib/vercel-blob-url";
 
 interface BackgroundEditorProps {
   backgrounds: BackgroundDefinition[];
@@ -179,7 +180,7 @@ export function BackgroundEditor({
     });
   }, [bgImage, bgRepeat, bgAttachment, bgSize, bgPosition, onBackgroundChange]);
 
-  const isCustomUpload = bgImage?.includes("blob.vercel-storage.com") ?? false;
+  const isCustomUpload = isVercelBlobUrl(bgImage);
 
   const handlePresetSelect = useCallback(
     (bg: BackgroundDefinition | null) => {

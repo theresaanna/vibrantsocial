@@ -15,17 +15,8 @@ import type { UserThemeResult } from "@/lib/user-theme";
 import { ProfileSparklefall } from "@/components/profile-sparklefall";
 import { toast } from "sonner";
 import { type ThemeExport, validateThemeExport } from "@/lib/theme-export";
+import { isVercelBlobUrl } from "@/lib/vercel-blob-url";
 import { zipSync, unzipSync, strToU8, strFromU8 } from "fflate";
-
-/** Check if a URL is hosted on Vercel Blob storage by parsing its hostname. */
-function isVercelBlobUrl(url: string): boolean {
-  try {
-    const { hostname } = new URL(url);
-    return hostname === "blob.vercel-storage.com" || hostname.endsWith(".public.blob.vercel-storage.com");
-  } catch {
-    return false;
-  }
-}
 
 interface ThemeFormProps {
   user: {

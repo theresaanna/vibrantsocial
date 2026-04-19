@@ -53,27 +53,8 @@ import {
 } from "@/lib/profile-backgrounds.server";
 import { isValidPreset, parseJsonArray, clamp } from "@/lib/sparklefall-presets";
 import { invalidate, cacheKeys } from "@/lib/cache";
+import { isVercelBlobUrl } from "@/lib/vercel-blob-url";
 import { revalidatePath } from "next/cache";
-
-/**
- * Verify that a URL string belongs to Vercel Blob (our CDN). Parses
- * the URL properly and compares the hostname — a substring check on
- * "blob.vercel-storage.com" would let attacker-controlled hosts like
- * `https://evil.com/?x=blob.vercel-storage.com` slip through.
- */
-function isVercelBlobUrl(raw: string): boolean {
-  try {
-    const url = new URL(raw);
-    if (url.protocol !== "https:") return false;
-    const host = url.hostname;
-    return (
-      host === "blob.vercel-storage.com" ||
-      host.endsWith(".public.blob.vercel-storage.com")
-    );
-  } catch {
-    return false;
-  }
-}
 
 export async function OPTIONS(req: Request) {
   return handleCorsPreflightRequest(req);
