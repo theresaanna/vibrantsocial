@@ -16,6 +16,16 @@ class CuratedListsApi {
     return CuratedListOverview.fromJson(res.data!);
   }
 
+  /// Browse every public list on the platform, newest first. Backs the
+  /// "Everyone's lists" tab.
+  Future<CuratedListPage> fetchAll({String? cursor}) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/api/v1/lists/all',
+      queryParameters: {if (cursor != null) 'cursor': cursor},
+    );
+    return CuratedListPage.fromJson(res.data!);
+  }
+
   /// Fetch one list's metadata + members + viewer role flags.
   Future<CuratedListDetail> fetchDetail(String listId) async {
     final res = await _dio.get<Map<String, dynamic>>(
