@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/curated_list.dart';
 import '../widgets/themed_background.dart';
+import '../widgets/themed_container.dart';
 import '../providers.dart';
 import 'curated_lists_screen.dart';
 import 'curated_list_feed_screen.dart';
@@ -144,14 +145,16 @@ class _Body extends StatelessWidget {
     return ListView(
       children: [
         // Header card
-        Padding(
+        ThemedContainer(
+          margin: const EdgeInsets.fromLTRB(12, 12, 12, 8),
           padding: const EdgeInsets.all(16),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CircleAvatar(
                 radius: 28,
-                backgroundColor: const Color(0xFFD946EF).withOpacity(0.15),
+                backgroundColor:
+                    const Color(0xFFD946EF).withValues(alpha: 0.15),
                 child: Icon(
                   detail.isPrivate ? Icons.lock : Icons.playlist_play,
                   color: const Color(0xFFD946EF),
@@ -239,19 +242,10 @@ class _Body extends StatelessWidget {
           )
         else
           for (final m in detail.members)
-            ListTile(
-              leading: CircleAvatar(
-                backgroundImage: m.user.avatarUrl != null
-                    ? CachedNetworkImageProvider(m.user.avatarUrl!)
-                    : null,
-                child: m.user.avatarUrl == null
-                    ? const Icon(Icons.person)
-                    : null,
-              ),
-              title: Text(m.user.displayNameOrUsername),
-              subtitle: m.user.username != null
-                  ? Text('@${m.user.username}')
-                  : null,
+            ThemedContainer(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 12, vertical: 8),
               onTap: m.user.username == null
                   ? null
                   : () => Navigator.of(context).push(
@@ -260,6 +254,37 @@ class _Body extends StatelessWidget {
                               ProfileScreen(username: m.user.username!),
                         ),
                       ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundImage: m.user.avatarUrl != null
+                        ? CachedNetworkImageProvider(m.user.avatarUrl!)
+                        : null,
+                    child: m.user.avatarUrl == null
+                        ? const Icon(Icons.person)
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          m.user.displayNameOrUsername,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (m.user.username != null)
+                          Text(
+                            '@${m.user.username}',
+                            style: const TextStyle(fontSize: 12),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
 
         const SizedBox(height: 32),

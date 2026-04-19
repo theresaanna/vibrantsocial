@@ -5,6 +5,7 @@ import '../api/curated_lists_api.dart';
 import '../models/curated_list.dart';
 import '../providers.dart';
 import '../widgets/themed_background.dart';
+import '../widgets/themed_container.dart';
 import 'curated_list_detail_screen.dart';
 
 final curatedListsApiProvider = Provider<CuratedListsApi>(
@@ -135,21 +136,44 @@ class _ListTile extends StatelessWidget {
       if (list.isPrivate) 'Private',
       if (list.ownerUsername != null) 'by @${list.ownerUsername}',
     ];
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: const Color(0xFFD946EF).withOpacity(0.15),
-        child: Icon(
-          list.isPrivate ? Icons.lock : Icons.playlist_play,
-          color: const Color(0xFFD946EF),
-        ),
-      ),
-      title: Text(list.name),
-      subtitle: Text(subtitleParts.join(' · ')),
-      trailing: const Icon(Icons.chevron_right),
+    return ThemedContainer(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => CuratedListDetailScreen(listId: list.id),
         ),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: const Color(0xFFD946EF).withValues(alpha: 0.15),
+            child: Icon(
+              list.isPrivate ? Icons.lock : Icons.playlist_play,
+              color: const Color(0xFFD946EF),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  list.name,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitleParts.join(' · '),
+                  style: const TextStyle(fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right),
+        ],
       ),
     );
   }
