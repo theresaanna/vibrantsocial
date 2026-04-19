@@ -54,6 +54,7 @@ export async function GET(req: Request) {
     id: l.id,
     name: l.name,
     isPrivate: l.isPrivate,
+    isNsfw: l.isNsfw,
     memberCount: l._count.members,
     ownerUsername: l.owner.username,
     createdAt: l.createdAt.toISOString(),

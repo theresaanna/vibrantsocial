@@ -3,11 +3,13 @@
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { rpc } from "@/lib/rpc";
+import { NsfwBadge } from "@/components/nsfw-badge";
 
 
 type UserListItem = {
   id: string;
   name: string;
+  isNsfw: boolean;
   owner: {
     id: string;
     username: string | null;
@@ -63,9 +65,12 @@ export function CommunitiesUserListsClient() {
                 {list.name.charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-zinc-900 dark:text-zinc-100 truncate">
-                  {list.name}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-zinc-900 dark:text-zinc-100 truncate">
+                    {list.name}
+                  </p>
+                  {list.isNsfw && <NsfwBadge />}
+                </div>
                 <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
                   <span className="flex items-center gap-1">
                     {(list.owner.avatar || list.owner.image) && (
