@@ -497,11 +497,23 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
   }
 
   Widget _colorsSection(ThemeOptions opts) {
-    final canSetColors = opts.viewerIsPremium || _bgImage == null;
+    // Custom colors are allowed when the viewer is premium, OR when
+    // they're on no background / a free preset. Uploaded blobs and
+    // premium presets both require premium to tint.
+    final bgIsFreePreset = _bgImage != null &&
+        _bgImage!.startsWith('/backgrounds/') &&
+        !_bgImage!.startsWith('/backgrounds/premium/');
+    final bgIsNone = _bgImage == null || _bgImage!.isEmpty;
+    final canSetColors = opts.viewerIsPremium || bgIsNone || bgIsFreePreset;
+
+    // AI generate follows the same rule as the server: available when
+    // premium OR when the source image is a free preset.
+    final canGenerate = !bgIsNone && canSetColors;
+
     return _Section(
       title: 'Colors',
       trailing: FilledButton.icon(
-        onPressed: _generating ? null : _aiGenerate,
+        onPressed: (_generating || !canGenerate) ? null : _aiGenerate,
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFFD946EF),
         ),
@@ -528,6 +540,7 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
         _ColorRow(
           label: 'Background',
           value: _bgColor,
+          enabled: canSetColors,
           onTap: () => _pickColor(
               'Background', _bgColor, (h) => _bgColor = h),
           onClear: () {
@@ -538,6 +551,7 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
         _ColorRow(
           label: 'Text',
           value: _textColor,
+          enabled: canSetColors,
           onTap: () =>
               _pickColor('Text', _textColor, (h) => _textColor = h),
           onClear: () {
@@ -548,6 +562,7 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
         _ColorRow(
           label: 'Link',
           value: _linkColor,
+          enabled: canSetColors,
           onTap: () =>
               _pickColor('Link', _linkColor, (h) => _linkColor = h),
           onClear: () {
@@ -558,6 +573,7 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
         _ColorRow(
           label: 'Secondary',
           value: _secondaryColor,
+          enabled: canSetColors,
           onTap: () => _pickColor(
               'Secondary', _secondaryColor, (h) => _secondaryColor = h),
           onClear: () {
@@ -568,6 +584,7 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
         _ColorRow(
           label: 'Container',
           value: _containerColor,
+          enabled: canSetColors,
           onTap: () => _pickColor(
               'Container', _containerColor, (h) => _containerColor = h),
           onClear: () {
@@ -581,12 +598,21 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
 
   Widget _presetsSection(
       ThemeOptions opts, AsyncValue<List<CustomThemePreset>> presets) {
+    // Saving custom presets is premium-only — server returns 403 for
+    // free users, so disable the button in the UI to match.
     return _Section(
       title: 'My saved themes',
       trailing: OutlinedButton.icon(
-        onPressed: _savePreset,
-        icon: const Icon(Icons.bookmark_add_outlined, size: 16),
-        label: const Text('Save current'),
+        onPressed: opts.viewerIsPremium ? _savePreset : null,
+        icon: Icon(
+          opts.viewerIsPremium
+              ? Icons.bookmark_add_outlined
+              : Icons.star_outline,
+          size: 16,
+        ),
+        label: Text(opts.viewerIsPremium
+            ? 'Save current'
+            : 'Save (Premium)'),
       ),
       children: [
         presets.when(
@@ -798,47 +824,52 @@ class _ColorRow extends StatelessWidget {
     required this.value,
     required this.onTap,
     required this.onClear,
+    this.enabled = true,
   });
 
   final String label;
   final String? value;
   final VoidCallback onTap;
   final VoidCallback onClear;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     final color = _hexToColor(value);
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: color ?? Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.black26),
+    return Opacity(
+      opacity: enabled ? 1.0 : 0.5,
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: color ?? Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.black26),
+                ),
+                child: color == null
+                    ? const Icon(Icons.colorize, size: 18)
+                    : null,
               ),
-              child: color == null
-                  ? const Icon(Icons.colorize, size: 18)
-                  : null,
-            ),
-            const SizedBox(width: 12),
-            Expanded(child: Text(label)),
-            Text(value ?? '—',
-                style: const TextStyle(
-                    fontFeatures: [FontFeature.tabularFigures()])),
-            if (value != null)
-              IconButton(
-                onPressed: onClear,
-                icon: const Icon(Icons.clear, size: 16),
-                tooltip: 'Clear',
-                visualDensity: VisualDensity.compact,
-              ),
-          ],
+              const SizedBox(width: 12),
+              Expanded(child: Text(label)),
+              Text(value ?? '—',
+                  style: const TextStyle(
+                      fontFeatures: [FontFeature.tabularFigures()])),
+              if (value != null && enabled)
+                IconButton(
+                  onPressed: onClear,
+                  icon: const Icon(Icons.clear, size: 16),
+                  tooltip: 'Clear',
+                  visualDensity: VisualDensity.compact,
+                ),
+            ],
+          ),
         ),
       ),
     );

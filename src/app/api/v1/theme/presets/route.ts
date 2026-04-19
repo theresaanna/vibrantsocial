@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { corsJson, handleCorsPreflightRequest } from "@/lib/cors";
 import { requireViewer } from "@/lib/require-viewer";
 import { isValidHexColor } from "@/lib/profile-themes";
+import { checkAndExpirePremium } from "@/lib/premium";
 
 const MAX_PRESETS = 10;
 
@@ -55,6 +56,16 @@ export async function POST(req: Request) {
   const viewer = await requireViewer(req);
   if (!viewer.ok) return viewer.response;
   const userId = viewer.userId;
+
+  // Saving custom presets is premium-only — matches the web's
+  // `saveCustomPreset` server action.
+  if (!(await checkAndExpirePremium(userId))) {
+    return corsJson(
+      req,
+      { error: "Premium subscription required" },
+      { status: 403 },
+    );
+  }
 
   let body: PresetPayload;
   try {
