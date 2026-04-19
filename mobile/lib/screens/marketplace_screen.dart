@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/marketplace_api.dart';
 import '../models/marketplace.dart';
 import '../providers.dart';
+import '../widgets/nsfw_toggle.dart';
 import '../widgets/themed_background.dart';
 import 'marketplace_detail_screen.dart';
 
@@ -87,6 +88,12 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
   Widget build(BuildContext context) {
     final viewerTheme = ref.watch(viewerThemeProvider);
 
+    // Re-fetch the grid when the NSFW pref flips — server filters the
+    // feed based on the caller's pref on every request.
+    ref.listen<bool>(nsfwPrefProvider, (_, __) {
+      if (mounted) _refresh();
+    });
+
     return ThemedBackground(
       theme: viewerTheme,
       child: Scaffold(
@@ -94,6 +101,7 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
         appBar: AppBar(
           title: const Text('Marketplace'),
           backgroundColor: Colors.transparent,
+          actions: const [NsfwToggle()],
         ),
         body: RefreshIndicator(
           onRefresh: _refresh,
