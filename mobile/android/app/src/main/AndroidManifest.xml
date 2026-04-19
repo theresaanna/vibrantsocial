@@ -1,5 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Required on Android 13+ to display notifications (FCM push +
+         flutter_local_notifications foreground toasts). The Flutter side
+         prompts the user for this permission at runtime. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="vibrantsocial"
         android:name="${applicationName}"

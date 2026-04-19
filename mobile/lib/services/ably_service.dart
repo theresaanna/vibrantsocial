@@ -20,6 +20,11 @@ class AblyService {
   final Dio _dio;
   ably.Realtime? _client;
 
+  /// Exposes the shared Realtime client, creating it on first use. Other
+  /// services (e.g. `PushService`) need it to construct an `ably.Push`
+  /// instance tied to the same connection + auth.
+  ably.Realtime ensureClient() => _ensureClient();
+
   ably.Realtime _ensureClient() {
     final existing = _client;
     if (existing != null) return existing;

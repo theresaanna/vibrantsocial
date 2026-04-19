@@ -172,6 +172,7 @@ model User {
 
   // Push subscriptions
   pushSubscriptions PushSubscription[]
+  mobileDevices     MobileDevice[]
 
   // Content moderation
   quarantinedUploads    QuarantinedUpload[]
@@ -1154,6 +1155,24 @@ model PushSubscription {
   p256dh    String
   auth      String
   createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Ably push: one row per physical device registered for native push.
+// `ablyDeviceId` is the identity Ably assigns when the device activates push
+// via the ably_flutter SDK — we forward notifications by publishing to a
+// device-targeted push channel keyed off this id.
+model MobileDevice {
+  id           String   @id @default(cuid())
+  userId       String
+  ablyDeviceId String   @unique
+  platform     String   // "android" | "ios"
+  appVersion   String?
+  createdAt    DateTime @default(now())
+  lastSeenAt   DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getAblyRestClient } from "@/lib/ably";
 import { sendPushNotification } from "@/lib/web-push";
+import { sendMobilePushToUser } from "@/lib/ably-push";
 import type { NotificationType } from "@/generated/prisma/client";
 import { invalidateMany, cacheKeys } from "@/lib/cache";
 
@@ -147,6 +148,32 @@ export async function createNotification(params: CreateNotificationParams) {
     });
   } catch {
     // Non-critical — DB write and Ably succeeded
+  }
+
+  // Send native mobile push via Ably (FCM/APNs under the hood).
+  // Data payload lets the Flutter client deep-link on tap once routing
+  // is wired — keys must be strings per FCM/APNs constraints.
+  try {
+    const data: Record<string, string> = {
+      notificationId: notification.id,
+      type,
+    };
+    if (postId) data.postId = postId;
+    if (commentId) data.commentId = commentId;
+    if (messageId) data.messageId = messageId;
+    if (repostId) data.repostId = repostId;
+    if (tagId) data.tagId = tagId;
+    if (userListId) data.userListId = userListId;
+    if (notification.actorId) data.actorId = notification.actorId;
+    if (notification.actor?.username) data.actorUsername = notification.actor.username;
+
+    await sendMobilePushToUser(targetUserId, {
+      title: "VibrantSocial",
+      body: pushBody,
+      data,
+    });
+  } catch {
+    // Non-critical
   }
 
   return notification;
