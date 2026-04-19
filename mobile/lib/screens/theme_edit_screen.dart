@@ -50,6 +50,10 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
 
   bool _sparkleEnabled = false;
   String? _sparklePreset;
+  // True once the user explicitly chose a preset in this session —
+  // guards us from clobbering a web-set null (custom sparkles) back
+  // to "default" just because we had to prefill the UI somehow.
+  bool _sparklePresetTouched = false;
   int _sparkleInterval = 800;
   double _sparkleWind = 0;
   int _sparkleMaxSparkles = 50;
@@ -76,7 +80,11 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
     _containerColor = current['profileContainerColor'] as String?;
 
     _sparkleEnabled = current['sparklefallEnabled'] as bool? ?? false;
-    _sparklePreset = current['sparklefallPreset'] as String? ?? 'default';
+    // Preserve whatever the web set. Web users with raw custom sparkles
+    // (sparklefallSparkles JSON) will have preset = null; we surface
+    // that faithfully so the preset row shows nothing highlighted and
+    // we don't accidentally overwrite their custom glyphs on save.
+    _sparklePreset = current['sparklefallPreset'] as String?;
     _sparkleInterval =
         (current['sparklefallInterval'] as num?)?.toInt() ?? 800;
     _sparkleWind =
@@ -87,6 +95,7 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
         (current['sparklefallMinSize'] as num?)?.toInt() ?? 10;
     _sparkleMaxSize =
         (current['sparklefallMaxSize'] as num?)?.toInt() ?? 30;
+    _sparklePresetTouched = false;
   }
 
   void _markDirty() {
@@ -97,7 +106,10 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
     if (_saving) return;
     setState(() => _saving = true);
     try {
-      await ref.read(themeEditApiProvider).update({
+      // Only send the preset field if the user explicitly picked one
+      // in this session — otherwise we'd clobber a web-set custom
+      // sparkle selection (where preset is null by design).
+      final patch = <String, dynamic>{
         'profileBgImage': _bgImage,
         'usernameFont': _usernameFont,
         'profileContainerOpacity': _containerOpacity,
@@ -107,13 +119,22 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
         'profileSecondaryColor': _secondaryColor,
         'profileContainerColor': _containerColor,
         'sparklefallEnabled': _sparkleEnabled,
-        'sparklefallPreset': _sparklePreset,
         'sparklefallInterval': _sparkleInterval,
         'sparklefallWind': _sparkleWind,
         'sparklefallMaxSparkles': _sparkleMaxSparkles,
         'sparklefallMinSize': _sparkleMinSize,
         'sparklefallMaxSize': _sparkleMaxSize,
-      });
+      };
+      if (_sparklePresetTouched) {
+        patch['sparklefallPreset'] = _sparklePreset;
+        // The resolver prefers raw `sparklefallSparkles` over the
+        // preset's glyphs, so a web user who previously set custom
+        // sparkles would see those instead of the preset they just
+        // picked on mobile. Null them out so the preset actually
+        // renders.
+        patch['sparklefallSparkles'] = null;
+      }
+      await ref.read(themeEditApiProvider).update(patch);
       // Bust the theme cache so ThemedBackground repaints on next frame.
       final username =
           ref.read(sessionProvider)?.user.username;
@@ -816,7 +837,10 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
                     onTap: disabled
                         ? null
                         : () {
-                            setState(() => _sparklePreset = p.id);
+                            setState(() {
+                              _sparklePreset = p.id;
+                              _sparklePresetTouched = true;
+                            });
                             _markDirty();
                           },
                     child: Container(
