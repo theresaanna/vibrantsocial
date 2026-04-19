@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { corsJson, handleCorsPreflightRequest } from "@/lib/cors";
 import { getSessionFromRequest } from "@/lib/mobile-auth";
 import { extractMediaFromLexicalJson } from "@/lib/lexical-text";
+import { mobileSafePostFilter } from "@/lib/mobile-safe-content";
 import { publishedOnly } from "@/app/feed/feed-queries";
 
 const PAGE_SIZE = 30;
@@ -27,17 +28,6 @@ export async function GET(req: Request) {
   const session = await getSessionFromRequest(req);
   const viewerId = session?.user?.id ?? null;
 
-  let showNsfw = false;
-  let ageVerified = false;
-  if (viewerId) {
-    const viewer = await prisma.user.findUnique({
-      where: { id: viewerId },
-      select: { showNsfwContent: true, ageVerified: true },
-    });
-    showNsfw = viewer?.showNsfwContent ?? false;
-    ageVerified = !!viewer?.ageVerified;
-  }
-
   const dateFilter = cursor ? { lt: new Date(cursor) } : undefined;
   const fetchCount = PAGE_SIZE + 1;
 
@@ -51,13 +41,14 @@ export async function GET(req: Request) {
         ],
       };
 
+  // Hard-filter explicit content — Play policy requires mobile never
+  // display NSFW / sensitive / graphic material regardless of prefs.
   const rows = await prisma.post.findMany({
     where: {
       ...publishedOnly,
+      ...mobileSafePostFilter,
       marketplacePost: { isNot: null },
       ...visibilityFilter,
-      ...(!showNsfw ? { isNsfw: false } : {}),
-      ...(!ageVerified ? { isGraphicNudity: false } : {}),
       ...(dateFilter ? { createdAt: dateFilter } : {}),
     },
     orderBy: { createdAt: "desc" },

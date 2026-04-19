@@ -96,15 +96,26 @@ export async function generateTheme(
   if (!session?.user?.id) {
     return { success: false, error: "Not authenticated" };
   }
+  return generateThemeForUser(session.user.id, imageUrl);
+}
 
-  if (await isRateLimited(apiLimiter, `generate-theme:${session.user.id}`)) {
+/**
+ * Core palette-generation logic extracted so the Flutter-facing
+ * `/api/v1/theme/generate` route can call it with a Bearer-resolved
+ * user id (which `auth()` wouldn't find on its own).
+ */
+export async function generateThemeForUser(
+  userId: string,
+  imageUrl: string,
+): Promise<GenerateThemeResult> {
+  if (await isRateLimited(apiLimiter, `generate-theme:${userId}`)) {
     return {
       success: false,
       error: "Too many requests. Please try again later.",
     };
   }
 
-  const isPremium = await checkAndExpirePremium(session.user.id);
+  const isPremium = await checkAndExpirePremium(userId);
 
   if (!imageUrl.trim()) {
     return { success: false, error: "Please select a background image" };

@@ -77,6 +77,13 @@ dependencies:
   # still sees a toast.
   flutter_local_notifications: ^17.2.3
 
+  # Color picker for the theme editor — HSV wheel + hex input, same
+  # shape as the web's color controls.
+  flutter_colorpicker: ^1.1.0
+
+  # Needed for MediaType when uploading theme backgrounds as multipart.
+  http_parser: ^4.0.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

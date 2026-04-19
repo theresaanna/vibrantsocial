@@ -31,6 +31,25 @@ class CuratedListCard {
   }
 }
 
+/// A paginated page of list cards. Returned by `/api/v1/lists/all` for
+/// the "Everyone's lists" discovery tab.
+class CuratedListPage {
+  CuratedListPage({required this.lists, required this.nextCursor});
+
+  final List<CuratedListCard> lists;
+  final String? nextCursor;
+
+  factory CuratedListPage.fromJson(Map<String, dynamic> json) {
+    return CuratedListPage(
+      lists: (json['lists'] as List)
+          .map((c) =>
+              CuratedListCard.fromJson((c as Map).cast<String, dynamic>()))
+          .toList(),
+      nextCursor: json['nextCursor'] as String?,
+    );
+  }
+}
+
 /// The three sections of the index screen.
 class CuratedListOverview {
   CuratedListOverview({

@@ -4,6 +4,7 @@ import { corsHeaders, handleCorsPreflightRequest } from "@/lib/cors";
 import { getSessionFromRequest } from "@/lib/mobile-auth";
 import { resolveAssetBaseUrl, resolveTarget } from "@/lib/profile-lists";
 import { postSelect, serializePosts } from "@/lib/post-serializer";
+import { mobileSafePostFilter } from "@/lib/mobile-safe-content";
 
 const PAGE_SIZE = 20;
 
@@ -40,6 +41,9 @@ export async function GET(
 
   const rows = await prisma.post.findMany({
     where: {
+      // Play-policy: mobile always hides explicit content, even on
+      // the viewer's own profile.
+      ...mobileSafePostFilter,
       isAuthorDeleted: false,
       authorId: target.targetId,
       scheduledFor: null,

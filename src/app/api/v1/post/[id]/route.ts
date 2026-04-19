@@ -4,6 +4,7 @@ import { corsHeaders, handleCorsPreflightRequest } from "@/lib/cors";
 import { getSessionFromRequest } from "@/lib/mobile-auth";
 import { postSelect, serializePost } from "@/lib/post-serializer";
 import { resolveAssetBaseUrl } from "@/lib/profile-lists";
+import { isMobileSafePost } from "@/lib/mobile-safe-content";
 
 export async function OPTIONS(req: Request) {
   return handleCorsPreflightRequest(req);
@@ -28,6 +29,15 @@ export async function GET(
     select: postSelect,
   });
   if (!post) {
+    return NextResponse.json(
+      { error: "Post not found" },
+      { status: 404, headers: corsHeaders(req) },
+    );
+  }
+
+  // Play-policy: mobile never renders explicit posts. 404 looks the
+  // same as "post doesn't exist" from the client's perspective.
+  if (!isMobileSafePost(post)) {
     return NextResponse.json(
       { error: "Post not found" },
       { status: 404, headers: corsHeaders(req) },

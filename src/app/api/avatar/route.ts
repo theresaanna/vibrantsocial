@@ -6,6 +6,7 @@ import { scanImageBuffer, quarantineUpload } from "@/lib/arachnid-shield";
 import { getSessionFromRequest } from "@/lib/mobile-auth";
 import { uploadLimiter, checkRateLimit } from "@/lib/rate-limit";
 import { invalidate, cacheKeys } from "@/lib/cache";
+import { isVercelBlobUrl } from "@/lib/vercel-blob-url";
 
 const ALLOWED_TYPES = [
   "image/jpeg",
@@ -76,9 +77,9 @@ export async function POST(request: NextRequest) {
     select: { avatar: true, username: true },
   });
 
-  if (user?.avatar?.includes("blob.vercel-storage.com")) {
+  if (isVercelBlobUrl(user?.avatar)) {
     try {
-      await del(user.avatar);
+      await del(user!.avatar!);
     } catch {
       // Non-critical — old blob cleanup failed
     }

@@ -7,6 +7,7 @@ import { getSessionFromRequest } from "@/lib/mobile-auth";
 import { uploadLimiter, checkRateLimit } from "@/lib/rate-limit";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { checkAndExpirePremium } from "@/lib/premium";
+import { isVercelBlobUrl } from "@/lib/vercel-blob-url";
 
 const ALLOWED_TYPES = [
   "image/jpeg",
@@ -91,9 +92,9 @@ export async function POST(request: NextRequest) {
   const blob = await put(filename, file, { access: "public" });
 
   // Delete old background if it's a Vercel Blob URL
-  if (user?.profileBgImage?.includes("blob.vercel-storage.com")) {
+  if (isVercelBlobUrl(user?.profileBgImage)) {
     try {
-      await del(user.profileBgImage);
+      await del(user!.profileBgImage!);
     } catch {
       // Non-critical — old blob cleanup failed
     }
@@ -123,9 +124,9 @@ export async function DELETE(request: NextRequest) {
     select: { profileBgImage: true, username: true },
   });
 
-  if (user?.profileBgImage?.includes("blob.vercel-storage.com")) {
+  if (isVercelBlobUrl(user?.profileBgImage)) {
     try {
-      await del(user.profileBgImage);
+      await del(user!.profileBgImage!);
     } catch {
       // Non-critical
     }

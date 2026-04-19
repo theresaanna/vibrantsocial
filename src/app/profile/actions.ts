@@ -10,6 +10,7 @@ import { revalidatePath } from "next/cache";
 import { isValidFrameId } from "@/lib/profile-frames";
 import { checkAndExpirePremium } from "@/lib/premium";
 import { invalidate, cacheKeys } from "@/lib/cache";
+import { isVercelBlobUrl } from "@/lib/vercel-blob-url";
 import { sendEmailVerificationEmail, sendPasswordResetEmail } from "@/lib/email";
 import { inngest } from "@/lib/inngest";
 
@@ -182,9 +183,9 @@ export async function removeAvatar(): Promise<ActionState> {
   });
 
   // Delete from Vercel Blob if it's a blob URL
-  if (user?.avatar?.includes("blob.vercel-storage.com")) {
+  if (isVercelBlobUrl(user?.avatar)) {
     try {
-      await del(user.avatar);
+      await del(user!.avatar!);
     } catch {
       // Non-critical — blob cleanup failed
     }
@@ -491,12 +492,12 @@ export async function deleteAccount(
   // Step 1: Collect all media blob URLs before deletion
   const blobUrls: string[] = [];
 
-  if (user.avatar?.includes("blob.vercel-storage.com")) {
-    blobUrls.push(user.avatar);
+  if (isVercelBlobUrl(user.avatar)) {
+    blobUrls.push(user.avatar!);
   }
 
-  if (user.profileBgImage?.includes("blob.vercel-storage.com")) {
-    blobUrls.push(user.profileBgImage);
+  if (isVercelBlobUrl(user.profileBgImage)) {
+    blobUrls.push(user.profileBgImage!);
   }
 
   const userPosts = await prisma.post.findMany({
@@ -515,8 +516,8 @@ export async function deleteAccount(
   });
 
   for (const msg of userMessages) {
-    if (msg.mediaUrl?.includes("blob.vercel-storage.com")) {
-      blobUrls.push(msg.mediaUrl);
+    if (isVercelBlobUrl(msg.mediaUrl)) {
+      blobUrls.push(msg.mediaUrl!);
     }
   }
 

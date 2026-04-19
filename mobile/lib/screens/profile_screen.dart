@@ -115,9 +115,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       theme.container.opacity,
     );
 
-    return ThemedBackground(
-      theme: theme,
-      child: ListView(
+    final body = ListView(
         controller: _scrollCtrl,
         padding: EdgeInsets.zero,
         children: [
@@ -197,8 +195,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             ..._postTail(postsState),
           const SizedBox(height: 24),
         ],
-      ),
-    );
+      );
+
+    return ThemedBackground(theme: theme, child: body);
   }
 
   /// Build the profile's posts tail: section header, rendered post cards,

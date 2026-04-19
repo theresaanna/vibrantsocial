@@ -12,6 +12,7 @@ import 'feed_screen.dart';
 import 'marketplace_screen.dart';
 import 'messages_screen.dart';
 import 'profile_screen.dart';
+import 'theme_edit_screen.dart';
 
 /// Four-tab authenticated shell: Feed, Messages (DMs), Chatrooms, Me.
 class HomeShell extends ConsumerStatefulWidget {
@@ -99,6 +100,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                               builder: (_) => const CuratedListsScreen(),
                             ));
                             break;
+                          case 'appearance':
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => const ThemeEditScreen(),
+                            ));
+                            break;
                           case 'signout':
                             ref.read(sessionProvider.notifier).clear();
                             break;
@@ -118,6 +124,14 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                           child: ListTile(
                             leading: Icon(Icons.playlist_play),
                             title: Text('Lists'),
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'appearance',
+                          child: ListTile(
+                            leading: Icon(Icons.palette_outlined),
+                            title: Text('Appearance'),
                             contentPadding: EdgeInsets.zero,
                           ),
                         ),

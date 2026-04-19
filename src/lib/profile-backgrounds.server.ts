@@ -132,17 +132,31 @@ export function getAllProfileBackgrounds(): BackgroundDefinition[] {
 }
 
 /**
- * Checks if a src path points to a file in the /backgrounds/ directory.
- * Works server-side by verifying the file exists on disk.
+ * Allowlist of valid preset `src` values, built once at import time
+ * by scanning the backgrounds directories. Used by
+ * `isPresetBackgroundSrc` so the validator never passes user input
+ * to a path / filesystem API — it's a pure set-membership check.
+ */
+let _presetSrcAllowlist: Set<string> | null = null;
+function getPresetSrcAllowlist(): Set<string> {
+  if (_presetSrcAllowlist) return _presetSrcAllowlist;
+  const bgs = [
+    ...getProfileBackgrounds(),
+    ...getPremiumProfileBackgrounds(),
+  ];
+  _presetSrcAllowlist = new Set(bgs.map((b) => b.src));
+  return _presetSrcAllowlist;
+}
+
+/**
+ * Checks if a src path matches one of our known preset backgrounds.
+ * Pure allowlist lookup against a set materialized at boot from the
+ * backgrounds directories — `src` is never used to construct a file
+ * path, so we can't be tricked by traversal payloads like
+ * `/backgrounds/../../etc/passwd`.
  */
 export function isPresetBackgroundSrc(src: string): boolean {
-  if (!src.startsWith("/backgrounds/")) return false;
-  try {
-    const filePath = path.join(process.cwd(), "public", src);
-    return fs.existsSync(filePath);
-  } catch {
-    return false;
-  }
+  return getPresetSrcAllowlist().has(src);
 }
 
 /**
