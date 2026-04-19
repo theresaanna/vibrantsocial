@@ -53,6 +53,7 @@ import {
 } from "@/lib/profile-backgrounds.server";
 import { isValidPreset, parseJsonArray, clamp } from "@/lib/sparklefall-presets";
 import { invalidate, cacheKeys } from "@/lib/cache";
+import { revalidatePath } from "next/cache";
 
 export async function OPTIONS(req: Request) {
   return handleCorsPreflightRequest(req);
@@ -270,6 +271,12 @@ export async function POST(req: Request) {
 
   if (user.username) {
     await invalidate(cacheKeys.userProfile(user.username));
+    // Bust the web-side Next.js render cache so an open browser tab
+    // picks up the change without a manual reload. Mirrors what the
+    // web `updateTheme` server action does so mobile ↔ web stay in
+    // lockstep when either side saves.
+    revalidatePath(`/${user.username}`);
+    revalidatePath("/theme");
   }
 
   return corsJson(req, { ok: true });
