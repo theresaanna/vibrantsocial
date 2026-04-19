@@ -69,22 +69,32 @@ export function ListsPageClient({ lists, collaboratingLists }: { lists: ListItem
     <div>
       <div className="rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-900">
         {/* Create list form */}
-        <form action={createAction} className="mb-6 flex gap-2">
-          <input
-            type="text"
-            name="name"
-            placeholder="New list name..."
-            maxLength={50}
-            required
-            className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
-          />
-          <button
-            type="submit"
-            disabled={isCreating}
-            className="rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50"
-          >
-            {isCreating ? "Creating..." : "Create"}
-          </button>
+        <form action={createAction} className="mb-6 space-y-2">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              name="name"
+              placeholder="New list name..."
+              maxLength={50}
+              required
+              className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
+            />
+            <button
+              type="submit"
+              disabled={isCreating}
+              className="rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50"
+            >
+              {isCreating ? "Creating..." : "Create"}
+            </button>
+          </div>
+          <label className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+            <input
+              type="checkbox"
+              name="isNsfw"
+              className="h-4 w-4 rounded border-zinc-300 text-rose-600 focus:ring-rose-500 dark:border-zinc-600 dark:bg-zinc-800"
+            />
+            Mark as NSFW (hidden from users who haven&apos;t opted in)
+          </label>
         </form>
 
         {createState.message && !createState.success && (

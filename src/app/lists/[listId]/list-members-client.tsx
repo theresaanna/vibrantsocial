@@ -9,6 +9,7 @@ import {
   removeMemberFromList,
   renameList,
   toggleListPrivacy,
+  toggleListNsfw,
   searchUsersForCollaborator,
   addCollaboratorToList,
   removeCollaboratorFromList,
@@ -234,10 +235,46 @@ function PrivacyToggle({ listId, isPrivate }: { listId: string; isPrivate: boole
   );
 }
 
+function NsfwToggle({ listId, isNsfw }: { listId: string; isNsfw: boolean }) {
+  const [, formAction, isPending] = useActionState(toggleListNsfw, {
+    success: false,
+    message: "",
+  });
+
+  return (
+    <form action={formAction} className="mb-6">
+      <input type="hidden" name="listId" value={listId} />
+      <div className="flex items-center justify-between rounded-xl bg-zinc-50 p-4 dark:bg-zinc-800">
+        <div>
+          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">NSFW list</p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Hidden from viewers who haven&apos;t enabled NSFW content
+          </p>
+        </div>
+        <button
+          type="submit"
+          disabled={isPending}
+          aria-pressed={isNsfw}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 ${
+            isNsfw ? "bg-rose-600" : "bg-zinc-300 dark:bg-zinc-600"
+          }`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              isNsfw ? "translate-x-6" : "translate-x-1"
+            }`}
+          />
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export function ListMembersClient({
   listId,
   listName,
   isPrivate,
+  isNsfw,
   members,
   isOwner,
   canManageMembers,
@@ -246,6 +283,7 @@ export function ListMembersClient({
   listId: string;
   listName: string;
   isPrivate: boolean;
+  isNsfw: boolean;
   members: MemberEntry[];
   isOwner: boolean;
   canManageMembers: boolean;
@@ -316,6 +354,7 @@ export function ListMembersClient({
 
       {/* Privacy toggle (owner only) */}
       {isOwner && <PrivacyToggle listId={listId} isPrivate={isPrivate} />}
+      {isOwner && <NsfwToggle listId={listId} isNsfw={isNsfw} />}
 
       {/* Search to add members (owner or collaborator) */}
       {canManageMembers && (

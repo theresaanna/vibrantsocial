@@ -151,7 +151,7 @@ describe("createList", () => {
     const result = await createList(prevState, makeFormData({ name: "My List" }));
     expect(result.success).toBe(true);
     expect(mockPrisma.userList.create).toHaveBeenCalledWith({
-      data: { name: "My List", ownerId: "u1" },
+      data: { name: "My List", ownerId: "u1", isNsfw: false },
     });
   });
 });
