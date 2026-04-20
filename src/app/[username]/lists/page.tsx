@@ -4,6 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getListsForUser } from "@/app/lists/actions";
 import { ShareListButton } from "@/components/share-list-button";
+import { NsfwBadge } from "@/components/nsfw-badge";
 import Link from "next/link";
 
 interface UserListsPageProps {
@@ -66,6 +67,11 @@ export default async function UserListsPage({ params }: UserListsPageProps) {
                     <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                       {list.name}
                     </span>
+                    {list.isNsfw && (
+                      <span className="ml-2 align-middle">
+                        <NsfwBadge />
+                      </span>
+                    )}
                     <span className="ml-2 text-sm text-zinc-500 dark:text-zinc-400">
                       {list._count.members} {list._count.members === 1 ? "member" : "members"}
                     </span>

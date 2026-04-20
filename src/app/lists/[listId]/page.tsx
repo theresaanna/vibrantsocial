@@ -7,6 +7,7 @@ import { getListMembers, getListCollaborators, isSubscribedToList } from "../act
 import { ListMembersClient } from "./list-members-client";
 import { SubscribeListButton } from "./subscribe-list-button";
 import { ShareListButton } from "@/components/share-list-button";
+import { NsfwBadge } from "@/components/nsfw-badge";
 import { FramedAvatar } from "@/components/framed-avatar";
 import { userThemeSelect, buildUserTheme, NO_THEME } from "@/lib/user-theme";
 import { ThemedPage } from "@/components/themed-page";
@@ -82,6 +83,11 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
                 {list.isPrivate && (
                   <span className="ml-1 inline-flex items-center rounded bg-zinc-200 px-1.5 py-0.5 text-[10px] font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
                     Private
+                  </span>
+                )}
+                {list.isNsfw && (
+                  <span className="ml-1">
+                    <NsfwBadge />
                   </span>
                 )}
               </div>

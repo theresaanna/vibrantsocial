@@ -5,11 +5,13 @@ import Link from "next/link";
 import { createList, deleteList } from "./actions";
 import { ShareListButton } from "@/components/share-list-button";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { NsfwBadge } from "@/components/nsfw-badge";
 import { useState } from "react";
 
 interface ListItem {
   id: string;
   name: string;
+  isNsfw: boolean;
   _count: { members: number };
 }
 
@@ -117,12 +119,15 @@ export function ListsPageClient({ lists, collaboratingLists }: { lists: ListItem
                 className="flex items-center gap-3 rounded-xl bg-zinc-50 p-4 dark:bg-zinc-800"
               >
                 <div className="min-w-0 flex-1">
-                  <Link
-                    href={`/lists/${list.id}`}
-                    className="block text-sm font-semibold text-zinc-900 hover:underline dark:text-zinc-100"
-                  >
-                    {list.name}
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/lists/${list.id}`}
+                      className="text-sm font-semibold text-zinc-900 hover:underline dark:text-zinc-100"
+                    >
+                      {list.name}
+                    </Link>
+                    {list.isNsfw && <NsfwBadge />}
+                  </div>
                   <span className="text-sm text-zinc-500 dark:text-zinc-400">
                     {list._count.members} {list._count.members === 1 ? "member" : "members"}
                   </span>
@@ -155,12 +160,15 @@ export function ListsPageClient({ lists, collaboratingLists }: { lists: ListItem
                     className="flex items-center gap-3 rounded-xl bg-zinc-50 p-4 dark:bg-zinc-800"
                   >
                     <div className="min-w-0 flex-1">
-                      <Link
-                        href={`/lists/${list.id}`}
-                        className="block text-sm font-semibold text-zinc-900 hover:underline dark:text-zinc-100"
-                      >
-                        {list.name}
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/lists/${list.id}`}
+                          className="text-sm font-semibold text-zinc-900 hover:underline dark:text-zinc-100"
+                        >
+                          {list.name}
+                        </Link>
+                        {list.isNsfw && <NsfwBadge />}
+                      </div>
                       <span className="text-sm text-zinc-500 dark:text-zinc-400">
                         {list._count.members} {list._count.members === 1 ? "member" : "members"}
                         {" · "}by {ownerName}
