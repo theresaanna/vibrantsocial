@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { suspendUser, unsuspendUser, reviewViolation, reviewAppeal, reviewReport, removeWarning, resetWarnings, applyContentWarning, removeContentWarning, searchPostsForWarning } from "./actions";
 import { PremiumTab, type PremiumUser, type PremiumCompRecord } from "./premium-tab";
+import { AccountsTab } from "./accounts-tab";
 
-type Tab = "reports" | "violations" | "appeals" | "users" | "warnings" | "premium" | "log";
+type Tab = "reports" | "violations" | "appeals" | "users" | "warnings" | "premium" | "accounts" | "log";
 
 interface ReportRecord {
   id: string;
@@ -95,6 +96,7 @@ export function AdminDashboard({
           ["users", "Users"],
           ["warnings", "Content Warnings"],
           ["premium", "Premium"],
+          ["accounts", "Accounts"],
           ["log", "Action Log"],
         ] as [Tab, string][]).map(([key, label]) => (
           <button
@@ -117,6 +119,7 @@ export function AdminDashboard({
       {tab === "users" && <UsersTab users={flaggedUsers} />}
       {tab === "warnings" && <ContentWarningsTab />}
       {tab === "premium" && <PremiumTab users={premiumUsers} comps={recentComps} />}
+      {tab === "accounts" && <AccountsTab />}
       {tab === "log" && <ActionLogTab actions={recentActions} />}
     </div>
   );
