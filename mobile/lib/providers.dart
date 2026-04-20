@@ -9,6 +9,7 @@ import 'api/avatar_frames_api.dart';
 import 'api/chatroom_api.dart';
 import 'api/interaction_api.dart';
 import 'api/link_preview_api.dart';
+import 'api/links_page_api.dart';
 import 'api/media_api.dart';
 import 'api/media_feed_api.dart';
 import 'api/messaging_api.dart';
@@ -69,6 +70,10 @@ final profileApiProvider = Provider<ProfileApi>(
 
 final profileEditApiProvider = Provider<ProfileEditApi>(
   (ref) => ProfileEditApi(ref.watch(dioProvider)),
+);
+
+final linksPageApiProvider = Provider<LinksPageApi>(
+  (ref) => LinksPageApi(ref.watch(dioProvider)),
 );
 
 /// Family: fetches the full profile paint for a username.

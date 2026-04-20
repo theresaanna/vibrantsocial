@@ -12,6 +12,7 @@ import '../models/resolved_theme.dart';
 import '../providers.dart';
 import '../widgets/framed_avatar.dart';
 import '../widgets/themed_background.dart';
+import 'links_page_screen.dart';
 import 'theme_edit_screen.dart';
 
 /// Flutter edit-profile screen. Mirrors `/profile` on web minus the
@@ -502,10 +503,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 Icons.history,
                 'Bio revision history',
               ),
-              _webLink(
-                Icons.link_rounded,
-                'Links page',
-                subtitle: 'Customize your /@username links.',
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.link_rounded),
+                title: const Text('Links page'),
+                subtitle: const Text(
+                  'Customize your links.vibrantsocial.app/@username page.',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const LinksPageScreen(),
+                  ),
+                ),
               ),
               const SizedBox(height: 4),
               _webLink(

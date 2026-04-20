@@ -10,8 +10,11 @@
  * write them.
  */
 import { prisma } from "@/lib/prisma";
-import { corsJson, handleCorsPreflightRequest } from "@/lib/cors";
+import { corsJson, corsHeaders, handleCorsPreflightRequest } from "@/lib/cors";
 import { requireViewer } from "@/lib/require-viewer";
+import { getSessionFromRequest } from "@/lib/mobile-auth";
+import { withMobileSession } from "@/lib/mobile-session-context";
+import { NextResponse } from "next/server";
 import { updateMobileProfile } from "@/app/profile/actions";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
 
@@ -121,8 +124,13 @@ const BOOLEAN_KEYS = [
 ] as const;
 
 export async function PUT(req: Request) {
-  const viewer = await requireViewer(req);
-  if (!viewer.ok) return viewer.response;
+  const session = await getSessionFromRequest(req);
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "Not authenticated" },
+      { status: 401, headers: corsHeaders(req) },
+    );
+  }
 
   let body: unknown;
   try {
@@ -167,7 +175,13 @@ export async function PUT(req: Request) {
     }
   }
 
-  const result = await updateMobileProfile(patch);
+  // Seed the AsyncLocalStorage mobile session so that server actions
+  // downstream of here — which rely on `auth()` / `requireAuthWith-
+  // RateLimit` — see the bearer-token session. Without this wrap the
+  // delegated `updateMobileProfile` returns "Not authenticated".
+  const result = await withMobileSession(session, () =>
+    updateMobileProfile(patch),
+  );
   if (!result.success) {
     return corsJson(req, { error: result.message }, { status: 400 });
   }
