@@ -151,9 +151,20 @@ export function CommentSection({
         return c;
       });
     }
-    setComments(updateDeep);
+    let previous: CommentData[] = [];
+    setComments((prev) => {
+      previous = prev;
+      return updateDeep(prev);
+    });
 
-    await toggleCommentReaction({ commentId, emoji });
+    try {
+      const result = await toggleCommentReaction({ commentId, emoji });
+      if (!result.success) {
+        setComments(previous);
+      }
+    } catch {
+      setComments(previous);
+    }
   }, [currentUserId, setComments]);
 
   const handleEdit = useCallback(async (commentId: string, content: string) => {

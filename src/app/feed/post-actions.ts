@@ -1055,6 +1055,9 @@ export async function toggleCommentReaction(data: {
     // Non-critical
   }
 
+  revalidatePath(`/post/${comment.postId}`);
+  revalidatePath("/feed");
+
   return { success: true, message: existing ? "Reaction removed" : "Reaction added" };
 }
 
