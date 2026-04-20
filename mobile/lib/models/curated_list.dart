@@ -10,6 +10,7 @@ class CuratedListCard {
     required this.id,
     required this.name,
     required this.isPrivate,
+    required this.isNsfw,
     required this.memberCount,
     required this.ownerUsername,
   });
@@ -17,6 +18,11 @@ class CuratedListCard {
   final String id;
   final String name;
   final bool isPrivate;
+
+  /// Whether the list's owner has marked the list as NSFW. Only returned
+  /// today by `GET /api/v1/lists/all` (discovery); defaults to `false`
+  /// for other payloads that don't surface the flag.
+  final bool isNsfw;
   final int memberCount;
   final String? ownerUsername;
 
@@ -25,6 +31,7 @@ class CuratedListCard {
       id: json['id'] as String,
       name: json['name'] as String,
       isPrivate: json['isPrivate'] as bool,
+      isNsfw: json['isNsfw'] as bool? ?? false,
       memberCount: (json['memberCount'] as num).toInt(),
       ownerUsername: json['ownerUsername'] as String?,
     );

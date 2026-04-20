@@ -31,21 +31,19 @@ class ChatroomListState {
 }
 
 class ChatroomListController extends StateNotifier<ChatroomListState> {
-  ChatroomListController(this._api, {required this.showNsfw})
-      : super(ChatroomListState.initial) {
+  ChatroomListController(this._api) : super(ChatroomListState.initial) {
     refresh();
   }
 
   final ChatroomApi _api;
-  final bool showNsfw;
 
   Future<void> refresh() async {
     if (!mounted) return;
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final rooms = await _api.listRooms(showNsfw: showNsfw);
-      // Provider can be torn down mid-fetch (e.g. when the NSFW pref
-      // flips and our owning provider rebuilds). Drop late results.
+      // Server-side Play policy always hides NSFW rooms from mobile
+      // callers — no flag needs to be passed.
+      final rooms = await _api.listRooms();
       if (!mounted) return;
       state = state.copyWith(rooms: rooms, isLoading: false);
     } catch (err) {

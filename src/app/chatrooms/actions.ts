@@ -7,6 +7,7 @@ import { createNotification } from "@/lib/notifications";
 import { inngest } from "@/lib/inngest";
 import { cached, cacheKeys, cacheTags } from "@/lib/cache";
 import { unstable_cache } from "next/cache";
+import { isMobileCaller } from "@/lib/mobile-session-context";
 import {
   requireAuthWithRateLimit,
   isActionError,
@@ -154,9 +155,14 @@ export async function getChatRoomMessages(
 
   const room = await getOrCreateRoom(roomSlug);
 
+  // Play-policy: mobile callers never see messages flagged NSFW by the
+  // async moderation scan, regardless of the viewer's account pref.
+  const hideNsfwMessages = isMobileCaller();
+
   const messages = await prisma.chatRoomMessage.findMany({
     where: {
       roomId: room.id,
+      ...(hideNsfwMessages ? { isNsfw: false } : {}),
       ...(cursor ? { createdAt: { lt: new Date(cursor) } } : {}),
     },
     include: {
@@ -726,10 +732,15 @@ export interface ChatRoomListItem {
 
 /**
  * List chat rooms. NSFW rooms are excluded unless `showNsfw` is true.
+ *
+ * Play-policy: mobile callers never see NSFW rooms. The `showNsfw`
+ * argument is ignored (forced to `false`) when the request originated
+ * from the mobile app, regardless of what the client sent.
  */
 export async function listChatRooms(showNsfw = false): Promise<ChatRoomListItem[]> {
+  const effectiveShowNsfw = isMobileCaller() ? false : showNsfw;
   const rooms = await prisma.chatRoom.findMany({
-    where: showNsfw ? {} : { isNsfw: false },
+    where: effectiveShowNsfw ? {} : { isNsfw: false },
     select: {
       id: true,
       slug: true,
@@ -794,9 +805,12 @@ export async function listTopActiveChatRooms(
   limit = 5,
   showNsfw = false,
 ): Promise<{ id: string; slug: string; name: string; isNsfw: boolean; recentMessageCount: number }[]> {
-  const key = cacheKeys.activeChatRooms(limit, showNsfw);
+  // Play-policy: mobile callers never see NSFW rooms even if the client
+  // passes `showNsfw=true`.
+  const effectiveShowNsfw = isMobileCaller() ? false : showNsfw;
+  const key = cacheKeys.activeChatRooms(limit, effectiveShowNsfw);
   return unstable_cache(
-    () => cached(key, () => queryTopActiveChatRooms(limit, showNsfw), ACTIVE_CHATROOMS_TTL_SECONDS),
+    () => cached(key, () => queryTopActiveChatRooms(limit, effectiveShowNsfw), ACTIVE_CHATROOMS_TTL_SECONDS),
     [key],
     { revalidate: ACTIVE_CHATROOMS_TTL_SECONDS, tags: [cacheTags.activeChatrooms] },
   )();

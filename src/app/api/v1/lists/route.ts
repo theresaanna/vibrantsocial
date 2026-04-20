@@ -29,9 +29,12 @@ export async function GET(req: Request) {
   if (!viewer.ok) return viewer.response;
   const userId = viewer.userId;
 
+  // Play-policy: mobile never surfaces NSFW lists — even the viewer's
+  // own. List management (including NSFW lists) lives on the web; the
+  // app should hide them everywhere.
   const [owned, collaborating, subscribed] = await Promise.all([
     prisma.userList.findMany({
-      where: { ownerId: userId },
+      where: { ownerId: userId, isNsfw: false },
       include: {
         _count: { select: { members: true } },
         owner: { select: { username: true } },
@@ -39,7 +42,7 @@ export async function GET(req: Request) {
       orderBy: { createdAt: "asc" },
     }),
     prisma.userList.findMany({
-      where: { collaborators: { some: { userId } } },
+      where: { collaborators: { some: { userId } }, isNsfw: false },
       include: {
         _count: { select: { members: true } },
         owner: { select: { username: true } },
@@ -47,7 +50,7 @@ export async function GET(req: Request) {
       orderBy: { createdAt: "asc" },
     }),
     prisma.userListSubscription.findMany({
-      where: { userId },
+      where: { userId, list: { isNsfw: false } },
       include: {
         list: {
           include: {

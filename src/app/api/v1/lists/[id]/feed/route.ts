@@ -33,9 +33,14 @@ export async function GET(
 
   const list = await prisma.userList.findUnique({
     where: { id },
-    select: { ownerId: true, isPrivate: true },
+    select: { ownerId: true, isPrivate: true, isNsfw: true },
   });
   if (!list) {
+    return corsJson(req, { error: "Not found" }, { status: 404 });
+  }
+  // Play-policy: NSFW lists are invisible on mobile (matches the detail
+  // route's 404).
+  if (list.isNsfw) {
     return corsJson(req, { error: "Not found" }, { status: 404 });
   }
 

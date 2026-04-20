@@ -13,7 +13,6 @@ import 'api/media_api.dart';
 import 'api/media_feed_api.dart';
 import 'api/messaging_api.dart';
 import 'api/post_api.dart';
-import 'api/prefs_api.dart';
 import 'api/profile_api.dart';
 import 'api/push_api.dart';
 import 'api/rpc_client.dart';
@@ -23,7 +22,6 @@ import 'controllers/chatroom_list_controller.dart';
 import 'controllers/conversation_list_controller.dart';
 import 'controllers/media_list_controller.dart';
 import 'controllers/message_requests_controller.dart';
-import 'controllers/nsfw_pref_controller.dart';
 import 'controllers/post_list_controller.dart';
 import 'controllers/profile_list_controller.dart';
 import 'models/avatar_frame.dart';
@@ -105,14 +103,13 @@ final mediaApiProvider = Provider<MediaApi>(
   (ref) => MediaApi(ref.watch(dioProvider)),
 );
 
-/// Home feed controller. Watches the NSFW pref so flipping the toggle
-/// in the header reissues the feed query (server-side filter).
+/// Home feed controller. The server hard-filters NSFW / sensitive /
+/// graphic content for every `/api/v1` request regardless of account
+/// prefs (Play policy), so this provider no longer needs to invalidate
+/// on a toggle.
 final feedProvider =
     StateNotifierProvider<PostListController, PostListState>((ref) {
   final api = ref.watch(postApiProvider);
-  // Establish a dependency without using the value directly — the
-  // server reads the pref from the user record on each request.
-  ref.watch(nsfwPrefProvider);
   return PostListController((cursor) => api.fetchFeed(cursor: cursor));
 });
 
@@ -210,10 +207,6 @@ final linkPreviewApiProvider = Provider<LinkPreviewApi>(
   (ref) => LinkPreviewApi(ref.watch(rpcClientProvider)),
 );
 
-final prefsApiProvider = Provider<PrefsApi>(
-  (ref) => PrefsApi(ref.watch(rpcClientProvider)),
-);
-
 final avatarFramesApiProvider = Provider<AvatarFramesApi>(
   (ref) => AvatarFramesApi(ref.watch(rpcClientProvider)),
 );
@@ -229,12 +222,12 @@ final mediaFeedApiProvider = Provider<MediaFeedApi>(
   (ref) => MediaFeedApi(ref.watch(rpcClientProvider)),
 );
 
-/// Media-only home feed (posts containing images/videos/YouTube).
-/// Watches NSFW pref so flipping the toggle reissues with new filter.
+/// Media-only home feed (posts containing images/videos/YouTube). The
+/// server hard-filters explicit content for every `/api/v1` request
+/// (Play policy), so no NSFW pref dependency is needed.
 final mediaFeedProvider =
     StateNotifierProvider<MediaListController, MediaListState>((ref) {
   final api = ref.watch(mediaFeedApiProvider);
-  ref.watch(nsfwPrefProvider);
   return MediaListController((cursor) => api.fetchFeed(cursor: cursor));
 });
 
@@ -242,19 +235,18 @@ final mediaFeedProvider =
 final profileMediaProvider = StateNotifierProvider.autoDispose
     .family<MediaListController, MediaListState, String>((ref, username) {
   final api = ref.watch(mediaFeedApiProvider);
-  ref.watch(nsfwPrefProvider);
   return MediaListController(
     (cursor) => api.fetchProfile(username, cursor: cursor),
   );
 });
 
-/// Viewer's NSFW visibility preference. Bootstraps from the server on
-/// first read; flipping it triggers refresh of feed + chatroom lists so
-/// they reflect the new filter.
-final nsfwPrefProvider =
-    StateNotifierProvider<NsfwPrefController, bool>((ref) {
-  return NsfwPrefController(ref.watch(prefsApiProvider));
-});
+/// NSFW visibility on the Flutter app is **permanently off** (Google
+/// Play policy). This provider exists only so legacy call sites still
+/// compile; its value is always `false` and cannot be toggled. The real
+/// enforcement is on the server — `/api/v1/*` and any RPC action that
+/// detects a mobile caller hard-filter NSFW content unconditionally,
+/// even when the viewer's account-level `showNsfwContent` pref is on.
+final nsfwPrefProvider = Provider<bool>((_) => false);
 
 /// Server fetches OG metadata; cached in Redis for 7 days. Family keyed
 /// by URL — autoDispose so we drop the result when no message bubble is
@@ -314,15 +306,11 @@ final unreadDmCountProvider = Provider<int>((ref) {
   return total;
 });
 
-/// Browsable public chatrooms. Rebuilds when the NSFW pref flips so the
-/// query reissues with the right `showNsfw` flag.
+/// Browsable public chatrooms. NSFW rooms are hard-filtered server-side
+/// for any mobile caller — no client-side flag needed.
 final chatroomListProvider = StateNotifierProvider<
     ChatroomListController, ChatroomListState>((ref) {
-  final showNsfw = ref.watch(nsfwPrefProvider);
-  return ChatroomListController(
-    ref.watch(chatroomApiProvider),
-    showNsfw: showNsfw,
-  );
+  return ChatroomListController(ref.watch(chatroomApiProvider));
 });
 
 /// Paginated messages for a DM conversation. Keyed by conversationId so

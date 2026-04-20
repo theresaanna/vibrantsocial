@@ -9,8 +9,11 @@ class ChatroomApi {
 
   final RpcClient _rpc;
 
-  Future<List<ChatRoomListItem>> listRooms({bool showNsfw = false}) async {
-    final list = await _rpc.callList('listChatRooms', [showNsfw]);
+  Future<List<ChatRoomListItem>> listRooms() async {
+    // NSFW rooms are filtered server-side for mobile callers (Play
+    // policy). The underlying RPC still accepts a `showNsfw` arg for
+    // web, but passing it from the app would be a no-op, so omit.
+    final list = await _rpc.callList('listChatRooms', const [false]);
     return list
         .map((r) => ChatRoomListItem.fromJson((r as Map).cast<String, dynamic>()))
         .toList();

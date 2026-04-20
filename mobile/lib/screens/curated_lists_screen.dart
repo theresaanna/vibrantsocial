@@ -244,6 +244,8 @@ class _EveryoneListsState extends ConsumerState<_EveryoneLists> {
 
   @override
   Widget build(BuildContext context) {
+    // NSFW lists are hard-filtered server-side for mobile callers
+    // (Play policy) — no client-side filter needed.
     if (_error != null && _items.isEmpty) {
       return _ErrorView(error: _error!, onRetry: _refresh);
     }

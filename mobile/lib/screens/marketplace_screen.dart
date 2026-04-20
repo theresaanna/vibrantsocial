@@ -88,12 +88,6 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
   Widget build(BuildContext context) {
     final viewerTheme = ref.watch(viewerThemeProvider);
 
-    // Re-fetch the grid when the NSFW pref flips — server filters the
-    // feed based on the caller's pref on every request.
-    ref.listen<bool>(nsfwPrefProvider, (_, __) {
-      if (mounted) _refresh();
-    });
-
     return ThemedBackground(
       theme: viewerTheme,
       child: Scaffold(

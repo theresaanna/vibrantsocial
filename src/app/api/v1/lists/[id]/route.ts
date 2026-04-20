@@ -30,6 +30,7 @@ export async function GET(
       name: true,
       ownerId: true,
       isPrivate: true,
+      isNsfw: true,
       createdAt: true,
       owner: {
         select: {
@@ -45,6 +46,12 @@ export async function GET(
     },
   });
   if (!list) {
+    return corsJson(req, { error: "Not found" }, { status: 404 });
+  }
+
+  // Play-policy: NSFW lists are invisible on mobile — even to the
+  // owner. List management lives on the web.
+  if (list.isNsfw) {
     return corsJson(req, { error: "Not found" }, { status: 404 });
   }
 

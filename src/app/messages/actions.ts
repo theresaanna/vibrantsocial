@@ -9,6 +9,7 @@ import { getAblyRestClient } from "@/lib/ably";
 import { getAllBlockRelatedIds } from "@/app/feed/block-actions";
 import { cached, cacheKeys } from "@/lib/cache";
 import { inngest } from "@/lib/inngest";
+import { isMobileCaller } from "@/lib/mobile-session-context";
 import {
   requireAuthWithRateLimit,
   isActionError,
@@ -196,8 +197,15 @@ export async function getMessages(
   });
   if (!participant) return { messages: [], nextCursor: null };
 
+  // Play-policy: mobile callers never see DMs flagged NSFW by the async
+  // moderation scan, regardless of the viewer's account pref.
+  const hideNsfwMessages = isMobileCaller();
+
   const messages = await prisma.message.findMany({
-    where: { conversationId },
+    where: {
+      conversationId,
+      ...(hideNsfwMessages ? { isNsfw: false } : {}),
+    },
     orderBy: { createdAt: "desc" },
     take: 51,
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),

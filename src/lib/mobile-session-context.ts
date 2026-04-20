@@ -24,3 +24,13 @@ export function withMobileSession<T>(session: Session, fn: () => T): T {
 export function getMobileSession(): Session | undefined {
   return mobileSessionStorage.getStore();
 }
+
+/**
+ * True when the current request originated from a mobile client (i.e. the
+ * RPC route populated `mobileSessionStorage` from a bearer token). Used by
+ * shared actions to apply Play-policy NSFW hard-filters regardless of the
+ * viewer's account preference.
+ */
+export function isMobileCaller(): boolean {
+  return mobileSessionStorage.getStore() !== undefined;
+}

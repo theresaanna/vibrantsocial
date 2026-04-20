@@ -14,7 +14,6 @@
 import { prisma } from "@/lib/prisma";
 import { corsJson, handleCorsPreflightRequest } from "@/lib/cors";
 import { requireViewer } from "@/lib/require-viewer";
-import { getUserPrefs } from "@/lib/user-prefs";
 
 const PAGE_SIZE = 30;
 
@@ -29,16 +28,15 @@ export async function GET(req: Request) {
   const cursorRaw = new URL(req.url).searchParams.get("cursor");
   const cursor = cursorRaw ? new Date(cursorRaw) : null;
 
-  const prefs = await getUserPrefs(viewer.userId);
-  const hideNsfw = !prefs.showNsfwContent;
-
+  // Play-policy: mobile never surfaces NSFW lists, regardless of the
+  // viewer's account-level `showNsfwContent` pref (which can be toggled
+  // on from the web). Unconditional filter — no owner-escape either,
+  // since "My lists" is the place to manage your own NSFW lists.
   const rows = await prisma.userList.findMany({
     where: {
       isPrivate: false,
+      isNsfw: false,
       ...(cursor ? { createdAt: { lt: cursor } } : {}),
-      ...(hideNsfw
-        ? { OR: [{ isNsfw: false }, { ownerId: viewer.userId }] }
-        : {}),
     },
     orderBy: { createdAt: "desc" },
     take: PAGE_SIZE + 1,
