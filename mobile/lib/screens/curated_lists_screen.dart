@@ -124,8 +124,8 @@ class _MyListsBody extends StatelessWidget {
                   Icon(Icons.playlist_add_check, size: 48),
                   SizedBox(height: 12),
                   Text(
-                    'You don\'t own or follow any lists yet.\n'
-                    'Browse "Everyone\'s" to find and subscribe.',
+                    'You don\'t own any lists we can load here.\n'
+                    'Create one or sign into the website.',
                     textAlign: TextAlign.center,
                   ),
                 ],

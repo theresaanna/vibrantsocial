@@ -172,6 +172,177 @@ export async function updateProfile(
   return { success: true, message: "Profile updated" };
 }
 
+/**
+ * Mobile-friendly profile update. Three reasons this is a separate action
+ * from `updateProfile`:
+ *
+ *   1. Takes a plain JSON patch (partial — only the keys the client sent)
+ *      rather than a FormData blob where missing keys silently coerce to
+ *      `false`. On mobile a missing NSFW checkbox in the form must NOT
+ *      clobber the viewer's stored pref.
+ *   2. **Never** touches `showNsfwContent`, `showGraphicByDefault`,
+ *      `hideSensitiveOverlay`, or `hideNsfwOverlay` — Play policy says
+ *      those prefs are web-only. The mobile edit-profile screen has no
+ *      UI for them and the action refuses to write them.
+ *   3. Returns a consistent shape the Flutter client can parse.
+ */
+export async function updateMobileProfile(
+  patch: Partial<{
+    username: string;
+    displayName: string | null;
+    bio: string | null;
+    birthdayMonth: number | null;
+    birthdayDay: number | null;
+    profileFrameId: string | null;
+    emailOnComment: boolean;
+    emailOnNewChat: boolean;
+    emailOnMention: boolean;
+    emailOnFriendRequest: boolean;
+    emailOnListJoinRequest: boolean;
+    emailOnSubscribedPost: boolean;
+    emailOnSubscribedComment: boolean;
+    emailOnTagPost: boolean;
+    pushEnabled: boolean;
+    isProfilePublic: boolean;
+    hideWallFromFeed: boolean;
+  }>,
+): Promise<ActionState> {
+  const result = await requireAuthWithRateLimit("profile");
+  if (isActionError(result)) return result;
+  const session = result;
+
+  const data: Record<string, unknown> = {};
+
+  // Username — regex + uniqueness
+  if (patch.username !== undefined) {
+    const u = patch.username.trim();
+    if (!/^[a-zA-Z0-9_]{3,30}$/.test(u)) {
+      return {
+        success: false,
+        message:
+          "Username must be 3-30 characters, letters, numbers, and underscores only",
+      };
+    }
+    const existing = await prisma.user.findUnique({ where: { username: u } });
+    if (existing && existing.id !== session.user.id) {
+      return { success: false, message: "Username is already taken" };
+    }
+    data.username = u;
+  }
+
+  // Bio — plain-text on mobile; same revision history behavior as web
+  if (patch.bio !== undefined) {
+    const current = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { bio: true },
+    });
+    const oldBio = current?.bio ?? null;
+    const newBio = patch.bio && patch.bio.length > 0 ? patch.bio : null;
+    if (oldBio !== null && oldBio !== newBio) {
+      await prisma.bioRevision.create({
+        data: { userId: session.user.id, content: oldBio },
+      });
+      await pruneOldRevisions(session.user.id);
+    }
+    data.bio = newBio;
+  }
+
+  if (patch.displayName !== undefined) {
+    data.displayName = patch.displayName && patch.displayName.length > 0
+      ? patch.displayName
+      : null;
+  }
+
+  // Birthday — month+day together, leap-aware; either both or neither
+  if (patch.birthdayMonth !== undefined || patch.birthdayDay !== undefined) {
+    const month = patch.birthdayMonth ?? null;
+    const day = patch.birthdayDay ?? null;
+    if (month === null || day === null) {
+      data.birthdayMonth = null;
+      data.birthdayDay = null;
+    } else if (
+      Number.isInteger(month) &&
+      Number.isInteger(day) &&
+      month >= 1 && month <= 12 &&
+      day >= 1 && day <= 31
+    ) {
+      const maxDay = new Date(2001, month, 0).getDate();
+      if (day <= maxDay) {
+        data.birthdayMonth = month;
+        data.birthdayDay = day;
+      } else {
+        return { success: false, message: "Invalid birthday for that month" };
+      }
+    } else {
+      return { success: false, message: "Invalid birthday" };
+    }
+  }
+
+  // Profile frame — premium-gated; empty string / null clears
+  if (patch.profileFrameId !== undefined) {
+    const raw = patch.profileFrameId;
+    if (!raw) {
+      data.profileFrameId = null;
+    } else {
+      const isPremium = await checkAndExpirePremium(session.user.id);
+      if (!isPremium) {
+        data.profileFrameId = null;
+      } else if (!isValidFrameId(raw)) {
+        return { success: false, message: "Invalid frame selection." };
+      } else {
+        data.profileFrameId = raw;
+      }
+    }
+  }
+
+  // Notification + visibility toggles — copy only the keys the client sent.
+  for (const key of [
+    "emailOnComment",
+    "emailOnNewChat",
+    "emailOnMention",
+    "emailOnFriendRequest",
+    "emailOnListJoinRequest",
+    "emailOnSubscribedPost",
+    "emailOnSubscribedComment",
+    "emailOnTagPost",
+    "pushEnabled",
+    "hideWallFromFeed",
+  ] as const) {
+    if (patch[key] !== undefined) data[key] = patch[key];
+  }
+
+  // Suspended users cannot make their profile public (same rule as web).
+  if (patch.isProfilePublic !== undefined) {
+    if (patch.isProfilePublic) {
+      const u = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { suspended: true },
+      });
+      data.isProfilePublic = !u?.suspended;
+    } else {
+      data.isProfilePublic = false;
+    }
+  }
+
+  if (Object.keys(data).length === 0) {
+    return { success: true, message: "Nothing to update" };
+  }
+
+  const updated = await prisma.user.update({
+    where: { id: session.user.id },
+    data,
+    select: { username: true },
+  });
+
+  if (updated.username) {
+    await invalidate(cacheKeys.userProfile(updated.username));
+    revalidatePath(`/${updated.username}`);
+  }
+  revalidatePath("/profile");
+
+  return { success: true, message: "Profile updated" };
+}
+
 export async function removeAvatar(): Promise<ActionState> {
   const result = await requireAuthWithRateLimit("profile");
   if (isActionError(result)) return result;

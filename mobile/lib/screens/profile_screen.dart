@@ -18,6 +18,7 @@ import '../widgets/themed_background.dart';
 import '../widgets/username_text.dart';
 import '../widgets/view_mode_toggle.dart';
 import 'conversation_screen.dart';
+import 'edit_profile_screen.dart';
 import 'user_list_screen.dart';
 import 'user_posts_screen.dart';
 
@@ -443,6 +444,17 @@ class _RelationshipActionsState extends ConsumerState<_RelationshipActions> {
     }
   }
 
+  Future<void> _openEditProfile() async {
+    final saved = await Navigator.of(context).push<bool?>(
+      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+    );
+    if (saved == true && mounted) {
+      // The username may have changed — invalidate the current profile
+      // fetch so the user sees their new handle on return.
+      ref.invalidate(profileProvider(widget.username));
+    }
+  }
+
   Future<void> _toggleFollow() {
     final api = ref.read(interactionApiProvider);
     return _run(() async {
@@ -512,7 +524,7 @@ class _RelationshipActionsState extends ConsumerState<_RelationshipActions> {
     final buttons = <Widget>[];
 
     if (r.isSelf) {
-      buttons.add(_primary(context, 'Edit profile', onTap: null));
+      buttons.add(_primary(context, 'Edit profile', onTap: _openEditProfile));
     } else if (r.blockedByMe) {
       buttons.add(_secondary(context, 'Blocked', onTap: null));
     } else {

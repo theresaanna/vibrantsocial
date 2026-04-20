@@ -14,6 +14,7 @@ import 'api/media_feed_api.dart';
 import 'api/messaging_api.dart';
 import 'api/post_api.dart';
 import 'api/profile_api.dart';
+import 'api/profile_edit_api.dart';
 import 'api/push_api.dart';
 import 'api/rpc_client.dart';
 import 'api/theme_api.dart';
@@ -64,6 +65,10 @@ final themeApiProvider = Provider<ThemeApi>(
 
 final profileApiProvider = Provider<ProfileApi>(
   (ref) => ProfileApi(ref.watch(dioProvider)),
+);
+
+final profileEditApiProvider = Provider<ProfileEditApi>(
+  (ref) => ProfileEditApi(ref.watch(dioProvider)),
 );
 
 /// Family: fetches the full profile paint for a username.
