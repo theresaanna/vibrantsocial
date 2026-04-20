@@ -499,11 +499,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 subtitle: 'Google, Apple, and email sign-in.',
               ),
               _webLink(
-                Icons.verified_user_outlined,
-                'Age verification',
-                subtitle: p.ageVerified ? 'Verified' : 'Not verified',
-              ),
-              _webLink(
                 Icons.history,
                 'Bio revision history',
               ),

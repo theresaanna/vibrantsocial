@@ -11,7 +11,7 @@ import { isValidFrameId } from "@/lib/profile-frames";
 import { checkAndExpirePremium } from "@/lib/premium";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { isVercelBlobUrl } from "@/lib/vercel-blob-url";
-import { sendEmailVerificationEmail, sendPasswordResetEmail } from "@/lib/email";
+import { sendEmailVerificationEmail, sendPasswordResetEmail, sendPasswordSetupEmail } from "@/lib/email";
 import { inngest } from "@/lib/inngest";
 
 const MAX_BIO_REVISIONS = 20;
@@ -60,10 +60,13 @@ export async function updateProfile(
     }
   }
 
-  // Save current bio as a revision if it changed
+  // Save current bio as a revision if it changed. `username` is
+  // selected so we can purge the *old* handle's cache + ISR path when
+  // the user renames (otherwise `/oldhandle` keeps serving stale HTML
+  // from the previous render).
   const currentUser = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { bio: true, tier: true, profileFrameId: true, suspended: true },
+    select: { bio: true, tier: true, profileFrameId: true, suspended: true, username: true },
   });
 
   const isPremium = await checkAndExpirePremium(session.user.id);
@@ -163,6 +166,14 @@ export async function updateProfile(
   // Invalidate cached public profile
   if (username) {
     await invalidate(cacheKeys.userProfile(username));
+  }
+
+  // Clear the old handle's cache + ISR path on rename so `/oldhandle`
+  // stops serving stale HTML.
+  const oldUsername = currentUser?.username ?? null;
+  if (oldUsername && username && oldUsername !== username) {
+    await invalidate(cacheKeys.userProfile(oldUsername));
+    revalidatePath(`/${oldUsername}`);
   }
 
   revalidatePath("/profile");
@@ -328,6 +339,17 @@ export async function updateMobileProfile(
     return { success: true, message: "Nothing to update" };
   }
 
+  // Capture the pre-update handle before writing. If the username is
+  // changing we need to purge the *old* path too — not just the new
+  // one — or `/oldhandle` can keep serving stale, now-orphaned HTML
+  // from the ISR cache and the `userProfile(oldHandle)` entry sticks
+  // around until TTL.
+  const before = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { username: true },
+  });
+  const oldUsername = before?.username ?? null;
+
   const updated = await prisma.user.update({
     where: { id: session.user.id },
     data,
@@ -337,6 +359,10 @@ export async function updateMobileProfile(
   if (updated.username) {
     await invalidate(cacheKeys.userProfile(updated.username));
     revalidatePath(`/${updated.username}`);
+  }
+  if (oldUsername && oldUsername !== updated.username) {
+    await invalidate(cacheKeys.userProfile(oldUsername));
+    revalidatePath(`/${oldUsername}`);
   }
   revalidatePath("/profile");
 
@@ -631,6 +657,60 @@ export async function requestPasswordChangeEmail(): Promise<ActionState> {
   sendPasswordResetEmail({ toEmail: user.email, token });
 
   return { success: true, message: "Password reset link sent! Check your inbox." };
+}
+
+/**
+ * Kicks off the "add a password" flow for OAuth-only users — those
+ * with `passwordHash === null` who signed up via Google / Discord.
+ * Once they complete the email-confirmed form at /set-password they
+ * gain a second sign-in method, which also unlocks disconnecting their
+ * last social account.
+ *
+ * Token storage reuses NextAuth's `VerificationToken` model with a
+ * `set-password:<email>` identifier prefix so it doesn't collide with
+ * the plain-email identifier the reset flow uses.
+ */
+export async function requestPasswordSetupEmail(): Promise<ActionState> {
+  const result = await requireAuthWithRateLimit("change-password");
+  if (isActionError(result)) return result;
+  const session = result;
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { email: true, passwordHash: true },
+  });
+
+  if (!user?.email) {
+    return { success: false, message: "No email address on file" };
+  }
+  if (user.passwordHash) {
+    // They already have one — route them to the change flow instead
+    // of letting them clobber it silently.
+    return {
+      success: false,
+      message: "You already have a password. Use 'Change Password' instead.",
+    };
+  }
+
+  const identifier = `set-password:${user.email}`;
+
+  // Clean up any existing setup tokens for this email first.
+  await prisma.verificationToken.deleteMany({ where: { identifier } });
+
+  const token = crypto.randomUUID();
+  const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+  await prisma.verificationToken.create({
+    data: { identifier, token, expires },
+  });
+
+  // Fire-and-forget
+  sendPasswordSetupEmail({ toEmail: user.email, token });
+
+  return {
+    success: true,
+    message: "Check your inbox — we sent you a link to set a password.",
+  };
 }
 
 const EMPTY_LEXICAL_CONTENT = '{"root":{"children":[],"direction":null,"format":"","indent":0,"type":"root","version":1}}';

@@ -35,7 +35,6 @@ class EditableProfile {
     required this.phoneNumber,
     required this.phoneVerified,
     required this.twoFactorEnabled,
-    required this.ageVerified,
     required this.suspended,
   });
 
@@ -67,7 +66,6 @@ class EditableProfile {
   final String? phoneNumber;
   final bool phoneVerified;
   final bool twoFactorEnabled;
-  final bool ageVerified;
   final bool suspended;
 
   bool get isPremium => tier == "premium";
@@ -109,7 +107,6 @@ class EditableProfile {
       phoneNumber: s('phoneNumber'),
       phoneVerified: b('phoneVerified'),
       twoFactorEnabled: b('twoFactorEnabled'),
-      ageVerified: b('ageVerified'),
       suspended: b('suspended'),
     );
   }

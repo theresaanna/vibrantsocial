@@ -51,7 +51,6 @@ export async function GET(req: Request) {
       phoneNumber: true,
       phoneVerified: true,
       twoFactorEnabled: true,
-      ageVerified: true,
       suspended: true,
     },
   });
@@ -96,7 +95,6 @@ export async function GET(req: Request) {
       phoneNumber: user.phoneNumber,
       phoneVerified: user.phoneVerified !== null,
       twoFactorEnabled: user.twoFactorEnabled,
-      ageVerified: user.ageVerified !== null,
       suspended: user.suspended,
     },
   });

@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { isProfileIncomplete } from "@/lib/require-profile";
 import { ProfileForm } from "./profile-form";
+import { OAuthConnectionsSection } from "./oauth-connections-section";
+import { PasswordSetupSection } from "./password-setup-section";
 import { Suspense } from "react";
 import Link from "next/link";
 import { AutoAccountSwitch } from "@/components/auto-account-switch";
@@ -54,6 +56,10 @@ export default async function ProfilePage() {
       stars: true,
       starsSpent: true,
       referralCode: true,
+      accounts: {
+        select: { id: true, provider: true, providerAccountId: true },
+        orderBy: { id: "asc" },
+      },
     },
   });
 
@@ -62,6 +68,7 @@ export default async function ProfilePage() {
   const isCredentialsUser = !!user?.passwordHash;
   const isPremium = user?.tier === "premium";
   const oauthImage = user?.image ?? session.user.image ?? null;
+  const oauthConnections = user?.accounts ?? [];
 
   const profileTheme = buildUserTheme(user);
 
@@ -125,6 +132,13 @@ export default async function ProfilePage() {
           starsSpent={user?.starsSpent ?? 0}
           referralCode={user?.referralCode ?? ""}
           userEmail={user?.email ?? null}
+        />
+
+        <PasswordSetupSection isCredentialsUser={isCredentialsUser} />
+
+        <OAuthConnectionsSection
+          initialConnections={oauthConnections}
+          hasPassword={isCredentialsUser}
         />
 
         <Link

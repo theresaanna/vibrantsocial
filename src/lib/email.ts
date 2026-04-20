@@ -107,6 +107,46 @@ export async function sendNewChatEmail(params: {
   });
 }
 
+export async function sendPasswordSetupEmail(params: {
+  toEmail: string;
+  token: string;
+}) {
+  // Same token mechanism as password reset, but the copy is for users
+  // who signed up via OAuth and are adding a password as a backup
+  // sign-in — the reset wording would be confusing ("reset" implies
+  // they had one).
+  const { toEmail, token } = params;
+  const setupUrl = `${getBaseUrl()}/set-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(toEmail)}`;
+
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: toEmail,
+      subject: "Add a password to your VibrantSocial account",
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #18181b; margin-bottom: 16px;">Set a password</h2>
+          <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
+            You asked to add a password to your account. You'll still be
+            able to sign in with your social account — this just gives
+            you a second way in.
+          </p>
+          <a href="${setupUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background-color: #18181b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500;">
+            Set Password
+          </a>
+          <p style="color: #a1a1aa; font-size: 12px; margin-top: 32px;">
+            This link will expire in 1 hour. If you didn&apos;t request this, you can safely ignore this email.
+          </p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    Sentry.captureException(error, {
+      extra: { emailType: "password-setup", toEmail },
+    });
+  }
+}
+
 export async function sendPasswordResetEmail(params: {
   toEmail: string;
   token: string;
