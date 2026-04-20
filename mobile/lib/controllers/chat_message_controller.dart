@@ -127,6 +127,16 @@ class ChatMessageListController extends StateNotifier<ChatMessageListState> {
     if (changed) state = state.copyWith(messages: next);
   }
 
+  /// Fully remove a message from local state after the async moderation
+  /// scan flagged it NSFW. Unlike [applyDelete] (which keeps a "deleted"
+  /// placeholder), redaction leaves no trace — Play-policy on mobile is
+  /// that NSFW content must be completely unavailable.
+  void applyRedaction(String id) {
+    final next = state.messages.where((m) => m.id != id).toList();
+    if (next.length == state.messages.length) return;
+    state = state.copyWith(messages: next);
+  }
+
   /// Replace the reactions on a message in-place.
   void applyReactions(String id, List<ReactionGroup> reactions) {
     var changed = false;

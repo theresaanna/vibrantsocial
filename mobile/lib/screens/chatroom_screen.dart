@@ -33,6 +33,10 @@ class _ChatroomScreenState extends ConsumerState<ChatroomScreen> {
             onEdit: ctrl.applyEdit,
             onDelete: ctrl.applyDelete,
             onReaction: ctrl.applyReactions,
+            // Async moderation flagged this message NSFW after it had
+            // already been delivered via realtime — remove it from the
+            // local list so Play-policy holds even mid-room.
+            onNsfwRedaction: ctrl.applyRedaction,
           );
     });
   }

@@ -40,6 +40,10 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
             onEdit: ctrl.applyEdit,
             onDelete: ctrl.applyDelete,
             onReaction: ctrl.applyReactions,
+            // Async moderation flagged this message NSFW after it had
+            // already been delivered via realtime — remove it from the
+            // local list so Play-policy holds even mid-conversation.
+            onNsfwRedaction: ctrl.applyRedaction,
           );
       // Mark read asynchronously — we don't block the UI on it.
       ref.read(messagingApiProvider).markConversationRead(widget.conversationId);

@@ -46,12 +46,19 @@ class AblyService {
 
   /// Subscribe to a DM conversation. Returns a handle the caller must
   /// close when leaving the screen.
+  ///
+  /// [onNsfwRedaction] fires when the async moderation scan flags a
+  /// message as NSFW after it was already delivered via realtime. The
+  /// Flutter app must fully remove such messages (Play policy — the
+  /// server-side re-fetch filters them, but in-memory state from the
+  /// initial push needs to be cleaned up too).
   ChatChannelSubscription subscribeConversation(
     String conversationId, {
     required void Function(ChatMessage message) onNew,
     void Function(String id, String content, DateTime editedAt)? onEdit,
     void Function(String id, DateTime deletedAt)? onDelete,
     void Function(String id, List<ReactionGroup> reactions)? onReaction,
+    void Function(String id)? onNsfwRedaction,
   }) {
     final channel = _ensureClient().channels.get('chat:$conversationId');
     return _subscribeChannel(
@@ -60,6 +67,7 @@ class AblyService {
       onEdit: onEdit,
       onDelete: onDelete,
       onReaction: onReaction,
+      onNsfwRedaction: onNsfwRedaction,
     );
   }
 
@@ -71,6 +79,7 @@ class AblyService {
     void Function(String id, String content, DateTime editedAt)? onEdit,
     void Function(String id, DateTime deletedAt)? onDelete,
     void Function(String id, List<ReactionGroup> reactions)? onReaction,
+    void Function(String id)? onNsfwRedaction,
   }) {
     final channel = _ensureClient().channels.get('chatroom:$slug');
     return _subscribeChannel(
@@ -79,6 +88,7 @@ class AblyService {
       onEdit: onEdit,
       onDelete: onDelete,
       onReaction: onReaction,
+      onNsfwRedaction: onNsfwRedaction,
     );
   }
 
@@ -101,6 +111,7 @@ class AblyService {
     void Function(String id, String content, DateTime editedAt)? onEdit,
     void Function(String id, DateTime deletedAt)? onDelete,
     void Function(String id, List<ReactionGroup> reactions)? onReaction,
+    void Function(String id)? onNsfwRedaction,
   }) {
     final subs = <StreamSubscription<dynamic>>[];
 
@@ -151,6 +162,26 @@ class AblyService {
           if (id != null && deletedAt != null) {
             onDelete(id, deletedAt);
           }
+        }),
+      );
+    }
+
+    if (onNsfwRedaction != null) {
+      // Fired by the async moderation scan when a message is flagged
+      // NSFW after delivery. Server publishes to `nsfw-update`; on
+      // mobile we always redact (remove from local state). The
+      // payload is `{ id, isNsfw: true }` — chatroom stringifies it,
+      // DMs send it as a plain object; `_decode` normalizes both.
+      subs.add(
+        channel.subscribe(name: 'nsfw-update').listen((msg) {
+          final data = _decode(msg.data);
+          if (data == null) return;
+          final id = data['id'] as String?;
+          final flag = data['isNsfw'];
+          if (id == null) return;
+          // Only redact when the server flipped the flag on. A `false`
+          // payload (moderation overturned) leaves local state as-is.
+          if (flag == true) onNsfwRedaction(id);
         }),
       );
     }
