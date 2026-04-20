@@ -16,7 +16,7 @@ import { getSessionFromRequest } from "@/lib/mobile-auth";
 import { withMobileSession } from "@/lib/mobile-session-context";
 import { NextResponse } from "next/server";
 import { updateMobileProfile } from "@/app/profile/actions";
-import { extractTextFromLexicalJson } from "@/lib/lexical-text";
+import { lexicalJsonToMarkdown } from "@/lib/bio-markdown";
 
 export async function OPTIONS(req: Request) {
   return handleCorsPreflightRequest(req);
@@ -62,10 +62,12 @@ export async function GET(req: Request) {
     return corsJson(req, { error: "Not found" }, { status: 404 });
   }
 
-  // Web stores the bio as a Lexical JSON string. Flutter's bio field
-  // is a plain-text `TextField`, so hand it the extracted text — the
-  // rich formatting only survives on the web.
-  const bioPlain = user.bio ? extractTextFromLexicalJson(user.bio) : null;
+  // Web stores the bio as a Lexical JSON string. Convert it down to
+  // the markdown-subset the Flutter toolbar emits so the editor can
+  // round-trip (bold / italic / underline / link / image). Legacy
+  // plain-text bios pass through untouched — the converter falls back
+  // to the input when it can't parse as Lexical.
+  const bioMarkdown = user.bio ? lexicalJsonToMarkdown(user.bio) : null;
 
   return corsJson(req, {
     profile: {
@@ -73,7 +75,7 @@ export async function GET(req: Request) {
       username: user.username,
       displayName: user.displayName,
       avatar: user.avatar,
-      bio: bioPlain,
+      bio: bioMarkdown,
       tier: user.tier,
       profileFrameId: user.profileFrameId,
       usernameFont: user.usernameFont,

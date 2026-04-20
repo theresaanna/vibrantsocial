@@ -12,6 +12,7 @@ import { checkAndExpirePremium } from "@/lib/premium";
 import { invalidate, cacheKeys } from "@/lib/cache";
 import { isVercelBlobUrl } from "@/lib/vercel-blob-url";
 import { sendEmailVerificationEmail, sendPasswordResetEmail, sendPasswordSetupEmail } from "@/lib/email";
+import { markdownToLexicalJson } from "@/lib/bio-markdown";
 import { inngest } from "@/lib/inngest";
 
 const MAX_BIO_REVISIONS = 20;
@@ -241,14 +242,20 @@ export async function updateMobileProfile(
     data.username = u;
   }
 
-  // Bio — plain-text on mobile; same revision history behavior as web
+  // Bio — mobile sends a markdown-subset string (see `bio-markdown.ts`);
+  // store it as Lexical JSON so the web renderer keeps working.
+  // Revision history behaves exactly like web: we snapshot the
+  // previous value before overwriting, regardless of the encoding.
   if (patch.bio !== undefined) {
     const current = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { bio: true },
     });
     const oldBio = current?.bio ?? null;
-    const newBio = patch.bio && patch.bio.length > 0 ? patch.bio : null;
+    const markdown = patch.bio ?? "";
+    const newBio = markdown.trim().length > 0
+      ? markdownToLexicalJson(markdown)
+      : null;
     if (oldBio !== null && oldBio !== newBio) {
       await prisma.bioRevision.create({
         data: { userId: session.user.id, content: oldBio },
