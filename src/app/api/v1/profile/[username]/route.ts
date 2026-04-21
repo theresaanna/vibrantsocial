@@ -53,6 +53,7 @@ export async function GET(
       createdAt: true,
       suspended: true,
       emailVerified: true,
+      hideWallFromFeed: true,
       _count: {
         select: {
           // Follow relations: follower=me following them / following=me being followed
@@ -131,6 +132,7 @@ export async function GET(
         tier: user.tier ?? "free",
         verified: user.emailVerified != null,
         createdAt: user.createdAt.toISOString(),
+        hideWallFromFeed: user.hideWallFromFeed,
       },
       theme: theme satisfies ResolvedUserTheme,
       counts: {

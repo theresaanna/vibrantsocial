@@ -18,6 +18,7 @@ import { getChatRequestStatus, type ChatRequestStatus } from "@/app/messages/act
 import { deriveBlockStatus } from "@/app/feed/block-actions";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
+import { PROFILE_THEME_PRESETS } from "@/lib/profile-themes";
 import { publishedOnly, buildDigitalFileData } from "@/app/feed/feed-queries";
 import { buildProfilePostsContentFilter } from "./profile-queries";
 import { MarketplaceGrid } from "@/components/marketplace-grid";
@@ -551,6 +552,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   const displayName = user.displayName || user.name || user.username;
   const avatarSrc = user.avatar || user.image;
   const initial = (displayName || "?")[0].toUpperCase();
+  const defaultPreset = PROFILE_THEME_PRESETS.default;
   const hasCustomTheme = !!(
     user.profileBgColor ||
     user.profileTextColor ||
@@ -561,13 +563,21 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
 
   const userHasBirthday = isBirthday(user.birthdayMonth, user.birthdayDay);
 
+  // Only publish theme vars + the `.profile-themed` chrome when the user
+  // has actually customized a slot. Unthemed profiles fall back to the
+  // base Tailwind surface to avoid link-color collisions inside shared
+  // components that assume dark/light Tailwind defaults.
   const themeStyle = hasCustomTheme
     ? ({
-        "--profile-bg": user.profileBgColor ?? "#ffffff",
-        "--profile-text": user.profileTextColor ?? "#18181b",
-        "--profile-link": user.profileLinkColor ?? "#2563eb",
-        "--profile-secondary": user.profileSecondaryColor ?? "#71717a",
-        "--profile-container": user.profileContainerColor ?? "#f4f4f5",
+        "--profile-bg": user.profileBgColor ?? defaultPreset.profileBgColor,
+        "--profile-text":
+          user.profileTextColor ?? defaultPreset.profileTextColor,
+        "--profile-link":
+          user.profileLinkColor ?? defaultPreset.profileLinkColor,
+        "--profile-secondary":
+          user.profileSecondaryColor ?? defaultPreset.profileSecondaryColor,
+        "--profile-container":
+          user.profileContainerColor ?? defaultPreset.profileContainerColor,
         "--profile-container-alpha": `${user.profileContainerOpacity ?? 100}%`,
       } as React.CSSProperties)
     : undefined;

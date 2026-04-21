@@ -7,8 +7,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../api/profile_api.dart';
 import '../controllers/post_list_controller.dart';
 import '../models/avatar_frame.dart';
+import '../models/post.dart';
 import '../models/profile.dart';
 import '../models/resolved_theme.dart';
+import '../models/wall_post.dart';
 import '../providers.dart';
 import '../widgets/block_renderer.dart';
 import '../widgets/framed_avatar.dart';
@@ -155,6 +157,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                       displayName: profile.user.displayNameOrUsername,
                       relationship: profile.relationship,
                       colors: colors,
+                      hideWallFromFeed: profile.user.hideWallFromFeed,
                     ),
                     if (profile.user.bioBlocks.isNotEmpty) ...[
                       const SizedBox(height: 20),
@@ -202,18 +205,20 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     return ThemedBackground(theme: theme, child: body);
   }
 
-  /// Build the profile's posts tail: section header, rendered post cards,
-  /// and an optional loading indicator pinned at the end when more pages
-  /// remain. Scroll-near-bottom triggers [_onScroll] to page in the next.
+  /// Build the profile's posts tail: section header, rendered post cards
+  /// (with any inline wall posts interleaved by createdAt), and an
+  /// optional loading indicator pinned at the end when more pages remain.
+  /// Scroll-near-bottom triggers [_onScroll] to page in the next.
   Iterable<Widget> _postTail(PostListState state) sync* {
-    if (state.posts.isEmpty && state.isLoadingMore) {
+    final hasAny = state.posts.isNotEmpty || state.wallPosts.isNotEmpty;
+    if (!hasAny && state.isLoadingMore) {
       yield const Padding(
         padding: EdgeInsets.symmetric(vertical: 24),
         child: Center(child: CircularProgressIndicator()),
       );
       return;
     }
-    if (state.posts.isEmpty) {
+    if (!hasAny) {
       yield const Padding(
         padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
         child: Center(child: Text('No posts yet.')),
@@ -222,13 +227,35 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     }
     yield const SizedBox(height: 8);
     final username = widget.profile.user.username ?? '';
-    for (final post in state.posts) {
-      yield PostCard(
-        post: post,
-        onMutate: (updated) => ref
-            .read(profilePostsProvider(username).notifier)
-            .updatePost(post.id, (_) => updated),
-      );
+
+    // Merge authored posts and wall posts chronologically. Pinned
+    // authored posts stay first to match the web profile behavior.
+    final items = <_ProfileItem>[
+      for (final p in state.posts) _ProfileItem.post(p),
+      for (final w in state.wallPosts) _ProfileItem.wall(w),
+    ]..sort((a, b) {
+        final aPinned = a.isPinned ? 1 : 0;
+        final bPinned = b.isPinned ? 1 : 0;
+        if (aPinned != bPinned) return bPinned - aPinned;
+        return b.createdAt.compareTo(a.createdAt);
+      });
+
+    for (final item in items) {
+      if (item.post != null) {
+        final post = item.post!;
+        yield PostCard(
+          post: post,
+          onMutate: (updated) => ref
+              .read(profilePostsProvider(username).notifier)
+              .updatePost(post.id, (_) => updated),
+        );
+      } else {
+        yield _InlineWallRow(
+          entry: item.wall!,
+          username: username,
+          canModerate: state.canModerateWall,
+        );
+      }
       yield const SizedBox(height: 4);
     }
     if (state.isLoadingMore) {
@@ -237,6 +264,183 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         child: Center(child: CircularProgressIndicator()),
       );
     }
+  }
+}
+
+/// Discriminated-union item for the merged profile feed. Exactly one
+/// of [post] or [wall] is non-null.
+class _ProfileItem {
+  _ProfileItem.post(this.post)
+      : wall = null,
+        createdAt = post!.createdAt,
+        isPinned = post.isPinned;
+  _ProfileItem.wall(this.wall)
+      : post = null,
+        createdAt = wall!.createdAt,
+        isPinned = false;
+
+  final Post? post;
+  final WallPostEntry? wall;
+  final DateTime createdAt;
+  final bool isPinned;
+}
+
+/// Inline wall-post row used inside the Posts tab. Mirrors the standalone
+/// [WallScreen]'s moderation chrome (pending chip + accept/hide, delete
+/// button) so owners can moderate without opening the separate wall
+/// screen — which only exists now when `hideWallFromFeed = true`.
+class _InlineWallRow extends ConsumerStatefulWidget {
+  const _InlineWallRow({
+    required this.entry,
+    required this.username,
+    required this.canModerate,
+  });
+
+  final WallPostEntry entry;
+  final String username;
+  final bool canModerate;
+
+  @override
+  ConsumerState<_InlineWallRow> createState() => _InlineWallRowState();
+}
+
+class _InlineWallRowState extends ConsumerState<_InlineWallRow> {
+  Future<void> _setStatus(String status) async {
+    try {
+      await ref
+          .read(wallApiProvider)
+          .setStatus(wallPostId: widget.entry.wallPostId, status: status);
+      if (!mounted) return;
+      ref
+          .read(profilePostsProvider(widget.username).notifier)
+          .updateWallStatus(widget.entry.wallPostId, status);
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final msg = e.response?.data is Map
+          ? ((e.response!.data as Map)['error']?.toString() ?? 'Update failed.')
+          : 'Update failed.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    }
+  }
+
+  Future<void> _delete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete wall post?'),
+        content: const Text('This can\'t be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ref
+          .read(wallApiProvider)
+          .deleteWallPost(widget.entry.wallPostId);
+      if (!mounted) return;
+      ref
+          .read(profilePostsProvider(widget.username).notifier)
+          .removeWallPost(widget.entry.wallPostId);
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final msg = e.response?.data is Map
+          ? ((e.response!.data as Map)['error']?.toString() ?? 'Delete failed.')
+          : 'Delete failed.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final entry = widget.entry;
+    final showPending = entry.isPending;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+          child: Row(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: showPending
+                      ? Colors.amber.withValues(alpha: 0.18)
+                      : Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(999),
+                  border: showPending
+                      ? Border.all(color: Colors.amber.withValues(alpha: 0.4))
+                      : null,
+                ),
+                child: Text(
+                  showPending ? 'Pending wall post' : 'On @${widget.username}\'s wall',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              if (widget.canModerate && showPending) ...[
+                TextButton(
+                  onPressed: () => _setStatus('accepted'),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text('Accept'),
+                ),
+                TextButton(
+                  onPressed: () => _setStatus('hidden'),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                  ),
+                  child: const Text('Hide'),
+                ),
+              ],
+            ],
+          ),
+        ),
+        PostCard(post: entry.post, onMutate: null),
+        if (widget.canModerate)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _delete,
+                icon: const Icon(Icons.delete_outline, size: 16),
+                label: const Text('Delete'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }
 
@@ -406,6 +610,7 @@ class _RelationshipActions extends ConsumerStatefulWidget {
     required this.displayName,
     required this.relationship,
     required this.colors,
+    required this.hideWallFromFeed,
   });
 
   final String username;
@@ -413,6 +618,12 @@ class _RelationshipActions extends ConsumerStatefulWidget {
   final String displayName;
   final ProfileRelationship relationship;
   final ResolvedColors colors;
+
+  /// When the profile owner has opted into a separate Wall tab
+  /// (web: `showWallInSeparateTab`), the profile renders a Wall
+  /// button. Otherwise wall posts are interleaved into the Posts
+  /// tab and no dedicated button is shown.
+  final bool hideWallFromFeed;
 
   @override
   ConsumerState<_RelationshipActions> createState() =>
@@ -555,10 +766,13 @@ class _RelationshipActionsState extends ConsumerState<_RelationshipActions> {
         buttons.add(_secondary(context, 'Message', onTap: _startConversation));
       }
     }
-    // Wall is always visible — non-friends can still read accepted
-    // posts, and the wall screen gates the composer on canCompose
-    // (friends only) so the button never opens into a dead-end state.
-    buttons.add(_secondary(context, 'Wall', onTap: _openWall));
+    // Wall button appears only when the owner has chosen to keep
+    // wall posts on a separate tab (mirrors web's `showWallInSeparateTab`).
+    // Otherwise wall posts interleave into the Posts tab below.
+    final canSeeWall = r.isSelf || r.isFriend;
+    if (widget.hideWallFromFeed && canSeeWall) {
+      buttons.add(_secondary(context, 'Wall', onTap: _openWall));
+    }
 
     return Wrap(
       spacing: 8,

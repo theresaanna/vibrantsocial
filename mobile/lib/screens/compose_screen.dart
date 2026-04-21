@@ -14,7 +14,7 @@ import '../widgets/themed_background.dart';
 import 'premium_screen.dart';
 import 'scheduled_posts_screen.dart';
 
-/// Minimal post composer — text + tags + content warnings. Auto-link
+/// Minimal post composer — text + tags. Auto-link
 /// and auto-YouTube detection happen server-side (see lib/compose.ts),
 /// so pasting a URL or YouTube link is enough; the user doesn't need a
 /// separate "insert link" control.
@@ -34,9 +34,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   final _tags = <String>[];
   final _images = <_PendingImage>[];
   _PollDraft? _poll;
-  bool _isNsfw = false;
-  bool _isSensitive = false;
-  bool _isGraphicNudity = false;
   bool _submitting = false;
   bool _generatingTags = false;
   bool _pickingImage = false;
@@ -281,9 +278,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                     (src: img.uploaded!, altText: null),
               ],
               poll: pollPayload,
-              isNsfw: _isNsfw,
-              isSensitive: _isSensitive,
-              isGraphicNudity: _isGraphicNudity,
               scheduledFor: _scheduledFor,
             ),
           );
@@ -412,15 +406,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 canGenerate: _textCtrl.text.trim().isNotEmpty,
                 generating: _generatingTags,
                 onGenerate: _generateTags,
-              ),
-              const SizedBox(height: 16),
-              _WarningToggles(
-                isNsfw: _isNsfw,
-                isSensitive: _isSensitive,
-                isGraphicNudity: _isGraphicNudity,
-                onNsfw: (v) => setState(() => _isNsfw = v),
-                onSensitive: (v) => setState(() => _isSensitive = v),
-                onGraphic: (v) => setState(() => _isGraphicNudity = v),
               ),
               const SizedBox(height: 16),
               _ScheduleRow(
@@ -1085,53 +1070,3 @@ String _formatSchedule(DateTime dt) {
   return '${months[dt.month - 1]} ${dt.day}, $hour:$minute $suffix';
 }
 
-class _WarningToggles extends StatelessWidget {
-  const _WarningToggles({
-    required this.isNsfw,
-    required this.isSensitive,
-    required this.isGraphicNudity,
-    required this.onNsfw,
-    required this.onSensitive,
-    required this.onGraphic,
-  });
-
-  final bool isNsfw;
-  final bool isSensitive;
-  final bool isGraphicNudity;
-  final void Function(bool) onNsfw;
-  final void Function(bool) onSensitive;
-  final void Function(bool) onGraphic;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Content warnings',
-            style: TextStyle(fontWeight: FontWeight.w600)),
-        const SizedBox(height: 4),
-        SwitchListTile.adaptive(
-          title: const Text('NSFW'),
-          subtitle: const Text('Not safe for work'),
-          value: isNsfw,
-          onChanged: onNsfw,
-          contentPadding: EdgeInsets.zero,
-        ),
-        SwitchListTile.adaptive(
-          title: const Text('Sensitive'),
-          subtitle: const Text('Needs age verification to view'),
-          value: isSensitive,
-          onChanged: onSensitive,
-          contentPadding: EdgeInsets.zero,
-        ),
-        SwitchListTile.adaptive(
-          title: const Text('Graphic nudity'),
-          subtitle: const Text('Needs age verification to view'),
-          value: isGraphicNudity,
-          onChanged: onGraphic,
-          contentPadding: EdgeInsets.zero,
-        ),
-      ],
-    );
-  }
-}
