@@ -49,7 +49,10 @@ export async function POST(req: Request) {
       ? (body as Record<string, unknown>).email
       : undefined;
   const email = typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : "";
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  // Length-cap before the regex: the pattern below has overlapping
+  // [^\s@]+ groups that can backtrack polynomially on crafted input,
+  // so we bound input size first (RFC 5321 caps addresses at 254).
+  if (!email || email.length > 254 || !/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email)) {
     return NextResponse.json(
       { error: "Enter a valid email." },
       { status: 400, headers: corsHeaders(req) },
