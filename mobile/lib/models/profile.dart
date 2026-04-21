@@ -67,6 +67,7 @@ class ProfileUser {
     required this.tier,
     required this.verified,
     required this.createdAt,
+    required this.hideWallFromFeed,
   });
 
   final String id;
@@ -95,6 +96,11 @@ class ProfileUser {
   final bool verified;
   final DateTime createdAt;
 
+  /// When `true`, wall posts live in their own dedicated screen
+  /// instead of being interleaved into the profile's Posts tab.
+  /// Mirrors the web flag of the same name.
+  final bool hideWallFromFeed;
+
   String get displayNameOrUsername =>
       (displayName?.isNotEmpty ?? false)
           ? displayName!
@@ -122,6 +128,7 @@ class ProfileUser {
       tier: json['tier'] as String,
       verified: json['verified'] as bool,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      hideWallFromFeed: json['hideWallFromFeed'] as bool? ?? false,
     );
   }
 }

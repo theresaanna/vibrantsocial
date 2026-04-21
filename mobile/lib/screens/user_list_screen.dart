@@ -7,6 +7,7 @@ import '../models/user_list.dart';
 import '../providers.dart';
 import '../widgets/framed_avatar.dart';
 import '../widgets/themed_background.dart';
+import '../widgets/themed_container.dart';
 import '../widgets/username_text.dart';
 import 'profile_screen.dart';
 
@@ -108,10 +109,10 @@ class _UserListScreenState extends ConsumerState<UserListScreen> {
     }
 
     final tailCount = state.isLoadingMore || state.error != null ? 1 : 0;
-    return ListView.separated(
+    return ListView.builder(
       controller: _scrollCtrl,
+      padding: const EdgeInsets.symmetric(vertical: 4),
       itemCount: state.users.length + tailCount,
-      separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (context, index) {
         if (index >= state.users.length) {
           return state.error != null
@@ -138,52 +139,9 @@ class _UserRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: FramedAvatar(
-        avatarUrl: user.avatar,
-        frame: user.frame,
-        size: 40,
-      ),
-      title: Row(
-        children: [
-          Flexible(
-            child: UsernameText(
-              text: user.displayNameOrUsername,
-              fontFamily: user.usernameFontFamily,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (user.tier == 'premium')
-            Padding(
-              padding: const EdgeInsets.only(left: 6),
-              child: Icon(
-                Icons.workspace_premium,
-                size: 16,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-        ],
-      ),
-      subtitle: user.username == null
-          ? null
-          : Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '@${user.username}',
-                    style: const TextStyle(color: Colors.black54),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (user.isFriend)
-                  const _Tag(label: 'friend')
-                else if (user.isFollowing)
-                  const _Tag(label: 'following')
-                else if (user.isSelf)
-                  const _Tag(label: 'you'),
-              ],
-            ),
+    return ThemedContainer(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       onTap: user.username == null
           ? null
           : () => Navigator.of(context).push(
@@ -191,6 +149,63 @@ class _UserRow extends StatelessWidget {
                   builder: (_) => ProfileScreen(username: user.username!),
                 ),
               ),
+      child: Row(
+        children: [
+          FramedAvatar(
+            avatarUrl: user.avatar,
+            frame: user.frame,
+            size: 44,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: UsernameText(
+                        text: user.displayNameOrUsername,
+                        fontFamily: user.usernameFontFamily,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (user.tier == 'premium')
+                      Padding(
+                        padding: const EdgeInsets.only(left: 6),
+                        child: Icon(
+                          Icons.workspace_premium,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                  ],
+                ),
+                if (user.username != null)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '@${user.username}',
+                          style: const TextStyle(fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (user.isFriend)
+                        const _Tag(label: 'friend')
+                      else if (user.isFollowing)
+                        const _Tag(label: 'following')
+                      else if (user.isSelf)
+                        const _Tag(label: 'you'),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

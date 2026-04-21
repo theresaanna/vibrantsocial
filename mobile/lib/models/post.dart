@@ -1,6 +1,7 @@
 import 'avatar_frame.dart';
 import 'block.dart';
 import 'resolved_theme.dart';
+import 'wall_post.dart';
 
 class PostAuthor {
   PostAuthor({
@@ -214,10 +215,26 @@ class Post {
 }
 
 class PostPage {
-  PostPage({required this.posts, required this.nextCursor});
+  PostPage({
+    required this.posts,
+    required this.nextCursor,
+    this.wallPosts = const [],
+    this.canModerateWall = false,
+  });
 
   final List<Post> posts;
   final String? nextCursor;
+
+  /// Wall entries interleaved into the same paginated stream. Only
+  /// populated by `GET /api/v1/profile/:username/posts` and only when
+  /// the target hasn't enabled the separate-Wall-tab setting. Clients
+  /// render these merged chronologically with [posts].
+  final List<WallPostEntry> wallPosts;
+
+  /// True when the viewer owns this wall and can accept/hide pending
+  /// entries inline. Surfaced alongside [wallPosts] so callers don't
+  /// have to re-query the wall endpoint to paint moderation chips.
+  final bool canModerateWall;
 
   factory PostPage.fromJson(Map<String, dynamic> json) {
     return PostPage(
@@ -226,6 +243,11 @@ class PostPage {
           .map((m) => Post.fromJson(m.cast<String, dynamic>()))
           .toList(),
       nextCursor: json['nextCursor'] as String?,
+      wallPosts: (json['wallPosts'] as List? ?? const [])
+          .cast<Map>()
+          .map((m) => WallPostEntry.fromJson(m.cast<String, dynamic>()))
+          .toList(),
+      canModerateWall: json['canModerateWall'] as bool? ?? false,
     );
   }
 }
