@@ -22,13 +22,25 @@ class PostDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final postAsync = ref.watch(postProvider(postId));
     final viewerTheme = ref.watch(viewerThemeProvider);
+
+    // Fall back to the viewer's own theme while the author theme is
+    // loading (or when the post itself fails) so we don't flash a stark
+    // default background.
+    final authorTheme = postAsync.maybeWhen(
+      data: (detail) => detail.authorTheme,
+      orElse: () => null,
+    );
+    final backdropTheme = authorTheme ?? viewerTheme;
+    final appBarForeground = backdropTheme?.colors.textColor;
+
     return ThemedBackground(
-      theme: viewerTheme,
+      theme: backdropTheme,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
+          foregroundColor: appBarForeground,
           title: const Text('Post'),
         ),
         body: postAsync.when(
@@ -40,7 +52,10 @@ class PostDetailScreen extends ConsumerWidget {
                   textAlign: TextAlign.center),
             ),
           ),
-          data: (post) => _PostWithComments(post: post),
+          data: (detail) => _PostWithComments(
+            post: detail.post,
+            authorTheme: detail.authorTheme,
+          ),
         ),
       ),
     );
@@ -48,8 +63,9 @@ class PostDetailScreen extends ConsumerWidget {
 }
 
 class _PostWithComments extends ConsumerStatefulWidget {
-  const _PostWithComments({required this.post});
+  const _PostWithComments({required this.post, required this.authorTheme});
   final Post post;
+  final ResolvedTheme? authorTheme;
 
   @override
   ConsumerState<_PostWithComments> createState() =>
@@ -114,7 +130,12 @@ class _PostWithCommentsState extends ConsumerState<_PostWithComments> {
   @override
   Widget build(BuildContext context) {
     final commentsAsync = ref.watch(commentsProvider(_post.id));
-    final viewerTheme = ref.watch(viewerThemeProvider);
+    // Prefer the post author's theme — the backdrop + post card + comment
+    // tiles all share one author-owned color world so opening a post
+    // feels like visiting their profile. Fall back to the viewer's theme
+    // when the author has none, so we're not flashing a default palette.
+    final viewerTheme =
+        widget.authorTheme ?? ref.watch(viewerThemeProvider);
     return Column(
       children: [
         Expanded(

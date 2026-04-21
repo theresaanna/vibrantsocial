@@ -5,6 +5,7 @@ import { getSessionFromRequest } from "@/lib/mobile-auth";
 import { postSelect, serializePost } from "@/lib/post-serializer";
 import { resolveAssetBaseUrl } from "@/lib/profile-lists";
 import { isMobileSafePost } from "@/lib/mobile-safe-content";
+import { resolveUserTheme, themeResolverUserSelect } from "@/lib/theme-resolver";
 
 export async function OPTIONS(req: Request) {
   return handleCorsPreflightRequest(req);
@@ -65,10 +66,25 @@ export async function GET(
     }
   }
 
-  const serialized = await serializePost(
-    post,
-    viewerId,
-    resolveAssetBaseUrl(req),
+  const assetBaseUrl = resolveAssetBaseUrl(req);
+  const serialized = await serializePost(post, viewerId, assetBaseUrl);
+
+  // Fetch the author's theme separately so we don't bloat the shared
+  // `postSelect` (used by feed endpoints where this payload would be
+  // wasted). The detail route is happy to do the extra round-trip.
+  let authorTheme: ReturnType<typeof resolveUserTheme> | null = null;
+  if (post.authorId) {
+    const themeUser = await prisma.user.findUnique({
+      where: { id: post.authorId },
+      select: themeResolverUserSelect,
+    });
+    if (themeUser) {
+      authorTheme = resolveUserTheme(themeUser, { assetBaseUrl });
+    }
+  }
+
+  return NextResponse.json(
+    { post: serialized, authorTheme },
+    { headers: corsHeaders(req) },
   );
-  return NextResponse.json({ post: serialized }, { headers: corsHeaders(req) });
 }

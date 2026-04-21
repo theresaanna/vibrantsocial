@@ -218,6 +218,147 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   // ---------------------------------------------------------------------
+  // Bio rich-text helpers (toolbar actions operate on `_bioCtl`)
+  // ---------------------------------------------------------------------
+
+  /// Wrap the current selection (or insert empty markers at the cursor)
+  /// with the given prefix/suffix. Cursor position afterwards:
+  ///  - With a selection: covers the wrapped text including markers.
+  ///  - No selection: sits between the markers so typing continues inside.
+  void _wrapSelection(String prefix, String suffix) {
+    final text = _bioCtl.text;
+    final sel = _bioCtl.selection;
+    final start = sel.start < 0 ? text.length : sel.start;
+    final end = sel.end < 0 ? text.length : sel.end;
+    final inner = text.substring(start, end);
+    final replacement = '$prefix$inner$suffix';
+    final newText = text.replaceRange(start, end, replacement);
+    final newStart = start + prefix.length;
+    final newEnd = newStart + inner.length;
+    _bioCtl.value = TextEditingValue(
+      text: newText,
+      selection: inner.isEmpty
+          ? TextSelection.collapsed(offset: newStart)
+          : TextSelection(baseOffset: newStart, extentOffset: newEnd),
+    );
+  }
+
+  /// Insert `[text](url)` at the cursor. If the user had text selected
+  /// we reuse it as the link label; otherwise we ask for one.
+  Future<void> _insertLink() async {
+    final sel = _bioCtl.selection;
+    final selectedText = sel.isValid && !sel.isCollapsed
+        ? _bioCtl.text.substring(sel.start, sel.end)
+        : '';
+    final result = await _promptForLink(initialText: selectedText);
+    if (result == null || !mounted) return;
+    final markdown = '[${result.text}](${result.url})';
+    final start = sel.start < 0 ? _bioCtl.text.length : sel.start;
+    final end = sel.end < 0 ? _bioCtl.text.length : sel.end;
+    final newText = _bioCtl.text.replaceRange(start, end, markdown);
+    _bioCtl.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: start + markdown.length),
+    );
+  }
+
+  Future<({String text, String url})?> _promptForLink({
+    required String initialText,
+  }) async {
+    final textCtl = TextEditingController(text: initialText);
+    final urlCtl = TextEditingController();
+    final result = await showDialog<({String text, String url})?>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Insert link'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: textCtl,
+              decoration: const InputDecoration(
+                labelText: 'Link text',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: urlCtl,
+              keyboardType: TextInputType.url,
+              autofocus: initialText.isNotEmpty,
+              decoration: const InputDecoration(
+                labelText: 'URL',
+                hintText: 'https://…',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(null),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final text = textCtl.text.trim();
+              final url = urlCtl.text.trim();
+              if (text.isEmpty || url.isEmpty) return;
+              final uri = Uri.tryParse(url);
+              if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  const SnackBar(
+                    content: Text('URL must start with http:// or https://'),
+                  ),
+                );
+                return;
+              }
+              Navigator.of(ctx).pop((text: text, url: url));
+            },
+            child: const Text('Insert'),
+          ),
+        ],
+      ),
+    );
+    textCtl.dispose();
+    urlCtl.dispose();
+    return result;
+  }
+
+  /// Pick an image, upload it through the shared `/api/upload` endpoint,
+  /// and insert the returned URL as a markdown image at the cursor.
+  Future<void> _insertImage() async {
+    final picker = ImagePicker();
+    final xfile = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 2048,
+      maxHeight: 2048,
+      imageQuality: 90,
+    );
+    if (xfile == null || !mounted) return;
+    _snack('Uploading image…');
+    try {
+      final media = await ref
+          .read(mediaApiProvider)
+          .uploadImage(xfile.path, fileName: xfile.name);
+      if (!mounted) return;
+      final sel = _bioCtl.selection;
+      final start = sel.start < 0 ? _bioCtl.text.length : sel.start;
+      final end = sel.end < 0 ? _bioCtl.text.length : sel.end;
+      final markdown = '![](${media.url})';
+      final newText = _bioCtl.text.replaceRange(start, end, markdown);
+      _bioCtl.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: start + markdown.length),
+      );
+      _snack('Image inserted');
+    } catch (err) {
+      if (!mounted) return;
+      _snack('Image upload failed: $err');
+    }
+  }
+
+  // ---------------------------------------------------------------------
   // Avatar
   // ---------------------------------------------------------------------
 
@@ -365,6 +506,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 ),
               ),
               const SizedBox(height: 12),
+              _BioToolbar(
+                onBold: () => _wrapSelection('**', '**'),
+                onItalic: () => _wrapSelection('*', '*'),
+                onUnderline: () => _wrapSelection('<u>', '</u>'),
+                onLink: _insertLink,
+                onImage: _insertImage,
+              ),
               TextField(
                 controller: _bioCtl,
                 minLines: 3,
@@ -373,7 +521,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   labelText: 'Bio',
                   border: OutlineInputBorder(),
                   helperText:
-                      'Plain text on mobile. Rich formatting available on the web.',
+                      'Use the toolbar for bold, italic, underline, links, and images.',
                 ),
               ),
               const SizedBox(height: 12),
@@ -781,6 +929,110 @@ class _AvatarRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Compact formatting toolbar above the bio `TextField`. Each action
+/// mutates the bio text buffer directly (see `_wrapSelection`,
+/// `_insertLink`, `_insertImage` in the screen state); the underlying
+/// storage is a markdown-subset string the server converts to Lexical
+/// JSON on save.
+class _BioToolbar extends StatelessWidget {
+  const _BioToolbar({
+    required this.onBold,
+    required this.onItalic,
+    required this.onUnderline,
+    required this.onLink,
+    required this.onImage,
+  });
+
+  final VoidCallback onBold;
+  final VoidCallback onItalic;
+  final VoidCallback onUnderline;
+  final VoidCallback onLink;
+  final VoidCallback onImage;
+
+  @override
+  Widget build(BuildContext context) {
+    final border = Theme.of(context).colorScheme.outlineVariant;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        border: Border.all(color: border),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(8),
+          topRight: Radius.circular(8),
+        ),
+      ),
+      child: Row(
+        children: [
+          _ToolbarButton(
+            icon: Icons.format_bold,
+            tooltip: 'Bold',
+            onTap: onBold,
+          ),
+          _ToolbarButton(
+            icon: Icons.format_italic,
+            tooltip: 'Italic',
+            onTap: onItalic,
+          ),
+          _ToolbarButton(
+            icon: Icons.format_underline,
+            tooltip: 'Underline',
+            onTap: onUnderline,
+          ),
+          _ToolbarDivider(color: border),
+          _ToolbarButton(
+            icon: Icons.link,
+            tooltip: 'Insert link',
+            onTap: onLink,
+          ),
+          _ToolbarButton(
+            icon: Icons.image_outlined,
+            tooltip: 'Insert image',
+            onTap: onImage,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ToolbarButton extends StatelessWidget {
+  const _ToolbarButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: tooltip,
+      visualDensity: VisualDensity.compact,
+      onPressed: onTap,
+      icon: Icon(icon, size: 20),
+    );
+  }
+}
+
+class _ToolbarDivider extends StatelessWidget {
+  const _ToolbarDivider({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 20,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      color: color,
     );
   }
 }

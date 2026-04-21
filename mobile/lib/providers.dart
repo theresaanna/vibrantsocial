@@ -133,9 +133,11 @@ final profilePostsProvider = StateNotifierProvider.autoDispose
 });
 
 /// Single post fetch. Usually navigated into from the feed or profile,
-/// but also the entry point for deep links.
+/// but also the entry point for deep links. Returns `PostDetail` —
+/// the post itself plus the author's resolved theme so the detail
+/// screen can paint the author's backdrop.
 final postProvider =
-    FutureProvider.autoDispose.family<Post, String>((ref, id) {
+    FutureProvider.autoDispose.family<PostDetail, String>((ref, id) {
   return ref.watch(postApiProvider).fetchPost(id);
 });
 

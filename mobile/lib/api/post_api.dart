@@ -74,13 +74,14 @@ class PostApi {
     return PostPage.fromJson(_requireBody(res));
   }
 
-  /// `GET /api/v1/post/:id` — single post with viewer state.
-  Future<Post> fetchPost(String id) async {
+  /// `GET /api/v1/post/:id` — single post with viewer state + the
+  /// post author's resolved theme (so the detail screen can paint the
+  /// author's backdrop the way their profile page does).
+  Future<PostDetail> fetchPost(String id) async {
     final res = await _dio.get<Map<String, dynamic>>(
       '/api/v1/post/${Uri.encodeComponent(id)}',
     );
-    final body = _requireBody(res);
-    return Post.fromJson((body['post'] as Map).cast<String, dynamic>());
+    return PostDetail.fromJson(_requireBody(res));
   }
 
   /// `POST /api/v1/post` — create a new post from the mobile composer.
