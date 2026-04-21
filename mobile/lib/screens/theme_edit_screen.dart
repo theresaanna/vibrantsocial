@@ -8,10 +8,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../api/theme_edit_api.dart';
+import '../config/env.dart';
 import '../models/theme_edit.dart';
 import '../providers.dart';
 import '../widgets/themed_background.dart';
 import '../widgets/themed_container.dart';
+import 'premium_screen.dart';
 
 final themeEditApiProvider = Provider<ThemeEditApi>(
   (ref) => ThemeEditApi(ref.watch(dioProvider)),
@@ -68,6 +70,22 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
   bool _generating = false;
   bool _uploading = false;
   bool _primed = false;
+
+  /// Turn a canonical background reference (as stored server-side and
+  /// returned by `/api/v1/theme/options`) into a URL
+  /// `CachedNetworkImage` can fetch. Preset paths start with `/` and
+  /// need the API base prepended; Vercel Blob uploads come back
+  /// absolute and pass through.
+  String _absBgUrl(String raw) {
+    if (raw.startsWith('/')) {
+      final base = Env.apiBaseUrl;
+      // Trim a trailing slash on base to avoid `//` in the final URL.
+      return base.endsWith('/')
+          ? '${base.substring(0, base.length - 1)}$raw'
+          : '$base$raw';
+    }
+    return raw;
+  }
 
   @override
   void initState() {
@@ -469,6 +487,7 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
     return ListView(
       padding: const EdgeInsets.only(bottom: 32),
       children: [
+        if (!opts.viewerIsPremium) _GoPremiumBanner(onTap: _openPremiumFlow),
         _backgroundSection(opts),
         _colorsSection(opts),
         _presetsSection(opts, presets),
@@ -477,6 +496,18 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
         _sparkleSection(opts),
       ],
     );
+  }
+
+  /// Launches the in-app subscription flow. On successful activation we
+  /// refetch theme options so premium backgrounds + fonts unlock
+  /// without the user having to back out and come back.
+  Future<void> _openPremiumFlow() async {
+    final activated = await Navigator.of(context).push<bool?>(
+      MaterialPageRoute(builder: (_) => const PremiumScreen()),
+    );
+    if (activated == true && mounted) {
+      ref.invalidate(_optionsProvider);
+    }
   }
 
   // ─── Sections ──────────────────────────────────────────────────
@@ -493,9 +524,12 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
               child: AspectRatio(
                 aspectRatio: 16 / 9,
                 child: CachedNetworkImage(
-                  imageUrl: _bgImage!,
+                  // Relative preset paths (`/backgrounds/...`) need the
+                  // API base prepended before they can be fetched; blob
+                  // URLs pass through unchanged.
+                  imageUrl: _absBgUrl(_bgImage!),
                   fit: BoxFit.cover,
-                  errorWidget: (_, __, ___) => const ColoredBox(
+                  errorWidget: (_, _, _) => const ColoredBox(
                     color: Colors.black12,
                     child: Center(child: Icon(Icons.broken_image)),
                   ),
@@ -538,26 +572,100 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
           ),
         ),
         const SizedBox(height: 12),
+        // Split the catalog into free + premium rows so the distinction
+        // is obvious at a glance. The flat list buried the tier under a
+        // tiny amber star which wasn't clearly readable.
+        _bgRow(
+          label: 'Free',
+          backgrounds:
+              opts.backgrounds.where((b) => !b.premiumOnly).toList(growable: false),
+          locked: false,
+          showStar: false,
+          viewerIsPremium: opts.viewerIsPremium,
+        ),
+        const SizedBox(height: 12),
+        _bgRow(
+          label: 'Premium',
+          backgrounds:
+              opts.backgrounds.where((b) => b.premiumOnly).toList(growable: false),
+          locked: !opts.viewerIsPremium,
+          showStar: false,
+          viewerIsPremium: opts.viewerIsPremium,
+          trailingHeaderAction: opts.viewerIsPremium
+              ? null
+              : TextButton(
+                  onPressed: _openPremiumFlow,
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFFD946EF),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text('Unlock'),
+                ),
+        ),
+      ],
+    );
+  }
+
+  /// One labeled horizontal strip of background thumbs. When
+  /// [locked] is true the entire row is dimmed and every tap opens
+  /// the premium screen instead of selecting the background.
+  Widget _bgRow({
+    required String label,
+    required List<dynamic> backgrounds,
+    required bool locked,
+    required bool showStar,
+    required bool viewerIsPremium,
+    Widget? trailingHeaderAction,
+  }) {
+    if (backgrounds.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+          child: Row(
+            children: [
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: locked
+                          ? Theme.of(context).colorScheme.onSurfaceVariant
+                          : null,
+                    ),
+              ),
+              if (locked) ...[
+                const SizedBox(width: 6),
+                const Icon(Icons.lock, size: 14, color: Colors.grey),
+              ],
+              const Spacer(),
+              if (trailingHeaderAction != null) trailingHeaderAction,
+            ],
+          ),
+        ),
         SizedBox(
           height: 100,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: opts.backgrounds.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemCount: backgrounds.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemBuilder: (_, i) {
-              final bg = opts.backgrounds[i];
-              final disabled = bg.premiumOnly && !opts.viewerIsPremium;
+              final bg = backgrounds[i];
               final selected = _bgImage == bg.src;
               return GestureDetector(
-                onTap: disabled
-                    ? null
-                    : () {
-                        setState(() => _bgImage = bg.src);
-                        _markDirty();
-                      },
+                onTap: () {
+                  if (locked) {
+                    _openPremiumFlow();
+                    return;
+                  }
+                  setState(() => _bgImage = bg.src);
+                  _markDirty();
+                },
                 child: Opacity(
-                  opacity: disabled ? 0.4 : 1,
+                  opacity: locked ? 0.4 : 1,
                   child: Container(
                     width: 100,
                     decoration: BoxDecoration(
@@ -574,12 +682,24 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
                       fit: StackFit.expand,
                       children: [
                         CachedNetworkImage(
-                          imageUrl: bg.thumbSrc,
+                          // Catalog paths are canonical (relative for
+                          // presets). Absolutize for the image loader.
+                          imageUrl: _absBgUrl(bg.thumbSrc),
                           fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) =>
+                          errorWidget: (_, _, _) =>
                               const ColoredBox(color: Colors.black12),
                         ),
-                        if (bg.premiumOnly)
+                        if (locked)
+                          Container(
+                            alignment: Alignment.center,
+                            color: Colors.black.withValues(alpha: 0.25),
+                            child: const Icon(
+                              Icons.lock,
+                              size: 20,
+                              color: Colors.white,
+                            ),
+                          ),
+                        if (showStar && !locked)
                           const Positioned(
                             top: 4,
                             right: 4,
@@ -1092,6 +1212,66 @@ class _ThemeEditScreenState extends ConsumerState<ThemeEditScreen> {
 }
 
 // ── Shared sub-widgets ──────────────────────────────────────────
+
+/// Top-of-editor banner shown to free users, pointing at the premium
+/// screen. Visible even when specific rows (backgrounds, fonts) have
+/// their own disabled state — keeps the upgrade affordance prominent
+/// rather than burying it under each locked tile.
+class _GoPremiumBanner extends StatelessWidget {
+  const _GoPremiumBanner({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: const LinearGradient(
+              colors: [Color(0xFFD946EF), Color(0xFF2563EB)],
+            ),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.auto_awesome, color: Colors.white),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Unlock the full theme editor',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Premium unlocks custom colors, backgrounds, '
+                      'fonts, and sparklefall.',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.white),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _Section extends StatelessWidget {
   const _Section({

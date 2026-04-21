@@ -4,6 +4,9 @@
          flutter_local_notifications foreground toasts). The Flutter side
          prompts the user for this permission at runtime. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Google Play Billing — required for the in_app_purchase plugin
+         to open the Play purchase flow for the premium subscription. -->
+    <uses-permission android:name="com.android.vending.BILLING"/>
     <application
         android:label="vibrantsocial"
         android:name="${applicationName}"

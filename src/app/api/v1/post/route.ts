@@ -37,6 +37,11 @@ import {
   serializePost,
 } from "@/lib/post-serializer";
 import { resolveAssetBaseUrl } from "@/lib/profile-lists";
+import { checkAndExpirePremium } from "@/lib/premium";
+
+// Same 5-minute-future minimum the web composer enforces so the cron
+// tick doesn't race the create call.
+const MIN_SCHEDULE_OFFSET_MS = 5 * 60 * 1000;
 
 export async function OPTIONS(req: Request) {
   return handleCorsPreflightRequest(req);
@@ -77,6 +82,7 @@ export async function POST(req: Request) {
     isNsfw?: unknown;
     isSensitive?: unknown;
     isGraphicNudity?: unknown;
+    scheduledFor?: unknown;
   };
   try {
     body = await req.json();
@@ -104,6 +110,32 @@ export async function POST(req: Request) {
   const isSensitive = false;
   const isGraphicNudity = false;
 
+  // Scheduled posts — premium-only, must be >=5 minutes in the future.
+  // Inngest's `publish-scheduled-posts` job picks them up at the time.
+  let scheduledFor: Date | null = null;
+  if (typeof body.scheduledFor === "string" && body.scheduledFor.length > 0) {
+    const hasPremium = await checkAndExpirePremium(viewer.userId);
+    if (!hasPremium) {
+      return corsJson(
+        req,
+        { error: "Scheduling posts is a premium feature." },
+        { status: 403 },
+      );
+    }
+    const when = new Date(body.scheduledFor);
+    if (Number.isNaN(when.getTime())) {
+      return corsJson(req, { error: "Invalid schedule date" }, { status: 400 });
+    }
+    if (when.getTime() - Date.now() < MIN_SCHEDULE_OFFSET_MS) {
+      return corsJson(
+        req,
+        { error: "Schedule must be at least 5 minutes in the future." },
+        { status: 400 },
+      );
+    }
+    scheduledFor = when;
+  }
+
   // Build Lexical content: paragraphs with autolinks + optional YT / images / poll.
   const youtubeVideoId =
     body.youtubeVideoId ?? detectYouTubeVideoId(text) ?? undefined;
@@ -128,6 +160,7 @@ export async function POST(req: Request) {
       isNsfw,
       isSensitive,
       isGraphicNudity,
+      scheduledFor,
     },
     select: postSelect,
   });
@@ -148,6 +181,20 @@ export async function POST(req: Request) {
         data: { postId: created.id, tagId: tag.id },
       });
     }
+  }
+
+  // Scheduled posts don't publish yet — skip the star bump (that fires
+  // when a post goes live) and the serialization round-trip (the
+  // client only needs confirmation, not a renderable post payload).
+  if (scheduledFor) {
+    return NextResponse.json(
+      {
+        scheduled: true,
+        postId: created.id,
+        scheduledFor: scheduledFor.toISOString(),
+      },
+      { status: 201, headers: corsHeaders(req) },
+    );
   }
 
   // Stars + notification side effects are web-feature-heavy; they'll
