@@ -26,12 +26,13 @@ export const PROFILE_THEME_PRESETS: Record<string, ProfileThemeColors> = {
   default: {
     // Neutral grays with VibrantSocial's logo gradient as accents —
     // magenta links (fuchsia-600) and indigo secondary picks up the
-    // blue end; purple lives in the blend between them.
-    profileBgColor: "#fafafa",
+    // blue end; purple lives in the blend between them. The bg is a
+    // visible light gray so container cards (white) pop.
+    profileBgColor: "#e4e4e7",
     profileTextColor: "#18181b",
     profileLinkColor: "#c026d3",
     profileSecondaryColor: "#6366f1",
-    profileContainerColor: "#f4f4f5",
+    profileContainerColor: "#ffffff",
   },
   ocean: {
     profileBgColor: "#0c1929",
