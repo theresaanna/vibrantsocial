@@ -1,0 +1,15 @@
+# Copy to android/key.properties and fill in real values.
+# DO NOT commit — key.properties and *.jks are already gitignored.
+#
+# Generate a release keystore (one-time, store the output safely):
+#
+#   keytool -genkey -v \
+#     -keystore android/app/upload-keystore.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 \
+#     -alias upload
+#
+# Then point storeFile at it (path is resolved relative to android/).
+storeFile=app/upload-keystore.jks
+storePassword=CHANGE_ME
+keyAlias=upload
+keyPassword=CHANGE_ME

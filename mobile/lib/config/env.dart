@@ -5,12 +5,15 @@
 /// flutter run --dart-define=API_BASE_URL=http://192.168.1.42:3000
 /// ```
 class Env {
-  /// Base URL of the VibrantSocial API. Defaults to localhost for the iOS
-  /// simulator; Android emulators should override to `http://10.0.2.2:3000`
-  /// and physical devices to the host machine's LAN IP.
+  /// Base URL of the VibrantSocial API. Defaults to production so release
+  /// builds never accidentally ship pointing at a dev server. Dev runs
+  /// override via `--dart-define=API_BASE_URL=...`:
+  ///   - iOS simulator:    http://localhost:3000
+  ///   - Android emulator: http://10.0.2.2:3000
+  ///   - Physical device:  http://<host-lan-ip>:3000
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:3000',
+    defaultValue: 'https://vibrantsocial.app',
   );
 
   /// iOS OAuth 2.0 Client ID from Google Cloud Console. Pass via

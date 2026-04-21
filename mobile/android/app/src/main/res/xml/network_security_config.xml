@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Dev-only cleartext exception: let the app hit the Next.js dev server on
-  localhost and the Android emulator's host alias (10.0.2.2) without TLS.
-  Production traffic hits https://vibrantsocial.app, which uses TLS normally.
+  Release-safe network policy: no cleartext traffic anywhere. The dev
+  cleartext exceptions for localhost / 10.0.2.2 live in
+  src/debug/res/xml/network_security_config.xml and only ship in debug
+  builds. Play Store submissions must not permit cleartext, so this is
+  the file packaged into release AABs.
 -->
 <network-security-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">localhost</domain>
-        <domain includeSubdomains="true">127.0.0.1</domain>
-        <domain includeSubdomains="true">10.0.2.2</domain>
-    </domain-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
 </network-security-config>
