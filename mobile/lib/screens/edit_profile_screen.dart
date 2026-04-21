@@ -13,6 +13,7 @@ import '../providers.dart';
 import '../widgets/framed_avatar.dart';
 import '../widgets/themed_background.dart';
 import 'links_page_screen.dart';
+import 'premium_screen.dart';
 import 'theme_edit_screen.dart';
 
 /// Flutter edit-profile screen. Mirrors `/profile` on web minus the
@@ -359,6 +360,26 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   // ---------------------------------------------------------------------
+  // Premium
+  // ---------------------------------------------------------------------
+
+  /// Push the in-app premium screen. If the user completes a successful
+  /// subscription (the screen pops with `true`), we refetch the profile
+  /// so the avatar-frame picker flips from the upgrade row to the
+  /// real picker without a manual reload.
+  Future<void> _openPremiumFlow() async {
+    final activated = await Navigator.of(context).push<bool?>(
+      MaterialPageRoute(builder: (_) => const PremiumScreen()),
+    );
+    if (activated == true && mounted) {
+      setState(() {
+        _load = ref.read(profileEditApiProvider).fetchMe();
+      });
+      _load.then(_hydrate).catchError((_) {});
+    }
+  }
+
+  // ---------------------------------------------------------------------
   // Avatar
   // ---------------------------------------------------------------------
 
@@ -647,6 +668,41 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 'Linked accounts',
                 subtitle: 'Google, Apple, and email sign-in.',
               ),
+              // Premium row routes premium users to Play's native sub-
+              // management screen (cancel, restart, update payment —
+              // Google's UI is the source of truth). Free users instead
+              // get pushed into our in-app upgrade flow.
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(
+                  p.isPremium
+                      ? Icons.auto_awesome
+                      : Icons.auto_awesome_outlined,
+                  color: p.isPremium ? const Color(0xFFD946EF) : null,
+                ),
+                title: const Text('Premium subscription'),
+                subtitle: Text(
+                  p.isPremium ? 'Active · Manage in Google Play' : 'Not subscribed',
+                ),
+                trailing: Icon(
+                  p.isPremium ? Icons.open_in_new : Icons.chevron_right,
+                  size: 16,
+                ),
+                onTap: () {
+                  if (p.isPremium) {
+                    launchUrl(
+                      Uri.parse(
+                        'https://play.google.com/store/account/subscriptions'
+                        '?sku=premium_monthly'
+                        '&package=app.vibrantsocial.app',
+                      ),
+                      mode: LaunchMode.externalApplication,
+                    );
+                  } else {
+                    _openPremiumFlow();
+                  }
+                },
+              ),
               _webLink(
                 Icons.history,
                 'Bio revision history',
@@ -684,18 +740,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     Map<String, AvatarFrame> framesById,
   ) {
     // Free-tier users see a single row inviting them to upgrade —
-    // framing is a paid perk both on web and here.
+    // framing is a paid perk. Tapping opens the in-app premium screen
+    // which handles the Google Play subscription; on success the form
+    // is re-hydrated so the real frame picker appears.
     if (!p.isPremium) {
       return ListTile(
         contentPadding: EdgeInsets.zero,
         leading: const Icon(Icons.auto_awesome_outlined),
         title: const Text('Avatar frames'),
-        subtitle: const Text('A premium perk. Upgrade on the website.'),
-        trailing: const Icon(Icons.open_in_new, size: 16),
-        onTap: () => launchUrl(
-          Uri.parse('https://vibrantsocial.app/premium'),
-          mode: LaunchMode.externalApplication,
-        ),
+        subtitle: const Text('A premium perk — tap to subscribe.'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => _openPremiumFlow(),
       );
     }
     // Row the user lands on — shows the current selection and a button

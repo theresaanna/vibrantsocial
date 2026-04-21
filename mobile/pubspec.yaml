@@ -84,6 +84,10 @@ dependencies:
   # Needed for MediaType when uploading theme backgrounds as multipart.
   http_parser: ^4.0.2
 
+  # Google Play Billing for the $4.99/mo premium subscription. Receipt
+  # validation happens server-side at POST /api/iap/google.
+  in_app_purchase: ^3.2.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

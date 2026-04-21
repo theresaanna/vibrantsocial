@@ -354,26 +354,34 @@ export async function sendChatRoomMessage(
     // Non-critical
   }
 
-  // Handle @mentions
+  // Handle @mentions — wrapped so a notification failure never 500s a
+  // successful message send. The FK on `Notification.messageId` points
+  // at the DM `Message` table, so passing a ChatRoomMessage id here
+  // would violate it; omit the id entirely on CHATROOM_MENTION. (A
+  // `chatRoomMessageId` relation on `Notification` would round-trip
+  // the link properly — filed as a follow-up, needs a migration.)
   if (trimmed) {
-    const mentionedUsernames = extractMentions(trimmed);
-    if (mentionedUsernames.length > 0) {
-      const users = await prisma.user.findMany({
-        where: { username: { in: mentionedUsernames, mode: "insensitive" } },
-        select: { id: true },
-      });
-      await Promise.all(
-        users
-          .filter((u) => u.id !== session.user.id)
-          .map((u) =>
-            createNotification({
-              type: "CHATROOM_MENTION",
-              actorId: session.user.id,
-              targetUserId: u.id,
-              messageId: message.id,
-            })
-          )
-      );
+    try {
+      const mentionedUsernames = extractMentions(trimmed);
+      if (mentionedUsernames.length > 0) {
+        const users = await prisma.user.findMany({
+          where: { username: { in: mentionedUsernames, mode: "insensitive" } },
+          select: { id: true },
+        });
+        await Promise.all(
+          users
+            .filter((u) => u.id !== session.user.id)
+            .map((u) =>
+              createNotification({
+                type: "CHATROOM_MENTION",
+                actorId: session.user.id,
+                targetUserId: u.id,
+              }),
+            ),
+        );
+      }
+    } catch (err) {
+      console.error("[sendChatRoomMessage] mention notify failed:", err);
     }
   }
 

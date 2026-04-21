@@ -122,6 +122,20 @@ class AuthApi {
     return MobileUser.fromJson(user.cast<String, dynamic>());
   }
 
+  /// `POST /api/v1/auth/forgot-password` — kick off the email-based
+  /// password-reset flow. Success is intentionally silent on the server
+  /// side (unknown email / OAuth-only user / successful enqueue all
+  /// return the same message) so callers only need the text to echo.
+  Future<String> requestPasswordReset({required String email}) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/auth/forgot-password',
+      data: {'email': email},
+    );
+    final data = res.data ?? const {};
+    return (data['message'] as String?) ??
+        'If an account with that email exists, we sent you a reset link.';
+  }
+
   Session _sessionFromJson(Map<String, dynamic> data) {
     final token = data['token'] as String?;
     final user = data['user'] as Map?;

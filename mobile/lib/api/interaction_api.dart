@@ -26,6 +26,18 @@ class BookmarkResult {
       );
 }
 
+/// Response shape for `/api/v1/post/:id/repost` (POST or DELETE).
+class RepostResult {
+  RepostResult({required this.reposted, required this.reposts});
+  final bool reposted;
+  final int reposts;
+
+  factory RepostResult.fromJson(Map<String, dynamic> json) => RepostResult(
+        reposted: json['reposted'] as bool,
+        reposts: json['reposts'] as int,
+      );
+}
+
 /// Response shape for `/api/v1/profile/:username/follow` (POST or DELETE).
 class FollowResult {
   FollowResult({required this.isFollowing, required this.followers});
@@ -94,6 +106,43 @@ class InteractionApi {
       '/api/v1/post/${Uri.encodeComponent(postId)}/bookmark',
     );
     return BookmarkResult.fromJson(_body(res));
+  }
+
+  Future<RepostResult> repost(String postId) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/post/${Uri.encodeComponent(postId)}/repost',
+    );
+    return RepostResult.fromJson(_body(res));
+  }
+
+  Future<RepostResult> unrepost(String postId) async {
+    final res = await _dio.delete<Map<String, dynamic>>(
+      '/api/v1/post/${Uri.encodeComponent(postId)}/repost',
+    );
+    return RepostResult.fromJson(_body(res));
+  }
+
+  /// Create a quote-repost — a repost with the viewer's own `content`
+  /// attached. Server refuses if the viewer has already straight-
+  /// reposted this post (keeps feeds from showing both). Returns the
+  /// fresh straight-repost count so the UI can reconcile the row
+  /// alongside the `reposted` flag it just flipped.
+  Future<RepostResult> quoteRepost({
+    required String postId,
+    required String content,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/post/${Uri.encodeComponent(postId)}/quote-repost',
+      data: {'content': content},
+    );
+    final data = _body(res);
+    return RepostResult(
+      // Server returns `{ok, repostId, reposts}` — synthesize `reposted`
+      // as `true` so callers treat the row the same as a straight repost
+      // for UI state.
+      reposted: true,
+      reposts: (data['reposts'] as num).toInt(),
+    );
   }
 
   /// Create a top-level comment on [postId].

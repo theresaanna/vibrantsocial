@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers.dart';
+import '../widgets/auth_card.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -72,81 +73,107 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final dobLabel = _dob == null
         ? 'Pick date of birth'
         : '${_dob!.year}-${_dob!.month.toString().padLeft(2, '0')}-${_dob!.day.toString().padLeft(2, '0')}';
-    return Scaffold(
-      appBar: AppBar(title: const Text('Create account')),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextFormField(
-                      controller: _email,
-                      keyboardType: TextInputType.emailAddress,
-                      autocorrect: false,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (v) =>
-                          (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _username,
-                      autocorrect: false,
-                      decoration: const InputDecoration(
-                        labelText: 'Username',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (v) => (v == null || v.trim().length < 3)
-                          ? 'At least 3 characters'
-                          : null,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _password,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Password',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (v) => (v == null || v.length < 8)
-                          ? 'At least 8 characters'
-                          : null,
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.calendar_today),
-                      label: Text(dobLabel),
-                      onPressed: _busy ? null : _pickDob,
-                    ),
-                    const SizedBox(height: 20),
-                    FilledButton(
-                      onPressed: _busy ? null : _submit,
-                      child: _busy
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Create account'),
-                    ),
-                    if (_error != null) ...[
-                      const SizedBox(height: 12),
-                      Text(_error!, style: const TextStyle(color: Colors.red)),
-                    ],
-                  ],
+    return Form(
+      key: _formKey,
+      child: AuthCard(
+        leading: IconButton(
+          tooltip: 'Back',
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.arrow_back),
+        ),
+        children: [
+          const BrandedAuthHeader(
+            lead: 'Join ',
+            subtitle: 'Create your account to start posting.',
+          ),
+          const SizedBox(height: 24),
+          TextFormField(
+            controller: _email,
+            keyboardType: TextInputType.emailAddress,
+            autocorrect: false,
+            autofillHints: const [AutofillHints.email],
+            decoration: const InputDecoration(
+              labelText: 'Email',
+              hintText: 'you@example.com',
+              border: OutlineInputBorder(),
+            ),
+            validator: (v) => (v == null || !v.contains('@'))
+                ? 'Enter a valid email'
+                : null,
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _username,
+            autocorrect: false,
+            autofillHints: const [AutofillHints.newUsername],
+            decoration: const InputDecoration(
+              labelText: 'Username',
+              hintText: '3–30 letters, numbers, or underscores',
+              border: OutlineInputBorder(),
+            ),
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Pick a username';
+              if (!RegExp(r'^[a-zA-Z0-9_]{3,30}$').hasMatch(v.trim())) {
+                return '3–30 letters, numbers, or underscores only';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _password,
+            obscureText: true,
+            autofillHints: const [AutofillHints.newPassword],
+            decoration: const InputDecoration(
+              labelText: 'Password',
+              hintText: 'At least 8 characters',
+              border: OutlineInputBorder(),
+            ),
+            validator: (v) =>
+                (v == null || v.length < 8) ? 'At least 8 characters' : null,
+          ),
+          const SizedBox(height: 16),
+          // DOB picker styled to look like the other form fields — an
+          // empty-state with a calendar icon on the right.
+          InkWell(
+            onTap: _busy ? null : _pickDob,
+            borderRadius: BorderRadius.circular(4),
+            child: InputDecorator(
+              decoration: const InputDecoration(
+                labelText: 'Date of birth',
+                border: OutlineInputBorder(),
+                suffixIcon: Icon(Icons.calendar_today, size: 18),
+              ),
+              child: Text(
+                dobLabel,
+                style: TextStyle(
+                  color: _dob == null
+                      ? Theme.of(context).hintColor
+                      : Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),
           ),
-        ),
+          const SizedBox(height: 20),
+          AuthGradientButton(
+            onTap: _busy ? null : _submit,
+            busy: _busy,
+            label: 'Create account',
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              _error!,
+              style: const TextStyle(color: Colors.red, fontSize: 13),
+            ),
+          ],
+          const SizedBox(height: 20),
+          AuthFooterLink(
+            leading: 'Already have an account? ',
+            action: 'Sign in',
+            onTap: _busy ? null : () => Navigator.of(context).pop(),
+          ),
+        ],
       ),
     );
   }

@@ -8,6 +8,7 @@ import '../models/resolved_theme.dart';
 import '../providers.dart';
 import '../widgets/block_renderer.dart';
 import '../widgets/framed_avatar.dart';
+import '../widgets/gif_picker.dart';
 import '../widgets/post_card.dart';
 import '../widgets/themed_background.dart';
 import '../widgets/username_text.dart';
@@ -76,6 +77,7 @@ class _PostWithCommentsState extends ConsumerState<_PostWithComments> {
   late Post _post;
   final _commentCtrl = TextEditingController();
   bool _submitting = false;
+  String? _pendingGifUrl;
 
   @override
   void initState() {
@@ -89,16 +91,26 @@ class _PostWithCommentsState extends ConsumerState<_PostWithComments> {
     super.dispose();
   }
 
+  Future<void> _pickGif() async {
+    final gif = await pickGif(context);
+    if (gif == null || !mounted) return;
+    setState(() => _pendingGifUrl = gif.url);
+  }
+
   Future<void> _submitComment() async {
     final text = _commentCtrl.text.trim();
-    if (text.isEmpty || _submitting) return;
+    // Allow a comment that's just a GIF (no text) — matches how people
+    // actually use this. Require *something*.
+    if ((text.isEmpty && _pendingGifUrl == null) || _submitting) return;
     setState(() => _submitting = true);
     try {
       await ref.read(interactionApiProvider).createComment(
             postId: _post.id,
             content: text,
+            imageUrl: _pendingGifUrl,
           );
       _commentCtrl.clear();
+      setState(() => _pendingGifUrl = null);
       // Bump comment count locally so the post card reflects it immediately,
       // and refetch the comments list so the new row shows up.
       setState(() {
@@ -174,41 +186,102 @@ class _PostWithCommentsState extends ConsumerState<_PostWithComments> {
           top: false,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-            child: Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: _commentCtrl,
-                    minLines: 1,
-                    maxLines: 4,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _submitComment(),
-                    decoration: InputDecoration(
-                      hintText: 'Write a comment…',
-                      filled: true,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
+                if (_pendingGifUrl != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: _StagedGifChip(
+                        url: _pendingGifUrl!,
+                        onRemove: () =>
+                            setState(() => _pendingGifUrl = null),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                IconButton.filled(
-                  onPressed: _submitting ? null : _submitComment,
-                  icon: _submitting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.send),
+                Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Add GIF',
+                      onPressed: _submitting ? null : _pickGif,
+                      icon: const Icon(Icons.gif_box_outlined),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: _commentCtrl,
+                        minLines: 1,
+                        maxLines: 4,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _submitComment(),
+                        decoration: InputDecoration(
+                          hintText: 'Write a comment…',
+                          filled: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.filled(
+                      onPressed: _submitting ? null : _submitComment,
+                      icon: _submitting
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child:
+                                  CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.send),
+                    ),
+                  ],
                 ),
               ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Staged-GIF chip shown above the comment composer when the user
+/// has picked a GIF but hasn't submitted yet. Tap the ✕ to drop it.
+class _StagedGifChip extends StatelessWidget {
+  const _StagedGifChip({required this.url, required this.onRemove});
+
+  final String url;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Image.network(url, height: 80, fit: BoxFit.cover),
+        ),
+        Positioned(
+          top: -6,
+          right: -6,
+          child: InkWell(
+            onTap: onRemove,
+            borderRadius: BorderRadius.circular(999),
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close, size: 14, color: Colors.white),
             ),
           ),
         ),
