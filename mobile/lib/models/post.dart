@@ -1,5 +1,6 @@
 import 'avatar_frame.dart';
 import 'block.dart';
+import 'resolved_theme.dart';
 
 class PostAuthor {
   PostAuthor({
@@ -226,5 +227,31 @@ class PostPage {
           .toList(),
       nextCursor: json['nextCursor'] as String?,
     );
+  }
+}
+
+/// Response shape for `GET /api/v1/post/:id` — the post itself plus the
+/// author's resolved theme so the detail screen can paint the same
+/// backdrop as the author's profile page.
+class PostDetail {
+  const PostDetail({required this.post, required this.authorTheme});
+
+  final Post post;
+  final ResolvedTheme? authorTheme;
+
+  factory PostDetail.fromJson(Map<String, dynamic> json) {
+    final rawTheme = json['authorTheme'];
+    return PostDetail(
+      post: Post.fromJson((json['post'] as Map).cast<String, dynamic>()),
+      authorTheme: rawTheme is Map
+          ? ResolvedTheme.fromJson(rawTheme.cast<String, dynamic>())
+          : null,
+    );
+  }
+
+  /// Keeps viewer-state mutations (like/bookmark toggles) working even
+  /// when a caller only has the PostDetail wrapper.
+  PostDetail copyWith({Post? post}) {
+    return PostDetail(post: post ?? this.post, authorTheme: authorTheme);
   }
 }

@@ -9,7 +9,13 @@
  */
 
 export type Segment =
-  | { type: "text"; text: string; bold?: boolean; italic?: boolean }
+  | {
+      type: "text";
+      text: string;
+      bold?: boolean;
+      italic?: boolean;
+      underline?: boolean;
+    }
   | { type: "link"; text: string; url: string }
   | { type: "mention"; text: string; username: string }
   | { type: "hashtag"; text: string; tag: string };
@@ -63,6 +69,7 @@ interface LexicalNode {
 
 const FORMAT_BOLD = 1;
 const FORMAT_ITALIC = 2;
+const FORMAT_UNDERLINE = 8;
 
 /** Parse a post's Lexical JSON content into ordered blocks. */
 export function extractBlocksFromLexicalJson(jsonString: string): Block[] {
@@ -212,20 +219,27 @@ function headingLevel(tag: string | undefined): 1 | 2 | 3 {
 function collectInlineSegments(nodes: LexicalNode[]): Segment[] {
   const segments: Segment[] = [];
 
-  function pushText(text: string, bold?: boolean, italic?: boolean) {
+  function pushText(
+    text: string,
+    bold?: boolean,
+    italic?: boolean,
+    underline?: boolean,
+  ) {
     if (!text) return;
     const last = segments[segments.length - 1];
     if (
       last &&
       last.type === "text" &&
       (last.bold ?? false) === (bold ?? false) &&
-      (last.italic ?? false) === (italic ?? false)
+      (last.italic ?? false) === (italic ?? false) &&
+      (last.underline ?? false) === (underline ?? false)
     ) {
       last.text += text;
     } else {
       const seg: Segment = { type: "text", text };
       if (bold) seg.bold = true;
       if (italic) seg.italic = true;
+      if (underline) seg.underline = true;
       segments.push(seg);
     }
   }
@@ -238,6 +252,7 @@ function collectInlineSegments(nodes: LexicalNode[]): Segment[] {
           n.text,
           (fmt & FORMAT_BOLD) !== 0,
           (fmt & FORMAT_ITALIC) !== 0,
+          (fmt & FORMAT_UNDERLINE) !== 0,
         );
         continue;
       }
