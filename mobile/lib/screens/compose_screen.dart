@@ -9,7 +9,10 @@ import 'package:image_picker/image_picker.dart';
 
 import '../api/post_api.dart';
 import '../providers.dart';
+import '../widgets/gif_picker.dart';
 import '../widgets/themed_background.dart';
+import 'premium_screen.dart';
+import 'scheduled_posts_screen.dart';
 
 /// Minimal post composer — text + tags + content warnings. Auto-link
 /// and auto-YouTube detection happen server-side (see lib/compose.ts),
@@ -37,6 +40,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   bool _submitting = false;
   bool _generatingTags = false;
   bool _pickingImage = false;
+  DateTime? _scheduledFor;
   String? _error;
 
   @override
@@ -95,6 +99,16 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   void _removeImage(_PendingImage image) {
     setState(() => _images.remove(image));
+  }
+
+  /// Open the shared Giphy picker. Picked GIFs skip the upload pipe —
+  /// we stash the Giphy CDN URL directly on a pre-"uploaded" pending
+  /// row so it flows through the same thumbnail + submit paths images
+  /// use.
+  Future<void> _addGif() async {
+    final gif = await pickGif(context);
+    if (gif == null || !mounted) return;
+    setState(() => _images.add(_PendingImage.hosted(gif.url)));
   }
 
   /// Prompt for a URL, then insert a markdown link using the current
@@ -188,6 +202,67 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     });
   }
 
+  /// Opens a date + time picker, stages `_scheduledFor` if the user
+  /// confirms. Premium-only; free users get punted to `PremiumScreen`
+  /// (server would 403 otherwise — this just surfaces it nicely).
+  Future<void> _pickSchedule() async {
+    final session = ref.read(sessionProvider);
+    final isPremium = session?.user.tier == 'premium';
+    if (!isPremium) {
+      final activated = await Navigator.of(context).push<bool?>(
+        MaterialPageRoute(builder: (_) => const PremiumScreen()),
+      );
+      if (activated != true) return;
+      // `session.user.tier` is cached — re-check via fresh claim the
+      // next build. For now just fall through so the picker opens.
+    }
+    if (!mounted) return;
+
+    final now = DateTime.now();
+    // Default to "tomorrow same hour" to minimize scrolling; clamped to
+    // the server's 5-minute-future minimum.
+    final seedDate = _scheduledFor ?? now.add(const Duration(days: 1));
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: seedDate,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (picked == null || !mounted) return;
+
+    final seedTime = _scheduledFor != null
+        ? TimeOfDay.fromDateTime(_scheduledFor!)
+        : TimeOfDay.fromDateTime(seedDate);
+    final time = await showTimePicker(
+      context: context,
+      initialTime: seedTime,
+    );
+    if (time == null || !mounted) return;
+
+    final combined = DateTime(
+      picked.year,
+      picked.month,
+      picked.day,
+      time.hour,
+      time.minute,
+    );
+    if (combined.difference(DateTime.now()) < const Duration(minutes: 5)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pick a time at least 5 minutes from now.'),
+        ),
+      );
+      return;
+    }
+    setState(() => _scheduledFor = combined);
+  }
+
+  void _openScheduledList() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ScheduledPostsScreen()),
+    );
+  }
+
   Future<void> _submit() async {
     if (!_canSubmit) return;
     setState(() {
@@ -196,7 +271,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     });
     try {
       final pollPayload = _poll?.toPayload();
-      await ref.read(postApiProvider).createPost(
+      final result = await ref.read(postApiProvider).createPost(
             CreatePostInput(
               text: _textCtrl.text.trim(),
               tags: List.of(_tags),
@@ -209,15 +284,28 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               isNsfw: _isNsfw,
               isSensitive: _isSensitive,
               isGraphicNudity: _isGraphicNudity,
+              scheduledFor: _scheduledFor,
             ),
           );
-      // Reset the feed + the signed-in user's posts so the new post shows.
-      ref.read(feedProvider.notifier).refresh();
-      final username = ref.read(sessionProvider)?.user.username;
-      if (username != null) {
-        ref.read(profilePostsProvider(username).notifier).refresh();
-      }
       if (!mounted) return;
+      // Scheduled posts don't go into the feed yet — no provider
+      // invalidation needed. Live posts refresh both the home feed and
+      // the author's profile so the new card shows immediately.
+      if (result is PublishedPostResult) {
+        ref.read(feedProvider.notifier).refresh();
+        final username = ref.read(sessionProvider)?.user.username;
+        if (username != null) {
+          ref.read(profilePostsProvider(username).notifier).refresh();
+        }
+      } else if (result is ScheduledPostResult) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Scheduled for ${_formatSchedule(result.scheduledFor.toLocal())}',
+            ),
+          ),
+        );
+      }
       Navigator.of(context).pop(true);
     } on DioException catch (e) {
       final msg = e.response?.data is Map
@@ -301,6 +389,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               _ImageStrip(
                 images: _images,
                 onAdd: _addImage,
+                onAddGif: _addGif,
                 onRemove: _removeImage,
                 busyAdding: _pickingImage,
               ),
@@ -332,6 +421,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 onNsfw: (v) => setState(() => _isNsfw = v),
                 onSensitive: (v) => setState(() => _isSensitive = v),
                 onGraphic: (v) => setState(() => _isGraphicNudity = v),
+              ),
+              const SizedBox(height: 16),
+              _ScheduleRow(
+                scheduledFor: _scheduledFor,
+                onPickTap: _pickSchedule,
+                onClear: () => setState(() => _scheduledFor = null),
+                onManageTap: _openScheduledList,
               ),
               if (_error != null) ...[
                 const SizedBox(height: 12),
@@ -709,6 +805,15 @@ class _PollBuilder extends StatelessWidget {
 /// URL we'll submit with the post.
 class _PendingImage {
   _PendingImage({required this.localPath});
+
+  /// Construct a `_PendingImage` for a hosted URL we don't need to
+  /// upload — used for Giphy picks. `localPath` stays empty; the
+  /// thumbnail branch keys on `uploaded != null` so it renders the
+  /// remote URL directly.
+  _PendingImage.hosted(String url)
+      : localPath = '',
+        uploaded = url;
+
   final String localPath;
   String? uploaded;
   String? uploadError;
@@ -718,12 +823,14 @@ class _ImageStrip extends StatelessWidget {
   const _ImageStrip({
     required this.images,
     required this.onAdd,
+    required this.onAddGif,
     required this.onRemove,
     required this.busyAdding,
   });
 
   final List<_PendingImage> images;
   final VoidCallback onAdd;
+  final VoidCallback onAddGif;
   final void Function(_PendingImage) onRemove;
   final bool busyAdding;
 
@@ -737,6 +844,8 @@ class _ImageStrip extends StatelessWidget {
           for (final img in images)
             _Thumbnail(image: img, onRemove: () => onRemove(img)),
           _AddImageTile(onTap: onAdd, busy: busyAdding),
+          const SizedBox(width: 6),
+          _AddGifTile(onTap: onAddGif),
         ],
       ),
     );
@@ -868,6 +977,112 @@ class _AddImageTile extends StatelessWidget {
       ),
     );
   }
+}
+
+class _AddGifTile extends StatelessWidget {
+  const _AddGifTile({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: onTap,
+      child: Container(
+        width: 88,
+        height: 88,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.gif_box_outlined),
+            SizedBox(height: 4),
+            Text('GIF', style: TextStyle(fontSize: 11)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Row showing the current schedule (if any) + controls to pick or
+/// clear it, plus a shortcut to the "my scheduled posts" queue. Free
+/// users see the label with a premium badge — tapping pushes them at
+/// the upgrade screen via `_pickSchedule`.
+class _ScheduleRow extends StatelessWidget {
+  const _ScheduleRow({
+    required this.scheduledFor,
+    required this.onPickTap,
+    required this.onClear,
+    required this.onManageTap,
+  });
+
+  final DateTime? scheduledFor;
+  final VoidCallback onPickTap;
+  final VoidCallback onClear;
+  final VoidCallback onManageTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isScheduled = scheduledFor != null;
+    return Row(
+      children: [
+        OutlinedButton.icon(
+          onPressed: onPickTap,
+          icon: const Icon(Icons.schedule, size: 18),
+          label: Text(
+            isScheduled
+                ? 'Scheduled: ${_formatSchedule(scheduledFor!.toLocal())}'
+                : 'Schedule for later',
+          ),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: isScheduled ? scheme.primary : null,
+          ),
+        ),
+        if (isScheduled) ...[
+          const SizedBox(width: 4),
+          IconButton(
+            tooltip: 'Clear schedule',
+            visualDensity: VisualDensity.compact,
+            onPressed: onClear,
+            icon: const Icon(Icons.clear, size: 18),
+          ),
+        ],
+        const Spacer(),
+        TextButton(
+          onPressed: onManageTap,
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: const Text('Manage queue'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Short-form "Mon Apr 21, 3:05 PM" style used in the composer row and
+/// the after-submit confirmation snackbar.
+String _formatSchedule(DateTime dt) {
+  const months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  final hour24 = dt.hour;
+  final hour = hour24 == 0 ? 12 : (hour24 > 12 ? hour24 - 12 : hour24);
+  final suffix = hour24 < 12 ? 'AM' : 'PM';
+  final minute = dt.minute.toString().padLeft(2, '0');
+  return '${months[dt.month - 1]} ${dt.day}, $hour:$minute $suffix';
 }
 
 class _WarningToggles extends StatelessWidget {

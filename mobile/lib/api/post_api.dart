@@ -15,6 +15,7 @@ class CreatePostInput {
     this.isNsfw = false,
     this.isSensitive = false,
     this.isGraphicNudity = false,
+    this.scheduledFor,
   });
 
   final String text;
@@ -25,6 +26,11 @@ class CreatePostInput {
   final bool isNsfw;
   final bool isSensitive;
   final bool isGraphicNudity;
+
+  /// When set, the server queues the post for publish at this time via
+  /// the `publish-scheduled-posts` Inngest job. Premium-only — free
+  /// accounts get a 403. Must be >= 5 minutes in the future.
+  final DateTime? scheduledFor;
 
   Map<String, dynamic> toJson() => {
         'text': text,
@@ -45,7 +51,54 @@ class CreatePostInput {
         'isNsfw': isNsfw,
         'isSensitive': isSensitive,
         'isGraphicNudity': isGraphicNudity,
+        if (scheduledFor != null)
+          'scheduledFor': scheduledFor!.toUtc().toIso8601String(),
       };
+}
+
+/// Union return from `POST /api/v1/post`. Published posts get the full
+/// serialized row; scheduled posts only return the id + when, since
+/// the mobile UI doesn't need to render a draft.
+sealed class CreatePostResult {
+  const CreatePostResult();
+}
+
+class PublishedPostResult extends CreatePostResult {
+  const PublishedPostResult(this.post);
+  final Post post;
+}
+
+class ScheduledPostResult extends CreatePostResult {
+  const ScheduledPostResult({required this.postId, required this.scheduledFor});
+  final String postId;
+  final DateTime scheduledFor;
+}
+
+/// Minimal summary of a queued post, returned by
+/// `GET /api/v1/scheduled-posts`. Carries a plain-text preview so the
+/// management screen can identify the post without a full renderer.
+class ScheduledPostSummary {
+  const ScheduledPostSummary({
+    required this.id,
+    required this.text,
+    required this.tagNames,
+    required this.scheduledFor,
+  });
+
+  final String id;
+  final String text;
+  final List<String> tagNames;
+  final DateTime scheduledFor;
+
+  factory ScheduledPostSummary.fromJson(Map<String, dynamic> json) =>
+      ScheduledPostSummary(
+        id: json['id'] as String,
+        text: (json['text'] as String?) ?? '',
+        tagNames: (json['tagNames'] as List? ?? const [])
+            .map((t) => t as String)
+            .toList(),
+        scheduledFor: DateTime.parse(json['scheduledFor'] as String),
+      );
 }
 
 class PostApi {
@@ -85,13 +138,44 @@ class PostApi {
   }
 
   /// `POST /api/v1/post` — create a new post from the mobile composer.
-  Future<Post> createPost(CreatePostInput input) async {
+  ///
+  /// When the input carries a `scheduledFor`, the server queues the
+  /// post and returns `{scheduled: true, postId, scheduledFor}` — this
+  /// method bridges both response shapes into `CreatePostResult`.
+  Future<CreatePostResult> createPost(CreatePostInput input) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/api/v1/post',
       data: input.toJson(),
     );
     final body = _requireBody(res);
-    return Post.fromJson((body['post'] as Map).cast<String, dynamic>());
+    if (body['scheduled'] == true) {
+      return ScheduledPostResult(
+        postId: body['postId'] as String,
+        scheduledFor: DateTime.parse(body['scheduledFor'] as String),
+      );
+    }
+    return PublishedPostResult(
+      Post.fromJson((body['post'] as Map).cast<String, dynamic>()),
+    );
+  }
+
+  /// `GET /api/v1/scheduled-posts` — your not-yet-published queue.
+  Future<List<ScheduledPostSummary>> fetchScheduledPosts() async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/api/v1/scheduled-posts',
+    );
+    final body = _requireBody(res);
+    return (body['posts'] as List)
+        .cast<Map>()
+        .map((m) => ScheduledPostSummary.fromJson(m.cast<String, dynamic>()))
+        .toList();
+  }
+
+  /// `DELETE /api/v1/scheduled-posts/:id` — cancel a queued post.
+  Future<void> cancelScheduledPost(String id) async {
+    await _dio.delete<Map<String, dynamic>>(
+      '/api/v1/scheduled-posts/${Uri.encodeComponent(id)}',
+    );
   }
 
   /// `POST /api/v1/compose/suggest-tags` — AI-suggested tags for the

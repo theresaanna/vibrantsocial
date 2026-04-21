@@ -21,6 +21,7 @@ import 'conversation_screen.dart';
 import 'edit_profile_screen.dart';
 import 'user_list_screen.dart';
 import 'user_posts_screen.dart';
+import 'wall_screen.dart';
 
 /// Public profile view. Mirrors the web profile layout (themed background,
 /// container panel with the user's colors, avatar + frame overlay, bio,
@@ -455,6 +456,14 @@ class _RelationshipActionsState extends ConsumerState<_RelationshipActions> {
     }
   }
 
+  void _openWall() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => WallScreen(username: widget.username),
+      ),
+    );
+  }
+
   Future<void> _toggleFollow() {
     final api = ref.read(interactionApiProvider);
     return _run(() async {
@@ -546,6 +555,10 @@ class _RelationshipActionsState extends ConsumerState<_RelationshipActions> {
         buttons.add(_secondary(context, 'Message', onTap: _startConversation));
       }
     }
+    // Wall is always visible — non-friends can still read accepted
+    // posts, and the wall screen gates the composer on canCompose
+    // (friends only) so the button never opens into a dead-end state.
+    buttons.add(_secondary(context, 'Wall', onTap: _openWall));
 
     return Wrap(
       spacing: 8,

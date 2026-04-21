@@ -17,7 +17,6 @@ import { prisma } from "@/lib/prisma";
 import { corsJson, handleCorsPreflightRequest } from "@/lib/cors";
 import { requireViewer } from "@/lib/require-viewer";
 import { getAllProfileBackgrounds } from "@/lib/profile-backgrounds.server";
-import { resolveAssetBaseUrl } from "@/lib/profile-lists";
 import { USERNAME_FONTS } from "@/lib/profile-fonts";
 import { SPARKLEFALL_PRESETS } from "@/lib/sparklefall-presets";
 import { checkAndExpirePremium } from "@/lib/premium";
@@ -30,12 +29,17 @@ export async function GET(req: Request) {
   const viewer = await requireViewer(req);
   if (!viewer.ok) return viewer.response;
 
-  const base = resolveAssetBaseUrl(req);
+  // Preset background `src` / `thumbSrc` are relative, canonical paths
+  // (e.g. `/backgrounds/clouds.jpg`) — the same shape we store in
+  // `User.profileBgImage`. Returning them verbatim keeps write-back
+  // lossless: the client can pick a catalog bg and save it straight
+  // through without stripping a base URL. Clients absolutize at render
+  // time (see `Env.apiBaseUrl` helper on mobile).
   const backgrounds = getAllProfileBackgrounds().map((b) => ({
     id: b.id,
     name: b.name,
-    src: `${base}${b.src}`,
-    thumbSrc: `${base}${b.thumbSrc}`,
+    src: b.src,
+    thumbSrc: b.thumbSrc,
     category: b.category,
     premiumOnly: b.premiumOnly === true,
   }));

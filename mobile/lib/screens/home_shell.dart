@@ -8,6 +8,7 @@ import '../widgets/themed_background.dart';
 import 'chatrooms_screen.dart';
 import 'compose_screen.dart';
 import 'curated_lists_screen.dart';
+import 'explore_screen.dart';
 import 'feed_screen.dart';
 import 'marketplace_screen.dart';
 import 'messages_screen.dart';
@@ -27,7 +28,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   ChatChannelSubscription? _notifySub;
   String? _notifySubUserId;
 
-  static const _titles = ['Feed', 'Messages', 'Chatrooms', 'Me'];
+  static const _titles = ['Feed', 'Explore', 'Messages', 'Chatrooms', 'Me'];
 
   @override
   void dispose() {
@@ -68,8 +69,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     }
 
     // The Me tab composes its own AppBar with the profile-specific chrome,
-    // so we suppress the shell's AppBar on that tab.
-    final showAppBar = _tab != 3;
+    // so we suppress the shell's AppBar on that tab. With the new Explore
+    // tab the Me index shifts to 4.
+    final showAppBar = _tab != 4;
 
     return ThemedBackground(
       theme: viewerTheme,
@@ -83,7 +85,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 actions: [
                   // NSFW toggle is visible on Feed and Chatrooms tabs —
                   // both surface NSFW-gated content (posts and rooms).
-                  if (_tab == 0 || _tab == 2) const NsfwToggle(),
+                  // Chatrooms is now index 3 after Explore slotted in.
+                  if (_tab == 0 || _tab == 3) const NsfwToggle(),
                   if (_tab == 0)
                     PopupMenuButton<String>(
                       tooltip: 'More',
@@ -153,6 +156,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           index: _tab,
           children: [
             const FeedScreen(),
+            const ExploreScreen(),
             const MessagesScreen(),
             const ChatroomsScreen(),
             if (username != null)
@@ -182,6 +186,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               icon: Icon(Icons.home_outlined),
               selectedIcon: Icon(Icons.home),
               label: 'Feed',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.tag_outlined),
+              selectedIcon: Icon(Icons.tag),
+              label: 'Explore',
             ),
             NavigationDestination(
               icon: _BadgedIcon(

@@ -7,6 +7,8 @@ import 'api/api_client.dart';
 import 'api/auth_api.dart';
 import 'api/avatar_frames_api.dart';
 import 'api/chatroom_api.dart';
+import 'api/explore_api.dart';
+import 'api/giphy_api.dart';
 import 'api/interaction_api.dart';
 import 'api/link_preview_api.dart';
 import 'api/links_page_api.dart';
@@ -16,6 +18,7 @@ import 'api/messaging_api.dart';
 import 'api/post_api.dart';
 import 'api/profile_api.dart';
 import 'api/profile_edit_api.dart';
+import 'api/wall_api.dart';
 import 'api/push_api.dart';
 import 'api/rpc_client.dart';
 import 'api/theme_api.dart';
@@ -34,6 +37,7 @@ import 'models/profile.dart';
 import 'models/resolved_theme.dart';
 import 'models/session.dart';
 import 'services/ably_service.dart';
+import 'services/iap_service.dart';
 import 'services/native_oauth.dart';
 import 'services/push_service.dart';
 import 'services/token_store.dart';
@@ -60,6 +64,12 @@ final authApiProvider = Provider<AuthApi>(
 
 final nativeOAuthProvider = Provider<NativeOAuth>((ref) => NativeOAuth());
 
+final iapServiceProvider = Provider<IapService>((ref) {
+  final service = IapService(ref.watch(dioProvider));
+  ref.onDispose(service.dispose);
+  return service;
+});
+
 final themeApiProvider = Provider<ThemeApi>(
   (ref) => ThemeApi(ref.watch(dioProvider)),
 );
@@ -70,6 +80,18 @@ final profileApiProvider = Provider<ProfileApi>(
 
 final profileEditApiProvider = Provider<ProfileEditApi>(
   (ref) => ProfileEditApi(ref.watch(dioProvider)),
+);
+
+final exploreApiProvider = Provider<ExploreApi>(
+  (ref) => ExploreApi(ref.watch(dioProvider)),
+);
+
+final giphyApiProvider = Provider<GiphyApi>(
+  (ref) => GiphyApi(ref.watch(dioProvider)),
+);
+
+final wallApiProvider = Provider<WallApi>(
+  (ref) => WallApi(ref.watch(dioProvider)),
 );
 
 final linksPageApiProvider = Provider<LinksPageApi>(
@@ -155,8 +177,24 @@ class SessionController extends StateNotifier<Session?> {
 
   final Ref _ref;
 
+  /// Local-dev bypass: when a pre-minted mobile JWT is passed via
+  /// `--dart-define=DEV_BYPASS_TOKEN=…`, seed the store with it the
+  /// first time we boot without an existing token. Keeps dev flowing
+  /// while Android OAuth is still being configured. Never fires in
+  /// release builds and never overwrites an already-present token.
+  static const String _devBypassToken =
+      String.fromEnvironment('DEV_BYPASS_TOKEN');
+
   Future<void> bootstrap() async {
-    final token = await _ref.read(tokenStoreProvider).read();
+    final store = _ref.read(tokenStoreProvider);
+    var token = await store.read();
+    if ((token == null || token.isEmpty) && _devBypassToken.isNotEmpty) {
+      // Debug-only shortcut — compile-time gated and no-op when the
+      // define is absent. Only seeds when the store is empty so a real
+      // login always wins.
+      await store.write(_devBypassToken);
+      token = _devBypassToken;
+    }
     if (token == null || token.isEmpty) return;
     try {
       final user = await _ref.read(authApiProvider).me();

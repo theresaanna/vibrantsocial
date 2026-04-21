@@ -12,6 +12,7 @@ import '../models/resolved_theme.dart';
 import '../providers.dart';
 import '../screens/profile_screen.dart';
 import 'framed_avatar.dart';
+import 'gif_picker.dart';
 import 'link_preview_card.dart';
 import 'linkified_text.dart';
 import 'username_text.dart';
@@ -83,6 +84,7 @@ class _ChatThreadViewState extends ConsumerState<ChatThreadView> {
   final ImagePicker _picker = ImagePicker();
   bool _sending = false;
   XFile? _attachment;
+  String? _pendingGifUrl;
   bool _uploading = false;
   ChatMessage? _replyTarget;
 
@@ -119,7 +121,12 @@ class _ChatThreadViewState extends ConsumerState<ChatThreadView> {
         imageQuality: 90,
       );
       if (picked == null || !mounted) return;
-      setState(() => _attachment = picked);
+      setState(() {
+        _attachment = picked;
+        // Image + GIF are mutually exclusive attachments — clear the
+        // other so there's no ambiguity over which one gets sent.
+        _pendingGifUrl = null;
+      });
     } catch (err) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -128,8 +135,22 @@ class _ChatThreadViewState extends ConsumerState<ChatThreadView> {
     }
   }
 
+  Future<void> _pickGif() async {
+    if (_uploading || _sending) return;
+    final gif = await pickGif(context);
+    if (gif == null || !mounted) return;
+    setState(() {
+      _pendingGifUrl = gif.url;
+      _attachment = null;
+    });
+  }
+
   void _clearAttachment() {
     setState(() => _attachment = null);
+  }
+
+  void _clearGif() {
+    setState(() => _pendingGifUrl = null);
   }
 
   void _stageReply(ChatMessage target) {
@@ -143,7 +164,10 @@ class _ChatThreadViewState extends ConsumerState<ChatThreadView> {
   Future<void> _handleSend() async {
     final text = _inputCtrl.text.trim();
     final attachment = _attachment;
-    if ((text.isEmpty && attachment == null) || _sending) return;
+    final gifUrl = _pendingGifUrl;
+    if ((text.isEmpty && attachment == null && gifUrl == null) || _sending) {
+      return;
+    }
     setState(() => _sending = true);
 
     String? mediaUrl;
@@ -173,6 +197,13 @@ class _ChatThreadViewState extends ConsumerState<ChatThreadView> {
       } finally {
         if (mounted) setState(() => _uploading = false);
       }
+    } else if (gifUrl != null) {
+      // GIFs from Giphy are pre-hosted — skip the upload pipeline and
+      // attach the Giphy CDN URL directly. `mediaType: 'image'` is what
+      // the server + client expect for both still images and animated
+      // GIFs (Flutter's `Image.network` decodes animated GIFs natively).
+      mediaUrl = gifUrl;
+      mediaType = 'image';
     }
 
     final ok = await widget.onSend(ChatSendDraft(
@@ -189,6 +220,7 @@ class _ChatThreadViewState extends ConsumerState<ChatThreadView> {
       _inputCtrl.clear();
       setState(() {
         _attachment = null;
+        _pendingGifUrl = null;
         _replyTarget = null;
       });
     }
@@ -206,9 +238,12 @@ class _ChatThreadViewState extends ConsumerState<ChatThreadView> {
           enabled: !_sending && !_uploading,
           sending: _sending || _uploading,
           attachment: _attachment,
+          pendingGifUrl: _pendingGifUrl,
           replyTarget: _replyTarget,
           onPickImage: _pickImage,
+          onPickGif: _pickGif,
           onClearAttachment: _clearAttachment,
+          onClearGif: _clearGif,
           onClearReply: _clearReply,
           onSend: _handleSend,
           viewerTheme: viewerTheme,
@@ -916,9 +951,12 @@ class _Composer extends StatelessWidget {
     required this.enabled,
     required this.sending,
     required this.attachment,
+    required this.pendingGifUrl,
     required this.replyTarget,
     required this.onPickImage,
+    required this.onPickGif,
     required this.onClearAttachment,
+    required this.onClearGif,
     required this.onClearReply,
     required this.onSend,
     required this.viewerTheme,
@@ -928,9 +966,12 @@ class _Composer extends StatelessWidget {
   final bool enabled;
   final bool sending;
   final XFile? attachment;
+  final String? pendingGifUrl;
   final ChatMessage? replyTarget;
   final VoidCallback onPickImage;
+  final VoidCallback onPickGif;
   final VoidCallback onClearAttachment;
+  final VoidCallback onClearGif;
   final VoidCallback onClearReply;
   final VoidCallback onSend;
   final ResolvedTheme? viewerTheme;
@@ -971,6 +1012,14 @@ class _Composer extends StatelessWidget {
                     onRemove: sending ? null : onClearAttachment,
                   ),
                 ),
+              if (pendingGifUrl != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 6, top: 2),
+                  child: _GifPreview(
+                    url: pendingGifUrl!,
+                    onRemove: sending ? null : onClearGif,
+                  ),
+                ),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -978,6 +1027,12 @@ class _Composer extends StatelessWidget {
                     tooltip: 'Attach image',
                     onPressed: enabled ? onPickImage : null,
                     icon: const Icon(Icons.image_outlined),
+                    color: textColor,
+                  ),
+                  IconButton(
+                    tooltip: 'Add GIF',
+                    onPressed: enabled ? onPickGif : null,
+                    icon: const Icon(Icons.gif_box_outlined),
                     color: textColor,
                   ),
                   Expanded(
@@ -1103,6 +1158,50 @@ class _ReplyStagedChip extends StatelessWidget {
 
 /// Inline preview chip for the picked-but-not-yet-sent image. The X
 /// button drops the attachment without sending.
+/// Sibling of `_AttachmentPreview` for GIFs picked from Giphy. Renders
+/// the remote URL via `Image.network` so the animation loops even
+/// before send.
+class _GifPreview extends StatelessWidget {
+  const _GifPreview({required this.url, required this.onRemove});
+
+  final String url;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.network(
+            url,
+            height: 80,
+            fit: BoxFit.cover,
+          ),
+        ),
+        if (onRemove != null)
+          Positioned(
+            top: -6,
+            right: -6,
+            child: Material(
+              color: Colors.black87,
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: onRemove,
+                child: const Padding(
+                  padding: EdgeInsets.all(2),
+                  child: Icon(Icons.close, size: 14, color: Colors.white),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _AttachmentPreview extends StatelessWidget {
   const _AttachmentPreview({required this.file, required this.onRemove});
 
