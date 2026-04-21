@@ -18,6 +18,7 @@ import { getChatRequestStatus, type ChatRequestStatus } from "@/app/messages/act
 import { deriveBlockStatus } from "@/app/feed/block-actions";
 import { buildMetadata, truncateText, SITE_NAME } from "@/lib/metadata";
 import { extractTextFromLexicalJson } from "@/lib/lexical-text";
+import { PROFILE_THEME_PRESETS } from "@/lib/profile-themes";
 import { publishedOnly, buildDigitalFileData } from "@/app/feed/feed-queries";
 import { buildProfilePostsContentFilter } from "./profile-queries";
 import { MarketplaceGrid } from "@/components/marketplace-grid";
@@ -551,6 +552,12 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
   const displayName = user.displayName || user.name || user.username;
   const avatarSrc = user.avatar || user.image;
   const initial = (displayName || "?")[0].toUpperCase();
+  // `hasCustomTheme` still tracks whether the user overrode any slot —
+  // used elsewhere (className) — but the profile always paints with the
+  // `default` preset's grays + logo-gradient accents when a slot is
+  // unset, so unthemed profiles don't fall through to the bare Tailwind
+  // surface.
+  const defaultPreset = PROFILE_THEME_PRESETS.default;
   const hasCustomTheme = !!(
     user.profileBgColor ||
     user.profileTextColor ||
@@ -561,16 +568,16 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
 
   const userHasBirthday = isBirthday(user.birthdayMonth, user.birthdayDay);
 
-  const themeStyle = hasCustomTheme
-    ? ({
-        "--profile-bg": user.profileBgColor ?? "#ffffff",
-        "--profile-text": user.profileTextColor ?? "#18181b",
-        "--profile-link": user.profileLinkColor ?? "#2563eb",
-        "--profile-secondary": user.profileSecondaryColor ?? "#71717a",
-        "--profile-container": user.profileContainerColor ?? "#f4f4f5",
-        "--profile-container-alpha": `${user.profileContainerOpacity ?? 100}%`,
-      } as React.CSSProperties)
-    : undefined;
+  const themeStyle = {
+    "--profile-bg": user.profileBgColor ?? defaultPreset.profileBgColor,
+    "--profile-text": user.profileTextColor ?? defaultPreset.profileTextColor,
+    "--profile-link": user.profileLinkColor ?? defaultPreset.profileLinkColor,
+    "--profile-secondary":
+      user.profileSecondaryColor ?? defaultPreset.profileSecondaryColor,
+    "--profile-container":
+      user.profileContainerColor ?? defaultPreset.profileContainerColor,
+    "--profile-container-alpha": `${user.profileContainerOpacity ?? 100}%`,
+  } as React.CSSProperties;
 
   const bgImageStyle: React.CSSProperties | undefined = user.profileBgImage
     ? {
@@ -587,7 +594,7 @@ export default async function PublicProfilePage({ params, searchParams }: Profil
 
   return (
     <div
-      className={hasCustomTheme && !isBlocked ? "profile-themed" : ""}
+      className={!isBlocked ? "profile-themed" : ""}
       style={isBlocked ? undefined : { ...themeStyle, ...bgImageStyle }}
     >
       {(() => {
