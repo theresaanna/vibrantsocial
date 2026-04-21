@@ -273,10 +273,16 @@ function collectInlineSegments(nodes: LexicalNode[]): Segment[] {
         continue;
       }
       if (n.type === "hashtag") {
-        const tag = (typeof n.text === "string" ? n.text : "").replace(
-          /^#/,
-          "",
-        );
+        // HashtagNode serializes the label as `tagName` (see
+        // src/components/editor/nodes/HashtagNode.tsx). Older/paste-
+        // ingested payloads may carry `text` instead, so accept either.
+        const rawTag =
+          typeof n.tagName === "string"
+            ? n.tagName
+            : typeof n.text === "string"
+              ? n.text
+              : "";
+        const tag = rawTag.replace(/^#/, "");
         if (tag) {
           segments.push({ type: "hashtag", text: `#${tag}`, tag });
         }
