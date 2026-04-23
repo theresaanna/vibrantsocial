@@ -58,7 +58,7 @@
     "@types/d3": "^7.4.3",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.36.3",
-    "@vercel/analytics": "^1.6.1",
+    "@vercel/analytics": "^2.0.1",
     "@vercel/blob": "^2.3.1",
     "@vercel/speed-insights": "^2.0.0",
     "ably": "^2.19.0",
