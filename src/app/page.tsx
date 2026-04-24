@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
@@ -36,9 +37,16 @@ export default async function Home() {
         <div className="w-full max-w-xl space-y-10 py-20 text-center">
           <div className="space-y-5">
             <h1 className="text-4xl leading-tight tracking-tight text-zinc-900 sm:text-5xl sm:leading-tight dark:text-zinc-50">
-              You&apos;ve arrived at{" "}
-              <span className="bg-gradient-to-r from-fuchsia-600 to-blue-600 bg-clip-text font-semibold text-transparent dark:from-fuchsia-400 dark:to-blue-400">VibrantSocial</span>.
+              You&apos;ve arrived at
             </h1>
+            <Image
+              src="/vibrantsocial-logo.png"
+              alt="VibrantSocial"
+              width={800}
+              height={213}
+              priority
+              className="mx-auto h-auto w-full max-w-md"
+            />
 
             <p className="mx-auto max-w-md text-lg leading-relaxed text-zinc-500 dark:text-zinc-400">
               Return to the good ol&apos; days of the internet, before
