@@ -43,8 +43,8 @@ export function Header() {
             src="/vibrantsocial-logo.png"
             alt="VibrantSocial"
             width={160}
-            height={40}
-            className="hidden sm:block"
+            height={43}
+            className="hidden h-9 w-auto sm:block"
             priority
           />
         </Link>
