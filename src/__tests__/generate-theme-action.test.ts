@@ -87,6 +87,17 @@ describe("generateTheme", () => {
     mockAuth.mockResolvedValue({ user: { id: "user1" } } as never);
     mockCheckPremium.mockResolvedValue(true);
     mockIsRateLimited.mockResolvedValue(false);
+    // Stub the server-side image fetch so tests don't hit the real network.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        headers: new Headers({ "content-type": "image/jpeg" }),
+        arrayBuffer: async () => new Uint8Array([1, 2, 3, 4]).buffer,
+      } as Response),
+    );
   });
 
   it("rejects unauthenticated users", async () => {
@@ -128,17 +139,29 @@ describe("generateTheme", () => {
     expect(result.dark!.profileBgColor).toMatch(/^#[0-9a-f]{6}$/);
   });
 
-  it("sends image content to AI", async () => {
+  it("sends image content to AI as inline base64", async () => {
     mockAiSuccess();
     await generateTheme("/backgrounds/blue-waves.jpg");
+    expect(fetch).toHaveBeenCalledWith(
+      "https://vibrantsocial.app/backgrounds/blue-waves.jpg",
+      expect.objectContaining({ headers: { Accept: "image/*" } }),
+    );
     const callArg = mockAnthropicCreate.mock.calls[0][0] as {
-      messages: Array<{ content: Array<{ type: string; source?: { url: string } }> }>;
+      messages: Array<{
+        content: Array<{
+          type: string;
+          source?: { type: string; media_type?: string; data?: string };
+        }>;
+      }>;
     };
     const imageBlock = callArg.messages[0].content.find(
       (b: { type: string }) => b.type === "image"
     );
     expect(imageBlock).toBeDefined();
-    expect(imageBlock!.source!.url).toBe("https://vibrantsocial.app/backgrounds/blue-waves.jpg");
+    expect(imageBlock!.source!.type).toBe("base64");
+    expect(imageBlock!.source!.media_type).toBe("image/jpeg");
+    // Buffer.from([1,2,3,4]).toString("base64") === "AQIDBA=="
+    expect(imageBlock!.source!.data).toBe("AQIDBA==");
   });
 
   it("handles malformed JSON from AI", async () => {

@@ -46,6 +46,67 @@ async function resolveImageUrl(imageUrl: string): Promise<string> {
   return `${proto}://${host}${imageUrl.startsWith("/") ? "" : "/"}${imageUrl}`;
 }
 
+const ANTHROPIC_SUPPORTED_MEDIA_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+] as const;
+type AnthropicMediaType = (typeof ANTHROPIC_SUPPORTED_MEDIA_TYPES)[number];
+
+function mediaTypeFromHeader(value: string | null): AnthropicMediaType | null {
+  if (!value) return null;
+  const t = value.split(";")[0].trim().toLowerCase();
+  return (ANTHROPIC_SUPPORTED_MEDIA_TYPES as readonly string[]).includes(t)
+    ? (t as AnthropicMediaType)
+    : null;
+}
+
+function mediaTypeFromExtension(url: string): AnthropicMediaType | null {
+  const ext = url.split("?")[0].split("#")[0].toLowerCase().match(/\.(\w+)$/)?.[1];
+  switch (ext) {
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "png":
+      return "image/png";
+    case "gif":
+      return "image/gif";
+    case "webp":
+      return "image/webp";
+    default:
+      return null;
+  }
+}
+
+/**
+ * Fetch the image ourselves and return it base64-encoded so we can hand it
+ * to Anthropic as an inline source. Going through `type: "url"` doesn't work
+ * because Cloudflare's bot management 403s requests carrying Anthropic's
+ * user-agent — fetching server-side bypasses that and also covers private
+ * blob URLs that aren't publicly reachable.
+ */
+async function fetchImageAsBase64(
+  absoluteUrl: string,
+): Promise<{ data: string; mediaType: AnthropicMediaType }> {
+  const res = await fetch(absoluteUrl, {
+    headers: { Accept: "image/*" },
+  });
+  if (!res.ok) {
+    throw new Error(`Image fetch failed: ${res.status} ${res.statusText}`);
+  }
+  const mediaType =
+    mediaTypeFromHeader(res.headers.get("content-type")) ??
+    mediaTypeFromExtension(absoluteUrl);
+  if (!mediaType) {
+    throw new Error(
+      `Unsupported image type for ${absoluteUrl} (content-type: ${res.headers.get("content-type") ?? "none"})`,
+    );
+  }
+  const buf = Buffer.from(await res.arrayBuffer());
+  return { data: buf.toString("base64"), mediaType };
+}
+
 function enforceContrast(colors: ProfileThemeColors): ProfileThemeColors {
   return {
     profileBgColor: colors.profileBgColor,
@@ -130,6 +191,7 @@ export async function generateThemeForUser(
   let absoluteUrl: string | undefined;
   try {
     absoluteUrl = await resolveImageUrl(imageUrl);
+    const { data: imageData, mediaType } = await fetchImageAsBase64(absoluteUrl);
     const response = await anthropic.messages.create({
       model: "claude-haiku-4-5",
       max_tokens: 512,
@@ -141,7 +203,7 @@ export async function generateThemeForUser(
           content: [
             {
               type: "image",
-              source: { type: "url", url: absoluteUrl },
+              source: { type: "base64", media_type: mediaType, data: imageData },
             },
             {
               type: "text",
