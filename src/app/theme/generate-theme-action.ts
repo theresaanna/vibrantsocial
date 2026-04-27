@@ -127,8 +127,9 @@ export async function generateThemeForUser(
     return { success: false, error: "Premium subscription required" };
   }
 
+  let absoluteUrl: string | undefined;
   try {
-    const absoluteUrl = await resolveImageUrl(imageUrl);
+    absoluteUrl = await resolveImageUrl(imageUrl);
     const response = await anthropic.messages.create({
       model: "claude-haiku-4-5",
       max_tokens: 512,
@@ -202,7 +203,13 @@ Return JSON in this exact format:
         : "Custom Theme";
 
     return { success: true, name, light: colors, dark: colors };
-  } catch {
+  } catch (err) {
+    console.error("[generateTheme] failed", {
+      userId,
+      imageUrl,
+      absoluteUrl,
+      error: err instanceof Error ? { name: err.name, message: err.message, stack: err.stack } : err,
+    });
     return { success: false, error: "Failed to generate theme. Try again." };
   }
 }
