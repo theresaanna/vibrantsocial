@@ -102,22 +102,45 @@ describe("generateTheme", () => {
 
   it("rejects unauthenticated users", async () => {
     mockAuth.mockResolvedValue(null as never);
-    const result = await generateTheme("/backgrounds/test.jpg");
+    const result = await generateTheme("/backgrounds/blue-waves.jpg");
     expect(result.success).toBe(false);
     expect(result.error).toBe("Not authenticated");
     expect(mockAnthropicCreate).not.toHaveBeenCalled();
   });
 
-  it("rejects non-premium users", async () => {
+  it("rejects non-premium users on premium-only backgrounds", async () => {
     mockCheckPremium.mockResolvedValue(false);
-    const result = await generateTheme("/backgrounds/test.jpg");
+    // Real premium preset — free presets are allowed for non-premium users.
+    const result = await generateTheme("/backgrounds/premium/Chevron-Pattern-vector.jpg");
     expect(result.success).toBe(false);
     expect(result.error).toBe("Premium subscription required");
   });
 
+  it("rejects URLs outside the preset allowlist and our blob bucket", async () => {
+    // Premium user, but URL is not a preset and not a vercel-blob URL —
+    // SSRF guard must reject it before any fetch happens.
+    const result = await generateTheme("https://attacker.example/evil.png");
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("Invalid background source");
+    expect(fetch).not.toHaveBeenCalled();
+    expect(mockAnthropicCreate).not.toHaveBeenCalled();
+  });
+
+  it("accepts vercel-blob upload URLs", async () => {
+    mockAiSuccess();
+    const result = await generateTheme(
+      "https://abc123.public.blob.vercel-storage.com/uploads/bg.png",
+    );
+    expect(result.success).toBe(true);
+    expect(fetch).toHaveBeenCalledWith(
+      "https://abc123.public.blob.vercel-storage.com/uploads/bg.png",
+      expect.anything(),
+    );
+  });
+
   it("rejects rate-limited users", async () => {
     mockIsRateLimited.mockResolvedValue(true);
-    const result = await generateTheme("/backgrounds/test.jpg");
+    const result = await generateTheme("/backgrounds/blue-waves.jpg");
     expect(result.success).toBe(false);
     expect(result.error).toMatch(/too many requests/i);
   });

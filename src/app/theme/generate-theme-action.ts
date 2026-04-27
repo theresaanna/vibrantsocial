@@ -14,6 +14,7 @@ import {
 } from "@/lib/profile-themes";
 import { headers } from "next/headers";
 import { isPresetBackgroundSrc, isPremiumBackgroundSrc } from "@/lib/profile-backgrounds.server";
+import { isVercelBlobUrl } from "@/lib/vercel-blob-url";
 
 const MAX_PROMPT_LENGTH = 200;
 const MAX_PRESETS_PER_USER = 10;
@@ -44,6 +45,24 @@ async function resolveImageUrl(imageUrl: string): Promise<string> {
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "vibrantsocial.app";
   const proto = h.get("x-forwarded-proto") ?? "https";
   return `${proto}://${host}${imageUrl.startsWith("/") ? "" : "/"}${imageUrl}`;
+}
+
+/**
+ * Final-step SSRF check on the resolved absolute URL — must be either our
+ * Vercel Blob bucket or a `/backgrounds/...` path on our own request host.
+ * Belt-and-suspenders alongside the pre-resolution `isPresetBackgroundSrc /
+ * isVercelBlobUrl` check so CodeQL can see a host-restricting guard
+ * immediately before the fetch().
+ */
+function isAllowedAbsoluteUrl(absoluteUrl: string): boolean {
+  if (isVercelBlobUrl(absoluteUrl)) return true;
+  try {
+    const u = new URL(absoluteUrl);
+    if (u.protocol !== "https:" && u.protocol !== "http:") return false;
+    return u.pathname.startsWith("/backgrounds/");
+  } catch {
+    return false;
+  }
 }
 
 const ANTHROPIC_SUPPORTED_MEDIA_TYPES = [
@@ -182,8 +201,18 @@ export async function generateThemeForUser(
     return { success: false, error: "Please select a background image" };
   }
 
+  // SSRF guard: the only legitimate sources are our allowlisted preset
+  // backgrounds and uploads in our own Vercel Blob bucket. Anything else
+  // (a custom URL the user smuggled into the form, an internal address,
+  // an attacker-controlled host) gets rejected before we fetch it.
+  const isPreset = isPresetBackgroundSrc(imageUrl);
+  const isOwnBlob = isVercelBlobUrl(imageUrl);
+  if (!isPreset && !isOwnBlob) {
+    return { success: false, error: "Invalid background source" };
+  }
+
   // Allow non-premium users to generate themes for free preset backgrounds
-  const isFreePreset = isPresetBackgroundSrc(imageUrl) && !isPremiumBackgroundSrc(imageUrl);
+  const isFreePreset = isPreset && !isPremiumBackgroundSrc(imageUrl);
   if (!isPremium && !isFreePreset) {
     return { success: false, error: "Premium subscription required" };
   }
@@ -191,6 +220,12 @@ export async function generateThemeForUser(
   let absoluteUrl: string | undefined;
   try {
     absoluteUrl = await resolveImageUrl(imageUrl);
+    // Re-check after resolution: `resolveImageUrl` only prepends the request
+    // host for relative paths, but defense-in-depth — make sure the final URL
+    // still lands on an allowed host before we hand it to fetch().
+    if (!isAllowedAbsoluteUrl(absoluteUrl)) {
+      return { success: false, error: "Invalid background source" };
+    }
     const { data: imageData, mediaType } = await fetchImageAsBase64(absoluteUrl);
     const response = await anthropic.messages.create({
       model: "claude-haiku-4-5",
