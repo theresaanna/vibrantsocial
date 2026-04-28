@@ -126,16 +126,27 @@ describe("generateTheme", () => {
     expect(mockAnthropicCreate).not.toHaveBeenCalled();
   });
 
-  it("accepts vercel-blob upload URLs", async () => {
+  it("accepts vercel-blob upload URLs and forwards them as Anthropic url source", async () => {
     mockAiSuccess();
-    const result = await generateTheme(
-      "https://abc123.public.blob.vercel-storage.com/uploads/bg.png",
-    );
+    const blobUrl = "https://abc123.public.blob.vercel-storage.com/uploads/bg.png";
+    const result = await generateTheme(blobUrl);
     expect(result.success).toBe(true);
-    expect(fetch).toHaveBeenCalledWith(
-      "https://abc123.public.blob.vercel-storage.com/uploads/bg.png",
-      expect.anything(),
+    // We don't fetch blob URLs ourselves — Anthropic pulls them directly
+    // (vercel-storage isn't behind Cloudflare's bot rules).
+    expect(fetch).not.toHaveBeenCalled();
+    const callArg = mockAnthropicCreate.mock.calls[0][0] as {
+      messages: Array<{
+        content: Array<{
+          type: string;
+          source?: { type: string; url?: string };
+        }>;
+      }>;
+    };
+    const imageBlock = callArg.messages[0].content.find(
+      (b: { type: string }) => b.type === "image"
     );
+    expect(imageBlock!.source!.type).toBe("url");
+    expect(imageBlock!.source!.url).toBe(blobUrl);
   });
 
   it("rejects rate-limited users", async () => {
@@ -166,7 +177,7 @@ describe("generateTheme", () => {
     mockAiSuccess();
     await generateTheme("/backgrounds/blue-waves.jpg");
     expect(fetch).toHaveBeenCalledWith(
-      "https://vibrantsocial.app/backgrounds/blue-waves.jpg",
+      "https://www.vibrantsocial.app/backgrounds/blue-waves.jpg",
       expect.objectContaining({ headers: { Accept: "image/*" } }),
     );
     const callArg = mockAnthropicCreate.mock.calls[0][0] as {
