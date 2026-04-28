@@ -47,24 +47,6 @@ async function resolveImageUrl(imageUrl: string): Promise<string> {
   return `${proto}://${host}${imageUrl.startsWith("/") ? "" : "/"}${imageUrl}`;
 }
 
-/**
- * Final-step SSRF check on the resolved absolute URL — must be either our
- * Vercel Blob bucket or a `/backgrounds/...` path on our own request host.
- * Belt-and-suspenders alongside the pre-resolution `isPresetBackgroundSrc /
- * isVercelBlobUrl` check so CodeQL can see a host-restricting guard
- * immediately before the fetch().
- */
-function isAllowedAbsoluteUrl(absoluteUrl: string): boolean {
-  if (isVercelBlobUrl(absoluteUrl)) return true;
-  try {
-    const u = new URL(absoluteUrl);
-    if (u.protocol !== "https:" && u.protocol !== "http:") return false;
-    return u.pathname.startsWith("/backgrounds/");
-  } catch {
-    return false;
-  }
-}
-
 const ANTHROPIC_SUPPORTED_MEDIA_TYPES = [
   "image/jpeg",
   "image/png",
@@ -81,8 +63,8 @@ function mediaTypeFromHeader(value: string | null): AnthropicMediaType | null {
     : null;
 }
 
-function mediaTypeFromExtension(url: string): AnthropicMediaType | null {
-  const ext = url.split("?")[0].split("#")[0].toLowerCase().match(/\.(\w+)$/)?.[1];
+function mediaTypeFromExtension(pathname: string): AnthropicMediaType | null {
+  const ext = pathname.toLowerCase().match(/\.(\w+)$/)?.[1];
   switch (ext) {
     case "jpg":
     case "jpeg":
@@ -104,11 +86,37 @@ function mediaTypeFromExtension(url: string): AnthropicMediaType | null {
  * because Cloudflare's bot management 403s requests carrying Anthropic's
  * user-agent — fetching server-side bypasses that and also covers private
  * blob URLs that aren't publicly reachable.
+ *
+ * SSRF: we parse the URL and require the hostname to match an explicit
+ * allowlist of literals before reaching `fetch`. The reconstructed
+ * `safeUrl` is built from the parsed origin + pathname so the value
+ * passed to fetch never carries an attacker-controlled query / fragment.
  */
 async function fetchImageAsBase64(
   absoluteUrl: string,
 ): Promise<{ data: string; mediaType: AnthropicMediaType }> {
-  const res = await fetch(absoluteUrl, {
+  const parsed = new URL(absoluteUrl);
+  const hostname = parsed.hostname;
+  const isOwnHost =
+    hostname === "vibrantsocial.app" ||
+    hostname === "www.vibrantsocial.app";
+  const isOwnBlob =
+    hostname === "blob.vercel-storage.com" ||
+    hostname.endsWith(".public.blob.vercel-storage.com");
+  if (!isOwnHost && !isOwnBlob) {
+    throw new Error(`Disallowed image host: ${hostname}`);
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    throw new Error(`Disallowed image protocol: ${parsed.protocol}`);
+  }
+  if (isOwnHost && !parsed.pathname.startsWith("/backgrounds/")) {
+    throw new Error(`Disallowed image path on own host: ${parsed.pathname}`);
+  }
+
+  // Reconstruct from validated parts — drop query/fragment, keep only
+  // origin + pathname. This is what we actually fetch.
+  const safeUrl = `${parsed.protocol}//${parsed.host}${parsed.pathname}`;
+  const res = await fetch(safeUrl, {
     headers: { Accept: "image/*" },
   });
   if (!res.ok) {
@@ -116,15 +124,16 @@ async function fetchImageAsBase64(
   }
   const mediaType =
     mediaTypeFromHeader(res.headers.get("content-type")) ??
-    mediaTypeFromExtension(absoluteUrl);
+    mediaTypeFromExtension(parsed.pathname);
   if (!mediaType) {
     throw new Error(
-      `Unsupported image type for ${absoluteUrl} (content-type: ${res.headers.get("content-type") ?? "none"})`,
+      `Unsupported image type for ${safeUrl} (content-type: ${res.headers.get("content-type") ?? "none"})`,
     );
   }
   const buf = Buffer.from(await res.arrayBuffer());
   return { data: buf.toString("base64"), mediaType };
 }
+
 
 function enforceContrast(colors: ProfileThemeColors): ProfileThemeColors {
   return {
@@ -220,12 +229,9 @@ export async function generateThemeForUser(
   let absoluteUrl: string | undefined;
   try {
     absoluteUrl = await resolveImageUrl(imageUrl);
-    // Re-check after resolution: `resolveImageUrl` only prepends the request
-    // host for relative paths, but defense-in-depth — make sure the final URL
-    // still lands on an allowed host before we hand it to fetch().
-    if (!isAllowedAbsoluteUrl(absoluteUrl)) {
-      return { success: false, error: "Invalid background source" };
-    }
+    // `fetchImageAsBase64` does its own inline hostname allowlist check
+    // immediately before fetch() — we don't gate again here so CodeQL
+    // sees a single sanitiser at the call site.
     const { data: imageData, mediaType } = await fetchImageAsBase64(absoluteUrl);
     const response = await anthropic.messages.create({
       model: "claude-haiku-4-5",
