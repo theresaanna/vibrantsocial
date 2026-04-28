@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { linkUsersInGroup, loadLinkedAccounts } from "@/lib/account-linking-db";
+import {
+  linkUsersInGroup,
+  loadLinkedAccounts,
+  invalidateLinkedAccountsCacheForGroup,
+} from "@/lib/account-linking-db";
 
 /**
  * Account-linking handler that runs AFTER the OAuth callback completes.
@@ -42,6 +46,7 @@ export async function GET(req: NextRequest) {
     // Link the original user and the OAuth user.
     try {
       await linkUsersInGroup(from, oauthUserId);
+      await invalidateLinkedAccountsCacheForGroup([from, oauthUserId]);
     } catch (err) {
       console.error("[finish-link] linking error:", err);
     }
@@ -122,6 +127,7 @@ export async function GET(req: NextRequest) {
 
           // Link both users in a group
           await linkUsersInGroup(from, newUser.id);
+          await invalidateLinkedAccountsCacheForGroup([from, newUser.id]);
 
           // Trigger session refresh to pick up the new linked account
           redirectUrl.searchParams.set("_switchTo", from);

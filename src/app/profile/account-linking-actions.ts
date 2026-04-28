@@ -2,6 +2,7 @@
 
 import { auth, signIn } from "@/auth";
 import { apiLimiter, isRateLimited } from "@/lib/rate-limit";import { prisma } from "@/lib/prisma";
+import { invalidateLinkedAccountsCacheForGroup } from "@/lib/account-linking-db";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import type { LinkedAccount } from "@/types/next-auth";
@@ -180,6 +181,11 @@ export async function linkAccount(
     select: { id: true, username: true, displayName: true, avatar: true, profileFrameId: true, usernameFont: true },
   });
 
+  // Bust the linked-accounts cache for every member of the resulting group
+  // so other devices / sessions see the new member without waiting on the
+  // 60s TTL.
+  await invalidateLinkedAccountsCacheForGroup([session.user.id, targetUser.id]);
+
   return {
     success: true,
     message: "Account linked successfully",
@@ -241,6 +247,7 @@ export async function unlinkAccount(
     await prisma.linkedAccountGroup.delete({
       where: { id: currentUser.linkedAccountGroupId },
     });
+    await invalidateLinkedAccountsCacheForGroup([session.user.id, targetUserId]);
     return { success: true, message: "Account unlinked", linkedAccounts: [] };
   }
 
@@ -252,6 +259,9 @@ export async function unlinkAccount(
     },
     select: { id: true, username: true, displayName: true, avatar: true, profileFrameId: true, usernameFont: true },
   });
+
+  // Bust caches for the unlinked user and every remaining group member.
+  await invalidateLinkedAccountsCacheForGroup([session.user.id, targetUserId]);
 
   return { success: true, message: "Account unlinked", linkedAccounts };
 }
