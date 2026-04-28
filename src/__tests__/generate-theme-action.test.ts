@@ -87,26 +87,71 @@ describe("generateTheme", () => {
     mockAuth.mockResolvedValue({ user: { id: "user1" } } as never);
     mockCheckPremium.mockResolvedValue(true);
     mockIsRateLimited.mockResolvedValue(false);
+    // Stub the server-side image fetch so tests don't hit the real network.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        headers: new Headers({ "content-type": "image/jpeg" }),
+        arrayBuffer: async () => new Uint8Array([1, 2, 3, 4]).buffer,
+      } as Response),
+    );
   });
 
   it("rejects unauthenticated users", async () => {
     mockAuth.mockResolvedValue(null as never);
-    const result = await generateTheme("/backgrounds/test.jpg");
+    const result = await generateTheme("/backgrounds/blue-waves.jpg");
     expect(result.success).toBe(false);
     expect(result.error).toBe("Not authenticated");
     expect(mockAnthropicCreate).not.toHaveBeenCalled();
   });
 
-  it("rejects non-premium users", async () => {
+  it("rejects non-premium users on premium-only backgrounds", async () => {
     mockCheckPremium.mockResolvedValue(false);
-    const result = await generateTheme("/backgrounds/test.jpg");
+    // Real premium preset — free presets are allowed for non-premium users.
+    const result = await generateTheme("/backgrounds/premium/Chevron-Pattern-vector.jpg");
     expect(result.success).toBe(false);
     expect(result.error).toBe("Premium subscription required");
   });
 
+  it("rejects URLs outside the preset allowlist and our blob bucket", async () => {
+    // Premium user, but URL is not a preset and not a vercel-blob URL —
+    // SSRF guard must reject it before any fetch happens.
+    const result = await generateTheme("https://attacker.example/evil.png");
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("Invalid background source");
+    expect(fetch).not.toHaveBeenCalled();
+    expect(mockAnthropicCreate).not.toHaveBeenCalled();
+  });
+
+  it("accepts vercel-blob upload URLs and forwards them as Anthropic url source", async () => {
+    mockAiSuccess();
+    const blobUrl = "https://abc123.public.blob.vercel-storage.com/uploads/bg.png";
+    const result = await generateTheme(blobUrl);
+    expect(result.success).toBe(true);
+    // We don't fetch blob URLs ourselves — Anthropic pulls them directly
+    // (vercel-storage isn't behind Cloudflare's bot rules).
+    expect(fetch).not.toHaveBeenCalled();
+    const callArg = mockAnthropicCreate.mock.calls[0][0] as {
+      messages: Array<{
+        content: Array<{
+          type: string;
+          source?: { type: string; url?: string };
+        }>;
+      }>;
+    };
+    const imageBlock = callArg.messages[0].content.find(
+      (b: { type: string }) => b.type === "image"
+    );
+    expect(imageBlock!.source!.type).toBe("url");
+    expect(imageBlock!.source!.url).toBe(blobUrl);
+  });
+
   it("rejects rate-limited users", async () => {
     mockIsRateLimited.mockResolvedValue(true);
-    const result = await generateTheme("/backgrounds/test.jpg");
+    const result = await generateTheme("/backgrounds/blue-waves.jpg");
     expect(result.success).toBe(false);
     expect(result.error).toMatch(/too many requests/i);
   });
@@ -128,17 +173,29 @@ describe("generateTheme", () => {
     expect(result.dark!.profileBgColor).toMatch(/^#[0-9a-f]{6}$/);
   });
 
-  it("sends image content to AI", async () => {
+  it("sends image content to AI as inline base64", async () => {
     mockAiSuccess();
     await generateTheme("/backgrounds/blue-waves.jpg");
+    expect(fetch).toHaveBeenCalledWith(
+      "https://www.vibrantsocial.app/backgrounds/blue-waves.jpg",
+      expect.objectContaining({ headers: { Accept: "image/*" } }),
+    );
     const callArg = mockAnthropicCreate.mock.calls[0][0] as {
-      messages: Array<{ content: Array<{ type: string; source?: { url: string } }> }>;
+      messages: Array<{
+        content: Array<{
+          type: string;
+          source?: { type: string; media_type?: string; data?: string };
+        }>;
+      }>;
     };
     const imageBlock = callArg.messages[0].content.find(
       (b: { type: string }) => b.type === "image"
     );
     expect(imageBlock).toBeDefined();
-    expect(imageBlock!.source!.url).toBe("https://vibrantsocial.app/backgrounds/blue-waves.jpg");
+    expect(imageBlock!.source!.type).toBe("base64");
+    expect(imageBlock!.source!.media_type).toBe("image/jpeg");
+    // Buffer.from([1,2,3,4]).toString("base64") === "AQIDBA=="
+    expect(imageBlock!.source!.data).toBe("AQIDBA==");
   });
 
   it("handles malformed JSON from AI", async () => {

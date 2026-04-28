@@ -12,8 +12,8 @@ import {
   adjustForContrast,
   THEME_COLOR_FIELDS,
 } from "@/lib/profile-themes";
-import { headers } from "next/headers";
 import { isPresetBackgroundSrc, isPremiumBackgroundSrc } from "@/lib/profile-backgrounds.server";
+import { isVercelBlobUrl } from "@/lib/vercel-blob-url";
 
 const MAX_PROMPT_LENGTH = 200;
 const MAX_PRESETS_PER_USER = 10;
@@ -37,14 +37,82 @@ interface DeletePresetResult {
   error?: string;
 }
 
-async function resolveImageUrl(imageUrl: string): Promise<string> {
-  if (/^https?:\/\//.test(imageUrl)) return imageUrl;
-  // Relative path — resolve using the request host
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "vibrantsocial.app";
-  const proto = h.get("x-forwarded-proto") ?? "https";
-  return `${proto}://${host}${imageUrl.startsWith("/") ? "" : "/"}${imageUrl}`;
+const ANTHROPIC_SUPPORTED_MEDIA_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+] as const;
+type AnthropicMediaType = (typeof ANTHROPIC_SUPPORTED_MEDIA_TYPES)[number];
+
+function mediaTypeFromHeader(value: string | null): AnthropicMediaType | null {
+  if (!value) return null;
+  const t = value.split(";")[0].trim().toLowerCase();
+  return (ANTHROPIC_SUPPORTED_MEDIA_TYPES as readonly string[]).includes(t)
+    ? (t as AnthropicMediaType)
+    : null;
 }
+
+function mediaTypeFromExtension(pathname: string): AnthropicMediaType | null {
+  const ext = pathname.toLowerCase().match(/\.(\w+)$/)?.[1];
+  switch (ext) {
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "png":
+      return "image/png";
+    case "gif":
+      return "image/gif";
+    case "webp":
+      return "image/webp";
+    default:
+      return null;
+  }
+}
+
+/**
+ * Origin we use when fetching presets. Hardcoded literal so the host
+ * portion of the fetch URL is never user-controlled — this is what
+ * keeps CodeQL's `js/request-forgery` happy.
+ */
+const PRESET_ORIGIN = "https://www.vibrantsocial.app";
+
+/**
+ * Pull a preset background image off our own origin and inline it as
+ * base64. We have to fetch it ourselves (rather than letting Anthropic
+ * pull it via `type: "url"`) because Cloudflare's bot management 403s
+ * requests carrying Anthropic's user-agent against vibrantsocial.app.
+ *
+ * SSRF: the URL host is the constant `PRESET_ORIGIN` and the path comes
+ * from the preset allowlist (`isPresetBackgroundSrc`). User input is
+ * never used to choose the host, so this can't be steered at internal
+ * services or attacker-controlled origins.
+ */
+async function fetchPresetAsBase64(
+  presetPath: string,
+): Promise<{ data: string; mediaType: AnthropicMediaType }> {
+  // Belt-and-suspenders: caller has already validated, but re-assert so
+  // the URL we build below can never include a non-allowlisted path.
+  if (!isPresetBackgroundSrc(presetPath)) {
+    throw new Error("Preset path not in allowlist");
+  }
+  const url = `${PRESET_ORIGIN}${presetPath}`;
+  const res = await fetch(url, { headers: { Accept: "image/*" } });
+  if (!res.ok) {
+    throw new Error(`Image fetch failed: ${res.status} ${res.statusText}`);
+  }
+  const mediaType =
+    mediaTypeFromHeader(res.headers.get("content-type")) ??
+    mediaTypeFromExtension(presetPath);
+  if (!mediaType) {
+    throw new Error(
+      `Unsupported image type for ${url} (content-type: ${res.headers.get("content-type") ?? "none"})`,
+    );
+  }
+  const buf = Buffer.from(await res.arrayBuffer());
+  return { data: buf.toString("base64"), mediaType };
+}
+
 
 function enforceContrast(colors: ProfileThemeColors): ProfileThemeColors {
   return {
@@ -121,15 +189,35 @@ export async function generateThemeForUser(
     return { success: false, error: "Please select a background image" };
   }
 
+  // SSRF guard: the only legitimate sources are our allowlisted preset
+  // backgrounds and uploads in our own Vercel Blob bucket. Anything else
+  // (a custom URL the user smuggled into the form, an internal address,
+  // an attacker-controlled host) gets rejected before we fetch it.
+  const isPreset = isPresetBackgroundSrc(imageUrl);
+  const isOwnBlob = isVercelBlobUrl(imageUrl);
+  if (!isPreset && !isOwnBlob) {
+    return { success: false, error: "Invalid background source" };
+  }
+
   // Allow non-premium users to generate themes for free preset backgrounds
-  const isFreePreset = isPresetBackgroundSrc(imageUrl) && !isPremiumBackgroundSrc(imageUrl);
+  const isFreePreset = isPreset && !isPremiumBackgroundSrc(imageUrl);
   if (!isPremium && !isFreePreset) {
     return { success: false, error: "Premium subscription required" };
   }
 
-  let absoluteUrl: string | undefined;
   try {
-    absoluteUrl = await resolveImageUrl(imageUrl);
+    // Two paths, both SSRF-safe:
+    //  - Preset: we fetch from our own origin (hardcoded host) and inline
+    //    the bytes as base64, because Cloudflare blocks Anthropic's UA.
+    //  - Vercel Blob: pass the URL straight to Anthropic. Blob URLs aren't
+    //    behind Cloudflare's bot rules, and we never `fetch` them server-side.
+    const imageSource = isPreset
+      ? await (async () => {
+          const { data, mediaType } = await fetchPresetAsBase64(imageUrl);
+          return { type: "base64" as const, media_type: mediaType, data };
+        })()
+      : { type: "url" as const, url: imageUrl };
+
     const response = await anthropic.messages.create({
       model: "claude-haiku-4-5",
       max_tokens: 512,
@@ -141,7 +229,7 @@ export async function generateThemeForUser(
           content: [
             {
               type: "image",
-              source: { type: "url", url: absoluteUrl },
+              source: imageSource,
             },
             {
               type: "text",
@@ -207,7 +295,8 @@ Return JSON in this exact format:
     console.error("[generateTheme] failed", {
       userId,
       imageUrl,
-      absoluteUrl,
+      isPreset,
+      isOwnBlob,
       error: err instanceof Error ? { name: err.name, message: err.message, stack: err.stack } : err,
     });
     return { success: false, error: "Failed to generate theme. Try again." };
