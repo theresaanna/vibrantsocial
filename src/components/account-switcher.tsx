@@ -67,12 +67,15 @@ export function AccountSwitcher({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const ablyReady = useAblyReady();
 
-  // Prefer session data (reflects real-time updates like account switches),
-  // fall back to server-loaded data so the button renders immediately.
-  const sessionLinkedAccounts = session?.user?.linkedAccounts ?? [];
-  const linkedAccounts = sessionLinkedAccounts.length > 0
-    ? sessionLinkedAccounts
-    : initialLinkedAccounts;
+  // Always use the server-rendered prop. It's loaded fresh per page render
+  // (subject only to a short Redis cache) and is authoritative — including
+  // empty, e.g. right after the user unlinks their last account. The JWT's
+  // `session.user.linkedAccounts` is per-device and only refreshes on
+  // `update({ refreshLinkedAccounts | switchToUserId })`, so a device that
+  // wasn't where the linking happened can carry a stale list for the
+  // lifetime of its JWT. Switching triggers `window.location.reload()` so
+  // the next render's prop reflects the new identity.
+  const linkedAccounts = initialLinkedAccounts;
 
   const totalOtherNotifications = Object.values(notificationCounts).reduce(
     (sum, c) => sum + c,

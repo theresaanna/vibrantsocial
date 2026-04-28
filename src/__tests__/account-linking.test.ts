@@ -28,6 +28,16 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
+// Stub the cache invalidation that link/unlink call. We don't care to test
+// the cache-bust round-trip here — just that it's invoked on mutation.
+vi.mock("@/lib/account-linking-db", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/account-linking-db")>();
+  return {
+    ...actual,
+    invalidateLinkedAccountsCacheForGroup: vi.fn().mockResolvedValue(undefined),
+  };
+});
+
 vi.mock("bcryptjs", () => ({
   default: {
     compare: vi.fn(),
